@@ -1,4 +1,18 @@
 import axios from "axios";
+import {
+  mockGetList,
+  mockGetDoc,
+  mockCreateDoc,
+  mockUpdateDoc,
+  mockDeleteDoc,
+} from "./mockData";
+
+/**
+ * TEMPORARY: serve every read and write from src/lib/mockData.ts instead of Frappe,
+ * so the UI can be built while login is switched off and there is no session cookie.
+ * Set this to false to talk to the real backend again.
+ */
+export const MOCK_DATA: boolean = true;
 
 const api = axios.create({
   baseURL: "",
@@ -33,6 +47,7 @@ export const logout = async () => {
 };
 
 export const getList = async (doctype: string, fields: string[], filters?: any) => {
+  if (MOCK_DATA) return mockGetList(doctype, fields, filters);
   initAuth();
   const res = await api.get(`/frappe/api/resource/${doctype}`, {
     params: {
@@ -45,24 +60,28 @@ export const getList = async (doctype: string, fields: string[], filters?: any) 
 };
 
 export const getDoc = async (doctype: string, name: string) => {
+  if (MOCK_DATA) return mockGetDoc(doctype, name);
   initAuth();
   const res = await api.get(`/frappe/api/resource/${doctype}/${name}`);
   return res.data.data;
 };
 
 export const createDoc = async (doctype: string, data: any) => {
+  if (MOCK_DATA) return mockCreateDoc(doctype, data);
   initAuth();
   const res = await api.post(`/frappe/api/resource/${doctype}`, data);
   return res.data.data;
 };
 
 export const updateDoc = async (doctype: string, name: string, data: any) => {
+  if (MOCK_DATA) return mockUpdateDoc(doctype, name, data);
   initAuth();
   const res = await api.put(`/frappe/api/resource/${doctype}/${name}`, data);
   return res.data.data;
 };
 
 export const deleteDoc = async (doctype: string, name: string) => {
+  if (MOCK_DATA) return mockDeleteDoc(doctype, name);
   initAuth();
   await api.delete(`/frappe/api/resource/${doctype}/${name}`);
 };

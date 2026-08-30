@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getList } from "@/lib/frappe";
+import { getList, createDoc } from "@/lib/frappe";
 import { UserPlus, Shield } from "lucide-react";
 
 interface User {
@@ -44,26 +44,13 @@ export default function UsersPage() {
     setSaving(true);
     setError("");
     try {
-      const csrf = localStorage.getItem("csrf_token") || "";
-      const res = await fetch("/api/frappe/api/method/frappe.client.insert", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-frappe-csrf-token": csrf,
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          doc: {
-            doctype: "User",
-            email: form.email,
-            first_name: form.first_name,
-            new_password: form.password,
-            send_welcome_email: 0,
-            roles: [{ role: form.role }],
-          }
-        }),
+      await createDoc("User", {
+        email: form.email,
+        first_name: form.first_name,
+        new_password: form.password,
+        send_welcome_email: 0,
+        roles: [{ role: form.role }],
       });
-      if (!res.ok) throw new Error("Failed");
       setShowAdd(false);
       setForm({ email: "", first_name: "", role: "Clinic Receptionist", password: "" });
       loadUsers();

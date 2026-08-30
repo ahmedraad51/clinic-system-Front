@@ -38,7 +38,7 @@ const menuItems = [
 export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, logout, authDisabled } = useAuth();
 
   const handleLogout = async () => {
     await logout();
@@ -99,9 +99,11 @@ export default function Sidebar() {
             <p className="text-sm font-medium text-gray-800 truncate">{user}</p>
             <p className="text-xs text-gray-400">Administrator</p>
           </div>
-          <button onClick={handleLogout} className="text-gray-400 hover:text-red-500 transition">
-            <LogOut size={16} />
-          </button>
+          {!authDisabled && (
+            <button onClick={handleLogout} className="text-gray-400 hover:text-red-500 transition">
+              <LogOut size={16} />
+            </button>
+          )}
         </div>
       </div>
     </aside>
