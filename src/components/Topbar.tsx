@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Settings, Bell, ChevronDown, User, LogOut } from "lucide-react";
 
 export default function Topbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, authDisabled } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
@@ -65,14 +65,18 @@ export default function Topbar() {
                 <Settings size={15} />
                 Settings
               </button>
-              <hr className="my-1 border-gray-100" />
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50"
-              >
-                <LogOut size={15} />
-                Logout
-              </button>
+              {!authDisabled && (
+                <>
+                  <hr className="my-1 border-gray-100" />
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50"
+                  >
+                    <LogOut size={15} />
+                    Logout
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
