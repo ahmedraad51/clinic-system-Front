@@ -21,6 +21,7 @@ interface Patient {
   current_medications: string;
   chronic_diseases: string;
   notes: string;
+  dental_chart?: Record<string, string>;
   total_appointments: number;
   total_treatments: number;
   total_paid: number;
@@ -95,7 +96,7 @@ export default function PatientDetailPage() {
           <Row label="Notes" value={patient.notes} />
         </Section>
 
-        <DentalChart />
+        <DentalChart initialTeeth={patient.dental_chart} />
       </div>
     </div>
   );

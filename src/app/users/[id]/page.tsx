@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, useParams } from "next/navigation";
+import { getDoc, updateDoc, createDoc } from "@/lib/frappe";
 import { Shield, Check } from "lucide-react";
 
 const PERMISSIONS = [
@@ -51,34 +52,19 @@ export default function UserDetailPage() {
 
   const loadData = async () => {
     try {
-      const csrf = localStorage.getItem("csrf_token") || "";
+      setUserData(await getDoc("User", userId));
 
-      // Load user info
-      const userRes = await fetch(`/frappe/api/resource/User/${encodeURIComponent(userId)}`, {
-        credentials: "include",
-        headers: { "x-frappe-csrf-token": csrf },
-      });
-      const userData = await userRes.json();
-      setUserData(userData.data);
-
-      // Load permissions
-      const permRes = await fetch(`/frappe/api/resource/Clinic Permission/${encodeURIComponent(userId)}`, {
-        credentials: "include",
-        headers: { "x-frappe-csrf-token": csrf },
-      });
-
-      if (permRes.ok) {
-        const permData = await permRes.json();
-        const p: Record<string, boolean> = {};
+      const p: Record<string, boolean> = {};
+      try {
+        const permission = await getDoc("Clinic Permission", userId);
         PERMISSIONS.forEach(g => g.items.forEach(item => {
-          p[item.key] = permData.data[item.key] === 1;
+          p[item.key] = permission[item.key] === 1;
         }));
-        setPerms(p);
-      } else {
-        const p: Record<string, boolean> = {};
+      } catch {
+        // No Clinic Permission doc yet - start with everything switched off.
         PERMISSIONS.forEach(g => g.items.forEach(item => { p[item.key] = false; }));
-        setPerms(p);
       }
+      setPerms(p);
     } catch (err) {
       console.error(err);
     } finally {
@@ -92,28 +78,17 @@ export default function UserDetailPage() {
 
   const savePerms = async () => {
     setSaving(true);
-    const csrf = localStorage.getItem("csrf_token") || "";
-    const body: any = { user: userId };
+    const body: Record<string, string | number> = { user: userId };
     PERMISSIONS.forEach(g => g.items.forEach(item => {
       body[item.key] = perms[item.key] ? 1 : 0;
     }));
 
     try {
-      // Try update first, then create
-      const updateRes = await fetch(`/frappe/api/resource/Clinic Permission/${encodeURIComponent(userId)}`, {
-        method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json", "x-frappe-csrf-token": csrf },
-        body: JSON.stringify(body),
-      });
-
-      if (!updateRes.ok) {
-        await fetch("/frappe/api/resource/Clinic Permission", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json", "x-frappe-csrf-token": csrf },
-          body: JSON.stringify(body),
-        });
+      // Update the existing doc, or create it the first time.
+      try {
+        await updateDoc("Clinic Permission", userId, body);
+      } catch {
+        await createDoc("Clinic Permission", body);
       }
 
       setSuccess(true);

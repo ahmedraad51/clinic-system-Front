@@ -18,8 +18,19 @@ const statusConfig = {
   pending: { label: "Pending Treatment",bg: "bg-yellow-50",   border: "border-yellow-400", text: "text-yellow-600" },
 };
 
-export default function DentalChart() {
-  const [teeth, setTeeth] = useState<Record<number, ToothStatus>>({});
+/** Accepts a dental chart keyed by tooth number, e.g. { "36": "treated" }. */
+function normalizeTeeth(initial?: Record<string, string>): Record<number, ToothStatus> {
+  const teeth: Record<number, ToothStatus> = {};
+  Object.entries(initial || {}).forEach(([tooth, status]) => {
+    if (status === "treated" || status === "pending" || status === "normal") {
+      teeth[Number(tooth)] = status;
+    }
+  });
+  return teeth;
+}
+
+export default function DentalChart({ initialTeeth }: { initialTeeth?: Record<string, string> }) {
+  const [teeth, setTeeth] = useState<Record<number, ToothStatus>>(() => normalizeTeeth(initialTeeth));
   const [selected, setSelected] = useState<number | null>(null);
   const [mode, setMode] = useState<"Medical" | "Cosmetic">("Medical");
 
