@@ -28,7 +28,7 @@ export default function ReportsPage() {
     try {
       const [p, t, pay] = await Promise.all([
         getList("Patient", ["name"]),
-        getList("Treatment Plan", ["name", "treatment_type", "total_cost", "paid_amount", "remaining_amount"]),
+        getList("Treatment Plan", ["name", "patient", "treatment_type", "total_cost", "paid_amount", "remaining_amount"]),
         getList("Payment", ["name", "amount", "payment_date", "payment_method", "patient"]),
       ]);
 
