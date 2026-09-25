@@ -328,9 +328,6 @@ see section 5 of [`docs/backend-todo.md`](docs/backend-todo.md) for the fix.
 
 Worth knowing before you pick this up:
 
-- **Build and lint need a fresh run.** The two old build blockers are fixed (the unused
-  `src/app/api/frappe/[...path]/route.ts` is deleted, and the payment form sits inside `<Suspense>`),
-  but `npm run build` and `npm run lint` have not been run on this version yet.
 - **The backend needs a few additions** before `MOCK_DATA` can be turned off — see
   [`docs/backend-todo.md`](docs/backend-todo.md), including the CSRF token after login.
 - **Totals are added up in the browser** for the dashboard and reports. Fine for one clinic; backend

@@ -26,9 +26,9 @@ accurate.
 |---|---|---|
 | Data source | **Dummy data.** Every read and write goes to an in-memory store. No back end needed. | `MOCK_DATA = true` in `src/lib/frappe.ts` |
 | Login | **Off.** A stand-in `Administrator` session is used and logout buttons are hidden. `/profile` has a **Try Another User** card to see the app with another user's permissions. The login page sits in a private folder, so `/login` is not a route. | `AUTH_DISABLED = true` in `src/context/AuthContext.tsx`; page in `src/app/_login/page.tsx` |
-| `npm run dev` | Expected to work. | |
-| `npm run build` | **Not yet confirmed.** Both old blockers are fixed (the unused `route.ts` is deleted; `useSearchParams()` pages are inside `<Suspense>`). The change that did this was checked offline with a type check and a browser test, not with `next build`. Run it and update this row. | |
-| `npm run lint` | **Not yet confirmed.** The code was written to the rules below and checked with a stand-in for the main rules, not with the real ESLint. The old count was 75 problems. Run it and update this row. | |
+| `npm run dev` | Works. Dev output goes to `.next/dev`, so `npm run build` can run while it is up. Changing `next.config.ts` restarts it, and the first page after that can take several minutes to compile. | |
+| `npm run build` | **Passes** (checked 2026-09-26): compiles, type-checks and prerenders every route, with no warnings. | |
+| `npm run lint` | **Passes** with 0 problems (checked 2026-09-26). `npx tsc --noEmit` passes too. | |
 | Tests / CI | None in the repo. | |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
@@ -488,10 +488,6 @@ old Medical/Cosmetic toggle did nothing and was removed.
 
 Updated on 2026-09-26.
 
-- **`npm run build` and `npm run lint` have not been run on this change set** (it was made offline). It was
-  checked with a strict type check against stand-in types, a stand-in for the main lint rules, a server-side
-  render of every page, and a browser test of the main flows. Run both and record the results in the table at
-  the top.
 - **The back end does not have everything yet.** `Patient.dental_chart`, the `*_name` fetch fields,
   read permissions and several field names must be added or confirmed. See `docs/backend-todo.md`.
 - **Totals are computed in the browser.** The dashboard's revenue and amount owed, the payments total and the
