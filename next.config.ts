@@ -8,6 +8,10 @@ import type { NextConfig } from "next";
 const FRAPPE_URL = process.env.FRAPPE_URL || "http://dent_clinic.localhost:8000";
 
 const nextConfig: NextConfig = {
+  // The dev-only "N" button sits bottom-left by default, on top of the user card in the sidebar.
+  devIndicators: {
+    position: "bottom-right",
+  },
   // A package-lock.json in a parent folder can make Turbopack pick the wrong workspace root.
   turbopack: {
     root: path.resolve(__dirname),
