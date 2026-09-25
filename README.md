@@ -268,6 +268,21 @@ npm run dev
 Open <http://localhost:3000> — it redirects straight to the dashboard, already populated.
 Node **20.9+** is required (developed on Node 22).
 
+### Checks and tests
+
+```bash
+npx tsc --noEmit          # type check
+npm run lint              # ESLint
+npm run build             # production build
+npx playwright install chromium   # once, before the first test run
+npm run test:e2e          # browser tests (builds, then serves on port 3100)
+npm run screenshots       # every page at desktop, tablet and phone size, into screenshots/
+```
+
+The browser tests walk through the daily work: adding a patient, booking an appointment (and the
+"doctor is already booked" warning), creating a treatment plan and paying part of it, and checking that a
+receptionist cannot open Reports.
+
 ### Back end
 
 ```bash

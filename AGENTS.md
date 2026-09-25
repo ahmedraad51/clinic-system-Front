@@ -29,7 +29,7 @@ accurate.
 | `npm run dev` | Works. Dev output goes to `.next/dev`, so `npm run build` can run while it is up. Changing `next.config.ts` restarts it, and the first page after that can take several minutes to compile. | |
 | `npm run build` | **Passes** (checked 2026-09-26): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-26). `npx tsc --noEmit` passes too. | |
-| Tests / CI | None in the repo. | |
+| Tests | **Playwright browser tests pass** (5 tests, checked 2026-09-26): add a patient, book with the double-booking warning, plan plus part payment, payment above the balance is refused, a receptionist cannot open Reports. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -45,6 +45,8 @@ Both flags are set this way on purpose. Leave them alone unless the task is abou
 | `npm run start` | Serves a production build. |
 | `npm run lint` | Plain `eslint` with the flat config in `eslint.config.mjs`. Next 16 removed `next lint`. |
 | `npx tsc --noEmit` | Type-check only. It also checks the route types Next generates in `.next/` (created by `dev`/`build`). |
+| `npm run test:e2e` | Playwright tests in `e2e/tests` (Chromium only). Builds, then serves the build on port **3100** (`E2E_PORT`), so it never clashes with `npm run dev` on 3000. `SKIP_BUILD=1` reuses the last build. Output goes to `test-results/` and `playwright-report/` (ignored by git). |
+| `npm run screenshots` | Full-page screenshots of every page at desktop 1440×900, tablet 1024×768 and phone 390×844, saved to `screenshots/<size>/<page>.png` (ignored by git). `PAGES=dashboard,patients` limits it; `SKIP_BUILD=1` works here too. |
 
 The Frappe address comes from the `FRAPPE_URL` environment variable (for example in `.env.local`), default
 `http://dent_clinic.localhost:8000`. See `next.config.ts`.
@@ -148,7 +150,18 @@ docs/
 ├── backend-todo.md           what the back end must provide for this front end
 └── screenshots/              images used by README.md (from the older design; retake them)
 public/                       placeholder SVGs from create-next-app (unused)
+e2e/
+├── helpers.ts                waitForData, navigate (client-side, keeps the dummy data), openFromMenu, pickLink
+├── tests/                    the Playwright tests (npm run test:e2e)
+└── screens/                  the screenshot script (npm run screenshots)
+IMPROVEMENTS.md               the improvement backlog and log, written for the clinic owner
 ```
+
+**Writing browser tests.** The dummy data lives in browser memory and a full page load resets it, so a
+test calls `page.goto` once and then moves by clicking links, or with `navigate(page, path)` from
+`e2e/helpers.ts`, which calls the app's own router. Select by role and label (`getByRole`, `getByLabel`);
+add a `data-testid` only for values with no label, such as the plan's Paid and Remaining amounts. Next adds
+an empty `role="alert"` route announcer, so filter alerts by text.
 
 ---
 
@@ -515,7 +528,10 @@ Updated on 2026-09-26.
 - **Check UI changes in the running app.** Run `npm run dev` and open <http://localhost:3000>. Mock mode
   needs no back end. A full reload brings back the seed data. Use `/profile` → Try Another User to check
   permissions.
-- **Run `npm run lint` and `npx tsc --noEmit`** on your changes.
+- **Run `npx tsc --noEmit`, `npm run lint`, `npm run build` and `npm run test:e2e`** on your changes. Use
+  `npm run screenshots` to look at changed screens at desktop, tablet and phone size.
+- **Line endings are CRLF.** Git Bash `sed -i` and some editors write LF; run `unix2dos` on touched files and
+  check with `git ls-files --eol` (`w/crlf`).
 - **Git:** `develop` is the working branch and `main` is the base for PRs. Commit messages follow
   Conventional Commits (`feat:`, `fix:`, `docs:`).
 - **Keep this file current.** When you change routes, flags or the data layer, or fix a known issue, update

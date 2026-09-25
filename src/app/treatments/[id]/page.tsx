@@ -164,11 +164,11 @@ function TreatmentDetail() {
           </div>
           <div>
             <p className="text-xs text-gray-500">Paid</p>
-            <p className="text-xl sm:text-2xl font-bold text-green-600 mt-1">{money(paid)}</p>
+            <p data-testid="plan-paid" className="text-xl sm:text-2xl font-bold text-green-600 mt-1">{money(paid)}</p>
           </div>
           <div>
             <p className="text-xs text-gray-500">Remaining</p>
-            <p className={cx("text-xl sm:text-2xl font-bold mt-1", remaining > 0 ? "text-red-600" : "text-gray-400")}>
+            <p data-testid="plan-remaining" className={cx("text-xl sm:text-2xl font-bold mt-1", remaining > 0 ? "text-red-600" : "text-gray-400")}>
               {money(remaining)}
             </p>
           </div>

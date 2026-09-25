@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:e2e": "playwright test --project=e2e",
+    "screenshots": "playwright test --project=screens"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.18",
@@ -20,6 +22,7 @@
     "react-icons": "^5.7.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

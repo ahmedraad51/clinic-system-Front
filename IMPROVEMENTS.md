@@ -5,17 +5,11 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-1. Make the code checks pass (`npx tsc --noEmit`, `npm run lint`, `npm run build`) and write the real
-   results into the "current state" table in AGENTS.md.
+3. Quick fix: move the Next.js dev button (the black "N") to the bottom-right so it does not cover the user
+   card in the sidebar.
 
 ## Backlog
 
-2. Safety net: automatic browser tests with Playwright (`npm run test:e2e`): add a patient; book an
-   appointment (with the "doctor is already booked" warning); create a treatment plan and pay part of it
-   (the balance must update); a receptionist cannot open Reports. Plus a script that takes screenshots of
-   every page at desktop, tablet and phone size. Test output stays out of git.
-3. Quick fix: move the Next.js dev button (the black "N") to the bottom-right so it does not cover the user
-   card in the sidebar.
 4. Dental look and feel: a calm clinical colour theme defined once and used everywhere, using the Clinic
    Settings theme colour; a clean tooth logo; one set of text sizes; friendly empty states with small
    drawings; buttons and inputs at least 44 px tall for touch.
@@ -46,6 +40,24 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Done
 
+- 2026-09-26 - **Code checks pass.** Type check, lint and production build all pass with no warnings; the
+  results are written in AGENTS.md. Also fixed a build warning about the project folder. Commit f7c0476.
+- 2026-09-26 - **Automatic browser tests.** `npm run test:e2e` now clicks through the app like a person:
+  adds a patient, books an appointment (and sees the "doctor is already booked" warning), creates a
+  treatment plan and pays part of it (the balance goes down), checks a too-large payment is refused, and
+  checks a receptionist cannot open Reports. `npm run screenshots` photographs every page at desktop,
+  tablet and phone size. Commit PENDING.
+
 ## Questions for the owner
 
+- Your `npm run dev` on port 3000 restarted itself when I changed `next.config.ts` (item 1), and afterwards
+  it stopped answering for more than 10 minutes while using a lot of processor time. I did not stop it
+  (you asked me not to). If the app at http://localhost:3000 does not open, stop it with Ctrl+C and run
+  `npm run dev` again. My tests use their own copy of the app on port 3100, so they are not affected.
+
 ## Reverted
+
+## New packages
+
+- **@playwright/test** (free, by Microsoft, very widely used; only used for testing, not shipped to the
+  clinic): runs the browser tests and takes the screenshots. Chromium only.
