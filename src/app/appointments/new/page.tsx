@@ -29,8 +29,13 @@ function NewAppointment() {
   const initial: AppointmentFormData = {
     ...EMPTY_APPOINTMENT,
     patient: searchParams.get("patient") || "",
+    doctor: searchParams.get("doctor") || "",
     appointment_date: searchParams.get("date") || "",
+    // From a click on the calendar, e.g. ?time=10:30.
+    appointment_time: /^\d{2}:\d{2}$/.test(searchParams.get("time") || "") ? (searchParams.get("time") as string) : "",
   };
+  // Back to the calendar day the booking came from.
+  const backHref = initial.appointment_date ? `/appointments?view=day&day=${initial.appointment_date}` : "/appointments";
 
   const handleSubmit = async (data: AppointmentFormData) => {
     const appointment = await createDoc<Appointment>("Appointment", appointmentPayload(data));
@@ -40,11 +45,11 @@ function NewAppointment() {
 
   return (
     <PageContainer narrow>
-      <PageHeader title="New Appointment" back={{ href: "/appointments", label: "Appointments" }} />
+      <PageHeader title="New Appointment" back={{ href: backHref, label: "Appointments" }} />
       <AppointmentForm
         initial={initial}
         submitLabel="Book Appointment"
-        cancelHref="/appointments"
+        cancelHref={backHref}
         onSubmit={handleSubmit}
       />
     </PageContainer>

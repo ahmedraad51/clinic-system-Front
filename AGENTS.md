@@ -127,6 +127,7 @@ src/
 │   ├── Sidebar.tsx           nav in three groups (CLINIC, FINANCE, SYSTEM), hidden items by permission, user card
 │   ├── Topbar.tsx            mobile menu button, bell, settings, profile dropdown, logout
 │   ├── NotificationBell.tsx  today's Scheduled/Confirmed appointments
+│   ├── AppointmentCalendar.tsx  the day and week time grid on /appointments
 │   ├── Guard.tsx             RequirePermission
 │   ├── DentalChart.tsx       FDI chart of the 32 permanent teeth, saved to Patient.dental_chart
 │   ├── ToothLogo.tsx         the app logo (inline SVG)
@@ -163,7 +164,9 @@ IMPROVEMENTS.md               the improvement backlog and log, written for the c
 test calls `page.goto` once and then moves by clicking links, or with `navigate(page, path)` from
 `e2e/helpers.ts`, which calls the app's own router. Select by role and label (`getByRole`, `getByLabel`);
 add a `data-testid` only for values with no label, such as the plan's Paid and Remaining amounts. Next adds
-an empty `role="alert"` route announcer, so filter alerts by text.
+an empty `role="alert"` route announcer, so filter alerts by text. After pressing Save, wait for the next page
+(`toHaveURL` and its heading) before clicking anything else: text such as the patient's name is often already
+on the form, and a click made while the save is still running is overridden by the form's own navigation.
 
 ---
 
@@ -177,8 +180,8 @@ an empty `role="alert"` route announcer, so filter alerts by text.
 | `/patients/new` | `add_patients` | Shared `PatientForm`. Opens the new record after saving |
 | `/patients/[id]` | `view_patients` | Allergy and medical-condition alerts, totals, tabs: Overview, Appointments, Treatment Plans, Payments, Dental Chart. Buttons: New Appointment, New Treatment, Edit, Delete (each by permission) |
 | `/patients/[id]/edit` | `edit_patients` | Shared `PatientForm` |
-| `/appointments` | `view_appointments` | Search, date filter (All/Today/Tomorrow/Upcoming/Past, also `?date=today`), status filter, paging |
-| `/appointments/new` | `add_appointments` | Shared `AppointmentForm`. Reads `?patient=` and `?date=`. Warns if the doctor already has an overlapping appointment |
+| `/appointments` | `view_appointments` | Three views, chosen with `?view=day\|week\|list` (default `day`, or `list` when `?date=` is given). **Day**: one column per active doctor, rows from Clinic Settings opening to closing time (stretched to fit), blocks as long as the appointment and coloured by status, overlapping ones side by side, a red "now" line; `?day=YYYY-MM-DD` and `?doctor=` pick the day and one doctor. **Week**: one column per day (the week starts on `WEEK_STARTS_ON` in `format.ts`, Sunday). Clicking an empty 15-minute slot opens `/appointments/new` with date, time and doctor filled in (needs `add_appointments`). **List**: search, date filter (All/Today/Tomorrow/Upcoming/Past, also `?date=today`), status filter, paging. The grid is `src/components/AppointmentCalendar.tsx` |
+| `/appointments/new` | `add_appointments` | Shared `AppointmentForm`. Reads `?patient=`, `?date=`, `?time=HH:MM` and `?doctor=`; Back returns to that day in the calendar. Warns if the doctor already has an overlapping appointment (always checked for a new booking) |
 | `/appointments/[id]` | `view_appointments` | Details, status buttons, Edit/Delete (`edit_appointments`), WhatsApp messages for this appointment |
 | `/appointments/[id]/edit` | `edit_appointments` | Shared `AppointmentForm` with status |
 | `/treatments` | `view_treatments` | Search, type and status filters, paging |
@@ -246,6 +249,7 @@ Rules for data code:
 | `usePagedList<T>(doctype, { fields, filters, orFilters, orderBy, pageSize })` | A page of rows plus the total. Changing the query goes back to page 1. Returns `rows, total, page, setPage, pageSize, initialLoading, loading, error, reload` |
 | `useDocument<T>(doctype, name)` | One doc. `reload()` fetches again but keeps the old copy on screen meanwhile. `notFound` is true when the load failed; `error` is empty for a real 404 and holds the reason otherwise (for example no permission) |
 | `useDoctors()` | Active doctors (`is_active = 1`) for dropdowns |
+| `useDoctorList()` | The same, as `{ doctors, loading }`, for screens that would look empty while doctors load (the calendar) |
 | `useDebounced(value, ms)` | Waits until typing stops |
 
 ### Getting requests to the real back end
@@ -456,8 +460,10 @@ function Things() {
 
 `PageContainer` (`narrow` for forms), `PageHeader` (title, subtitle, back link, actions, badge), `Card`
 (`flush` for tables), `StatCard`, `Badge`, `StatusBadge` (kinds: appointment, treatment, session, method,
-whatsapp, trigger, user), `Button` and `LinkButton` (primary, secondary, danger, ghost, success; sm, md;
-`icon`, `loading`), `Field` (label wrapping one input), `TextInput`, `SelectInput`, `TextArea`, `Toggle`,
+whatsapp, trigger, user) and `statusTone(kind, status)` for other views that must match the badge colours,
+`Button` and `LinkButton` (primary, secondary, danger, ghost, success; sm, md; `icon`, `loading`),
+`Segmented` (joined view switch, e.g. Day / Week / List), `Field` (label wrapping one input), `TextInput`,
+`SelectInput`, `TextArea`, `Toggle`,
 `SearchInput`, `Toolbar`, `Table`, `Th`, `Td`, `ClickableRow`, `TableMessage`, `Pagination`, `DetailList` and
 `DetailRow`, `Tabs`, `Alert`, `Spinner`, `PageLoading`, `EmptyState`, `NoAccess`, `NotFoundCard`; plus
 `Modal` and `ConfirmDialog` in `Modal.tsx`, and `LinkSelect` for searchable Link fields. Use these instead of
@@ -545,6 +551,8 @@ Updated on 2026-09-26.
   permissions.
 - **Run `npx tsc --noEmit`, `npm run lint`, `npm run build` and `npm run test:e2e`** on your changes. Use
   `npm run screenshots` to look at changed screens at desktop, tablet and phone size.
+- If `npx tsc --noEmit` or `npm run build` says `.next/dev/types/routes.d.ts is not a module`, a running
+  `npm run dev` is rewriting its route types at that moment. Run the command again.
 - **Line endings are CRLF.** Git Bash `sed -i` and some editors write LF; run `unix2dos` on touched files and
   check with `git ls-files --eol` (`w/crlf`).
 - **Git:** `develop` is the working branch and `main` is the base for PRs. Commit messages follow

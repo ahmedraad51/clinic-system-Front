@@ -68,6 +68,36 @@ export function addDays(iso: string, days: number): string {
   return toISODate(new Date(year, month - 1, day + days));
 }
 
+const localDate = (iso: string) => {
+  const [year, month, day] = iso.split("-").map(Number);
+  return new Date(year, month - 1, day);
+};
+
+/** "2026-09-26" → "Saturday, 26 September 2026". */
+export function formatLongDate(iso: string): string {
+  return new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(
+    localDate(iso),
+  );
+}
+
+/** "2026-09-26" → "Sat". */
+export function weekdayShort(iso: string): string {
+  return new Intl.DateTimeFormat("en-GB", { weekday: "short" }).format(localDate(iso));
+}
+
+/** The day the calendar week starts on: 0 is Sunday (the working week in most of the region), 1 is Monday. */
+export const WEEK_STARTS_ON = 0;
+
+/** The first day of the week that holds the given date. */
+export function weekStart(iso: string): string {
+  return addDays(iso, -((localDate(iso).getDay() - WEEK_STARTS_ON + 7) % 7));
+}
+
+/** 630 → "10:30". */
+export function fromMinutes(minutes: number): string {
+  return `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
+}
+
 /** First day of the month that is `offset` months away from the given date. */
 export function monthStart(iso: string, offset = 0): string {
   const [year, month] = iso.split("-").map(Number);

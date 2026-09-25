@@ -26,7 +26,8 @@ test("book an appointment, with the double-booking warning", async ({ page }) =>
   await page.getByRole("button", { name: "Book Appointment" }).click();
 
   // The appointment page opens.
+  await expect(page).toHaveURL(/\/appointments\/APT-/);
+  await expect(page.getByRole("heading", { name: "Mona Adel" })).toBeVisible();
   await expect(page.getByText("Test booking").first()).toBeVisible();
-  await expect(page.getByText("Mona Adel").first()).toBeVisible();
   await expect(page.getByText("3:00 PM").first()).toBeVisible();
 });

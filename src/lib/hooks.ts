@@ -145,7 +145,12 @@ export function useDocument<T extends BaseDoc>(doctype: string, name: string) {
 
 /** Active doctors, for dropdowns. */
 export function useDoctors() {
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  return useDoctorList().doctors;
+}
+
+/** Active doctors, plus whether they are still loading (for screens that look empty without them). */
+export function useDoctorList() {
+  const [doctors, setDoctors] = useState<Doctor[] | null>(null);
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -158,6 +163,7 @@ export function useDoctors() {
         if (!cancelled) setDoctors(rows);
       } catch (err) {
         console.error(err);
+        if (!cancelled) setDoctors([]);
       }
     };
     load();
@@ -165,5 +171,7 @@ export function useDoctors() {
       cancelled = true;
     };
   }, []);
-  return doctors;
+  return { doctors: doctors ?? NO_DOCTORS, loading: doctors === null };
 }
+
+const NO_DOCTORS: Doctor[] = [];

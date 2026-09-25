@@ -66,10 +66,15 @@ export function Badge({ tone = "gray", children }: { tone?: Tone; children: Reac
   );
 }
 
+/** The colour of a status value, so other views (like the calendar) match the badges. */
+export function statusTone(kind: StatusKind, status?: string | null): Tone {
+  const tones: Record<string, Tone> = STATUS_TONES[kind];
+  return (status && tones[status]) || "gray";
+}
+
 export function StatusBadge({ kind, status }: { kind: StatusKind; status?: string | null }) {
   if (!status) return null;
-  const tones: Record<string, Tone> = STATUS_TONES[kind];
-  return <Badge tone={tones[status] ?? "gray"}>{status}</Badge>;
+  return <Badge tone={statusTone(kind, status)}>{status}</Badge>;
 }
 
 /* --------------------------------------------------------------- layout -- */
@@ -397,6 +402,45 @@ export function SearchInput({
           <X size={16} />
         </button>
       )}
+    </div>
+  );
+}
+
+/** A small row of joined buttons to switch between views, e.g. Day / Week / List. */
+export function Segmented<K extends string>({
+  options,
+  value,
+  onChange,
+  label,
+}: {
+  options: Array<{ value: K; label: string; icon?: LucideIcon }>;
+  value: K;
+  onChange: (value: K) => void;
+  /** Read out by screen readers, e.g. "View". */
+  label: string;
+}) {
+  return (
+    <div role="group" aria-label={label} className="inline-flex rounded-xl bg-gray-100 p-1 gap-1">
+      {options.map((option) => {
+        const Icon = option.icon;
+        const active = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(option.value)}
+            className={cx(
+              "inline-flex items-center justify-center gap-1.5 min-h-9 pointer-coarse:min-h-11 px-3.5 rounded-lg text-sm font-medium transition",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
+              active ? "bg-white text-primary-700 shadow-sm" : "text-gray-600 hover:text-gray-900",
+            )}
+          >
+            {Icon && <Icon size={15} />}
+            {option.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

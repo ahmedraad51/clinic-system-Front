@@ -5,33 +5,34 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Appointment calendar: a day view with one column per doctor from opening to closing time, blocks as long
-  as the appointment, coloured by status, a "now" line; a week view; click an empty slot to book with the
-  date, time and doctor filled in. Keep the list as a second view.
+- Real dental chart (odontogram): tooth drawings; healthy, caries, filling, crown, root canal, implant,
+  missing, to extract, bridge; the five surfaces (M, O, D, B, L); adult and child teeth; a note per tooth;
+  "New treatment for this tooth". Old charts must still load.
 
 ## Backlog
 
-1. Real dental chart (odontogram): tooth drawings; healthy, caries, filling, crown, root canal, implant,
-   missing, to extract, bridge; the five surfaces (M, O, D, B, L); adult and child teeth; a note per
-   tooth; "New treatment for this tooth". Old charts must still load.
-2. Patient page built for the dentist: a header with age, phone (tap to call, WhatsApp), medical alerts,
+1. Patient page built for the dentist: a header with age, phone (tap to call, WhatsApp), medical alerts,
    last visit, next appointment and balance; a timeline of visits, treatments and payments.
-3. Today board for the front desk: today's patients grouped by doctor, one-tap Confirmed / Completed / No
+2. Today board for the front desk: today's patients grouped by doctor, one-tap Confirmed / Completed / No
    Show, late patients highlighted, quick Add Payment.
-4. Global search in the top bar (also Ctrl+K): find a patient by name, phone or ID from any page, plus
+3. Global search in the top bar (also Ctrl+K): find a patient by name, phone or ID from any page, plus
    quick actions (New Appointment, Add Patient).
-5. Faster booking: "next free time" for the chosen doctor, show that doctor's day while booking, remember
+4. Faster booking: "next free time" for the chosen doctor, show that doctor's day while booking, remember
    the last doctor used.
-6. Doctors page: list, add and edit doctors (name, specialization, phone, email, active). Permission:
+5. Doctors page: list, add and edit doctors (name, specialization, phone, email, active). Permission:
    manage_users.
-7. Price list: a default price per treatment type (in Settings) that fills in the cost automatically, and
+6. Price list: a default price per treatment type (in Settings) that fills in the cost automatically, and
    a printable treatment estimate for the patient.
-8. Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
+7. Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
    payment method.
-9. Phone and tablet polish: tables turn into cards on small screens, sticky Save buttons, larger inputs.
-10. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
-    form with unsaved changes, clear error messages.
-11. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+8. Phone and tablet polish: tables turn into cards on small screens, sticky Save buttons, larger inputs.
+9. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
+   form with unsaved changes, clear error messages.
+10. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+11. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
+    and warn when booking outside them.
+12. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
+    check.
 
 ## Done
 
@@ -49,7 +50,13 @@ Each finished item says what changed, when, and which commit holds it.
   sample button); colours that are too light are darkened a little so text stays readable. A new, clean
   tooth logo. Text is a little larger and easier to read. Buttons, fields, tabs and menu items are at
   least 44 pixels tall, so they are easy to tap on a tablet. Empty lists show a small friendly drawing,
-  and search boxes have a clear button. Commit PENDING.
+  and search boxes have a clear button. Commit c7896de.
+- 2026-09-26 - **Appointment calendar.** The Appointments page now opens on a day calendar: one column per
+  doctor, from opening to closing time, each appointment a coloured block as long as the visit,
+  overlapping bookings side by side, and a red line for "now". A week view shows seven days. Click any
+  empty time to book it with the date, time and doctor already filled in (the "doctor is already booked"
+  warning still works). The old list is kept as the third view. The dashboard and the bell now open today
+  in the calendar. Commit PENDING.
 
 ## Questions for the owner
 
@@ -57,6 +64,10 @@ Each finished item says what changed, when, and which commit holds it.
   it stopped answering for more than 10 minutes while using a lot of processor time. I did not stop it
   (you asked me not to). If the app at http://localhost:3000 does not open, stop it with Ctrl+C and run
   `npm run dev` again. My tests use their own copy of the app on port 3100, so they are not affected.
+
+- Which day does your clinic week start on? The week calendar starts on **Sunday** (the working week in
+  most of the region). If you prefer Saturday or Monday, it is one setting (`WEEK_STARTS_ON` in
+  `src/lib/format.ts`).
 
 ## Reverted
 

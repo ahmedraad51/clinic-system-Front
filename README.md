@@ -137,7 +137,7 @@ what they are not allowed to do.
 | `/patients` | List with server-side search (name, phone, ID), gender filter and paging |
 | `/patients/new`, `/patients/[id]/edit` | Create or edit — basic details plus medical history, allergies, medications |
 | `/patients/[id]` | Allergy alerts, totals, tabs for appointments, treatment plans, payments and the dental chart (saved to the record) |
-| `/appointments` | The appointment book: search, date filter (today, tomorrow, upcoming, past), status filter |
+| `/appointments` | The appointment book as a **day calendar** (a column per doctor, from opening to closing time, with a "now" line), a **week calendar**, or a **list** with search and filters. Click an empty time in the calendar to book it with the date, time and doctor already filled in |
 | `/appointments/new`, `/appointments/[id]/edit` | Book or edit — warns when the doctor is already booked at that time |
 | `/appointments/[id]` | Detail, one-click status changes, WhatsApp messages sent for it |
 | `/treatments` | Plans with cost and remaining balance, type and status filters |

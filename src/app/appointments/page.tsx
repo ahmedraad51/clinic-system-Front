@@ -2,19 +2,29 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { CalendarX, Plus } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CalendarDays, CalendarRange, CalendarX, ChevronLeft, ChevronRight, List, Plus } from "lucide-react";
 import RequirePermission from "@/components/Guard";
+import AppointmentCalendar, { type CalendarView } from "@/components/AppointmentCalendar";
 import {
-  Alert, Card, ClickableRow, LinkButton, PageContainer, PageHeader, PageLoading, Pagination,
-  SearchInput, SelectInput, StatusBadge, Table, TableMessage, Td, Th, Toolbar,
+  Alert, Button, Card, ClickableRow, LinkButton, PageContainer, PageHeader, PageLoading, Pagination,
+  SearchInput, Segmented, SelectInput, StatusBadge, Table, TableMessage, Td, TextInput, Th, Toolbar,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
+import { useSettings } from "@/context/SettingsContext";
 import type { FilterRow } from "@/lib/frappe";
-import { addDays, display, formatDate, formatTime, todayISO } from "@/lib/format";
-import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
+import { addDays, display, formatDate, formatLongDate, formatTime, todayISO, weekStart } from "@/lib/format";
+import { searchFilters, useDebounced, useDoctorList, usePagedList } from "@/lib/hooks";
 import { appointmentHref, patientHref } from "@/lib/links";
 import { APPOINTMENT_STATUSES, type Appointment } from "@/lib/types";
+
+type View = CalendarView | "list";
+
+const VIEWS = [
+  { value: "day" as const, label: "Day", icon: CalendarDays },
+  { value: "week" as const, label: "Week", icon: CalendarRange },
+  { value: "list" as const, label: "List", icon: List },
+];
 
 const WHEN_OPTIONS = [
   { value: "all", label: "All dates" },
@@ -24,6 +34,8 @@ const WHEN_OPTIONS = [
   { value: "past", label: "Past" },
 ] as const;
 type When = (typeof WHEN_OPTIONS)[number]["value"];
+
+const isDate = (value: string | null): value is string => Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
 
 function whenFilter(when: When): FilterRow[] {
   const today = todayISO();
@@ -45,15 +57,128 @@ export default function AppointmentsPage() {
   return (
     <RequirePermission permission="view_appointments">
       <Suspense fallback={<PageLoading />}>
-        <AppointmentsList />
+        <Appointments />
       </Suspense>
     </RequirePermission>
   );
 }
 
-function AppointmentsList() {
+/**
+ * The appointment book in three views. The view, the day and the doctor live in the address
+ * (?view=day&day=2026-09-26&doctor=DOC-00001), so Back and a refresh keep them. The list view also
+ * accepts ?date=today|tomorrow|upcoming|past and opens by itself when that is given.
+ */
+function Appointments() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { can } = useSession();
+  const { settings } = useSettings();
+  const { doctors, loading: doctorsLoading } = useDoctorList();
+
+  const requested = searchParams.get("view");
+  const view: View =
+    requested === "day" || requested === "week" || requested === "list"
+      ? requested
+      : searchParams.get("date")
+        ? "list"
+        : "day";
+  const dayParam = searchParams.get("day");
+  const day = isDate(dayParam) ? dayParam : todayISO();
+  const doctor = searchParams.get("doctor") || "";
+
+  const update = (patch: Record<string, string>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    Object.entries(patch).forEach(([key, value]) => (value ? params.set(key, value) : params.delete(key)));
+    router.replace(`/appointments?${params.toString()}`, { scroll: false });
+  };
+
+  const step = view === "week" ? 7 : 1;
+  const first = view === "week" ? weekStart(day) : day;
+  const heading = view === "week" ? `${formatDate(first)} – ${formatDate(addDays(first, 6))}` : formatLongDate(day);
+  const newParams = new URLSearchParams(view === "list" ? {} : { date: day, ...(doctor ? { doctor } : {}) });
+  const newHref = `/appointments/new${newParams.size ? `?${newParams.toString()}` : ""}`;
+
+  return (
+    <PageContainer>
+      <PageHeader
+        title="Appointments"
+        subtitle={view === "list" ? "The appointment book as a list. Click a row to open it." : heading}
+        actions={
+          can("add_appointments") && (
+            <LinkButton href={newHref} icon={Plus}>
+              New Appointment
+            </LinkButton>
+          )
+        }
+      />
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Segmented label="View" options={VIEWS} value={view} onChange={(next) => update({ view: next })} />
+        {view !== "list" && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="secondary"
+              icon={ChevronLeft}
+              onClick={() => update({ day: addDays(day, -step) })}
+              aria-label={view === "week" ? "Previous week" : "Previous day"}
+              className="px-3 rtl:[&>svg]:rotate-180"
+            />
+            <Button variant="secondary" onClick={() => update({ day: "" })} disabled={day === todayISO()}>
+              Today
+            </Button>
+            <Button
+              variant="secondary"
+              icon={ChevronRight}
+              onClick={() => update({ day: addDays(day, step) })}
+              aria-label={view === "week" ? "Next week" : "Next day"}
+              className="px-3 rtl:[&>svg]:rotate-180"
+            />
+            <TextInput
+              type="date"
+              value={day}
+              onChange={(event) => {
+                if (isDate(event.target.value)) update({ day: event.target.value });
+              }}
+              aria-label="Go to date"
+              className="sm:w-auto flex-1 sm:flex-none min-w-0"
+            />
+            <SelectInput
+              value={doctor}
+              onChange={(event) => update({ doctor: event.target.value })}
+              aria-label="Doctor"
+              className="sm:w-auto sm:max-w-[15rem]"
+            >
+              <option value="">All doctors</option>
+              {doctors.map((d) => (
+                <option key={d.name} value={d.name}>
+                  {d.full_name}
+                </option>
+              ))}
+            </SelectInput>
+          </div>
+        )}
+      </div>
+
+      {view === "list" ? (
+        <AppointmentsList />
+      ) : (
+        <AppointmentCalendar
+          view={view}
+          date={day}
+          doctors={doctors}
+          doctorsLoading={doctorsLoading}
+          doctorFilter={doctor}
+          openingTime={settings.opening_time}
+          closingTime={settings.closing_time}
+          canBook={can("add_appointments")}
+        />
+      )}
+    </PageContainer>
+  );
+}
+
+function AppointmentsList() {
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [when, setWhen] = useState<When>(() => {
@@ -75,19 +200,7 @@ function AppointmentsList() {
   const filtered = Boolean(debounced.trim() || status || when !== "all");
 
   return (
-    <PageContainer>
-      <PageHeader
-        title="Appointments"
-        subtitle="The appointment book. Click a row to see or change an appointment."
-        actions={
-          can("add_appointments") && (
-            <LinkButton href="/appointments/new" icon={Plus}>
-              New Appointment
-            </LinkButton>
-          )
-        }
-      />
-
+    <>
       <Toolbar>
         <SearchInput value={search} onChange={setSearch} placeholder="Search by patient, doctor or reason..." />
         <SelectInput value={when} onChange={(e) => setWhen(e.target.value as When)} className="sm:w-40" aria-label="Date">
@@ -154,6 +267,6 @@ function AppointmentsList() {
         </Table>
         <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />
       </Card>
-    </PageContainer>
+    </>
   );
 }

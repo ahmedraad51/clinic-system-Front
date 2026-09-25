@@ -125,6 +125,8 @@ export default function AppointmentForm({
     event.preventDefault();
     // Only look for clashes when the booking slot changed, and never for cancelled or missed visits.
     const slotChanged =
+      // A new booking is always checked, even when the calendar filled in the slot.
+      !currentName ||
       form.doctor !== initial.doctor ||
       form.appointment_date !== initial.appointment_date ||
       form.appointment_time !== initial.appointment_time ||

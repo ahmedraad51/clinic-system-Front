@@ -10,7 +10,7 @@ import { Card, EmptyState, LinkButton, PageContainer, PageHeader, StatCard, Stat
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { getCount, getList } from "@/lib/frappe";
-import { addDays, formatDate, formatTime, monthStart, todayISO } from "@/lib/format";
+import { addDays, formatDate, formatLongDate, formatTime, monthStart, todayISO } from "@/lib/format";
 import { appointmentHref } from "@/lib/links";
 import type { Appointment, Payment, TreatmentPlan } from "@/lib/types";
 
@@ -43,13 +43,6 @@ function greeting(): string {
   if (hour < 12) return "Good morning";
   if (hour < 18) return "Good afternoon";
   return "Good evening";
-}
-
-function longDate(iso: string): string {
-  const [year, month, day] = iso.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(
-    new Date(year, month - 1, day),
-  );
 }
 
 function Dashboard() {
@@ -126,7 +119,7 @@ function Dashboard() {
 
   return (
     <PageContainer>
-      <PageHeader title={`${greeting()}, ${displayName}`} subtitle={longDate(today)} />
+      <PageHeader title={`${greeting()}, ${displayName}`} subtitle={formatLongDate(today)} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {seeAppointments && (
@@ -136,7 +129,7 @@ function Dashboard() {
             hint={data ? `${stillToCome} still to come` : undefined}
             icon={Calendar}
             tone="primary"
-            href="/appointments?date=today"
+            href="/appointments?view=day"
           />
         )}
         {seePatients && (
@@ -169,7 +162,7 @@ function Dashboard() {
             title="Today"
             flush
             actions={
-              <Link href="/appointments?date=today" className="text-sm text-primary-600 hover:underline">
+              <Link href="/appointments?view=day" className="text-sm text-primary-600 hover:underline">
                 View all
               </Link>
             }
