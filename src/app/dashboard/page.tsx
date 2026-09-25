@@ -135,7 +135,7 @@ function Dashboard() {
             value={data ? data.today.length : loadingValue}
             hint={data ? `${stillToCome} still to come` : undefined}
             icon={Calendar}
-            tone="blue"
+            tone="primary"
             href="/appointments?date=today"
           />
         )}
@@ -169,7 +169,7 @@ function Dashboard() {
             title="Today"
             flush
             actions={
-              <Link href="/appointments?date=today" className="text-sm text-blue-600 hover:underline">
+              <Link href="/appointments?date=today" className="text-sm text-primary-600 hover:underline">
                 View all
               </Link>
             }
@@ -184,7 +184,7 @@ function Dashboard() {
             title="Next 7 days"
             flush
             actions={
-              <Link href="/appointments?date=upcoming" className="text-sm text-blue-600 hover:underline">
+              <Link href="/appointments?date=upcoming" className="text-sm text-primary-600 hover:underline">
                 View all
               </Link>
             }
@@ -203,9 +203,9 @@ function Dashboard() {
                 <Link
                   key={action.href}
                   href={action.href}
-                  className="rounded-xl border border-gray-100 p-4 flex flex-col items-center gap-2 text-center hover:bg-blue-50/40 hover:border-blue-100 transition group"
+                  className="rounded-xl border border-gray-100 p-4 flex flex-col items-center gap-2 text-center hover:bg-primary-50/40 hover:border-primary-100 transition group"
                 >
-                  <span className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-100 transition">
+                  <span className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600 group-hover:bg-primary-100 transition">
                     <Icon size={18} />
                   </span>
                   <span className="text-sm font-medium text-gray-700">{action.label}</span>
@@ -255,7 +255,7 @@ function AppointmentList({
         <li key={a.name}>
           <Link href={appointmentHref(a.name)} className="flex items-center gap-4 px-6 py-3 hover:bg-gray-50">
             <span className="w-20 shrink-0">
-              <span className="block text-sm font-semibold text-blue-600">{formatTime(a.appointment_time)}</span>
+              <span className="block text-sm font-semibold text-primary-600">{formatTime(a.appointment_time)}</span>
               {showDate && <span className="block text-xs text-gray-400">{formatDate(a.appointment_date)}</span>}
             </span>
             <span className="flex-1 min-w-0">

@@ -5,36 +5,33 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Dental look and feel: a calm clinical colour theme defined once and used everywhere, using the Clinic
-  Settings theme colour; a clean tooth logo; one set of text sizes; friendly empty states with small
-  drawings; buttons and inputs at least 44 px tall for touch.
+- Appointment calendar: a day view with one column per doctor from opening to closing time, blocks as long
+  as the appointment, coloured by status, a "now" line; a week view; click an empty slot to book with the
+  date, time and doctor filled in. Keep the list as a second view.
 
 ## Backlog
 
-1. Appointment calendar: a day view with one column per doctor from opening to closing time, blocks as
-   long as the appointment, coloured by status, a "now" line; a week view; click an empty slot to book
-   with the date, time and doctor filled in. Keep the list as a second view.
-2. Real dental chart (odontogram): tooth drawings; healthy, caries, filling, crown, root canal, implant,
+1. Real dental chart (odontogram): tooth drawings; healthy, caries, filling, crown, root canal, implant,
    missing, to extract, bridge; the five surfaces (M, O, D, B, L); adult and child teeth; a note per
    tooth; "New treatment for this tooth". Old charts must still load.
-3. Patient page built for the dentist: a header with age, phone (tap to call, WhatsApp), medical alerts,
+2. Patient page built for the dentist: a header with age, phone (tap to call, WhatsApp), medical alerts,
    last visit, next appointment and balance; a timeline of visits, treatments and payments.
-4. Today board for the front desk: today's patients grouped by doctor, one-tap Confirmed / Completed / No
+3. Today board for the front desk: today's patients grouped by doctor, one-tap Confirmed / Completed / No
    Show, late patients highlighted, quick Add Payment.
-5. Global search in the top bar (also Ctrl+K): find a patient by name, phone or ID from any page, plus
+4. Global search in the top bar (also Ctrl+K): find a patient by name, phone or ID from any page, plus
    quick actions (New Appointment, Add Patient).
-6. Faster booking: "next free time" for the chosen doctor, show that doctor's day while booking, remember
+5. Faster booking: "next free time" for the chosen doctor, show that doctor's day while booking, remember
    the last doctor used.
-7. Doctors page: list, add and edit doctors (name, specialization, phone, email, active). Permission:
+6. Doctors page: list, add and edit doctors (name, specialization, phone, email, active). Permission:
    manage_users.
-8. Price list: a default price per treatment type (in Settings) that fills in the cost automatically, and
+7. Price list: a default price per treatment type (in Settings) that fills in the cost automatically, and
    a printable treatment estimate for the patient.
-9. Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
+8. Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
    payment method.
-10. Phone and tablet polish: tables turn into cards on small screens, sticky Save buttons, larger inputs.
-11. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
+9. Phone and tablet polish: tables turn into cards on small screens, sticky Save buttons, larger inputs.
+10. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
     form with unsaved changes, clear error messages.
-12. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+11. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -46,7 +43,13 @@ Each finished item says what changed, when, and which commit holds it.
   checks a receptionist cannot open Reports. `npm run screenshots` photographs every page at desktop,
   tablet and phone size. Commit 3151757.
 - 2026-09-26 - **Dev button moved.** The small black "N" button that only shows while developing now sits
-  in the bottom-right corner, so it no longer covers the user card in the menu. Commit PENDING.
+  in the bottom-right corner, so it no longer covers the user card in the menu. Commit 3425d52.
+- 2026-09-26 - **Calm dental look.** The app now uses a calm teal instead of plain blue, set once and used
+  everywhere. The clinic can pick its own colour in Settings (six ready-made choices or any colour, with a
+  sample button); colours that are too light are darkened a little so text stays readable. A new, clean
+  tooth logo. Text is a little larger and easier to read. Buttons, fields, tabs and menu items are at
+  least 44 pixels tall, so they are easy to tap on a tablet. Empty lists show a small friendly drawing,
+  and search boxes have a clear button. Commit PENDING.
 
 ## Questions for the owner
 

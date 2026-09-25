@@ -263,7 +263,7 @@ function TemplateModal({
                 key={key}
                 type="button"
                 onClick={() => insertPlaceholder(key)}
-                className="px-2 py-1 rounded-lg bg-gray-100 text-xs font-mono text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                className="px-2 py-1 rounded-lg bg-gray-100 text-xs font-mono text-gray-700 hover:bg-primary-50 hover:text-primary-700"
               >
                 {key}
               </button>
@@ -356,21 +356,21 @@ function MessageLog() {
             {list.initialLoading ? (
               <TableMessage colSpan={4}>Loading...</TableMessage>
             ) : list.rows.length === 0 ? (
-              <TableMessage colSpan={4}>No messages found.</TableMessage>
+              <TableMessage icon={MessageCircle} colSpan={4}>No messages found.</TableMessage>
             ) : (
               list.rows.map((log) => (
                 <tr key={log.name} className={list.loading ? "opacity-60" : "hover:bg-gray-50"}>
                   <Td className="whitespace-nowrap">
                     {formatDateTime(log.sent_at)}
                     {log.appointment && (
-                      <Link href={appointmentHref(log.appointment)} className="block text-xs text-blue-600 hover:underline">
+                      <Link href={appointmentHref(log.appointment)} className="block text-xs text-primary-600 hover:underline">
                         {log.appointment}
                       </Link>
                     )}
                   </Td>
                   <Td>
                     {log.patient ? (
-                      <Link href={patientHref(log.patient)} className="text-gray-800 hover:text-blue-600">
+                      <Link href={patientHref(log.patient)} className="text-gray-800 hover:text-primary-600">
                         {log.patient_name || log.patient}
                       </Link>
                     ) : (

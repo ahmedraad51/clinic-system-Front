@@ -31,7 +31,7 @@ function Profile() {
 
       <Card>
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 shrink-0 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl">
+          <div className="w-14 h-14 shrink-0 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold text-xl">
             {displayName.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
@@ -47,7 +47,7 @@ function Profile() {
               {roles.length > 0 ? (
                 <span className="flex flex-wrap gap-1.5">
                   {roles.map((role) => (
-                    <Badge key={role} tone="blue">
+                    <Badge key={role} tone="primary">
                       {role}
                     </Badge>
                   ))}
@@ -197,7 +197,7 @@ function DemoUserCard() {
     <Card
       title={
         <span className="flex items-center gap-2">
-          <Users size={18} className="text-blue-600" />
+          <Users size={18} className="text-primary-600" />
           Try Another User
         </span>
       }

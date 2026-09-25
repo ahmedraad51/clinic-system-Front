@@ -18,14 +18,15 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from "react";
-import { AlertCircle, ArrowLeft, ChevronLeft, ChevronRight, Info, Lock, Search, type LucideIcon } from "lucide-react";
+import { AlertCircle, ArrowLeft, ChevronLeft, ChevronRight, Info, Lock, Search, X, type LucideIcon } from "lucide-react";
 import { cx } from "@/lib/format";
 
 /* ---------------------------------------------------------------- tones -- */
 
-export type Tone = "blue" | "green" | "gray" | "red" | "yellow" | "purple";
+export type Tone = "primary" | "blue" | "green" | "gray" | "red" | "yellow" | "purple";
 
 const BADGE_TONES: Record<Tone, string> = {
+  primary: "bg-primary-100 text-primary-800",
   blue: "bg-blue-100 text-blue-700",
   green: "bg-green-100 text-green-700",
   gray: "bg-gray-100 text-gray-700",
@@ -35,6 +36,7 @@ const BADGE_TONES: Record<Tone, string> = {
 };
 
 const ICON_TONES: Record<Tone, string> = {
+  primary: "bg-primary-50 text-primary-600",
   blue: "bg-blue-50 text-blue-600",
   green: "bg-green-50 text-green-600",
   gray: "bg-gray-100 text-gray-600",
@@ -152,13 +154,14 @@ export function StatCard({
   title,
   value,
   icon: Icon,
-  tone = "blue",
+  tone = "primary",
   hint,
   href,
 }: {
   title: string;
   value: ReactNode;
   icon: LucideIcon;
+  /** Defaults to the clinic colour. */
   tone?: Tone;
   hint?: ReactNode;
   href?: string;
@@ -175,7 +178,7 @@ export function StatCard({
   );
   const className = "block bg-white rounded-2xl border border-gray-100 shadow-sm p-5";
   return href ? (
-    <Link href={href} className={cx(className, "hover:shadow-md hover:border-blue-100 transition")}>
+    <Link href={href} className={cx(className, "hover:shadow-md hover:border-primary-100 transition")}>
       {body}
     </Link>
   ) : (
@@ -189,7 +192,7 @@ type Variant = "primary" | "secondary" | "danger" | "ghost" | "success";
 type Size = "sm" | "md";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-blue-600 text-white hover:bg-blue-700 shadow-sm",
+  primary: "bg-primary-600 text-white hover:bg-primary-700 shadow-sm",
   secondary: "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50",
   danger: "bg-red-600 text-white hover:bg-red-700 shadow-sm",
   ghost: "text-gray-600 hover:bg-gray-100",
@@ -197,15 +200,16 @@ const VARIANTS: Record<Variant, string> = {
 };
 
 const SIZES: Record<Size, string> = {
-  sm: "px-3 py-1.5 text-xs gap-1.5",
-  md: "px-4 py-2.5 text-sm gap-2",
+  // Small buttons grow to 44 px on touch screens, so they are easy to hit with a finger.
+  sm: "min-h-9 pointer-coarse:min-h-11 px-3 py-1.5 text-xs gap-1.5",
+  md: "min-h-11 px-4 py-2 text-sm gap-2",
 };
 
 const buttonClass = (variant: Variant, size: Size, className?: string) =>
   cx(
     "inline-flex items-center justify-center rounded-xl font-medium transition whitespace-nowrap",
     "disabled:opacity-50 disabled:cursor-not-allowed",
-    "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1",
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1",
     VARIANTS[variant],
     SIZES[size],
     className,
@@ -275,8 +279,8 @@ export function LinkButton({
 /* --------------------------------------------------------------- inputs -- */
 
 export const inputClass =
-  "w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 " +
-  "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500";
+  "w-full min-h-11 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm text-gray-800 placeholder:text-gray-400 " +
+  "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500";
 
 /** A label above one input. The input goes inside as children, so clicking the label focuses it. */
 export function Field({
@@ -347,7 +351,7 @@ export function Toggle({
       onClick={() => onChange(!checked)}
       className="flex items-start gap-3 text-start w-full disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      <span className={cx("relative inline-flex h-6 w-11 shrink-0 rounded-full transition", checked ? "bg-blue-600" : "bg-gray-200")}>
+      <span className={cx("relative inline-flex h-6 w-11 shrink-0 rounded-full transition", checked ? "bg-primary-600" : "bg-gray-200")}>
         <span
           className={cx(
             "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all",
@@ -381,8 +385,18 @@ export function SearchInput({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className={cx(inputClass, "ps-10")}
+        className={cx(inputClass, "ps-10 pe-11 [&::-webkit-search-cancel-button]:appearance-none")}
       />
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          aria-label="Clear search"
+          className="absolute end-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+        >
+          <X size={16} />
+        </button>
+      )}
     </div>
   );
 }
@@ -433,11 +447,19 @@ export function ClickableRow({ href, children, dimmed = false }: { href: string;
   );
 }
 
-export function TableMessage({ colSpan, children }: { colSpan: number; children: ReactNode }) {
+/** A message across the whole table, e.g. "Loading...". With an icon it is a friendly empty state. */
+export function TableMessage({ colSpan, children, icon }: { colSpan: number; children: ReactNode; icon?: LucideIcon }) {
   return (
     <tr>
-      <td colSpan={colSpan} className="px-5 py-12 text-center text-sm text-gray-400">
-        {children}
+      <td colSpan={colSpan} className="px-5 py-12 text-center text-sm text-gray-500">
+        {icon ? (
+          <div className="flex flex-col items-center">
+            <EmptyDrawing icon={icon} />
+            {children}
+          </div>
+        ) : (
+          children
+        )}
       </td>
     </tr>
   );
@@ -461,7 +483,8 @@ export function Pagination({
   const pages = Math.ceil(total / pageSize);
   const from = (page - 1) * pageSize + 1;
   const to = Math.min(total, page * pageSize);
-  const arrow = "p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent";
+  const arrow =
+    "inline-flex items-center justify-center w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent";
   return (
     <div className="flex items-center justify-between gap-3 px-5 py-3 text-sm text-gray-500">
       <span>
@@ -521,9 +544,9 @@ export function Tabs<K extends string>({
             aria-selected={active === tab.key}
             onClick={() => onChange(tab.key)}
             className={cx(
-              "px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition whitespace-nowrap",
+              "min-h-11 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition whitespace-nowrap",
               active === tab.key
-                ? "border-blue-600 text-blue-600"
+                ? "border-primary-600 text-primary-700"
                 : "border-transparent text-gray-500 hover:text-gray-800",
             )}
           >
@@ -548,7 +571,8 @@ export function Alert({
   children: ReactNode;
 }) {
   const styles = {
-    blue: "bg-blue-50 border-blue-100 text-blue-800",
+    // Information uses the clinic colour.
+    blue: "bg-primary-50 border-primary-100 text-primary-800",
     red: "bg-red-50 border-red-100 text-red-800",
     yellow: "bg-yellow-50 border-yellow-100 text-yellow-800",
   }[tone];
@@ -573,6 +597,27 @@ export function PageLoading({ label = "Loading..." }: { label?: string }) {
   );
 }
 
+/** A small, calm drawing for empty lists: a soft disc with sparkles and the icon on a card. */
+function EmptyDrawing({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <div className="relative w-32 h-28 mb-4" aria-hidden="true">
+      <svg viewBox="0 0 128 112" className="absolute inset-0 w-full h-full">
+        <ellipse cx="64" cy="102" rx="36" ry="5" className="fill-gray-200/70" />
+        <circle cx="64" cy="52" r="42" className="fill-primary-50" />
+        <circle cx="64" cy="52" r="30" className="fill-primary-100/60" />
+        <circle cx="16" cy="26" r="4" className="fill-primary-200" />
+        <circle cx="114" cy="72" r="3" className="fill-primary-200" />
+        <circle cx="24" cy="84" r="2.5" className="fill-gray-200" />
+        <path d="M108 14v10M103 19h10" strokeWidth="2.5" strokeLinecap="round" className="stroke-primary-300" />
+        <path d="M14 56v6M11 59h6" strokeWidth="2" strokeLinecap="round" className="stroke-gray-300" />
+      </svg>
+      <span className="absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-2xl bg-white shadow-sm border border-primary-100 text-primary-600 flex items-center justify-center">
+        <Icon size={26} strokeWidth={1.75} />
+      </span>
+    </div>
+  );
+}
+
 export function EmptyState({
   icon: Icon,
   title,
@@ -586,10 +631,8 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center text-center py-12 px-6">
-      <div className="w-12 h-12 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center mb-3">
-        <Icon size={22} />
-      </div>
-      <p className="font-medium text-gray-700">{title}</p>
+      <EmptyDrawing icon={Icon} />
+      <p className="font-semibold text-gray-700">{title}</p>
       {text && <p className="text-sm text-gray-400 mt-1 max-w-sm">{text}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>

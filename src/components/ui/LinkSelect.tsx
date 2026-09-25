@@ -234,8 +234,8 @@ export default function LinkSelect({
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => choose(option)}
                   className={cx(
-                    "w-full text-start px-3.5 py-2 text-sm",
-                    index === highlight ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-50",
+                    "w-full text-start px-3.5 py-2 pointer-coarse:py-3 text-sm",
+                    index === highlight ? "bg-primary-50 text-primary-700" : "text-gray-700 hover:bg-gray-50",
                   )}
                 >
                   <span className="block font-medium">{option.label}</span>

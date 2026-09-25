@@ -26,7 +26,8 @@ These come from the README, not from the doctype JSON files. Check each one in t
 
 - **Doctor:** `is_active` (Check). Dropdowns only show doctors with `is_active = 1`.
 - **Clinic Settings** (single doctype): `clinic_name`, `logo` (Attach Image), `phone`, `email`, `address`,
-  `currency`, `tax_number`, `opening_time` (Time), `closing_time` (Time), `theme_color`, `enable_whatsapp`,
+  `currency`, `tax_number`, `opening_time` (Time), `closing_time` (Time), `theme_color` (Color or Data, a hex
+  colour such as `#0e7c86`; the whole front end is coloured from it), `enable_whatsapp`,
   `enable_patient_portal`, `enable_financial_reports` (Checks).
 - **Treatment Session:** `patient`, `treatment_plan`, `doctor`, `session_date`, `session_time`, `status`,
   `notes`. The front end offers the statuses `Scheduled`, `Completed`, `Cancelled`.

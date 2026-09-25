@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { GiTooth } from "react-icons/gi";
+import ToothLogo from "@/components/ToothLogo";
 import { Pencil, Printer, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import { Button, Card, LinkButton, NotFoundCard, PageContainer, PageHeader, PageLoading } from "@/components/ui";
@@ -88,8 +88,8 @@ function PaymentDetail() {
               // eslint-disable-next-line @next/next/no-img-element -- the logo is an uploaded file of unknown size
               <img src={settings.logo} alt="" className="w-12 h-12 rounded-xl object-contain" />
             ) : (
-              <span className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white">
-                <GiTooth size={24} />
+              <span className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center text-white">
+                <ToothLogo size={24} />
               </span>
             )}
             <div>
@@ -109,7 +109,7 @@ function PaymentDetail() {
           <div>
             <dt className="text-xs text-gray-400">Received from</dt>
             <dd className="text-sm font-medium text-gray-800 mt-0.5">
-              <Link href={patientHref(payment.patient)} className="hover:text-blue-600">
+              <Link href={patientHref(payment.patient)} className="hover:text-primary-600">
                 {payment.patient_name || payment.patient}
               </Link>
             </dd>
@@ -118,7 +118,7 @@ function PaymentDetail() {
             <dt className="text-xs text-gray-400">For</dt>
             <dd className="text-sm font-medium text-gray-800 mt-0.5">
               {payment.treatment_plan ? (
-                <Link href={treatmentHref(payment.treatment_plan)} className="hover:text-blue-600">
+                <Link href={treatmentHref(payment.treatment_plan)} className="hover:text-primary-600">
                   {payment.treatment_type || "Treatment"} ({payment.treatment_plan})
                 </Link>
               ) : (

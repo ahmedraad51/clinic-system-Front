@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { GiTooth } from "react-icons/gi";
+import ToothLogo from "@/components/ToothLogo";
 import { Alert, Button, Field, TextInput } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { errorMessage } from "@/lib/frappe";
@@ -41,8 +41,8 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <span className="mx-auto w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white">
-            <GiTooth size={26} />
+          <span className="mx-auto w-12 h-12 bg-primary-600 rounded-2xl flex items-center justify-center text-white">
+            <ToothLogo size={26} />
           </span>
           <h1 className="text-2xl font-bold text-gray-800 mt-4">DentClinic</h1>
           <p className="text-gray-500 text-sm mt-1">Log in to the clinic management system</p>

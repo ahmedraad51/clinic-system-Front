@@ -59,7 +59,7 @@ export default function NotificationBell() {
         onClick={toggle}
         aria-expanded={open}
         aria-label={`Today's appointments: ${items.length}`}
-        className="relative w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition"
+        className="relative w-11 h-11 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition"
       >
         <Bell size={18} />
         {items.length > 0 && (
@@ -88,7 +88,7 @@ export default function NotificationBell() {
                       onClick={() => setOpen(false)}
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50"
                     >
-                      <span className="text-xs font-semibold text-blue-600 w-16 shrink-0">{formatTime(item.appointment_time)}</span>
+                      <span className="text-xs font-semibold text-primary-600 w-16 shrink-0">{formatTime(item.appointment_time)}</span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-medium text-gray-800 truncate">{item.patient_name || item.name}</span>
                         <span className="block text-xs text-gray-400 truncate">{item.doctor_name}</span>
@@ -102,7 +102,7 @@ export default function NotificationBell() {
             <Link
               href="/appointments?date=today"
               onClick={() => setOpen(false)}
-              className="block px-4 py-2.5 text-sm text-center text-blue-600 font-medium border-t border-gray-100 hover:bg-gray-50 rounded-b-xl"
+              className="block px-4 py-2.5 text-sm text-center text-primary-600 font-medium border-t border-gray-100 hover:bg-gray-50 rounded-b-xl"
             >
               View all of today
             </Link>

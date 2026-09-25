@@ -21,7 +21,7 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
   };
 
   const iconButton =
-    "w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition";
+    "w-11 h-11 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition";
 
   return (
     <header className="h-16 bg-white/95 backdrop-blur border-b border-gray-100 flex items-center justify-between px-4 sm:px-6 fixed top-0 end-0 start-0 lg:start-64 z-30 print:hidden">
@@ -45,9 +45,9 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
             type="button"
             onClick={() => setOpen(!open)}
             aria-expanded={open}
-            className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-xl hover:bg-gray-50 transition"
+            className="flex items-center gap-2 min-h-11 px-2 sm:px-3 py-1.5 rounded-xl hover:bg-gray-50 transition"
           >
-            <span className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-sm">
+            <span className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-semibold text-sm">
               {displayName.charAt(0).toUpperCase()}
             </span>
             <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[160px] truncate">{displayName}</span>
@@ -61,7 +61,7 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
                 <Link
                   href="/profile"
                   onClick={() => setOpen(false)}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
                 >
                   <User size={15} />
                   Profile
@@ -70,7 +70,7 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
                   <Link
                     href="/settings"
                     onClick={() => setOpen(false)}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
                   >
                     <Settings size={15} />
                     Settings
@@ -82,7 +82,7 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50"
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50"
                     >
                       <LogOut size={15} />
                       Logout

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Receipt } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Card, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination,
@@ -130,24 +130,24 @@ function PaymentsList() {
             {list.initialLoading ? (
               <TableMessage colSpan={5}>Loading...</TableMessage>
             ) : list.rows.length === 0 ? (
-              <TableMessage colSpan={5}>{filtered ? "No payments match these filters." : "No payments yet."}</TableMessage>
+              <TableMessage icon={Receipt} colSpan={5}>{filtered ? "No payments match these filters." : "No payments yet."}</TableMessage>
             ) : (
               list.rows.map((pay) => (
                 <ClickableRow key={pay.name} href={paymentHref(pay.name)} dimmed={list.loading}>
                   <Td className="whitespace-nowrap">
-                    <Link href={paymentHref(pay.name)} className="font-medium text-gray-800 hover:text-blue-600">
+                    <Link href={paymentHref(pay.name)} className="font-medium text-gray-800 hover:text-primary-600">
                       {formatDate(pay.payment_date)}
                     </Link>
                     <span className="block text-xs text-gray-400">{pay.name}</span>
                   </Td>
                   <Td>
-                    <Link href={patientHref(pay.patient)} className="text-gray-700 hover:text-blue-600">
+                    <Link href={patientHref(pay.patient)} className="text-gray-700 hover:text-primary-600">
                       {pay.patient_name || pay.patient}
                     </Link>
                   </Td>
                   <Td>
                     {pay.treatment_plan ? (
-                      <Link href={treatmentHref(pay.treatment_plan)} className="text-gray-700 hover:text-blue-600">
+                      <Link href={treatmentHref(pay.treatment_plan)} className="text-gray-700 hover:text-primary-600">
                         {pay.treatment_type || pay.treatment_plan}
                       </Link>
                     ) : (

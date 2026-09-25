@@ -9,7 +9,7 @@ const STATUSES: ToothStatus[] = ["normal", "treated", "pending"];
 
 const statusConfig: Record<ToothStatus, { label: string; bg: string; border: string; text: string }> = {
   normal: { label: "Normal", bg: "bg-white", border: "border-gray-200", text: "text-gray-500" },
-  treated: { label: "Has Treatment", bg: "bg-blue-50", border: "border-blue-400", text: "text-blue-600" },
+  treated: { label: "Has Treatment", bg: "bg-primary-50", border: "border-primary-400", text: "text-primary-600" },
   pending: { label: "Pending Treatment", bg: "bg-yellow-50", border: "border-yellow-400", text: "text-yellow-600" },
 };
 
@@ -50,7 +50,7 @@ function ToothButton({
         cfg.bg,
         cfg.border,
         cfg.text,
-        selected ? "ring-2 ring-blue-500 ring-offset-1 scale-110" : canEdit && "hover:scale-105 hover:shadow-md",
+        selected ? "ring-2 ring-primary-500 ring-offset-1 scale-110" : canEdit && "hover:scale-105 hover:shadow-md",
       )}
     >
       {number}
@@ -144,8 +144,8 @@ export default function DentalChart({
                 className={cx(
                   "px-3 py-1.5 rounded-lg text-xs font-medium border transition",
                   (teeth[String(selected)] || "normal") === s
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white text-gray-700 border-gray-200 hover:border-blue-300",
+                    ? "bg-primary-600 text-white border-primary-600"
+                    : "bg-white text-gray-700 border-gray-200 hover:border-primary-300",
                 )}
               >
                 {statusConfig[s].label}

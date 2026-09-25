@@ -282,7 +282,7 @@ const clinicSettings: MockDoc[] = [
     tax_number: "",
     opening_time: "09:00",
     closing_time: "18:00",
-    theme_color: "#2563eb",
+    theme_color: "#0e7c86",
     enable_whatsapp: 1,
     enable_patient_portal: 0,
     enable_financial_reports: 1,

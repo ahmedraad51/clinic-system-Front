@@ -46,3 +46,5 @@ next-env.d.ts
 /blob-report/
 /playwright/.cache/
 /screenshots/
+# ad-hoc screenshot scripts
+/e2e/screens/*.local.spec.ts

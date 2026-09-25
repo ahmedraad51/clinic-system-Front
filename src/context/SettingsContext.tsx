@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, R
 import { useAuth } from "./AuthContext";
 import { getDoc } from "@/lib/frappe";
 import { formatMoney } from "@/lib/format";
+import { applyThemeColor } from "@/lib/theme";
 import type { ClinicSettings } from "@/lib/types";
 
 /** Used until the real settings arrive, and for any field the backend leaves empty. */
@@ -38,7 +39,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const load = async () => {
       try {
         const doc = await getDoc<ClinicSettings>("Clinic Settings", "Clinic Settings");
-        if (!cancelled) setSettings({ ...DEFAULTS, ...doc });
+        if (cancelled) return;
+        setSettings({ ...DEFAULTS, ...doc });
+        applyThemeColor(doc.theme_color);
       } catch (err) {
         console.error("Could not load Clinic Settings", err);
       }

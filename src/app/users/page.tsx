@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Shield, UserPlus } from "lucide-react";
+import { Shield, UserPlus, UserSearch } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Button, Card, ClickableRow, Field, PageContainer, PageHeader, Pagination, SearchInput,
@@ -76,13 +76,13 @@ function UsersList() {
             {list.initialLoading ? (
               <TableMessage colSpan={4}>Loading...</TableMessage>
             ) : list.rows.length === 0 ? (
-              <TableMessage colSpan={4}>No users found.</TableMessage>
+              <TableMessage icon={UserSearch} colSpan={4}>No users found.</TableMessage>
             ) : (
               list.rows.map((u) => (
                 <ClickableRow key={u.name} href={userHref(u.name)} dimmed={list.loading}>
                   <Td>
                     <span className="flex items-center gap-3">
-                      <span className="w-8 h-8 shrink-0 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-sm">
+                      <span className="w-8 h-8 shrink-0 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-semibold text-sm">
                         {(u.full_name || u.name).charAt(0).toUpperCase()}
                       </span>
                       <span className="font-medium text-gray-800">{u.full_name || u.name}</span>
@@ -93,7 +93,7 @@ function UsersList() {
                     <StatusBadge kind="user" status={u.enabled ? "Active" : "Disabled"} />
                   </Td>
                   <Td className="text-end">
-                    <Link href={userHref(u.name)} className="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm">
+                    <Link href={userHref(u.name)} className="inline-flex items-center gap-1 text-primary-600 hover:underline text-sm">
                       <Shield size={14} /> Permissions
                     </Link>
                   </Td>

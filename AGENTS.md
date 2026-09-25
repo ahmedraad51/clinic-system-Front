@@ -59,9 +59,9 @@ The Frappe address comes from the `FRAPPE_URL` environment variable (for example
 |---|---|
 | Framework | Next.js **16.2.9**, App Router, Turbopack |
 | UI | React **19.2.4**, TypeScript 5 with `strict: true`, path alias `@/*` → `src/*` |
-| Styling | Tailwind CSS **v4** via `@tailwindcss/postcss`. It is CSS-first: no `tailwind.config.*`, only `@import "tailwindcss"` in `src/app/globals.css` |
+| Styling | Tailwind CSS **v4** via `@tailwindcss/postcss`. It is CSS-first: no `tailwind.config.*`; the design tokens (the `primary-*` palette and the text scale) are an `@theme` block in `src/app/globals.css` |
 | Font | Plus Jakarta Sans through `next/font/google` in `layout.tsx` |
-| Icons | `lucide-react` everywhere, plus `react-icons` for the `GiTooth` logo |
+| Icons | `lucide-react` everywhere; the tooth logo is our own SVG in `src/components/ToothLogo.tsx` |
 | HTTP | `axios`, one instance in `src/lib/frappe.ts` |
 | State | React Context (auth, settings, session, toasts) and per-page `useState`. No global store, no data-fetching library |
 | Installed but unused | `@radix-ui/react-dialog`, `@radix-ui/react-dropdown-menu`, `clsx`. The modal and dropdowns are hand-written; `cx()` in `src/lib/format.ts` does what `clsx` would |
@@ -129,6 +129,7 @@ src/
 │   ├── NotificationBell.tsx  today's Scheduled/Confirmed appointments
 │   ├── Guard.tsx             RequirePermission
 │   ├── DentalChart.tsx       FDI chart of the 32 permanent teeth, saved to Patient.dental_chart
+│   ├── ToothLogo.tsx         the app logo (inline SVG)
 │   ├── forms/                PatientForm, AppointmentForm, TreatmentForm, PaymentForm (shared by new and edit)
 │   └── ui/
 │       ├── index.tsx         the UI kit (cards, buttons, inputs, tables, badges, paging, tabs, alerts, …)
@@ -145,6 +146,7 @@ src/
     ├── types.ts              doctype interfaces, allowed values, permission keys, role presets
     ├── hooks.ts              usePagedList, useDocument, useDoctors, useDebounced, searchFilters
     ├── format.ts             money, dates, times, cx(), CSV download, dental chart parsing
+    ├── theme.ts              the clinic colour: presets, contrast fix, applyThemeColor, the boot script
     └── links.ts              URL builders for records (always use these)
 docs/
 ├── backend-todo.md           what the back end must provide for this front end
@@ -464,8 +466,21 @@ writing new class lists.
 ### Styling
 
 - One visual style everywhere: white cards with `border-gray-100 shadow-sm rounded-2xl` on a `gray-50` page,
-  `rounded-xl` inputs and buttons, primary `blue-600`, lucide icons. No emoji titles.
-- Tailwind utility classes go inline; `globals.css` only holds the import and body colours.
+  `rounded-xl` inputs and buttons, the `primary-*` colour, lucide icons. No emoji titles.
+- **Colour: use `primary-50` … `primary-900` for anything that is "the clinic colour"** (buttons, links, active
+  menu items, focus rings, highlights). Never write `blue-*` for that. The palette is mixed from one CSS variable,
+  `--brand`, which `SettingsContext` sets from Clinic Settings `theme_color` through `applyThemeColor()`
+  (`src/lib/theme.ts`). A colour too light for white text is darkened to 4.5:1 contrast. The default is teal
+  `#0e7c86`. A script in `layout.tsx` applies the last colour before the first paint. `blue` stays only as a
+  status tone (see Badge colours). The `Tone` type also has `primary`; `StatCard` uses it by default.
+- **Text sizes:** `--text-xs` is 13 px and `--text-sm` is 15 px (a little larger than Tailwind's default, for
+  reading at a distance). Page titles `text-2xl font-bold`, card titles `text-base font-semibold`, body
+  `text-sm`, hints and table headers `text-xs`. Do not add other sizes for ordinary text.
+- **Touch targets are at least 44 px.** `Button` md, inputs, tabs and menu links have `min-h-11`; small
+  buttons and icon buttons grow to 44 px on touch screens with the `pointer-coarse:` variant. Do the same for
+  any new clickable thing.
+- Empty lists: `<TableMessage icon={SomeIcon}>` or `<EmptyState>` show a small drawing; keep the text short.
+- Tailwind utility classes go inline; `globals.css` only holds the import, the tokens and body colours.
 - **Use logical classes** (`ms-`, `me-`, `ps-`, `pe-`, `start-`, `end-`, `text-start`, `text-end`,
   `border-e`) instead of left/right, so a right-to-left (Arabic) layout can be added later. Arrow icons that
   point sideways carry `rtl:rotate-180`.
@@ -508,7 +523,7 @@ Updated on 2026-09-26.
   back-end report method would be faster later.
 - **No right-to-left layout yet.** The classes are ready (see Styling), but there is no Arabic text or `dir`
   switch.
-- `theme_color` and `enable_patient_portal` are saved but not used by the front end.
+- `enable_patient_portal` is saved but not used by the front end.
 - `README.md` screenshots show the older design.
 - Deleting is blocked for records that others link to (Frappe's normal rule). Users are disabled, not deleted.
 

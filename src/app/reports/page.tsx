@@ -174,7 +174,7 @@ function Reports() {
 
       <div className={stale ? "opacity-60 transition-opacity space-y-6" : "space-y-6"}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Revenue" value={money(revenue)} icon={TrendingUp} tone="blue" />
+          <StatCard title="Revenue" value={money(revenue)} icon={TrendingUp} tone="primary" />
           <StatCard title="Payments" value={payments.length} icon={CreditCard} tone="purple" />
           <StatCard
             title="Average payment"
@@ -225,12 +225,12 @@ function Reports() {
                 payments.slice(0, 10).map((row) => (
                   <tr key={row.name} className="hover:bg-gray-50">
                     <Td className="whitespace-nowrap">
-                      <Link href={paymentHref(row.name)} className="text-gray-800 hover:text-blue-600">
+                      <Link href={paymentHref(row.name)} className="text-gray-800 hover:text-primary-600">
                         {formatDate(row.payment_date)}
                       </Link>
                     </Td>
                     <Td>
-                      <Link href={patientHref(row.patient)} className="text-gray-700 hover:text-blue-600">
+                      <Link href={patientHref(row.patient)} className="text-gray-700 hover:text-primary-600">
                         {row.patient_name || row.patient}
                       </Link>
                     </Td>
@@ -280,12 +280,12 @@ function Reports() {
                 data.outstanding.map((row) => (
                   <tr key={row.name} className="hover:bg-gray-50">
                     <Td>
-                      <Link href={patientHref(row.patient)} className="font-medium text-gray-800 hover:text-blue-600">
+                      <Link href={patientHref(row.patient)} className="font-medium text-gray-800 hover:text-primary-600">
                         {row.patient_name || row.patient}
                       </Link>
                     </Td>
                     <Td>
-                      <Link href={treatmentHref(row.name)} className="text-gray-700 hover:text-blue-600">
+                      <Link href={treatmentHref(row.name)} className="text-gray-700 hover:text-primary-600">
                         {row.treatment_type}
                         {row.tooth_number ? ` · ${row.tooth_number}` : ""}
                       </Link>
@@ -341,7 +341,7 @@ function Bars({
           </div>
           <div className="w-full bg-gray-100 rounded-full h-2">
             <div
-              className="bg-blue-500 h-2 rounded-full transition-all"
+              className="bg-primary-500 h-2 rounded-full transition-all"
               style={{ width: `${max > 0 ? (amount / max) * 100 : 0}%` }}
             />
           </div>

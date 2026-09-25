@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { UserPlus } from "lucide-react";
+import { UserPlus, UserSearch } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Card, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination,
@@ -83,14 +83,14 @@ function PatientsList() {
             {list.initialLoading ? (
               <TableMessage colSpan={columns}>Loading...</TableMessage>
             ) : list.rows.length === 0 ? (
-              <TableMessage colSpan={columns}>
+              <TableMessage icon={UserSearch} colSpan={columns}>
                 {filtered ? "No patients match your search." : "No patients yet."}
               </TableMessage>
             ) : (
               list.rows.map((patient) => (
                 <ClickableRow key={patient.name} href={patientHref(patient.name)} dimmed={list.loading}>
                   <Td>
-                    <Link href={patientHref(patient.name)} className="font-medium text-gray-800 hover:text-blue-600">
+                    <Link href={patientHref(patient.name)} className="font-medium text-gray-800 hover:text-primary-600">
                       {patient.full_name}
                     </Link>
                     <span className="block text-xs text-gray-400">{patient.name}</span>

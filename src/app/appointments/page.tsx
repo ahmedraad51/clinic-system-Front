@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plus } from "lucide-react";
+import { CalendarX, Plus } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Card, ClickableRow, LinkButton, PageContainer, PageHeader, PageLoading, Pagination,
@@ -125,20 +125,20 @@ function AppointmentsList() {
             {list.initialLoading ? (
               <TableMessage colSpan={6}>Loading...</TableMessage>
             ) : list.rows.length === 0 ? (
-              <TableMessage colSpan={6}>
+              <TableMessage icon={CalendarX} colSpan={6}>
                 {filtered ? "No appointments match these filters." : "No appointments yet."}
               </TableMessage>
             ) : (
               list.rows.map((a) => (
                 <ClickableRow key={a.name} href={appointmentHref(a.name)} dimmed={list.loading}>
                   <Td className="whitespace-nowrap">
-                    <Link href={appointmentHref(a.name)} className="font-medium text-gray-800 hover:text-blue-600">
+                    <Link href={appointmentHref(a.name)} className="font-medium text-gray-800 hover:text-primary-600">
                       {formatDate(a.appointment_date)}
                     </Link>
                   </Td>
                   <Td className="whitespace-nowrap">{formatTime(a.appointment_time)}</Td>
                   <Td>
-                    <Link href={patientHref(a.patient)} className="text-gray-700 hover:text-blue-600">
+                    <Link href={patientHref(a.patient)} className="text-gray-700 hover:text-primary-600">
                       {a.patient_name || a.patient}
                     </Link>
                   </Td>

@@ -121,7 +121,7 @@ independent switches grouped by area.
 | Framework | Next.js **16.2.9**, App Router, Turbopack |
 | UI | React **19.2.4**, TypeScript 5 |
 | Styling | Tailwind CSS **v4** (via `@tailwindcss/postcss`) |
-| Icons | `lucide-react`, `react-icons` |
+| Icons | `lucide-react`, plus our own tooth logo |
 | HTTP | `axios`, with cookies and the Frappe CSRF header |
 | State | React Context (auth, clinic settings, session and permissions, toasts) — no external store |
 
@@ -149,7 +149,7 @@ what they are not allowed to do.
 | `/reports` | Revenue by treatment, method and month for a chosen period, outstanding balances, CSV export |
 | `/users`, `/users/[id]` | Staff accounts, roles, enable/disable, and the 14 permission switches with role presets |
 | `/whatsapp` | Reminder templates with a live preview, and the message log |
-| `/settings` | Clinic name and logo, contact details, currency, working hours, feature switches |
+| `/settings` | Clinic name and logo, contact details, currency, working hours, feature switches, and the clinic colour (the whole app follows it) |
 | `/profile` | My details and permissions, change password |
 
 ### Project structure
@@ -349,4 +349,4 @@ Worth knowing before you pick this up:
   report methods would be faster for very large data.
 - **English only for now.** The layout uses start/end spacing, so an Arabic right-to-left version can be
   added without redoing the screens.
-- The patient portal switch and the theme colour are saved in Settings but not used yet.
+- The patient portal switch is saved in Settings but not used yet.

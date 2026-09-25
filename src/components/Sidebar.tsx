@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { GiTooth } from "react-icons/gi";
+import ToothLogo from "@/components/ToothLogo";
 import {
   LayoutDashboard,
   Users,
@@ -91,13 +91,13 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               // eslint-disable-next-line @next/next/no-img-element -- the logo is an uploaded file of unknown size
               <img src={settings.logo} alt="" className="w-9 h-9 rounded-xl object-contain bg-gray-50" />
             ) : (
-              <span className="w-9 h-9 shrink-0 bg-blue-600 rounded-xl flex items-center justify-center text-white">
-                <GiTooth size={20} />
+              <span className="w-9 h-9 shrink-0 bg-primary-600 rounded-xl flex items-center justify-center text-white">
+                <ToothLogo size={20} />
               </span>
             )}
             <span className="font-bold text-gray-800 text-lg truncate">{clinicName}</span>
           </Link>
-          <button type="button" onClick={onClose} className="lg:hidden p-1.5 rounded-lg text-gray-400 hover:bg-gray-100" aria-label="Close menu">
+          <button type="button" onClick={onClose} className="lg:hidden w-11 h-11 -me-2 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100" aria-label="Close menu">
             <X size={18} />
           </button>
         </div>
@@ -121,13 +121,13 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                         onClick={onClose}
                         aria-current={active ? "page" : undefined}
                         className={cx(
-                          "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
-                          active ? "bg-blue-50 text-blue-600" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800",
+                          "flex items-center gap-3 min-h-11 px-3 py-2 rounded-xl text-sm font-medium transition-all",
+                          active ? "bg-primary-50 text-primary-600" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800",
                         )}
                       >
                         <Icon size={18} />
                         <span>{item.label}</span>
-                        {active && <span className="ms-auto w-1.5 h-1.5 rounded-full bg-blue-600" />}
+                        {active && <span className="ms-auto w-1.5 h-1.5 rounded-full bg-primary-600" />}
                       </Link>
                     );
                   })}
@@ -141,7 +141,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
         <div className="px-4 py-4 border-t border-gray-100">
           <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gray-50">
             <Link href="/profile" onClick={onClose} className="flex items-center gap-3 flex-1 min-w-0">
-              <span className="w-8 h-8 shrink-0 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-sm">
+              <span className="w-8 h-8 shrink-0 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-semibold text-sm">
                 {displayName.charAt(0).toUpperCase()}
               </span>
               <span className="min-w-0">

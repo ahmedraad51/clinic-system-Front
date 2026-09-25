@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { GiTooth } from "react-icons/gi";
+import ToothLogo from "@/components/ToothLogo";
 import { Save, Trash2, Upload } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
@@ -10,7 +10,9 @@ import {
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { errorMessage, updateDoc, uploadFile } from "@/lib/frappe";
+import { cx } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
+import { DEFAULT_THEME_COLOR, normalizeHex, readableBrand, THEME_PRESETS } from "@/lib/theme";
 import { CURRENCIES, type ClinicSettings } from "@/lib/types";
 
 const SETTINGS = "Clinic Settings";
@@ -42,7 +44,7 @@ function toForm(doc: ClinicSettings): SettingsForm {
     currency: doc.currency || "USD",
     opening_time: (doc.opening_time ?? "").slice(0, 5),
     closing_time: (doc.closing_time ?? "").slice(0, 5),
-    theme_color: doc.theme_color || "#2563eb",
+    theme_color: normalizeHex(doc.theme_color) ?? DEFAULT_THEME_COLOR,
     logo: doc.logo ?? "",
     enable_whatsapp: Number(doc.enable_whatsapp) === 1,
     enable_patient_portal: Number(doc.enable_patient_portal) === 1,
@@ -156,8 +158,8 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
             // eslint-disable-next-line @next/next/no-img-element -- the logo is an uploaded file of unknown size
             <img src={form.logo} alt="Clinic logo" className="w-16 h-16 rounded-2xl object-contain bg-gray-50 border border-gray-100" />
           ) : (
-            <span className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center text-white">
-              <GiTooth size={30} />
+            <span className="w-16 h-16 rounded-2xl bg-primary-600 flex items-center justify-center text-white">
+              <ToothLogo size={30} />
             </span>
           )}
           <div className="flex flex-wrap gap-2">
@@ -232,20 +234,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
             label="Patient portal"
             description="Saved for the back end. The front end has no patient portal screens yet."
           />
-          <div className="flex items-center gap-3 pt-1">
-            <input
-              type="color"
-              name="theme_color"
-              value={form.theme_color}
-              onChange={handleChange}
-              aria-label="Theme colour"
-              className="h-9 w-12 rounded-lg border border-gray-200 bg-white p-1"
-            />
-            <div>
-              <p className="text-sm font-medium text-gray-800">Theme colour</p>
-              <p className="text-xs text-gray-500">Saved for later. The app still uses blue.</p>
-            </div>
-          </div>
+          <ThemeColorPicker value={form.theme_color} onChange={(theme_color) => setForm({ ...form, theme_color })} />
         </div>
       </Card>
 
@@ -255,5 +244,52 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
         Save Settings
       </Button>
     </form>
+  );
+}
+
+/** The clinic colour: a few calm presets, or any colour. Shows a sample of how buttons will look. */
+function ThemeColorPicker({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const current = normalizeHex(value) ?? DEFAULT_THEME_COLOR;
+  const used = readableBrand(current);
+  return (
+    <div className="pt-1">
+      <p className="text-sm font-medium text-gray-800">Theme colour</p>
+      <p className="text-xs text-gray-500 mt-0.5">Buttons, links and highlights use this colour.</p>
+      <div className="flex flex-wrap items-center gap-2 mt-3">
+        {THEME_PRESETS.map((preset) => (
+          <button
+            key={preset.value}
+            type="button"
+            onClick={() => onChange(preset.value)}
+            aria-label={preset.label}
+            aria-pressed={current === preset.value}
+            title={preset.label}
+            className={cx(
+              "w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11 rounded-full border-2 transition",
+              current === preset.value ? "border-gray-800 scale-110" : "border-white shadow-sm hover:scale-105",
+            )}
+            style={{ backgroundColor: preset.value }}
+          />
+        ))}
+        <label className="flex items-center gap-2 ms-1 text-sm text-gray-600">
+          <input
+            type="color"
+            value={current}
+            onChange={(event) => onChange(event.target.value)}
+            aria-label="Choose any colour"
+            className="h-9 w-12 rounded-lg border border-gray-200 bg-white p-1 cursor-pointer"
+          />
+          Other
+        </label>
+      </div>
+      <div className="flex flex-wrap items-center gap-3 mt-3">
+        <span className="px-4 py-2 rounded-xl text-sm font-medium text-white shadow-sm" style={{ backgroundColor: used }}>
+          Sample button
+        </span>
+        {used !== current && (
+          <span className="text-xs text-gray-500">Made a little darker so white text on it stays easy to read.</span>
+        )}
+      </div>
+    </div>
   );
 }

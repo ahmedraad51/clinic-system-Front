@@ -192,7 +192,7 @@ function PatientDetail() {
       )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Appointments" value={patient.total_appointments ?? 0} icon={Calendar} tone="blue" />
+        <StatCard title="Appointments" value={patient.total_appointments ?? 0} icon={Calendar} tone="primary" />
         <StatCard title="Treatments" value={patient.total_treatments ?? 0} icon={Stethoscope} tone="green" />
         {showPayments && <StatCard title="Total Paid" value={money(patient.total_paid)} icon={CreditCard} tone="purple" />}
         {showPayments && (
@@ -265,7 +265,7 @@ function PatientDetail() {
                 {data.appointments.map((a) => (
                   <ClickableRow key={a.name} href={appointmentHref(a.name)}>
                     <Td className="whitespace-nowrap">
-                      <Link href={appointmentHref(a.name)} className="font-medium text-gray-800 hover:text-blue-600">
+                      <Link href={appointmentHref(a.name)} className="font-medium text-gray-800 hover:text-primary-600">
                         {formatDate(a.appointment_date)}
                       </Link>
                     </Td>
@@ -315,7 +315,7 @@ function PatientDetail() {
                 {data.plans.map((plan) => (
                   <ClickableRow key={plan.name} href={treatmentHref(plan.name)}>
                     <Td>
-                      <Link href={treatmentHref(plan.name)} className="font-medium text-gray-800 hover:text-blue-600">
+                      <Link href={treatmentHref(plan.name)} className="font-medium text-gray-800 hover:text-primary-600">
                         {plan.treatment_type}
                       </Link>
                     </Td>
@@ -368,7 +368,7 @@ function PatientDetail() {
                 {data.payments.map((pay) => (
                   <ClickableRow key={pay.name} href={paymentHref(pay.name)}>
                     <Td className="whitespace-nowrap">
-                      <Link href={paymentHref(pay.name)} className="font-medium text-gray-800 hover:text-blue-600">
+                      <Link href={paymentHref(pay.name)} className="font-medium text-gray-800 hover:text-primary-600">
                         {formatDate(pay.payment_date)}
                       </Link>
                     </Td>

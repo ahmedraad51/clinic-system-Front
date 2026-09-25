@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { ClipboardList, Plus } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Card, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination,
@@ -100,20 +100,20 @@ function TreatmentsList() {
             {list.initialLoading ? (
               <TableMessage colSpan={7}>Loading...</TableMessage>
             ) : list.rows.length === 0 ? (
-              <TableMessage colSpan={7}>
+              <TableMessage icon={ClipboardList} colSpan={7}>
                 {filtered ? "No treatment plans match these filters." : "No treatment plans yet."}
               </TableMessage>
             ) : (
               list.rows.map((plan) => (
                 <ClickableRow key={plan.name} href={treatmentHref(plan.name)} dimmed={list.loading}>
                   <Td>
-                    <Link href={treatmentHref(plan.name)} className="font-medium text-gray-800 hover:text-blue-600">
+                    <Link href={treatmentHref(plan.name)} className="font-medium text-gray-800 hover:text-primary-600">
                       {plan.treatment_type}
                     </Link>
                     <span className="block text-xs text-gray-400">{plan.name}</span>
                   </Td>
                   <Td>
-                    <Link href={patientHref(plan.patient)} className="text-gray-700 hover:text-blue-600">
+                    <Link href={patientHref(plan.patient)} className="text-gray-700 hover:text-primary-600">
                       {plan.patient_name || plan.patient}
                     </Link>
                   </Td>

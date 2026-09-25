@@ -127,14 +127,14 @@ function UserDetail() {
 
       <Card>
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="w-14 h-14 shrink-0 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl">
+          <div className="w-14 h-14 shrink-0 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold text-xl">
             {(userData.full_name || userData.name).charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-gray-800 text-lg">{userData.full_name || userData.name}</p>
             <p className="text-gray-500 text-sm break-all">{userData.email}</p>
             <div className="flex flex-wrap gap-1.5 mt-2">
-              {roles.length === 0 ? <Badge>No roles</Badge> : roles.map((role) => <Badge key={role} tone="blue">{role}</Badge>)}
+              {roles.length === 0 ? <Badge>No roles</Badge> : roles.map((role) => <Badge key={role} tone="primary">{role}</Badge>)}
             </div>
           </div>
         </div>
@@ -165,7 +165,7 @@ function UserDetail() {
       <Card
         title={
           <span className="flex items-center gap-2">
-            <Shield size={18} className="text-blue-600" />
+            <Shield size={18} className="text-primary-600" />
             Permissions
           </span>
         }
@@ -212,8 +212,8 @@ function UserDetail() {
                         aria-checked={on}
                         onClick={() => togglePerm(item.key)}
                         className={cx(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border transition-all",
-                          on ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200 hover:border-blue-300",
+                          "flex items-center gap-2 min-h-9 pointer-coarse:min-h-11 px-3 py-1.5 rounded-full text-sm font-medium border transition-all",
+                          on ? "bg-primary-600 text-white border-primary-600" : "bg-white text-gray-600 border-gray-200 hover:border-primary-300",
                         )}
                       >
                         {on && <Check size={12} />}

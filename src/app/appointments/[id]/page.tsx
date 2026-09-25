@@ -127,7 +127,7 @@ function AppointmentDetail() {
       <Card title="Details">
         <DetailList>
           <DetailRow label="Patient">
-            <Link href={patientHref(appointment.patient)} className="text-blue-600 hover:underline">
+            <Link href={patientHref(appointment.patient)} className="text-primary-600 hover:underline">
               {appointment.patient_name || appointment.patient}
             </Link>
           </DetailRow>
@@ -154,8 +154,8 @@ function AppointmentDetail() {
                   onClick={() => changeStatus(status)}
                   disabled={updating !== null || current}
                   className={cx(
-                    "px-4 py-2 rounded-xl text-sm font-medium transition disabled:cursor-not-allowed",
-                    current ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50",
+                    "min-h-11 px-4 py-2 rounded-xl text-sm font-medium transition disabled:cursor-not-allowed",
+                    current ? "bg-primary-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50",
                   )}
                 >
                   {updating === status ? "Saving..." : status}
