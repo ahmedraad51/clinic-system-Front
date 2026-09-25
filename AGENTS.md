@@ -1,0 +1,526 @@
+<!-- BEGIN:nextjs-agent-rules -->
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+<!-- END:nextjs-agent-rules -->
+
+# DentClinic front end — agent guide
+
+Front end of **DentClinic**, a dental clinic management system: patients and their medical records, the
+appointment book, treatment plans with sessions and per-tooth charting, payments and receipts, financial
+reports, WhatsApp reminder templates, clinic settings, and per-user permissions. It is a Next.js 16 App
+Router app. A separate **Frappe v16** back end
+([`ahmedraad51/clinic-system-backend`](https://github.com/ahmedraad51/clinic-system-backend), app `dent_app`)
+owns the data model, money calculations, roles, scheduled reports and WhatsApp sending.
+
+`README.md` is the overview for people. This file is the working reference for agents: how the code fits
+together, the rules to follow, and what is still open. `docs/backend-todo.md` lists what the back end must
+provide for this front end. `CLAUDE.md` imports this file, so every Claude Code session loads it. Keep it
+accurate.
+
+---
+
+## Read this first: current state
+
+| | State | Where |
+|---|---|---|
+| Data source | **Dummy data.** Every read and write goes to an in-memory store. No back end needed. | `MOCK_DATA = true` in `src/lib/frappe.ts` |
+| Login | **Off.** A stand-in `Administrator` session is used and logout buttons are hidden. `/profile` has a **Try Another User** card to see the app with another user's permissions. The login page sits in a private folder, so `/login` is not a route. | `AUTH_DISABLED = true` in `src/context/AuthContext.tsx`; page in `src/app/_login/page.tsx` |
+| `npm run dev` | Expected to work. | |
+| `npm run build` | **Not yet confirmed.** Both old blockers are fixed (the unused `route.ts` is deleted; `useSearchParams()` pages are inside `<Suspense>`). The change that did this was checked offline with a type check and a browser test, not with `next build`. Run it and update this row. | |
+| `npm run lint` | **Not yet confirmed.** The code was written to the rules below and checked with a stand-in for the main rules, not with the real ESLint. The old count was 75 problems. Run it and update this row. | |
+| Tests / CI | None in the repo. | |
+
+Both flags are set this way on purpose. Leave them alone unless the task is about them.
+
+---
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `npm install` | Installs dependencies. Next 16 needs Node **20.9+**; the project was developed on Node 22. |
+| `npm run dev` | Dev server at <http://localhost:3000>, using Turbopack (the Next 16 default). `/` redirects to `/dashboard`. |
+| `npm run build` | Production build: compile, TypeScript check, prerender. In Next 16 it **does not** run ESLint. |
+| `npm run start` | Serves a production build. |
+| `npm run lint` | Plain `eslint` with the flat config in `eslint.config.mjs`. Next 16 removed `next lint`. |
+| `npx tsc --noEmit` | Type-check only. It also checks the route types Next generates in `.next/` (created by `dev`/`build`). |
+
+The Frappe address comes from the `FRAPPE_URL` environment variable (for example in `.env.local`), default
+`http://dent_clinic.localhost:8000`. See `next.config.ts`.
+
+---
+
+## Stack
+
+| Concern | Choice |
+|---|---|
+| Framework | Next.js **16.2.9**, App Router, Turbopack |
+| UI | React **19.2.4**, TypeScript 5 with `strict: true`, path alias `@/*` → `src/*` |
+| Styling | Tailwind CSS **v4** via `@tailwindcss/postcss`. It is CSS-first: no `tailwind.config.*`, only `@import "tailwindcss"` in `src/app/globals.css` |
+| Font | Plus Jakarta Sans through `next/font/google` in `layout.tsx` |
+| Icons | `lucide-react` everywhere, plus `react-icons` for the `GiTooth` logo |
+| HTTP | `axios`, one instance in `src/lib/frappe.ts` |
+| State | React Context (auth, settings, session, toasts) and per-page `useState`. No global store, no data-fetching library |
+| Installed but unused | `@radix-ui/react-dialog`, `@radix-ui/react-dropdown-menu`, `clsx`. The modal and dropdowns are hand-written; `cx()` in `src/lib/format.ts` does what `clsx` would |
+
+---
+
+## Architecture
+
+```
+Browser: React client components (every page is "use client")
+   │  getList / getCount / getDoc / createDoc / updateDoc / deleteDoc / callMethod / uploadFile
+   ▼
+src/lib/frappe.ts   the only module that touches data
+   ├─ MOCK_DATA = true  → src/lib/mockData.ts   (in-memory store, lives in the browser)
+   └─ MOCK_DATA = false → axios → /frappe/api/...
+                                   │  rewrite in next.config.ts: /frappe/:path*
+                                   ▼
+                          FRAPPE_URL (default http://dent_clinic.localhost:8000)
+                          Frappe v16 · dent_app  (cookie session + x-frappe-csrf-token)
+```
+
+- **Rendering model.** Only `src/app/layout.tsx`, `src/app/page.tsx` (a server-side `redirect("/dashboard")`)
+  and `src/app/not-found.tsx` are Server Components. Every other page is a Client Component that loads its
+  data in effects after mount. No Server Actions, no server-side data fetching, no `loading.tsx` or
+  `error.tsx`, no `proxy.ts` (the Next 16 name for middleware).
+- **Provider tree** (in `layout.tsx`): `AuthProvider` → `SettingsProvider` → `SessionProvider` →
+  `ToastProvider` → `MainLayout` → page.
+- **Shell.** `MainLayout` draws the `Sidebar` (fixed `w-64`, a slide-in drawer below the `lg` breakpoint) and
+  the `Topbar` (`h-16`) around `<main>`. On `/login` it renders the page with no shell. Both bars carry
+  `print:hidden`, so a printed page is just the content (used by the payment receipt).
+- **One login guard.** `MainLayout` sends logged-out visitors to `/login`, and waits until `isLoading` is
+  false first. Pages do not check the login themselves.
+- **One permission guard per page.** Each page wraps its content in `<RequirePermission permission="…">`
+  from `src/components/Guard.tsx`. It shows a spinner while the session loads and a "no access" card when the
+  user lacks the permission.
+- **One data seam.** No page calls `fetch` or axios itself. That is why switching to dummy data is a
+  one-line change. Keep it that way.
+
+---
+
+## Directory map
+
+```
+src/
+├── app/
+│   ├── layout.tsx                 root layout: font, metadata, providers, MainLayout
+│   ├── page.tsx                   redirect("/dashboard")
+│   ├── not-found.tsx              404 page
+│   ├── globals.css                Tailwind import, body colours, print background
+│   ├── _login/page.tsx            login form; private folder, so it is NOT routed (see Auth)
+│   ├── dashboard/page.tsx
+│   ├── patients/      page · new · [id] · [id]/edit
+│   ├── appointments/  page · new · [id] · [id]/edit
+│   ├── treatments/    page · new · [id] · [id]/edit
+│   ├── payments/      page · new · [id] · [id]/edit
+│   ├── reports/page.tsx
+│   ├── users/         page · [id]
+│   ├── whatsapp/page.tsx
+│   ├── settings/page.tsx
+│   └── profile/page.tsx
+├── components/
+│   ├── MainLayout.tsx        shell + the login guard
+│   ├── Sidebar.tsx           nav in three groups (CLINIC, FINANCE, SYSTEM), hidden items by permission, user card
+│   ├── Topbar.tsx            mobile menu button, bell, settings, profile dropdown, logout
+│   ├── NotificationBell.tsx  today's Scheduled/Confirmed appointments
+│   ├── Guard.tsx             RequirePermission
+│   ├── DentalChart.tsx       FDI chart of the 32 permanent teeth, saved to Patient.dental_chart
+│   ├── forms/                PatientForm, AppointmentForm, TreatmentForm, PaymentForm (shared by new and edit)
+│   └── ui/
+│       ├── index.tsx         the UI kit (cards, buttons, inputs, tables, badges, paging, tabs, alerts, …)
+│       ├── Modal.tsx         Modal, ConfirmDialog
+│       └── LinkSelect.tsx    searchable picker for Link fields (used for patients)
+├── context/
+│   ├── AuthContext.tsx       who is logged in, the AUTH_DISABLED switch, useAuth()
+│   ├── SettingsContext.tsx   Clinic Settings (currency, clinic name, feature switches), useSettings()
+│   ├── SessionContext.tsx    the user's profile, roles and permission flags, useSession()
+│   └── ToastContext.tsx      small corner messages, useToast()
+└── lib/
+    ├── frappe.ts             data access (real or mock), login/logout, CSRF, errorMessage()
+    ├── mockData.ts           the in-memory dummy back end
+    ├── types.ts              doctype interfaces, allowed values, permission keys, role presets
+    ├── hooks.ts              usePagedList, useDocument, useDoctors, useDebounced, searchFilters
+    ├── format.ts             money, dates, times, cx(), CSV download, dental chart parsing
+    └── links.ts              URL builders for records (always use these)
+docs/
+├── backend-todo.md           what the back end must provide for this front end
+└── screenshots/              images used by README.md (from the older design; retake them)
+public/                       placeholder SVGs from create-next-app (unused)
+```
+
+---
+
+## Routes
+
+| Route | Permission | What it does |
+|---|---|---|
+| `/` | none | Server redirect to `/dashboard` |
+| `/dashboard` | none (cards appear per permission) | Greeting; counts for today's appointments, patients, active plans; revenue this month and amount owed; today's list and the next 7 days; quick actions |
+| `/patients` | `view_patients` | Server-side search (name, phone, second phone, ID), gender filter, paging, balance column (with `view_payments`) |
+| `/patients/new` | `add_patients` | Shared `PatientForm`. Opens the new record after saving |
+| `/patients/[id]` | `view_patients` | Allergy and medical-condition alerts, totals, tabs: Overview, Appointments, Treatment Plans, Payments, Dental Chart. Buttons: New Appointment, New Treatment, Edit, Delete (each by permission) |
+| `/patients/[id]/edit` | `edit_patients` | Shared `PatientForm` |
+| `/appointments` | `view_appointments` | Search, date filter (All/Today/Tomorrow/Upcoming/Past, also `?date=today`), status filter, paging |
+| `/appointments/new` | `add_appointments` | Shared `AppointmentForm`. Reads `?patient=` and `?date=`. Warns if the doctor already has an overlapping appointment |
+| `/appointments/[id]` | `view_appointments` | Details, status buttons, Edit/Delete (`edit_appointments`), WhatsApp messages for this appointment |
+| `/appointments/[id]/edit` | `edit_appointments` | Shared `AppointmentForm` with status |
+| `/treatments` | `view_treatments` | Search, type and status filters, paging |
+| `/treatments/new` | `add_treatments` | Shared `TreatmentForm`. Reads `?patient=` and `?tooth=`. New plans are always `Planned` |
+| `/treatments/[id]` | `view_treatments` | Cost/paid/remaining with a progress bar, details, status buttons, payments of the plan, **Treatment Sessions** (add, edit, delete in a dialog) |
+| `/treatments/[id]/edit` | `edit_treatments` | Shared `TreatmentForm` with status |
+| `/payments` | `view_payments` | Search, method filter, date range, paging, total of everything that matches |
+| `/payments/new` | `add_payments` | Shared `PaymentForm`. Reads `?patient=&treatment=`. Blocks amounts above what the plan has left |
+| `/payments/[id]` | `view_payments` | Printable receipt with clinic details; Edit/Delete (`add_payments`) |
+| `/payments/[id]/edit` | `add_payments` | Shared `PaymentForm` |
+| `/reports` | `view_reports`, and Clinic Settings `enable_financial_reports` | Period picker; revenue, count, average, outstanding; revenue by treatment, method and month; latest payments; outstanding balances; CSV export of both |
+| `/users` | `manage_users` | Staff list (without Administrator and Guest), search, status filter, Add User dialog (can apply the role's usual permissions) |
+| `/users/[id]` | `manage_users` | Clinic role, enable/disable, the 14 permission switches with presets. `[id]` is `encodeURIComponent(btoa(user.name))` |
+| `/whatsapp` | `manage_users` | Templates (add, edit, delete, placeholders, live preview) and the message log |
+| `/settings` | `manage_users` | Clinic Settings: name, logo upload, contact, tax number, currency, working hours, feature switches, theme colour |
+| `/profile` | none | My details, what I can do, change password, and (login off only) Try Another User |
+
+Links use `<Link>` from `next/link`; buttons that navigate after an action use `router.push`. Table rows are
+clickable through `ClickableRow`, and the first cell always holds a real link for keyboard users.
+
+---
+
+## Data layer: `src/lib/frappe.ts`
+
+| Function | Real back end (through the rewrite) | Mock |
+|---|---|---|
+| `getList(doctype, fields, { filters, orFilters, orderBy, limit, start })` | `GET /frappe/api/resource/<Doctype>` with `fields`, `filters`, `or_filters`, `order_by`, `limit_start`, `limit_page_length` | `mockGetList` |
+| `getCount(doctype, filters?, orFilters?)` | `frappe.client.get_count`, or `frappe.desk.reportview.get_count` when there are `orFilters` | `mockGetCount` |
+| `getDoc(doctype, name)` | `GET /frappe/api/resource/<Doctype>/<name>` | `mockGetDoc` |
+| `createDoc(doctype, data)` | `POST /frappe/api/resource/<Doctype>` | `mockCreateDoc` |
+| `updateDoc(doctype, name, data)` | `PUT /frappe/api/resource/<Doctype>/<name>` | `mockUpdateDoc` |
+| `deleteDoc(doctype, name)` | `DELETE /frappe/api/resource/<Doctype>/<name>` | `mockDeleteDoc` |
+| `callMethod(method, args)` | `POST /frappe/api/method/<method>`, returns `message` | `mockCall` (knows `update_password` only) |
+| `changePassword(old, new)` | `frappe.core.doctype.user.user.update_password` | via `mockCall` |
+| `uploadFile(file)` | multipart `POST /frappe/api/method/upload_file`, returns `file_url` | a data URL |
+| `login(usr, pwd)` / `logout()` / `initAuth()` | as before: login saves the `x-frappe-csrf-token` response header to `localStorage.csrf_token` | not mocked |
+| `errorMessage(err, fallback)` | turns a failed call into a readable sentence (Frappe `_server_messages`, `exception`, 403, no connection) | uses the mock's `Error` text |
+| `isNotFound(err)` | true for HTTP 404 or the mock's "… not found" | |
+
+Doctype and doc names are URL-encoded. The axios instance sets `withCredentials: true`.
+
+Rules for data code:
+
+- **Always use these helpers**, or the hooks below. Never add `fetch` or axios calls to pages or components.
+- **Doctype names are exact strings with spaces:** `"Patient"`, `"Doctor"`, `"Appointment"`,
+  `"Treatment Plan"`, `"Treatment Session"`, `"Payment"`, `"User"`, `"Clinic Permission"`,
+  `"Clinic Settings"` (a single; its doc name is also `"Clinic Settings"`), `"WhatsApp Template"`,
+  `"WhatsApp Log"`.
+- **`getList` returns only the fields you ask for**, in both Frappe and the mock. If you render a field, put
+  it in `fields`. `name` always comes back.
+- **Show names, not IDs.** Link fields hold IDs (`PAT-2026-00001`). Read the fetched label fields instead:
+  `patient_name`, `doctor_name`, and `treatment_type` on Payment. Fall back to the ID only if the label is
+  empty.
+- **Limits.** `limit` defaults to 100; `limit: 0` means every row. Lists use `usePagedList` (20 per page, with
+  a real count). Dashboard and report totals load the matching rows with `limit: 0` and add them up in the
+  browser; see Known issues.
+- **Filters** use Frappe's formats: `[[field, operator, value], …]` or `{ field: value }`. Search boxes use
+  `orFilters` built by `searchFilters(text, fields)`.
+- **Send `null`, not `""`, for empty Date, Time and Link fields.** The form payload helpers already do this.
+
+### Hooks: `src/lib/hooks.ts`
+
+| Hook | Use |
+|---|---|
+| `usePagedList<T>(doctype, { fields, filters, orFilters, orderBy, pageSize })` | A page of rows plus the total. Changing the query goes back to page 1. Returns `rows, total, page, setPage, pageSize, initialLoading, loading, error, reload` |
+| `useDocument<T>(doctype, name)` | One doc. `reload()` fetches again but keeps the old copy on screen meanwhile. `notFound` is true when the load failed; `error` is empty for a real 404 and holds the reason otherwise (for example no permission) |
+| `useDoctors()` | Active doctors (`is_active = 1`) for dropdowns |
+| `useDebounced(value, ms)` | Waits until typing stops |
+
+### Getting requests to the real back end
+
+`next.config.ts` rewrites `/frappe/:path*` to `FRAPPE_URL`. The old hand-written proxy
+`src/app/api/frappe/[...path]/route.ts` is deleted. See `docs/backend-todo.md` for the CSRF question.
+
+---
+
+## Mock back end: `src/lib/mockData.ts`
+
+An in-memory store that returns data in the same shape as Frappe's REST API, so pages behave the same with
+either source.
+
+- **Seed data:** 10 patients, 5 doctors, 22 appointments (June to September 2026, all five statuses; three of
+  them are dated today and tomorrow when the app loads), 15 treatment plans (all four statuses), 10
+  treatment sessions, 15 payments (two dated today), 9 users (including `Administrator`, `Guest` and one
+  disabled doctor), 3 `Clinic Permission` records (the manager has every permission; the receptionist and
+  one doctor have some), the `Clinic Settings` single (currency `USD`), 3 WhatsApp templates and 7 WhatsApp
+  log entries.
+- **IDs match the real naming series:** `PAT-2026-00001`, `DOC-00001`, `APT-2026-00001`,
+  `TRT-2026-00001`, `SES-2026-00001`, `PAY-2026-00001`, `WAT-00001`, `WAL-2026-00001`. New docs get the next
+  number with the current year. Users are named by `email`, Clinic Permissions by `user` (a duplicate gets
+  `" 2"`, `" 3"` …).
+- **Fields the server computes or fetches are rebuilt after every write** by `recalculate()`:
+  - `patient_name` on Appointment, Treatment Plan, Treatment Session, Payment and WhatsApp Log;
+    `doctor_name` on Appointment, Treatment Plan and Treatment Session; `treatment_type` on Payment.
+  - Treatment Plan: `paid_amount` is the sum of its payments. `remaining_amount` is
+    `max(0, total_cost − paid_amount)`, or `0` if the plan is `Cancelled`.
+  - Patient: `total_treatments`, `total_appointments`, `total_paid`, `total_remaining`.
+- **Validation like the back end:** a payment must be above zero and cannot take a plan's paid amount above
+  its total cost; a plan's total cost cannot go below what was already paid. A doc that other docs link to
+  cannot be deleted ("Cannot delete Patient … because it is linked with …").
+- **On create and update:** number fields (`total_cost`, `amount`, `duration_minutes`, `age`, `enabled`,
+  `is_active`) become numbers. A Patient gets `age` from `date_of_birth`, and `dental_chart` is parsed from
+  a JSON string or object. A User gets `full_name`, `enabled: 1`, and its `new_password` is not stored.
+- **Queries:** operators `=`, `!=`, `in`, `not in`, `like`, `not like`, `is` (`set`/`not set`), `between`,
+  `>`, `<`, `>=`, `<=` (numbers compare as numbers, everything else as strings, which works for ISO dates).
+  `orFilters`, multi-field `orderBy` (`"appointment_date desc, appointment_time desc"`), `limit`, `start`.
+  An unknown operator matches every doc. Empty `fields` or `"*"` returns whole docs.
+- **Errors:** `getDoc`, `updateDoc` and `deleteDoc` throw `"<Doctype> <name> not found"` for a missing doc.
+  An unknown doctype is not an error: it quietly gets an empty collection.
+- **Latency:** every call waits 150 ms so loading states show up.
+- **Persistence:** module memory in the browser. Writes survive client-side navigation and are lost on a full
+  reload.
+
+**Keep the mock in step with the UI.** When a screen starts reading a new field or doctype, add it to the
+seed data. If the back end computes or fetches that field, do it in `recalculate()` too.
+
+How the mock still differs from the real back end:
+
+| | Mock | Real Frappe |
+|---|---|---|
+| `Patient.dental_chart` and the `*_name` fetch fields | present | must be added (see `docs/backend-todo.md`) |
+| Sessions and permissions | none; any call succeeds | cookie session and CSRF token; the server enforces permissions |
+| Uploads | data URLs | files under `/files/…` |
+| `update_password` | always succeeds | checks the old password |
+
+---
+
+## Domain model
+
+Field names are Frappe fieldnames. Form state keys must match them exactly. Fields marked † come from
+`README.md` only and must be confirmed in the back-end repo; see `docs/backend-todo.md`.
+
+| Doctype | Fields the UI edits | Read-only (server) |
+|---|---|---|
+| **Patient** | `full_name`\*, `gender`, `date_of_birth`, `phone_number`\*, `secondary_phone`, `email`, `address`, `allergies`, `current_medications`, `chronic_diseases`, `medical_history`, `notes`, `dental_chart` (JSON, from the chart) | `age`, `total_appointments`, `total_treatments`, `total_paid`, `total_remaining` |
+| **Doctor** | none (read for dropdowns: `full_name`, `specialization`, `is_active`) | |
+| **Appointment** | `patient`\*, `doctor`\*, `appointment_date`\*, `appointment_time`\*, `duration_minutes`, `status`, `reason_for_visit`, `notes` | `patient_name`, `doctor_name` |
+| **Treatment Plan** | `patient`\*, `doctor`, `treatment_type`\*, `tooth_number` (FDI number from a dropdown), `total_cost`\*, `diagnosis`, `treatment_notes`, `status` (edit only; new plans are `Planned`) | `paid_amount`, `remaining_amount`, `patient_name`, `doctor_name` |
+| **Treatment Session** † | `patient`, `treatment_plan`, `doctor`, `session_date`\*, `session_time`, `status`, `notes` | `patient_name`, `doctor_name` |
+| **Payment** | `patient`\*, `treatment_plan`, `payment_date`\*, `amount`\*, `payment_method`\*, `notes` | `patient_name`, `treatment_type` |
+| **User** (Frappe core) | `email`, `first_name`, `enabled`, `new_password` (create only), `send_welcome_email: 0`, `roles: [{ role }]` | `full_name` |
+| **Clinic Permission** | `user` plus 14 flags set to `0` or `1` | |
+| **Clinic Settings** † (single) | `clinic_name`, `logo`, `phone`, `email`, `address`, `tax_number`, `currency`, `opening_time`, `closing_time`, `theme_color`, `enable_whatsapp`, `enable_patient_portal`, `enable_financial_reports` | |
+| **WhatsApp Template** † | `template_name`, `trigger`, `message`, `is_active` | |
+| **WhatsApp Log** † | none (read: `patient`, `appointment`, `phone_number`, `status`, `sent_at`, `message`, `error_message`) | `patient_name` |
+
+\* = required in the form.
+
+Allowed values live in `src/lib/types.ts`. Keep form options, badge colours (`STATUS_TONES` in
+`components/ui/index.tsx`) and mock data in line with them:
+
+- Appointment `status`: `Scheduled`, `Confirmed`, `Completed`, `Cancelled`, `No Show`
+- Treatment Plan `status`: `Planned`, `In Progress`, `Completed`, `Cancelled`
+- Treatment Plan `treatment_type`: `Filling`, `Root Canal`, `Crown`, `Bridge`, `Extraction`, `Implant`, `Cleaning`, `Whitening`
+- Treatment Session `status` †: `Scheduled`, `Completed`, `Cancelled`
+- Payment `payment_method`: `Cash`, `Card`, `Bank Transfer`
+- WhatsApp Template `trigger`: `24 Hours Before`, `2 Hours Before`, `Manual`; WhatsApp Log `status`: `Sent`, `Failed`, `Pending`
+- Roles: `Clinic Manager`, `Clinic Doctor`, `Clinic Receptionist`, plus Frappe's own roles such as `System Manager`
+- Template placeholders †: `{{ patient_name }}`, `{{ appointment_date }}`, `{{ appointment_time }}`, `{{ doctor_name }}`, `{{ clinic_name }}`
+
+Money rules: the back end's `Treatment Plan.validate()` recomputes `remaining_amount`, rejects a paid amount
+above `total_cost`, and re-saves the patient. The payment form also blocks an amount above what the plan has
+left (plus the payment's own amount when editing). The front end does its own arithmetic only for the
+dashboard and report totals.
+
+---
+
+## Auth: `src/context/AuthContext.tsx`
+
+`useAuth()` returns `{ user, isLoading, authDisabled, login, logout, switchUser? }`. `user` is the Frappe
+username or `null`.
+
+- The saved username lives in `localStorage.dental_user` and is read through `useSyncExternalStore`, so the
+  server render and the first client render agree. `isLoading` stays true until the browser has been read.
+- **With `AUTH_DISABLED = true` (as now):** `user` starts as `"Administrator"`, `isLoading` is `false`,
+  `logout()` does nothing, logout buttons are hidden, and `switchUser(name)` lets `/profile` act as another
+  user (memory only).
+- **With `AUTH_DISABLED = false`:** `user` comes from `localStorage`. `login()` calls Frappe, saves the
+  username and tells every listener. `logout()` calls Frappe and clears it.
+- **Guard:** `MainLayout` redirects to `/login` only when `isLoading` is false and there is no user, so a page
+  refresh with a saved session never bounces to `/login`. This was tested with login turned on.
+
+`useSession()` (`src/context/SessionContext.tsx`) loads the user's `User` doc and `Clinic Permission` doc and
+returns `{ profile, roles, displayName, roleLabel, isSuperUser, can(flag), loading, refresh }`.
+
+### Switching to the real back end and turning login on
+
+1. Run the Frappe site (`README.md` → *Getting started* → *Back end*) and work through
+   `docs/backend-todo.md`, especially the new fields and read permissions.
+2. Set `FRAPPE_URL` if the site is not at `http://dent_clinic.localhost:8000`.
+3. Set `MOCK_DATA = false` in `src/lib/frappe.ts`.
+4. Set `AUTH_DISABLED = false` in `src/context/AuthContext.tsx`.
+5. Run `git mv src/app/_login src/app/login`. A folder whose name starts with `_` is a Next.js private
+   folder and is left out of routing.
+
+---
+
+## Permissions: `Clinic Permission`
+
+Rules in `SessionContext`: `Administrator` and anyone with the `System Manager` role can do everything.
+Everyone else gets the flags from the `Clinic Permission` doc named after their user ID (`=== 1` is on). No
+doc means no section is open (the dashboard and profile still work).
+
+| Group | Flags | What the UI does with them |
+|---|---|---|
+| Patients | `view_patients`, `add_patients`, `edit_patients`, `delete_patients` | menu item and pages; Add, Edit, Delete buttons; editing the dental chart needs `edit_patients` |
+| Appointments | `view_appointments`, `add_appointments`, `edit_appointments` | menu, pages, bell; status buttons, Edit and Delete need `edit_appointments` |
+| Treatments | `view_treatments`, `add_treatments`, `edit_treatments` | menu, pages; status, Edit, Delete and sessions need `edit_treatments` |
+| Finance | `view_payments`, `add_payments`, `view_reports` | Payments menu and pages, balances and money cards; Add, Edit and Delete payments need `add_payments`; Reports needs `view_reports` |
+| System | `manage_users` | Users, WhatsApp and Settings pages and menu items, the settings icon |
+
+**The UI only hides things.** The back end must refuse the data too. `/users/[id]` saves with `updateDoc`
+when the doc exists and `createDoc` when it does not, and refreshes the session when you edit yourself.
+`ROLE_PRESETS` in `types.ts` are only starting points for the switches.
+
+User IDs are email addresses, so links use `userHref(name)` from `src/lib/links.ts`
+(`encodeURIComponent(btoa(name))`), and `/users/[id]` reads it back with `userIdFromRoute()`.
+
+---
+
+## UI conventions
+
+### Page shape
+
+The default export only sets the permission; the real page is an inner component. Load data inside the
+effect, with a `cancelled` flag, and set state only after `await`:
+
+```tsx
+"use client";
+export default function ThingsPage() {
+  return (
+    <RequirePermission permission="view_things">
+      <Things />
+    </RequirePermission>
+  );
+}
+
+function Things() {
+  const list = usePagedList<Thing>("Thing", { fields: ["name", "field_a"], orderBy: "name desc" });
+  // or for one doc:  const { doc, loading, notFound, error, reload } = useDocument<Thing>("Thing", id);
+  // or by hand:
+  const [items, setItems] = useState<Thing[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const rows = await getList<Thing>("Thing", ["name", "field_a"]);
+        if (!cancelled) setItems(rows);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  // … PageContainer, PageHeader, Card, Table …
+}
+```
+
+- A page that calls `useSearchParams()` must render that component inside `<Suspense>`, or the build fails.
+- Hooks go before any early `return`. Route params come from `useParams()` and go through `routeId()`.
+- To refetch after a change, bump a `version` state that the effect lists in its deps (or call `reload()`).
+- **Forms** live in `src/components/forms/`, one per doctype, shared by the new and edit pages. Each exports
+  `EMPTY_…` (or `empty…()`), `…ToForm(doc)` and `…Payload(form)`. The page passes `onSubmit`, which saves,
+  shows a toast and navigates; the form shows `errorMessage(err)` if it throws.
+- **Messages:** `useToast().success/error/info`. Never use `alert()`. Ask before deleting with
+  `ConfirmDialog`.
+- **Money** always goes through `useSettings().money(amount)`, which uses the clinic currency. Dates and
+  times go through `formatDate`, `formatTime`, `formatDateTime`; today is `todayISO()` (local time).
+- **Links** to records use `patientHref`, `appointmentHref`, `treatmentHref`, `paymentHref`, `userHref`.
+
+### The UI kit (`src/components/ui`)
+
+`PageContainer` (`narrow` for forms), `PageHeader` (title, subtitle, back link, actions, badge), `Card`
+(`flush` for tables), `StatCard`, `Badge`, `StatusBadge` (kinds: appointment, treatment, session, method,
+whatsapp, trigger, user), `Button` and `LinkButton` (primary, secondary, danger, ghost, success; sm, md;
+`icon`, `loading`), `Field` (label wrapping one input), `TextInput`, `SelectInput`, `TextArea`, `Toggle`,
+`SearchInput`, `Toolbar`, `Table`, `Th`, `Td`, `ClickableRow`, `TableMessage`, `Pagination`, `DetailList` and
+`DetailRow`, `Tabs`, `Alert`, `Spinner`, `PageLoading`, `EmptyState`, `NoAccess`, `NotFoundCard`; plus
+`Modal` and `ConfirmDialog` in `Modal.tsx`, and `LinkSelect` for searchable Link fields. Use these instead of
+writing new class lists.
+
+### Styling
+
+- One visual style everywhere: white cards with `border-gray-100 shadow-sm rounded-2xl` on a `gray-50` page,
+  `rounded-xl` inputs and buttons, primary `blue-600`, lucide icons. No emoji titles.
+- Tailwind utility classes go inline; `globals.css` only holds the import and body colours.
+- **Use logical classes** (`ms-`, `me-`, `ps-`, `pe-`, `start-`, `end-`, `text-start`, `text-end`,
+  `border-e`) instead of left/right, so a right-to-left (Arabic) layout can be added later. Arrow icons that
+  point sideways carry `rtl:rotate-180`.
+- Add `print:hidden` to anything that should not appear on paper.
+- Badge colours: Appointments Scheduled blue, Confirmed green, Completed gray, Cancelled red, No Show
+  yellow. Treatments Planned blue, In Progress yellow, Completed green, Cancelled red. Sessions Scheduled
+  blue, Completed green, Cancelled red. Methods Cash green, Card blue, Bank Transfer purple. WhatsApp Sent
+  green, Failed red, Pending yellow. Users Active green, Disabled red.
+
+### Lint rules that bite here
+
+The project uses `eslint-config-next` with the React Compiler hook rules. Follow these:
+
+- No `any`. No unused variables, imports or caught errors (`catch {` when you do not use it).
+- Never call `setState` directly in an effect body, and never call a component-level function that sets
+  state from an effect. Put the async loader inside the effect (the pattern above).
+- Complete dependency arrays. Never define a component inside another component.
+- No `'`, `"`, `>` or `}` as plain JSX text: rephrase, or wrap the text in `{"…"}`.
+- `<img>` needs `// eslint-disable-next-line @next/next/no-img-element -- reason` (used for the uploaded logo).
+- No empty blocks: put a comment inside.
+
+### Dental chart (`src/components/DentalChart.tsx`)
+
+FDI numbering: upper jaw `18→11, 21→28`, lower jaw `48→41, 31→38`. Each tooth is `normal`, `treated` or
+`pending` (labelled Normal, Has Treatment, Pending Treatment). Click a tooth, then choose its status in the
+panel under the chart. **Save Chart** calls `onSave`, which the patient page uses to save
+`dental_chart` as a JSON string; only marked teeth are saved. Undo changes brings back the saved chart. The
+old Medical/Cosmetic toggle did nothing and was removed.
+
+---
+
+## Known issues
+
+Updated on 2026-09-26.
+
+- **`npm run build` and `npm run lint` have not been run on this change set** (it was made offline). It was
+  checked with a strict type check against stand-in types, a stand-in for the main lint rules, a server-side
+  render of every page, and a browser test of the main flows. Run both and record the results in the table at
+  the top.
+- **The back end does not have everything yet.** `Patient.dental_chart`, the `*_name` fetch fields,
+  read permissions and several field names must be added or confirmed. See `docs/backend-todo.md`.
+- **Totals are computed in the browser.** The dashboard's revenue and amount owed, the payments total and the
+  reports load every matching row (`limit: 0`) and add them up. That is fine for one clinic for years, but a
+  back-end report method would be faster later.
+- **No right-to-left layout yet.** The classes are ready (see Styling), but there is no Arabic text or `dir`
+  switch.
+- `theme_color` and `enable_patient_portal` are saved but not used by the front end.
+- `README.md` screenshots show the older design.
+- Deleting is blocked for records that others link to (Frappe's normal rule). Users are disabled, not deleted.
+
+---
+
+## Working in this repo
+
+- **Next.js 16 changes that affect this code.** Check `node_modules/next/dist/docs/` before using any other
+  API.
+  - `params` and `searchParams` are async in pages, layouts and route handlers (these pages are client
+    components and use `useParams()` / `useSearchParams()` instead).
+  - Middleware is now `proxy.ts`.
+  - `next lint` is gone, and `next build` no longer lints.
+  - Turbopack is the default bundler.
+  - A folder named `_something` is left out of routing.
+  - `useSearchParams()` needs a `<Suspense>` boundary for prerendering.
+- **Check UI changes in the running app.** Run `npm run dev` and open <http://localhost:3000>. Mock mode
+  needs no back end. A full reload brings back the seed data. Use `/profile` → Try Another User to check
+  permissions.
+- **Run `npm run lint` and `npx tsc --noEmit`** on your changes.
+- **Git:** `develop` is the working branch and `main` is the base for PRs. Commit messages follow
+  Conventional Commits (`feat:`, `fix:`, `docs:`).
+- **Keep this file current.** When you change routes, flags or the data layer, or fix a known issue, update
+  this file, `docs/backend-todo.md` when the back-end contract changes, and `README.md` if people will notice.

@@ -1,0 +1,167 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { GiTooth } from "react-icons/gi";
+import { Pencil, Printer, Trash2 } from "lucide-react";
+import RequirePermission from "@/components/Guard";
+import { Button, Card, LinkButton, NotFoundCard, PageContainer, PageHeader, PageLoading } from "@/components/ui";
+import { ConfirmDialog } from "@/components/ui/Modal";
+import { useSession } from "@/context/SessionContext";
+import { useSettings } from "@/context/SettingsContext";
+import { useToast } from "@/context/ToastContext";
+import { deleteDoc, errorMessage } from "@/lib/frappe";
+import { formatDate } from "@/lib/format";
+import { useDocument } from "@/lib/hooks";
+import { patientHref, paymentHref, routeId, treatmentHref } from "@/lib/links";
+import type { Payment } from "@/lib/types";
+
+export default function PaymentDetailPage() {
+  return (
+    <RequirePermission permission="view_payments">
+      <PaymentDetail />
+    </RequirePermission>
+  );
+}
+
+function PaymentDetail() {
+  const params = useParams();
+  const router = useRouter();
+  const toast = useToast();
+  const { can } = useSession();
+  const { settings, clinicName, money } = useSettings();
+  const id = routeId(params.id);
+  const { doc: payment, loading, notFound, error } = useDocument<Payment>("Payment", id);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  if (loading) return <PageLoading />;
+  if (notFound || !payment) return <NotFoundCard error={error} what="Payment" backHref="/payments" backLabel="Back to Payments" />;
+
+  const canChange = can("add_payments");
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await deleteDoc("Payment", id);
+      toast.success("Payment deleted.");
+      router.push("/payments");
+    } catch (err) {
+      toast.error(errorMessage(err, "Could not delete the payment."));
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
+
+  const contact = [settings.address, settings.phone, settings.email].filter(Boolean).join(" · ");
+
+  return (
+    <PageContainer narrow>
+      <PageHeader
+        title="Payment Receipt"
+        subtitle={id}
+        back={{ href: "/payments", label: "Payments" }}
+        actions={
+          <>
+            <Button variant="secondary" icon={Printer} onClick={() => window.print()}>
+              Print
+            </Button>
+            {canChange && (
+              <LinkButton href={`${paymentHref(id)}/edit`} icon={Pencil}>
+                Edit
+              </LinkButton>
+            )}
+            {canChange && (
+              <Button variant="ghost" icon={Trash2} onClick={() => setConfirmDelete(true)} className="text-red-600 hover:bg-red-50">
+                Delete
+              </Button>
+            )}
+          </>
+        }
+      />
+
+      <Card className="print:shadow-none print:border-0">
+        <div className="flex items-start justify-between gap-4 pb-5 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            {settings.logo ? (
+              // eslint-disable-next-line @next/next/no-img-element -- the logo is an uploaded file of unknown size
+              <img src={settings.logo} alt="" className="w-12 h-12 rounded-xl object-contain" />
+            ) : (
+              <span className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white">
+                <GiTooth size={24} />
+              </span>
+            )}
+            <div>
+              <p className="font-bold text-gray-800 text-lg">{clinicName}</p>
+              {contact && <p className="text-xs text-gray-500">{contact}</p>}
+              {settings.tax_number && <p className="text-xs text-gray-500">Tax number: {settings.tax_number}</p>}
+            </div>
+          </div>
+          <div className="text-end">
+            <p className="text-xs uppercase tracking-wider text-gray-400">Receipt</p>
+            <p className="text-sm font-semibold text-gray-800">{id}</p>
+            <p className="text-xs text-gray-500">{formatDate(payment.payment_date)}</p>
+          </div>
+        </div>
+
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 py-5">
+          <div>
+            <dt className="text-xs text-gray-400">Received from</dt>
+            <dd className="text-sm font-medium text-gray-800 mt-0.5">
+              <Link href={patientHref(payment.patient)} className="hover:text-blue-600">
+                {payment.patient_name || payment.patient}
+              </Link>
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-gray-400">For</dt>
+            <dd className="text-sm font-medium text-gray-800 mt-0.5">
+              {payment.treatment_plan ? (
+                <Link href={treatmentHref(payment.treatment_plan)} className="hover:text-blue-600">
+                  {payment.treatment_type || "Treatment"} ({payment.treatment_plan})
+                </Link>
+              ) : (
+                "General payment"
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-gray-400">Payment method</dt>
+            <dd className="text-sm font-medium text-gray-800 mt-0.5">{payment.payment_method}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-gray-400">Date</dt>
+            <dd className="text-sm font-medium text-gray-800 mt-0.5">{formatDate(payment.payment_date)}</dd>
+          </div>
+          {payment.notes && (
+            <div className="sm:col-span-2">
+              <dt className="text-xs text-gray-400">Notes</dt>
+              <dd className="text-sm text-gray-700 mt-0.5 whitespace-pre-line">{payment.notes}</dd>
+            </div>
+          )}
+        </dl>
+
+        <div className="flex items-center justify-between rounded-xl bg-green-50 px-5 py-4">
+          <span className="text-sm font-medium text-green-800">Amount paid</span>
+          <span className="text-2xl font-bold text-green-700">{money(payment.amount)}</span>
+        </div>
+      </Card>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete this payment?"
+        message={
+          <p>
+            The payment of <strong>{money(payment.amount)}</strong> will be removed and the plan balance will go back up
+            by the same amount.
+          </p>
+        }
+        confirmLabel="Delete Payment"
+        busy={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
+    </PageContainer>
+  );
+}

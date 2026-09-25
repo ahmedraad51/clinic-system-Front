@@ -1,0 +1,259 @@
+"use client";
+
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { GiTooth } from "react-icons/gi";
+import { Save, Trash2, Upload } from "lucide-react";
+import RequirePermission from "@/components/Guard";
+import {
+  Alert, Button, Card, Field, PageContainer, PageHeader, PageLoading, SelectInput, TextInput, Toggle,
+} from "@/components/ui";
+import { useSettings } from "@/context/SettingsContext";
+import { useToast } from "@/context/ToastContext";
+import { errorMessage, updateDoc, uploadFile } from "@/lib/frappe";
+import { useDocument } from "@/lib/hooks";
+import { CURRENCIES, type ClinicSettings } from "@/lib/types";
+
+const SETTINGS = "Clinic Settings";
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+
+interface SettingsForm {
+  clinic_name: string;
+  phone: string;
+  email: string;
+  address: string;
+  tax_number: string;
+  currency: string;
+  opening_time: string;
+  closing_time: string;
+  theme_color: string;
+  logo: string;
+  enable_whatsapp: boolean;
+  enable_patient_portal: boolean;
+  enable_financial_reports: boolean;
+}
+
+function toForm(doc: ClinicSettings): SettingsForm {
+  return {
+    clinic_name: doc.clinic_name ?? "",
+    phone: doc.phone ?? "",
+    email: doc.email ?? "",
+    address: doc.address ?? "",
+    tax_number: doc.tax_number ?? "",
+    currency: doc.currency || "USD",
+    opening_time: (doc.opening_time ?? "").slice(0, 5),
+    closing_time: (doc.closing_time ?? "").slice(0, 5),
+    theme_color: doc.theme_color || "#2563eb",
+    logo: doc.logo ?? "",
+    enable_whatsapp: Number(doc.enable_whatsapp) === 1,
+    enable_patient_portal: Number(doc.enable_patient_portal) === 1,
+    enable_financial_reports: Number(doc.enable_financial_reports) === 1,
+  };
+}
+
+export default function SettingsPage() {
+  return (
+    <RequirePermission permission="manage_users">
+      <SettingsView />
+    </RequirePermission>
+  );
+}
+
+function SettingsView() {
+  const { doc, loading, error, reload } = useDocument<ClinicSettings>(SETTINGS, SETTINGS);
+
+  if (loading) return <PageLoading />;
+  return (
+    <PageContainer narrow>
+      <PageHeader title="Settings" subtitle="Clinic details, currency, working hours and features." />
+      {doc ? (
+        <SettingsFormView initial={doc} onSaved={reload} />
+      ) : (
+        <Alert tone="red" title="Could not load the settings">
+          {error}
+        </Alert>
+      )}
+    </PageContainer>
+  );
+}
+
+function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSaved: () => void }) {
+  const { refresh } = useSettings();
+  const toast = useToast();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [form, setForm] = useState<SettingsForm>(() => toForm(initial));
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setForm({ ...form, [event.target.name]: event.target.value });
+  };
+
+  const handleLogo = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file.");
+      return;
+    }
+    if (file.size > MAX_LOGO_BYTES) {
+      toast.error("The logo must be smaller than 2 MB.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const url = await uploadFile(file);
+      setForm((prev) => ({ ...prev, logo: url }));
+      toast.info("Logo uploaded. Press Save Settings to keep it.");
+    } catch (err) {
+      toast.error(errorMessage(err, "Could not upload the logo."));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      await updateDoc(SETTINGS, SETTINGS, {
+        clinic_name: form.clinic_name.trim(),
+        phone: form.phone,
+        email: form.email,
+        address: form.address,
+        tax_number: form.tax_number,
+        currency: form.currency,
+        opening_time: form.opening_time || null,
+        closing_time: form.closing_time || null,
+        theme_color: form.theme_color,
+        logo: form.logo,
+        enable_whatsapp: form.enable_whatsapp ? 1 : 0,
+        enable_patient_portal: form.enable_patient_portal ? 1 : 0,
+        enable_financial_reports: form.enable_financial_reports ? 1 : 0,
+      });
+      toast.success("Settings saved.");
+      refresh();
+      onSaved();
+    } catch (err) {
+      setError(errorMessage(err, "Could not save the settings."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Keep an unusual saved currency in the list so it is not lost.
+  const currencies: string[] = CURRENCIES.includes(form.currency as (typeof CURRENCIES)[number])
+    ? [...CURRENCIES]
+    : [form.currency, ...CURRENCIES];
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <Card title="Clinic">
+        <div className="flex items-center gap-4 mb-5">
+          {form.logo ? (
+            // eslint-disable-next-line @next/next/no-img-element -- the logo is an uploaded file of unknown size
+            <img src={form.logo} alt="Clinic logo" className="w-16 h-16 rounded-2xl object-contain bg-gray-50 border border-gray-100" />
+          ) : (
+            <span className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center text-white">
+              <GiTooth size={30} />
+            </span>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleLogo} />
+            <Button variant="secondary" size="sm" icon={Upload} loading={uploading} onClick={() => fileRef.current?.click()}>
+              Upload Logo
+            </Button>
+            {form.logo && (
+              <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setForm({ ...form, logo: "" })}>
+                Remove
+              </Button>
+            )}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Clinic Name" required className="sm:col-span-2">
+            <TextInput name="clinic_name" value={form.clinic_name} onChange={handleChange} required />
+          </Field>
+          <Field label="Phone">
+            <TextInput type="tel" name="phone" value={form.phone} onChange={handleChange} />
+          </Field>
+          <Field label="Email">
+            <TextInput type="email" name="email" value={form.email} onChange={handleChange} />
+          </Field>
+          <Field label="Address" className="sm:col-span-2">
+            <TextInput name="address" value={form.address} onChange={handleChange} />
+          </Field>
+          <Field label="Tax Number" hint="Printed on payment receipts.">
+            <TextInput name="tax_number" value={form.tax_number} onChange={handleChange} />
+          </Field>
+          <Field label="Currency" hint="Used for every amount in the app.">
+            <SelectInput name="currency" value={form.currency} onChange={handleChange}>
+              {currencies.map((code) => (
+                <option key={code} value={code}>
+                  {code}
+                </option>
+              ))}
+            </SelectInput>
+          </Field>
+        </div>
+      </Card>
+
+      <Card title="Working Hours">
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Opening Time">
+            <TextInput type="time" name="opening_time" value={form.opening_time} onChange={handleChange} />
+          </Field>
+          <Field label="Closing Time">
+            <TextInput type="time" name="closing_time" value={form.closing_time} onChange={handleChange} />
+          </Field>
+        </div>
+        <p className="text-xs text-gray-400 mt-3">Shown as a hint when booking an appointment.</p>
+      </Card>
+
+      <Card title="Features">
+        <div className="space-y-5">
+          <Toggle
+            checked={form.enable_whatsapp}
+            onChange={(value) => setForm({ ...form, enable_whatsapp: value })}
+            label="WhatsApp reminders"
+            description="Send appointment reminders with the templates on the WhatsApp page."
+          />
+          <Toggle
+            checked={form.enable_financial_reports}
+            onChange={(value) => setForm({ ...form, enable_financial_reports: value })}
+            label="Financial reports"
+            description="Show the Reports page to users who have the View Reports permission."
+          />
+          <Toggle
+            checked={form.enable_patient_portal}
+            onChange={(value) => setForm({ ...form, enable_patient_portal: value })}
+            label="Patient portal"
+            description="Saved for the back end. The front end has no patient portal screens yet."
+          />
+          <div className="flex items-center gap-3 pt-1">
+            <input
+              type="color"
+              name="theme_color"
+              value={form.theme_color}
+              onChange={handleChange}
+              aria-label="Theme colour"
+              className="h-9 w-12 rounded-lg border border-gray-200 bg-white p-1"
+            />
+            <div>
+              <p className="text-sm font-medium text-gray-800">Theme colour</p>
+              <p className="text-xs text-gray-500">Saved for later. The app still uses blue.</p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {error && <Alert tone="red">{error}</Alert>}
+
+      <Button type="submit" icon={Save} loading={saving} disabled={uploading}>
+        Save Settings
+      </Button>
+    </form>
+  );
+}

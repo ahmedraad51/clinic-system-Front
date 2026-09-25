@@ -1,0 +1,251 @@
+"use client";
+
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { ChevronDown, X } from "lucide-react";
+import { getList, type FilterRow } from "@/lib/frappe";
+import { useDebounced } from "@/lib/hooks";
+import { cx } from "@/lib/format";
+import type { Doc } from "@/lib/types";
+import { inputClass } from "./index";
+
+interface Option {
+  name: string;
+  label: string;
+  detail?: string;
+}
+
+interface Result {
+  query: string;
+  options: Option[];
+}
+
+const noop = () => {};
+
+/**
+ * A searchable picker for a Link field, e.g. choosing a patient. It asks the server
+ * as you type, so it works with any number of records. `value` is the linked doc's
+ * name (its ID); the label is only for display.
+ */
+export default function LinkSelect({
+  doctype,
+  value,
+  onChange,
+  labelField = "full_name",
+  detailField,
+  initialLabel,
+  placeholder = "Search...",
+  required = false,
+  disabled = false,
+  filters,
+}: {
+  doctype: string;
+  value: string;
+  onChange: (name: string) => void;
+  labelField?: string;
+  /** A second line under each option, e.g. the phone number. It is searched too. */
+  detailField?: string;
+  /** The label for `value` when it is already known, to skip a lookup. */
+  initialLabel?: string;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  filters?: FilterRow[];
+}) {
+  const listId = useId();
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [highlight, setHighlight] = useState(0);
+  const [result, setResult] = useState<Result | null>(null);
+  const [labels, setLabels] = useState<Record<string, string>>(
+    value && initialLabel ? { [value]: initialLabel } : {},
+  );
+  const debounced = useDebounced(query, 250);
+  const filtersKey = JSON.stringify(filters ?? []);
+
+  // Search while the list is open.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const load = async () => {
+      const needle = debounced.trim();
+      const orFilters: FilterRow[] | undefined = needle
+        ? [
+            [labelField, "like", `%${needle}%`],
+            ["name", "like", `%${needle}%`],
+            ...(detailField ? [[detailField, "like", `%${needle}%`] as FilterRow] : []),
+          ]
+        : undefined;
+      try {
+        const rows = await getList<Doc>(doctype, ["name", labelField, ...(detailField ? [detailField] : [])], {
+          filters: JSON.parse(filtersKey) as FilterRow[],
+          orFilters,
+          orderBy: `${labelField} asc`,
+          limit: 20,
+        });
+        if (!cancelled) {
+          setResult({
+            query: debounced,
+            options: rows.map((row) => ({
+              name: row.name,
+              label: String(row[labelField] || row.name),
+              detail: detailField && row[detailField] ? String(row[detailField]) : undefined,
+            })),
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, debounced, doctype, labelField, detailField, filtersKey]);
+
+  // Look up the label of a value set from outside (e.g. a form opened with a patient chosen).
+  useEffect(() => {
+    if (!value || labels[value]) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const rows = await getList<Doc>(doctype, ["name", labelField], { filters: [["name", "=", value]], limit: 1 });
+        if (!cancelled) {
+          setLabels((prev) => ({ ...prev, [value]: rows[0] ? String(rows[0][labelField] || value) : value }));
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [value, labels, doctype, labelField]);
+
+  // Close when clicking anywhere else.
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (event: PointerEvent) => {
+      if (boxRef.current && !boxRef.current.contains(event.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+    document.addEventListener("pointerdown", onPointer);
+    return () => document.removeEventListener("pointerdown", onPointer);
+  }, [open]);
+
+  const options = result?.options ?? [];
+  const searching = open && (result === null || result.query !== debounced || debounced !== query);
+
+  const choose = (option: Option) => {
+    setLabels((prev) => ({ ...prev, [option.name]: option.label }));
+    onChange(option.name);
+    setOpen(false);
+    setQuery("");
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setHighlight((h) => Math.min(h + 1, options.length - 1));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setHighlight((h) => Math.max(h - 1, 0));
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      if (options[highlight]) choose(options[highlight]);
+    } else if (event.key === "Escape") {
+      setOpen(false);
+      setQuery("");
+    }
+  };
+
+  const shownLabel = value ? labels[value] || value : "";
+
+  return (
+    <div ref={boxRef} className="relative">
+      {open ? (
+        <input
+          autoFocus
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setHighlight(0);
+          }}
+          onKeyDown={onKeyDown}
+          placeholder={placeholder}
+          role="combobox"
+          aria-expanded="true"
+          aria-controls={listId}
+          aria-autocomplete="list"
+          className={inputClass}
+        />
+      ) : (
+        <div className="relative">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => setOpen(true)}
+            className={cx(inputClass, "text-start flex items-center justify-between gap-2 pe-16")}
+          >
+            <span className={cx("truncate", value ? "text-gray-800" : "text-gray-400")}>{shownLabel || placeholder}</span>
+          </button>
+          <span className="absolute end-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-gray-400">
+            {value && !required && !disabled && (
+              <button
+                type="button"
+                onClick={() => onChange("")}
+                className="p-1 rounded hover:bg-gray-100 hover:text-gray-700"
+                aria-label="Clear"
+              >
+                <X size={14} />
+              </button>
+            )}
+            <ChevronDown size={16} className="pointer-events-none" />
+          </span>
+        </div>
+      )}
+
+      {/* Lets the browser's own "please fill in this field" check work for required links. */}
+      <input
+        tabIndex={-1}
+        aria-hidden="true"
+        required={required}
+        value={value}
+        onChange={noop}
+        className="absolute bottom-0 start-4 h-px w-px opacity-0 pointer-events-none"
+      />
+
+      {open && (
+        <ul
+          id={listId}
+          role="listbox"
+          className="absolute z-30 mt-1 w-full max-h-64 overflow-auto rounded-xl border border-gray-100 bg-white shadow-lg py-1"
+        >
+          {options.length === 0 ? (
+            <li className="px-3.5 py-2.5 text-sm text-gray-400">{searching ? "Searching..." : "No matches"}</li>
+          ) : (
+            options.map((option, index) => (
+              <li key={option.name} role="option" aria-selected={option.name === value}>
+                <button
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => choose(option)}
+                  className={cx(
+                    "w-full text-start px-3.5 py-2 text-sm",
+                    index === highlight ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-50",
+                  )}
+                >
+                  <span className="block font-medium">{option.label}</span>
+                  {option.detail && <span className="block text-xs text-gray-400">{option.detail}</span>}
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
