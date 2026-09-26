@@ -5,17 +5,15 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Recall list: patients not seen for six months with nothing booked, with one tap to call, send a WhatsApp
-  or book, so check-ups are not forgotten.
+- Phone: the day calendar shows one doctor at a time with buttons for the next and previous doctor (five
+  columns are too narrow on a phone).
 
 ## Backlog
 
-1. Phone: the day calendar shows one doctor at a time with buttons for the next and previous doctor (five
-   columns are too narrow on a phone).
-2. Dental chart on a phone or narrow screen: scroll the chart so the chosen tooth is in view (on the plan
+1. Dental chart on a phone or narrow screen: scroll the chart so the chosen tooth is in view (on the plan
    page tooth 37 was off-screen).
-3. Patient list: show a small medical-alert marker and the next appointment in each row.
-4. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+2. Patient list: show a small medical-alert marker and the next appointment in each row.
+3. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -117,7 +115,11 @@ Each finished item says what changed, when, and which commit holds it.
   page), the app asks "What was done in this visit?". The dentist picks the patient's treatment plan,
   types a note, and can tick "This treatment is now finished"; it is saved as a session on the plan. If
   the patient has no open plan, it offers to start one. Also: on phones, messages now appear at the top so
-  they never cover a Save button. Commit PENDING.
+  they never cover a Save button. Commit 2f780f8.
+- 2026-09-26 - **Recall list.** A new "Recall" page shows patients who are due for a check-up: not seen
+  for six months (or 3, 9, 12) and nothing booked. Each has one-tap Call, a WhatsApp button with a
+  friendly reminder already written, and Book. Two example patients were added to the dummy data so the
+  list is not empty. Commit PENDING.
 
 ## Questions for the owner
 

@@ -18,6 +18,7 @@ const PAGES: Array<[string, string]> = [
   ["dashboard", "/dashboard"],
   ["today", "/today"],
   ["patients", "/patients"],
+  ["recall", "/recall"],
   ["patient-new", "/patients/new"],
   ["patient-detail", "/patients/PAT-2026-00001"],
   ["patient-edit", "/patients/PAT-2026-00001/edit"],

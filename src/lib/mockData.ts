@@ -36,6 +36,8 @@ const P = {
   nadia: "PAT-2026-00001", karim: "PAT-2026-00002", mona: "PAT-2026-00003", tarek: "PAT-2026-00004",
   salma: "PAT-2026-00005", hossam: "PAT-2026-00006", dina: "PAT-2026-00007", amir: "PAT-2026-00008",
   yara: "PAT-2026-00009", bassel: "PAT-2026-00010",
+  // Two long-standing patients, last seen more than six months ago, for the recall list.
+  rania: "PAT-2025-00001", sherif: "PAT-2025-00002",
 };
 
 const D = {
@@ -177,6 +179,26 @@ const patients: MockDoc[] = [
     notes: "Missed his follow-up on 24 Aug 2026.",
     dental_chart: { "14": "pending" },
   },
+  {
+    name: P.rania, full_name: "Rania Fawzy", gender: "Female",
+    date_of_birth: "1979-02-11", age: 47,
+    phone_number: "+20 100 876 4410", secondary_phone: "",
+    email: "rania.fawzy@example.com", address: "9 Abbas El Akkad St, Nasr City, Cairo",
+    allergies: "None", current_medications: "None", chronic_diseases: "None",
+    medical_history: "Regular cleanings since 2023.",
+    notes: "Due for her six-month cleaning.",
+    dental_chart: {},
+  },
+  {
+    name: P.sherif, full_name: "Sherif Adel", gender: "Male",
+    date_of_birth: "1990-10-05", age: 35,
+    phone_number: "+20 122 615 7730", secondary_phone: "",
+    email: "sherif.adel@example.com", address: "15 Mourad St, Giza",
+    allergies: "None", current_medications: "None", chronic_diseases: "None",
+    medical_history: "Check-up and cleaning in February 2026.",
+    notes: "",
+    dental_chart: {},
+  },
 ];
 
 const TODAY = todayISO();
@@ -204,6 +226,8 @@ const appointments: MockDoc[] = [
   { name: A(16), patient: P.karim, doctor: D.youssef, appointment_date: "2026-06-25", appointment_time: "15:30", status: "Completed", duration_minutes: 45, reason_for_visit: "Lower molar extraction", notes: "" },
   { name: A(17), patient: P.nadia, doctor: D.leila, appointment_date: "2026-06-18", appointment_time: "09:00", status: "Completed", duration_minutes: 90, reason_for_visit: "Root canal treatment", notes: "" },
   { name: A(18), patient: P.karim, doctor: D.sarah, appointment_date: "2026-06-11", appointment_time: "13:30", status: "Completed", duration_minutes: 30, reason_for_visit: "Composite filling", notes: "" },
+  { name: "APT-2025-00001", patient: P.rania, doctor: D.sarah, appointment_date: "2025-12-10", appointment_time: "11:00", status: "Completed", duration_minutes: 30, reason_for_visit: "Scaling and polishing", notes: "" },
+  { name: A(23), patient: P.sherif, doctor: D.sarah, appointment_date: "2026-02-02", appointment_time: "17:00", status: "Completed", duration_minutes: 30, reason_for_visit: "Check-up and cleaning", notes: "" },
   { name: A(19), patient: P.tarek, doctor: D.sarah, appointment_date: "2026-06-04", appointment_time: "16:30", status: "Completed", duration_minutes: 30, reason_for_visit: "Bridge consultation", notes: "" },
 ];
 

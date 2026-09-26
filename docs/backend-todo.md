@@ -118,6 +118,10 @@ total cost." The dummy data already uses messages like these.
 
 ## 7. Later, for speed
 
+The recall list (`/recall`) also loads every patient and appointment to find who is due. A whitelisted
+method that returns patients with no completed visit since a date and nothing booked would be faster.
+
+
 The dashboard and reports add up payments and balances in the browser. When the data grows, add
 whitelisted methods that return the sums for a date range (revenue by treatment, by method, by month, and
 the outstanding total), and switch `src/app/reports/page.tsx` and `src/app/dashboard/page.tsx` to them. The

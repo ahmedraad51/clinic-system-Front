@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
-  CalendarDays, CalendarPlus, ClipboardCheck, CreditCard, Search, Stethoscope, User, UserPlus, type LucideIcon,
+  BellRing, CalendarDays, CalendarPlus, ClipboardCheck, CreditCard, Search, Stethoscope, User, UserPlus, type LucideIcon,
 } from "lucide-react";
 import { Spinner } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
@@ -34,6 +34,7 @@ const ACTIONS: Action[] = [
   { label: "Today", hint: "The front desk board", href: "/today", icon: ClipboardCheck, permission: "view_appointments", words: "board front desk" },
   { label: "Appointment Calendar", hint: "Day and week view", href: "/appointments?view=day", icon: CalendarDays, permission: "view_appointments", words: "calendar schedule diary" },
   { label: "New Treatment Plan", hint: "Plan work for a patient", href: "/treatments/new", icon: Stethoscope, permission: "add_treatments", words: "treatment plan" },
+  { label: "Recall List", hint: "Patients due for a check-up", href: "/recall", icon: BellRing, permission: "view_appointments", words: "recall check-up checkup due remind" },
   { label: "Record Payment", hint: "Take a payment", href: "/payments/new", icon: CreditCard, permission: "add_payments", words: "pay money cash card receipt" },
 ];
 

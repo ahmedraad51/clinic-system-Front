@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import ToothLogo from "@/components/ToothLogo";
 import {
   LayoutDashboard,
+  BellRing,
   BriefcaseMedical,
   ClipboardCheck,
   Users,
@@ -40,6 +41,7 @@ const menuGroups: Array<{ group: string; items: MenuItem[] }> = [
       { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
       { label: "Today", icon: ClipboardCheck, path: "/today", permission: "view_appointments" },
       { label: "Patients", icon: Users, path: "/patients", permission: "view_patients" },
+      { label: "Recall", icon: BellRing, path: "/recall", permission: "view_appointments" },
       { label: "Appointments", icon: Calendar, path: "/appointments", permission: "view_appointments" },
       { label: "Treatments", icon: Stethoscope, path: "/treatments", permission: "view_treatments" },
     ],

@@ -191,6 +191,7 @@ on the form, and a click made while the save is still running is overridden by t
 | `/dashboard` | none (cards appear per permission) | Greeting; counts for today's appointments, patients, active plans; revenue this month and amount owed; today's list and the next 7 days; quick actions |
 | `/today` | `view_appointments` | The front desk board: counts (still to come, late, completed, no show), today's appointments grouped by doctor with one-tap **Confirm**, **Completed**, **No show** and **Undo** (`edit_appointments`), late patients (still open `LATE_AFTER` = 10 minutes after the start) highlighted, a red chip for high medical alerts, what the patient owes (`view_payments`), **Add Payment** (`add_payments`), **Walk-in** (books now, rounded up to the quarter hour) and Refresh. The dashboard and the bell link here |
 | `/patients` | `view_patients` | Server-side search (name, phone, second phone, ID), gender filter, paging, balance column (with `view_payments`) |
+| `/recall` | `view_patients` and `view_appointments` | Patients due for a check-up: no Completed visit within the chosen period (3, 6, 9 or 12 months; default 6) and nothing Scheduled or Confirmed from today on; never-seen patients last. Tap to call, a WhatsApp link with a ready reminder text (`wa.me/<digits>?text=`), and Book (`add_appointments`). Worked out in the browser from all appointments |
 | `/patients/new` | `add_patients` | Shared `PatientForm`. Opens the new record after saving |
 | `/patients/[id]` | `view_patients` | `MedicalAlerts` band; a summary card with tap-to-call (`tel:`) and WhatsApp (`https://wa.me/<digits>`) buttons, last visit, next appointment, balance to pay (with Add payment) and paid so far; tabs: **Overview** (a timeline of appointments, treatment sessions and payments, grouped Upcoming / Today / by month, beside the contact and medical cards), Appointments, Treatment Plans, Payments, Dental Chart. Buttons: New Appointment, New Treatment, Edit, Delete (icon; each by permission) |
 | `/patients/[id]/edit` | `edit_patients` | Shared `PatientForm` |
@@ -286,7 +287,7 @@ Rules for data code:
 An in-memory store that returns data in the same shape as Frappe's REST API, so pages behave the same with
 either source.
 
-- **Seed data:** 10 patients, 5 doctors, 22 appointments (June to September 2026, all five statuses; three of
+- **Seed data:** 12 patients (two, Rania Fawzy and Sherif Adel, last seen more than six months ago for the recall list), 5 doctors, 24 appointments (December 2025 to September 2026, all five statuses; three of
   them are dated today and tomorrow when the app loads), 15 treatment plans (all four statuses), 10
   treatment sessions, 15 payments (two dated today), 9 users (including `Administrator`, `Guest` and one
   disabled doctor), 3 `Clinic Permission` records (the manager has every permission; the receptionist and
