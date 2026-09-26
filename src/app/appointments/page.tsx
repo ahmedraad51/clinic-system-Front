@@ -171,6 +171,7 @@ function Appointments() {
           openingTime={settings.opening_time}
           closingTime={settings.closing_time}
           canBook={can("add_appointments")}
+          canMove={can("edit_appointments")}
         />
       )}
     </PageContainer>

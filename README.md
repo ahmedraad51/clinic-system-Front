@@ -148,7 +148,7 @@ what they are not allowed to do.
 | `/patients/[id]/statement` | A printable statement of all treatments, payments and the balance |
 | `/appointments/[id]/card` | A printable appointment card to hand to the patient |
 | `/payments/day` | The end-of-day report: payments by method, the total, and the cash that should be in the drawer |
-| `/appointments` | The appointment book as a **day calendar** (a column per doctor, from opening to closing time, with a "now" line), a **week calendar**, or a **list** with search and filters. Click an empty time in the calendar to book it with the date, time and doctor already filled in |
+| `/appointments` | The appointment book as a **day calendar** (a column per doctor, from opening to closing time, with a "now" line), a **week calendar**, or a **list** with search and filters. Click an empty time in the calendar to book it with the date, time and doctor already filled in, or drag an appointment to move it to another time or doctor |
 | `/appointments/new`, `/appointments/[id]/edit` | Book or edit — shows the doctor's day with one-tap free times, remembers the last doctor used, and warns when the doctor is already booked at that time |
 | `/appointments/[id]` | Detail, one-click status changes, WhatsApp messages sent for it |
 | `/treatments` | Plans with cost and remaining balance, type and status filters |

@@ -5,14 +5,12 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
-  check.
+- Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
+  treatment plan page for its tooth.
 
 ## Backlog
 
-1. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
-   treatment plan page for its tooth.
-2. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+1. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -95,7 +93,11 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-26 - **Doctors' working hours in the calendar.** Each doctor's hours (set on the Doctors page)
   show under their name in the day calendar, and the time they do not work is shaded with stripes. The
   booking form now offers free times only within that doctor's hours and warns when a chosen time is
-  outside them. Commit PENDING.
+  outside them. Commit a2f7d4e.
+- 2026-09-26 - **Move appointments by dragging.** In the calendar, an appointment can now be dragged with
+  the mouse or a finger to another time, another doctor or (in the week view) another day. A dashed box
+  shows where it will land, and the app asks "Move this appointment?" before saving, with a warning if the
+  new time overlaps another patient. A simple tap still opens the appointment. Commit PENDING.
 
 ## Questions for the owner
 

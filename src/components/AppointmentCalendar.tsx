@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Alert, statusTone, type Tone } from "@/components/ui";
-import { errorMessage, getList } from "@/lib/frappe";
-import { addDays, cx, formatTime, fromMinutes, toMinutes, todayISO, weekdayShort, weekStart } from "@/lib/format";
+import { ConfirmDialog } from "@/components/ui/Modal";
+import { useToast } from "@/context/ToastContext";
+import { errorMessage, getList, updateDoc } from "@/lib/frappe";
+import { addDays, cx, formatDate, formatTime, fromMinutes, toMinutes, todayISO, weekdayShort, weekStart } from "@/lib/format";
 import { appointmentHref } from "@/lib/links";
 import { APPOINTMENT_STATUSES, type Appointment, type Doctor } from "@/lib/types";
 
@@ -65,6 +67,28 @@ interface Column {
   /** The doctor's working hours in minutes, when known. Time outside them is shaded. */
   hours?: { start: number; end: number };
 }
+
+/** An appointment being dragged, and where it would land. */
+interface Drag {
+  appointment: Appointment;
+  /** Minutes between the top of the block and where it was grabbed. */
+  grab: number;
+  startX: number;
+  startY: number;
+  moved: boolean;
+  target: { column: Column; minutes: number } | null;
+}
+
+/** A dropped appointment waiting for "Move?" to be confirmed. */
+interface PendingMove {
+  appointment: Appointment;
+  date: string;
+  doctor: string;
+  minutes: number;
+  clash?: Appointment;
+}
+
+const canDrag = (a: Appointment) => a.status === "Scheduled" || a.status === "Confirmed";
 
 /** A doctor's working hours in minutes, or undefined when not set (then the clinic hours apply). */
 function doctorHours(doctor?: Doctor): { start: number; end: number } | undefined {
@@ -133,6 +157,7 @@ export default function AppointmentCalendar({
   openingTime,
   closingTime,
   canBook,
+  canMove = false,
 }: {
   view: CalendarView;
   /** The day shown, or any day of the week shown. */
@@ -145,7 +170,10 @@ export default function AppointmentCalendar({
   openingTime?: string;
   closingTime?: string;
   canBook: boolean;
+  /** Appointments can be dragged to another time, day or doctor (edit_appointments). */
+  canMove?: boolean;
 }) {
+  const toast = useToast();
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
   const today = todayISO();
@@ -155,6 +183,11 @@ export default function AppointmentCalendar({
 
   const [result, setResult] = useState<{ key: string; rows: Appointment[]; error: string } | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [drag, setDrag] = useState<Drag | null>(null);
+  const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
+  const [moving, setMoving] = useState(false);
+  // A drag ends with a click on the block; that click must not open the appointment.
+  const suppressClick = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -263,6 +296,84 @@ export default function AppointmentCalendar({
     }
   }, [scrollKey, scrollTarget, view]);
 
+  /* ------------------------------------------------ dragging to move -- */
+
+  const startDrag = (event: PointerEvent<HTMLAnchorElement>, a: Appointment) => {
+    if (!canMove || !canDrag(a) || event.button !== 0) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDrag({ appointment: a, grab: (event.clientY - rect.top) / PX, startX: event.clientX, startY: event.clientY, moved: false, target: null });
+  };
+
+  const moveDrag = (event: PointerEvent<HTMLAnchorElement>) => {
+    if (!drag) return;
+    const moved = drag.moved || Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 6;
+    if (!moved) return;
+    const under = document
+      .elementsFromPoint(event.clientX, event.clientY)
+      .find((el): el is HTMLElement => el instanceof HTMLElement && Boolean(el.dataset.column));
+    const column = under ? columns.find((c) => c.key === under.dataset.column) : undefined;
+    let target: Drag["target"] = null;
+    if (under && column) {
+      const length = endOf(drag.appointment) - startOf(drag.appointment);
+      const raw = dayStart + (event.clientY - under.getBoundingClientRect().top) / PX - drag.grab;
+      const minutes = Math.min(Math.max(Math.round(raw / SLOT) * SLOT, dayStart), dayEnd - length);
+      target = { column, minutes };
+    }
+    setDrag({ ...drag, moved, target });
+  };
+
+  const endDrag = () => {
+    if (!drag) return;
+    if (drag.moved) {
+      suppressClick.current = true;
+      const a = drag.appointment;
+      const target = drag.target;
+      const doctor = target?.column.doctor ?? a.doctor;
+      const unchanged =
+        target && target.column.date === a.appointment_date && doctor === a.doctor && target.minutes === startOf(a);
+      if (target && !unchanged) {
+        const length = endOf(a) - startOf(a);
+        const clash = rows.find(
+          (other) =>
+            other.name !== a.name &&
+            other.doctor === doctor &&
+            other.appointment_date === target.column.date &&
+            canDrag(other) &&
+            startOf(other) < target.minutes + length &&
+            target.minutes < endOf(other),
+        );
+        setPendingMove({ appointment: a, date: target.column.date, doctor, minutes: target.minutes, clash });
+      }
+    }
+    setDrag(null);
+  };
+
+  const confirmMove = async () => {
+    if (!pendingMove) return;
+    const { appointment: a, date: day, doctor, minutes } = pendingMove;
+    const time = fromMinutes(minutes);
+    setMoving(true);
+    try {
+      await updateDoc("Appointment", a.name, { appointment_date: day, appointment_time: time, doctor });
+      const doctorName = doctors.find((d) => d.name === doctor)?.full_name ?? a.doctor_name;
+      setResult((prev) =>
+        prev && {
+          ...prev,
+          rows: prev.rows.map((row) =>
+            row.name === a.name ? { ...row, appointment_date: day, appointment_time: time, doctor, doctor_name: doctorName } : row,
+          ),
+        },
+      );
+      toast.success(`${a.patient_name || a.patient} moved to ${formatTime(time)}.`);
+      setPendingMove(null);
+    } catch (err) {
+      toast.error(errorMessage(err, "Could not move the appointment."));
+    } finally {
+      setMoving(false);
+    }
+  };
+
   const book = (column: Column, minutes: number) => {
     const params = new URLSearchParams({ date: column.date, time: fromMinutes(minutes) });
     if (column.doctor) params.set("doctor", column.doctor);
@@ -366,6 +477,7 @@ export default function AppointmentCalendar({
               {columns.map((column) => (
                 <div
                   key={column.key}
+                  data-column={column.key}
                   className={cx("relative border-e border-gray-100 last:border-e-0", column.today && view === "week" && "bg-primary-50/40")}
                   style={{ height, ...gridLines }}
                 >
@@ -408,10 +520,23 @@ export default function AppointmentCalendar({
                     const faded = a.status === "Cancelled" || a.status === "No Show";
                     const who = a.patient_name || a.patient;
                     const doctor = view === "week" && !doctorFilter ? shortDoctor(a.doctor_name) : "";
+                    const movable = canMove && canDrag(a);
+                    const dragging = drag?.moved && drag.appointment.name === a.name;
                     return (
                       <Link
                         key={a.name}
                         href={appointmentHref(a.name)}
+                        onPointerDown={(event) => startDrag(event, a)}
+                        onPointerMove={moveDrag}
+                        onPointerUp={endDrag}
+                        onPointerCancel={() => setDrag(null)}
+                        onClick={(event) => {
+                          if (suppressClick.current) {
+                            event.preventDefault();
+                            suppressClick.current = false;
+                          }
+                        }}
+                        draggable={false}
                         aria-label={`${formatTime(a.appointment_time)}, ${who}${a.doctor_name ? `, ${a.doctor_name}` : ""}, ${a.status}`}
                         title={`${formatTime(a.appointment_time)} · ${who}${a.reason_for_visit ? ` · ${a.reason_for_visit}` : ""} · ${a.status}`}
                         className={cx(
@@ -419,6 +544,9 @@ export default function AppointmentCalendar({
                           "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
                           BLOCK_TONES[tone],
                           faded && "opacity-60",
+                          // Touching a movable block drags it instead of scrolling the calendar.
+                          movable && "touch-none cursor-grab",
+                          dragging && "opacity-40 cursor-grabbing",
                         )}
                         style={{
                           top: (start - dayStart) * PX + 1,
@@ -443,6 +571,21 @@ export default function AppointmentCalendar({
                       </Link>
                     );
                   })}
+
+                  {drag?.moved && drag.target?.column.key === column.key && (
+                    <div
+                      className="absolute inset-x-1 z-30 rounded-lg border-2 border-dashed border-primary-500 bg-primary-50/80 px-2 py-1 pointer-events-none"
+                      style={{
+                        top: (drag.target.minutes - dayStart) * PX,
+                        height: (endOf(drag.appointment) - startOf(drag.appointment)) * PX,
+                      }}
+                      aria-hidden="true"
+                    >
+                      <p className="text-xs font-semibold text-primary-800 truncate">
+                        {formatTime(fromMinutes(drag.target.minutes))} {drag.appointment.patient_name}
+                      </p>
+                    </div>
+                  )}
 
                   {column.date === today && nowMinutes >= dayStart && nowMinutes <= dayEnd && (
                     <div
@@ -479,7 +622,42 @@ export default function AppointmentCalendar({
           Doctor not working
         </span>
         {canBook && <span className="text-gray-500">Click an empty time to book it.</span>}
+        {canMove && <span className="text-gray-500">Drag an appointment to move it.</span>}
       </div>
+
+      <ConfirmDialog
+        open={pendingMove !== null}
+        title="Move this appointment?"
+        danger={false}
+        confirmLabel={pendingMove?.clash ? "Move anyway" : "Move"}
+        busy={moving}
+        message={
+          pendingMove && (
+            <div className="space-y-2">
+              <p>
+                <strong>{pendingMove.appointment.patient_name || pendingMove.appointment.patient}</strong> from{" "}
+                {formatDate(pendingMove.appointment.appointment_date)} at {formatTime(pendingMove.appointment.appointment_time)}
+                {pendingMove.appointment.doctor_name ? ` with ${pendingMove.appointment.doctor_name}` : ""} to{" "}
+                <strong>
+                  {formatDate(pendingMove.date)} at {formatTime(fromMinutes(pendingMove.minutes))}
+                </strong>
+                {pendingMove.doctor !== pendingMove.appointment.doctor
+                  ? ` with ${doctors.find((d) => d.name === pendingMove.doctor)?.full_name ?? pendingMove.doctor}`
+                  : ""}
+                .
+              </p>
+              {pendingMove.clash && (
+                <p className="text-amber-700">
+                  This overlaps {pendingMove.clash.patient_name || "another appointment"} at{" "}
+                  {formatTime(pendingMove.clash.appointment_time)}.
+                </p>
+              )}
+            </div>
+          )
+        }
+        onCancel={() => setPendingMove(null)}
+        onConfirm={confirmMove}
+      />
     </div>
   );
 }
