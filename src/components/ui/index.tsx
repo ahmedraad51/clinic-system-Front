@@ -489,7 +489,9 @@ export function Th({ children, className }: { children?: ReactNode; className?: 
   return (
     <th
       className={cx(
-        "text-start px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 border-b border-gray-100 whitespace-nowrap",
+        // text-start unless the column is right-aligned (text-end), so numbers line up under their header.
+        className?.includes("text-end") ? "" : "text-start",
+        "px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 border-b border-gray-100 whitespace-nowrap",
         className,
       )}
     >

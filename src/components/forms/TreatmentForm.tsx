@@ -82,15 +82,25 @@ export default function TreatmentForm({
   cancelHref: string;
   onSubmit: (data: TreatmentFormData) => Promise<void>;
 }) {
-  const { currency } = useSettings();
+  const { currency, prices, money } = useSettings();
   const doctors = useDoctors();
   const [form, setForm] = useState<TreatmentFormData>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const handleChange = (event: InputEvent) => {
-    setForm({ ...form, [event.target.name]: event.target.value });
+    const { name, value } = event.target;
+    if (name === "treatment_type") {
+      // Fill in the usual price, unless someone already typed a different cost.
+      const previous = prices[form.treatment_type];
+      const untouched = form.total_cost === "" || (previous !== undefined && Number(form.total_cost) === previous);
+      const price = prices[value];
+      setForm({ ...form, treatment_type: value, total_cost: untouched && price ? String(price) : form.total_cost });
+      return;
+    }
+    setForm({ ...form, [name]: value });
   };
+  const listPrice = prices[form.treatment_type];
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -161,7 +171,11 @@ export default function TreatmentForm({
               ))}
             </SelectInput>
           </Field>
-          <Field label={`Total Cost (${currency})`} required>
+          <Field
+            label={`Total Cost (${currency})`}
+            required
+            hint={listPrice ? `Usual price for ${form.treatment_type.toLowerCase()}: ${money(listPrice)}` : undefined}
+          >
             <TextInput
               type="number"
               name="total_cost"

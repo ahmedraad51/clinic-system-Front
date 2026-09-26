@@ -309,6 +309,16 @@ const clinicSettings: MockDoc[] = [
     enable_whatsapp: 1,
     enable_patient_portal: 0,
     enable_financial_reports: 1,
+    treatment_prices: [
+      { treatment_type: "Filling", price: 900 },
+      { treatment_type: "Root Canal", price: 4500 },
+      { treatment_type: "Crown", price: 6000 },
+      { treatment_type: "Bridge", price: 12000 },
+      { treatment_type: "Extraction", price: 1200 },
+      { treatment_type: "Implant", price: 18000 },
+      { treatment_type: "Cleaning", price: 600 },
+      { treatment_type: "Whitening", price: 3500 },
+    ],
   },
 ];
 

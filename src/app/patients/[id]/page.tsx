@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   Calendar, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, CreditCard, History, MessageCircle,
-  Pencil, Phone, Plus, Stethoscope, Trash2, Wallet, type LucideIcon,
+  Pencil, Phone, Plus, Printer, Stethoscope, Trash2, Wallet, type LucideIcon,
 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import DentalChart from "@/components/DentalChart";
@@ -366,6 +366,14 @@ function PatientDetail() {
             </Table>
           )}
         </Card>
+      )}
+
+      {tab === "treatments" && data?.plans.some((plan) => plan.status === "Planned" || plan.status === "In Progress") && (
+        <div className="flex justify-end -mt-2">
+          <LinkButton href={`${patientHref(id)}/estimate`} variant="secondary" size="sm" icon={Printer}>
+            Print estimate
+          </LinkButton>
+        </div>
       )}
 
       {tab === "treatments" && (

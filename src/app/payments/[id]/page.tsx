@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import ToothLogo from "@/components/ToothLogo";
+import ClinicLetterhead from "@/components/ClinicLetterhead";
 import { Pencil, Printer, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import { Button, Card, LinkButton, NotFoundCard, PageContainer, PageHeader, PageLoading } from "@/components/ui";
@@ -30,7 +30,7 @@ function PaymentDetail() {
   const router = useRouter();
   const toast = useToast();
   const { can } = useSession();
-  const { settings, clinicName, money } = useSettings();
+  const { money } = useSettings();
   const id = routeId(params.id);
   const { doc: payment, loading, notFound, error } = useDocument<Payment>("Payment", id);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -53,8 +53,6 @@ function PaymentDetail() {
       setConfirmDelete(false);
     }
   };
-
-  const contact = [settings.address, settings.phone, settings.email].filter(Boolean).join(" · ");
 
   return (
     <PageContainer narrow>
@@ -82,28 +80,7 @@ function PaymentDetail() {
       />
 
       <Card className="print:shadow-none print:border-0">
-        <div className="flex items-start justify-between gap-4 pb-5 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            {settings.logo ? (
-              // eslint-disable-next-line @next/next/no-img-element -- the logo is an uploaded file of unknown size
-              <img src={settings.logo} alt="" className="w-12 h-12 rounded-xl object-contain" />
-            ) : (
-              <span className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center text-white">
-                <ToothLogo size={24} />
-              </span>
-            )}
-            <div>
-              <p className="font-bold text-gray-800 text-lg">{clinicName}</p>
-              {contact && <p className="text-xs text-gray-500">{contact}</p>}
-              {settings.tax_number && <p className="text-xs text-gray-500">Tax number: {settings.tax_number}</p>}
-            </div>
-          </div>
-          <div className="text-end">
-            <p className="text-xs uppercase tracking-wider text-gray-400">Receipt</p>
-            <p className="text-sm font-semibold text-gray-800">{id}</p>
-            <p className="text-xs text-gray-500">{formatDate(payment.payment_date)}</p>
-          </div>
-        </div>
+        <ClinicLetterhead kind="Receipt" reference={id} date={formatDate(payment.payment_date)} />
 
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 py-5">
           <div>

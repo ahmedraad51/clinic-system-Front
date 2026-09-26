@@ -13,7 +13,7 @@ import { errorMessage, updateDoc, uploadFile } from "@/lib/frappe";
 import { cx } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
 import { DEFAULT_THEME_COLOR, normalizeHex, readableBrand, THEME_PRESETS } from "@/lib/theme";
-import { CURRENCIES, type ClinicSettings } from "@/lib/types";
+import { CURRENCIES, TREATMENT_TYPES, type ClinicSettings } from "@/lib/types";
 
 const SETTINGS = "Clinic Settings";
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
@@ -32,6 +32,8 @@ interface SettingsForm {
   enable_whatsapp: boolean;
   enable_patient_portal: boolean;
   enable_financial_reports: boolean;
+  /** Treatment type → price as typed; empty means no usual price. */
+  prices: Record<string, string>;
 }
 
 function toForm(doc: ClinicSettings): SettingsForm {
@@ -49,6 +51,7 @@ function toForm(doc: ClinicSettings): SettingsForm {
     enable_whatsapp: Number(doc.enable_whatsapp) === 1,
     enable_patient_portal: Number(doc.enable_patient_portal) === 1,
     enable_financial_reports: Number(doc.enable_financial_reports) === 1,
+    prices: Object.fromEntries((doc.treatment_prices ?? []).map((row) => [row.treatment_type, String(row.price ?? "")])),
   };
 }
 
@@ -134,6 +137,10 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
         enable_whatsapp: form.enable_whatsapp ? 1 : 0,
         enable_patient_portal: form.enable_patient_portal ? 1 : 0,
         enable_financial_reports: form.enable_financial_reports ? 1 : 0,
+        // Types from the list first, then any other type an older price list still holds.
+        treatment_prices: [...TREATMENT_TYPES, ...Object.keys(form.prices).filter((t) => !(TREATMENT_TYPES as readonly string[]).includes(t))]
+          .filter((type) => Number(form.prices[type]) > 0)
+          .map((type) => ({ treatment_type: type, price: Number(form.prices[type]) })),
       });
       toast.success("Settings saved.");
       refresh();
@@ -212,6 +219,27 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
           </Field>
         </div>
         <p className="text-xs text-gray-400 mt-3">Shown as a hint when booking an appointment.</p>
+      </Card>
+
+      <Card title="Price List">
+        <p className="text-sm text-gray-500 mb-4">
+          The usual price of each treatment. It is filled in when a treatment plan is created and can still be
+          changed there. Leave a price empty to type it every time.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {TREATMENT_TYPES.map((type) => (
+            <Field key={type} label={`${type} (${form.currency})`}>
+              <TextInput
+                type="number"
+                min={0}
+                step="any"
+                inputMode="decimal"
+                value={form.prices[type] ?? ""}
+                onChange={(event) => setForm({ ...form, prices: { ...form.prices, [type]: event.target.value } })}
+              />
+            </Field>
+          ))}
+        </div>
       </Card>
 
       <Card title="Features">

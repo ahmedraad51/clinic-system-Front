@@ -20,6 +20,8 @@ interface SettingsContextType {
   settings: ClinicSettings;
   clinicName: string;
   currency: string;
+  /** The price list: treatment type → usual price. Types without a price are missing. */
+  prices: Record<string, number>;
   /** Formats an amount in the clinic currency. */
   money: (amount: number | string | null | undefined) => string;
   /** Call after saving the settings page. */
@@ -55,11 +57,19 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(() => setVersion((v) => v + 1), []);
   const currency = settings.currency || "USD";
   const clinicName = settings.clinic_name || "DentClinic";
+  const prices = useMemo(() => {
+    const list: Record<string, number> = {};
+    (settings.treatment_prices ?? []).forEach((row) => {
+      const price = Number(row.price);
+      if (row.treatment_type && price > 0) list[row.treatment_type] = price;
+    });
+    return list;
+  }, [settings.treatment_prices]);
   const money = useCallback((amount: number | string | null | undefined) => formatMoney(amount, currency), [currency]);
 
   const value = useMemo(
-    () => ({ settings, clinicName, currency, money, refresh }),
-    [settings, clinicName, currency, money, refresh],
+    () => ({ settings, clinicName, currency, prices, money, refresh }),
+    [settings, clinicName, currency, prices, money, refresh],
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

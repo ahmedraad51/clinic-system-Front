@@ -144,6 +144,7 @@ what they are not allowed to do.
 | `/patients` | List with server-side search (name, phone, ID), gender filter and paging |
 | `/patients/new`, `/patients/[id]/edit` | Create or edit — basic details plus medical history, allergies, medications |
 | `/patients/[id]` | Medical alerts (allergies, blood thinners, diabetes, heart problems, pregnancy), tap-to-call and WhatsApp buttons, last visit, next appointment and balance, a timeline of visits, treatment sessions and payments, and tabs for appointments, treatment plans, payments and the dental chart |
+| `/patients/[id]/estimate` | A printable treatment estimate of the patient's open plans, with totals and signature lines |
 | `/appointments` | The appointment book as a **day calendar** (a column per doctor, from opening to closing time, with a "now" line), a **week calendar**, or a **list** with search and filters. Click an empty time in the calendar to book it with the date, time and doctor already filled in |
 | `/appointments/new`, `/appointments/[id]/edit` | Book or edit — shows the doctor's day with one-tap free times, remembers the last doctor used, and warns when the doctor is already booked at that time |
 | `/appointments/[id]` | Detail, one-click status changes, WhatsApp messages sent for it |
@@ -157,7 +158,7 @@ what they are not allowed to do.
 | `/doctors` | The clinic's doctors: add and edit name, specialization, phone, email, working hours, and switch a doctor off when they leave |
 | `/users`, `/users/[id]` | Staff accounts, roles, enable/disable, and the 14 permission switches with role presets |
 | `/whatsapp` | Reminder templates with a live preview, and the message log |
-| `/settings` | Clinic name and logo, contact details, currency, working hours, feature switches, and the clinic colour (the whole app follows it) |
+| `/settings` | Clinic name and logo, contact details, currency, working hours, feature switches, and the clinic colour (the whole app follows it), and a price list that fills in treatment costs |
 | `/profile` | My details and permissions, change password |
 
 ### Project structure

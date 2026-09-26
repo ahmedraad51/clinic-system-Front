@@ -5,23 +5,21 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Price list: a default price per treatment type (in Settings) that fills in the cost automatically, and a
-  printable treatment estimate for the patient.
+- Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
+  payment method.
 
 ## Backlog
 
-1. Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
-   payment method.
-2. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
+1. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
    form with unsaved changes, clear error messages.
-3. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
-4. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
+2. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+3. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
    and warn when booking outside them.
-5. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
+4. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
    check.
-6. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
+5. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
    treatment plan page for its tooth.
-7. Show the medical alerts in the booking and treatment forms as soon as a patient is picked.
+6. Show the medical alerts in the booking and treatment forms as soon as a patient is picked.
 
 ## Done
 
@@ -80,7 +78,13 @@ Each finished item says what changed, when, and which commit holds it.
   payments, reports and more) now shows each record as a small card with every value labelled, so nothing
   is cut off, such as the payment Amount before. The Save button of every form stays at the bottom of the
   screen while you scroll. Text in fields is larger on phones, and the payment date filters now fit the
-  screen. Commit PENDING.
+  screen. Commit 0a244b4.
+- 2026-09-26 - **Price list and treatment estimate.** Settings now has a Price List with the usual price
+  of each treatment. When a new treatment plan is created, choosing the treatment type fills in its price
+  (you can still change it; a price you typed is never overwritten). From a patient's Treatment Plans tab,
+  "Print estimate" makes a clean printable estimate of all open plans on the clinic letterhead, with
+  totals, a 30-day validity note and signature lines. Also: money columns in tables now line up under
+  their headings. Commit PENDING.
 
 ## Questions for the owner
 

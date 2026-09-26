@@ -209,6 +209,12 @@ export interface User extends BaseDoc {
   roles?: UserRole[];
 }
 
+/** One row of Clinic Settings → treatment_prices (a child table). */
+export interface TreatmentPrice {
+  treatment_type: string;
+  price: number;
+}
+
 export interface ClinicSettings extends BaseDoc {
   clinic_name?: string;
   logo?: string;
@@ -223,6 +229,8 @@ export interface ClinicSettings extends BaseDoc {
   enable_whatsapp?: number;
   enable_patient_portal?: number;
   enable_financial_reports?: number;
+  /** The usual price of each treatment type; fills in Treatment Plan.total_cost. */
+  treatment_prices?: TreatmentPrice[];
 }
 
 export interface WhatsAppTemplate extends BaseDoc {

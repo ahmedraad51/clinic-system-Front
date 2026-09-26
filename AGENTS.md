@@ -137,6 +137,7 @@ src/
 │   ├── AppointmentCalendar.tsx  the day and week time grid on /appointments
 │   ├── Guard.tsx             RequirePermission
 │   ├── DentalChart.tsx       the odontogram (adult and child teeth, surfaces, conditions), saved to Patient.dental_chart
+│   ├── ClinicLetterhead.tsx  the clinic header on printouts (receipt, estimate)
 │   ├── ToothLogo.tsx         the app logo (inline SVG)
 │   ├── MedicalAlerts.tsx     the red/yellow medical alerts band (show it wherever treatment is decided)
 │   ├── forms/                PatientForm, AppointmentForm, TreatmentForm, PaymentForm (shared by new and edit)
@@ -191,12 +192,13 @@ on the form, and a click made while the save is still running is overridden by t
 | `/patients/new` | `add_patients` | Shared `PatientForm`. Opens the new record after saving |
 | `/patients/[id]` | `view_patients` | `MedicalAlerts` band; a summary card with tap-to-call (`tel:`) and WhatsApp (`https://wa.me/<digits>`) buttons, last visit, next appointment, balance to pay (with Add payment) and paid so far; tabs: **Overview** (a timeline of appointments, treatment sessions and payments, grouped Upcoming / Today / by month, beside the contact and medical cards), Appointments, Treatment Plans, Payments, Dental Chart. Buttons: New Appointment, New Treatment, Edit, Delete (icon; each by permission) |
 | `/patients/[id]/edit` | `edit_patients` | Shared `PatientForm` |
+| `/patients/[id]/estimate` | `view_patients` and `view_treatments` | Printable treatment estimate on the clinic letterhead: the patient's Planned and In Progress plans with cost, paid and to pay, totals, a 30-day validity note (`VALID_DAYS`) and signature lines. Linked as **Print estimate** above the Treatment Plans tab |
 | `/appointments` | `view_appointments` | Three views, chosen with `?view=day\|week\|list` (default `day`, or `list` when `?date=` is given). **Day**: one column per active doctor, rows from Clinic Settings opening to closing time (stretched to fit), blocks as long as the appointment and coloured by status, overlapping ones side by side, a red "now" line; `?day=YYYY-MM-DD` and `?doctor=` pick the day and one doctor. **Week**: one column per day (the week starts on `WEEK_STARTS_ON` in `format.ts`, Sunday). Clicking an empty 15-minute slot opens `/appointments/new` with date, time and doctor filled in (needs `add_appointments`). **List**: search, date filter (All/Today/Tomorrow/Upcoming/Past, also `?date=today`), status filter, paging. The grid is `src/components/AppointmentCalendar.tsx` |
 | `/appointments/new` | `add_appointments` | Shared `AppointmentForm`. Reads `?patient=`, `?date=`, `?time=HH:MM` and `?doctor=`; Back returns to that day in the calendar. Once a doctor and date are chosen, the form shows that doctor's bookings for the day and up to 8 free times that fit the chosen length (from opening, or from now for today, to closing; tap one to fill in the time) and says when the typed time overlaps. With no `?doctor=`, it starts with the doctor of the last booking made on this computer (`localStorage.last_doctor`). Warns if the doctor already has an overlapping appointment (always checked for a new booking) |
 | `/appointments/[id]` | `view_appointments` | `MedicalAlerts` for the patient, details, status buttons, Edit/Delete (`edit_appointments`), WhatsApp messages for this appointment |
 | `/appointments/[id]/edit` | `edit_appointments` | Shared `AppointmentForm` with status |
 | `/treatments` | `view_treatments` | Search, type and status filters, paging |
-| `/treatments/new` | `add_treatments` | Shared `TreatmentForm`. Reads `?patient=` and `?tooth=`. New plans are always `Planned` |
+| `/treatments/new` | `add_treatments` | Shared `TreatmentForm`. Reads `?patient=` and `?tooth=`. New plans are always `Planned`. Choosing a treatment type fills in its price-list price unless a different cost was typed |
 | `/treatments/[id]` | `view_treatments` | `MedicalAlerts` for the patient, cost/paid/remaining with a progress bar, details, status buttons, payments of the plan, **Treatment Sessions** (add, edit, delete in a dialog) |
 | `/treatments/[id]/edit` | `edit_treatments` | Shared `TreatmentForm` with status |
 | `/payments` | `view_payments` | Search, method filter, date range, paging, total of everything that matches |
@@ -208,7 +210,7 @@ on the form, and a click made while the save is still running is overridden by t
 | `/users` | `manage_users` | Staff list (without Administrator and Guest), search, status filter, Add User dialog (can apply the role's usual permissions) |
 | `/users/[id]` | `manage_users` | Clinic role, enable/disable, the 14 permission switches with presets. `[id]` is `encodeURIComponent(btoa(user.name))` |
 | `/whatsapp` | `manage_users` | Templates (add, edit, delete, placeholders, live preview) and the message log |
-| `/settings` | `manage_users` | Clinic Settings: name, logo upload, contact, tax number, currency, working hours, feature switches, theme colour |
+| `/settings` | `manage_users` | Clinic Settings: name, logo upload, contact, tax number, currency, working hours, feature switches, theme colour, **Price List** (a usual price per treatment type, saved in `treatment_prices`) |
 | `/profile` | none | My details, what I can do, change password, and (login off only) Try Another User |
 
 Links use `<Link>` from `next/link`; buttons that navigate after an action use `router.push`. Table rows are
@@ -339,7 +341,7 @@ Field names are Frappe fieldnames. Form state keys must match them exactly. Fiel
 | **Payment** | `patient`\*, `treatment_plan`, `payment_date`\*, `amount`\*, `payment_method`\*, `notes` | `patient_name`, `treatment_type` |
 | **User** (Frappe core) | `email`, `first_name`, `enabled`, `new_password` (create only), `send_welcome_email: 0`, `roles: [{ role }]` | `full_name` |
 | **Clinic Permission** | `user` plus 14 flags set to `0` or `1` | |
-| **Clinic Settings** † (single) | `clinic_name`, `logo`, `phone`, `email`, `address`, `tax_number`, `currency`, `opening_time`, `closing_time`, `theme_color`, `enable_whatsapp`, `enable_patient_portal`, `enable_financial_reports` | |
+| **Clinic Settings** † (single) | `clinic_name`, `logo`, `phone`, `email`, `address`, `tax_number`, `currency`, `opening_time`, `closing_time`, `theme_color`, `enable_whatsapp`, `enable_patient_portal`, `enable_financial_reports`, `treatment_prices` † (child table rows `{ treatment_type, price }`; `useSettings().prices` is the lookup) | |
 | **WhatsApp Template** † | `template_name`, `trigger`, `message`, `is_active` | |
 | **WhatsApp Log** † | none (read: `patient`, `appointment`, `phone_number`, `status`, `sent_at`, `message`, `error_message`) | `patient_name` |
 

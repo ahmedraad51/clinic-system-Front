@@ -21,6 +21,7 @@ const PAGES: Array<[string, string]> = [
   ["patient-new", "/patients/new"],
   ["patient-detail", "/patients/PAT-2026-00001"],
   ["patient-edit", "/patients/PAT-2026-00001/edit"],
+  ["patient-estimate", "/patients/PAT-2026-00004/estimate"],
   ["appointments", "/appointments"],
   ["appointment-new", "/appointments/new"],
   ["appointment-detail", "/appointments/APT-2026-00001"],
