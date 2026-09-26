@@ -49,9 +49,9 @@ After adding fetch fields, run a patch that fills them for existing records (fet
 
 These come from the README, not from the doctype JSON files. Check each one in the back-end repo.
 
-- **Phone numbers** (`Patient.phone_number`, `secondary_phone`, `Doctor.phone_number`) are stored as typed
-  (`0770 123 4567`, `07701234567`, `+964 770 123 4567`); the forms only turn Arabic digits into 0-9 before
-  saving. Do not reformat them on save. Records saved before may still hold Arabic digits; Frappe's usual
+- **Phone numbers** (`Patient.phone_number`, `secondary_phone`, `Doctor.phone_number`, `Clinic Settings.phone`)
+  are stored as typed (`0770 123 4567`, `07701234567`, `+964 770 123 4567`); the phone boxes only turn Arabic
+  digits into 0-9. Do not reformat them on save. Records saved before may still hold Arabic digits; Frappe's usual
   `utf8mb4_unicode_ci` collation treats them as equal to 0-9 in searches, and a one-off patch can convert them.
   For WhatsApp the front end turns a number into international digits like this: invisible direction marks
   are removed and Arabic digits become 0-9; a number starting with `+` keeps its digits; `00` is dropped; a
@@ -151,14 +151,21 @@ by `/api/method/login` normally gets one only when the Frappe desk (`/app`) is o
 - For real use: add a whitelisted method that returns `frappe.sessions.get_csrf_token()`, call it right after
   login, and store the result where `initAuth()` reads it (`localStorage.csrf_token`).
 
-## 6. Error messages
+## 6. Money and numbers
+
+Amounts arrive as plain numbers (the front end turns Arabic-keyboard digits into 0-9 before sending). For a
+clinic in Iraq, set the IQD currency to show no decimals in Frappe too (the `Currency` record's fraction and
+number format, or System Settings → Currency Precision 0), so server-side totals and any Frappe print format
+match the app, which never shows decimals for IQD.
+
+## 7. Error messages
 
 The front end shows the back end's message to the user as it is (from `_server_messages` or `exception`),
 only turning raw database errors (`Duplicate entry '…'`, `Data too long for column '…'`) into plain sentences.
 Write `frappe.throw` messages as short, plain sentences, for example: "Paid amount cannot be more than the
 total cost." The dummy data already uses messages like these.
 
-## 7. Later, for speed
+## 8. Later, for speed
 
 The recall list (`/recall`) also loads every patient and appointment to find who is due. A whitelisted
 method that returns patients with no completed visit since a date and nothing booked would be faster.

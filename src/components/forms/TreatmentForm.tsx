@@ -2,11 +2,12 @@
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Save } from "lucide-react";
-import { Alert, Button, Card, Field, FormActions, LinkButton, SelectInput, TextArea, TextInput } from "@/components/ui";
+import { Alert, Button, Card, Field, FormActions, LinkButton, NumberInput, SelectInput, TextArea } from "@/components/ui";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import LinkSelect from "@/components/ui/LinkSelect";
 import { errorMessage } from "@/lib/frappe";
+import { currencyDecimals } from "@/lib/format";
 import { useDoctors, usePatientMedical } from "@/lib/hooks";
 import { useSettings } from "@/context/SettingsContext";
 import {
@@ -110,6 +111,11 @@ export default function TreatmentForm({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const cost = Number(form.total_cost);
+    if (form.total_cost === "" || !Number.isFinite(cost) || cost < 0) {
+      setError("Enter the total cost as a number.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
@@ -191,16 +197,7 @@ export default function TreatmentForm({
             required
             hint={listPrice ? `Usual price for ${form.treatment_type.toLowerCase()}: ${money(listPrice)}` : undefined}
           >
-            <TextInput
-              type="number"
-              name="total_cost"
-              min={0}
-              step="any"
-              inputMode="decimal"
-              value={form.total_cost}
-              onChange={handleChange}
-              required
-            />
+            <NumberInput name="total_cost" decimals={currencyDecimals(currency) > 0} value={form.total_cost} onChange={handleChange} required />
           </Field>
           {showStatus && (
             <Field label="Status">

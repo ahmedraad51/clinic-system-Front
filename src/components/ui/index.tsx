@@ -19,7 +19,8 @@ import type {
   TextareaHTMLAttributes,
 } from "react";
 import { AlertCircle, ArrowLeft, ChevronLeft, ChevronRight, Info, Lock, Search, X, type LucideIcon } from "lucide-react";
-import { cx } from "@/lib/format";
+import { cleanNumberText, cx } from "@/lib/format";
+import { toLatinDigits } from "@/lib/phone";
 
 /* ---------------------------------------------------------------- tones -- */
 
@@ -315,6 +316,67 @@ export function Field({
 
 export function TextInput({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={cx(inputClass, className)} {...rest} />;
+}
+
+/**
+ * Rewrites a text box's value with `clean` and puts the caret back where it was (setting .value moves it to the
+ * end, so a digit typed in the middle would otherwise send the next one to the end).
+ */
+function replaceKeepingCaret(input: HTMLInputElement, clean: (text: string) => string) {
+  const value = input.value;
+  const cleaned = clean(value);
+  if (cleaned === value) return;
+  const caret = input.selectionStart;
+  input.value = cleaned;
+  if (caret !== null && document.activeElement === input) {
+    const position = Math.min(clean(value.slice(0, caret)).length, cleaned.length);
+    input.setSelectionRange(position, position);
+  }
+}
+
+/**
+ * A box for amounts, prices and ages. Digits typed on an Arabic keyboard become 0-9 and anything that is not
+ * part of a number is dropped while typing (cleanNumberText), so onChange always gets a plain number as text.
+ * It is a text box, not type="number", which would quietly empty itself on Arabic digits, and it checks no
+ * min or max: forms check limits when saving. `decimals={false}` for whole numbers and whole-dinar amounts
+ * (`currencyDecimals(currency) > 0`).
+ */
+export function NumberInput({
+  className,
+  decimals = true,
+  onChange,
+  ...rest
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "inputMode"> & { decimals?: boolean }) {
+  return (
+    <input
+      {...rest}
+      type="text"
+      inputMode={decimals ? "decimal" : "numeric"}
+      dir="ltr"
+      autoComplete="off"
+      className={cx(inputClass, className)}
+      onChange={(event) => {
+        replaceKeepingCaret(event.target, (text) => cleanNumberText(text, decimals));
+        onChange?.(event);
+      }}
+    />
+  );
+}
+
+/** A phone number box: Arabic-keyboard digits become 0-9 while typing; spaces and + stay as typed. */
+export function PhoneInput({ className, onChange, ...rest }: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+  return (
+    <input
+      {...rest}
+      type="tel"
+      dir="ltr"
+      className={cx(inputClass, className)}
+      onChange={(event) => {
+        replaceKeepingCaret(event.target, toLatinDigits);
+        onChange?.(event);
+      }}
+    />
+  );
 }
 
 export function SelectInput({ className, children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {

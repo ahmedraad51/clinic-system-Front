@@ -6,12 +6,24 @@ import { Save, Trash2, Upload } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import {
-  Alert, Button, Card, Field, FormActions, PageContainer, PageHeader, PageLoading, SelectInput, TextInput, Toggle,
+  Alert,
+  Button,
+  Card,
+  Field,
+  FormActions,
+  NumberInput,
+  PageContainer,
+  PageHeader,
+  PageLoading,
+  PhoneInput,
+  SelectInput,
+  TextInput,
+  Toggle,
 } from "@/components/ui";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { errorMessage, updateDoc, uploadFile, fileHref } from "@/lib/frappe";
-import { cx } from "@/lib/format";
+import { currencyDecimals, cx } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
 import { DEFAULT_THEME_COLOR, normalizeHex, readableBrand, THEME_PRESETS } from "@/lib/theme";
 import { CURRENCIES, TREATMENT_TYPES, WEEK_DAYS, type ClinicSettings } from "@/lib/types";
@@ -207,7 +219,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
             <TextInput name="clinic_name" value={form.clinic_name} onChange={handleChange} required />
           </Field>
           <Field label="Phone">
-            <TextInput type="tel" name="phone" value={form.phone} onChange={handleChange} />
+            <PhoneInput name="phone" value={form.phone} onChange={handleChange} />
           </Field>
           <Field label="Email">
             <TextInput type="email" name="email" value={form.email} onChange={handleChange} />
@@ -288,11 +300,8 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {TREATMENT_TYPES.map((type) => (
             <Field key={type} label={`${type} (${form.currency})`}>
-              <TextInput
-                type="number"
-                min={0}
-                step="any"
-                inputMode="decimal"
+              <NumberInput
+                decimals={currencyDecimals(form.currency) > 0}
                 value={form.prices[type] ?? ""}
                 onChange={(event) => setForm({ ...form, prices: { ...form.prices, [type]: event.target.value } })}
               />

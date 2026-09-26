@@ -198,7 +198,11 @@ Each finished item says what changed, when, and which commit holds it.
   has "Keep me logged in on this computer": switch it off on shared computers, and closing the browser logs
   you out. No request waits forever (15 seconds), errors are explained in plain words, and a list that got
   no answer is asked for again. **Please restart your `npm run dev`**: `next.config.ts` changed (the link to
-  the server now waits up to 2 minutes instead of 30 seconds). Commit PENDING.
+  the server now waits up to 2 minutes instead of 30 seconds). Commit a5e69e1.
+- 2026-09-26 - **Iraqi dinars and Arabic-keyboard digits** (from the pet store study, item 3). Amounts in
+  IQD are now always shown without decimals, like "IQD 1,250,000". Every amount, price, age and phone box
+  accepts digits typed on an Arabic keyboard (١٢٣) and turns them into 1 2 3 while you type, instead of
+  silently losing them. Commit PENDING.
 
 ## Questions for the owner
 

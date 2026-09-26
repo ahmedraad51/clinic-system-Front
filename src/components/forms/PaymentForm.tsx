@@ -2,11 +2,11 @@
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Save } from "lucide-react";
-import { Alert, Button, Card, Field, FormActions, LinkButton, SelectInput, TextArea, TextInput } from "@/components/ui";
+import { Alert, Button, Card, Field, FormActions, LinkButton, NumberInput, SelectInput, TextArea, TextInput } from "@/components/ui";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import LinkSelect from "@/components/ui/LinkSelect";
 import { errorMessage, getList } from "@/lib/frappe";
-import { todayISO } from "@/lib/format";
+import { currencyDecimals, todayISO } from "@/lib/format";
 import { useSettings } from "@/context/SettingsContext";
 import { PAYMENT_METHODS, type Payment, type TreatmentPlan } from "@/lib/types";
 
@@ -194,16 +194,7 @@ export default function PaymentForm({
               ) : undefined
             }
           >
-            <TextInput
-              type="number"
-              name="amount"
-              min={0}
-              step="any"
-              inputMode="decimal"
-              value={form.amount}
-              onChange={handleChange}
-              required
-            />
+            <NumberInput name="amount" decimals={currencyDecimals(currency) > 0} value={form.amount} onChange={handleChange} required />
           </Field>
           <Field label="Payment Method" required>
             <SelectInput name="payment_method" value={form.payment_method} onChange={handleChange} required>

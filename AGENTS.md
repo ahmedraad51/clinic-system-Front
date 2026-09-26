@@ -29,7 +29,7 @@ accurate.
 | `npm run dev` | Works. Dev output goes to `.next/dev`, so `npm run build` can run while it is up. Changing `next.config.ts` restarts it, and the first page after that can take several minutes to compile. | |
 | `npm run build` | **Passes** (checked 2026-09-26): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-26). `npx tsc --noEmit` passes too. | |
-| Tests | **Playwright tests pass** (71 tests, checked 2026-09-26): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (77 tests, checked 2026-09-26): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -162,7 +162,7 @@ src/
     ├── mockData.ts           the in-memory dummy back end
     ├── types.ts              doctype interfaces, allowed values, permission keys, role presets
     ├── hooks.ts              usePagedList, useDocument, useDoctors, useDebounced, searchFilters
-    ├── format.ts             money, dates, times, week helpers, cx(), CSV download
+    ├── format.ts             money (IQD without decimals, currencyDecimals()), cleanNumberText(), dates, times, week helpers, cx(), CSV download
     ├── dentalChart.ts        parseDentalChart (both shapes), cleanChart, tooth names, surface layout, labels
     ├── medical.ts            medicalFlags(): allergy, blood thinner, diabetes, heart, pregnancy from the medical text
     ├── whatsapp.ts           PLACEHOLDERS, fillTemplate(), whatsappNumber(), whatsappLink() (wa.me links)
@@ -279,8 +279,9 @@ Rules for data code:
   Arabic-keyboard digits as 0-9, and when the text looks like a phone number (7 or more digits, no letters)
   every field with `phone` in its name also gets `phoneSearchPattern()`: the last 9 digits with `%` between
   them, so `+964 770 123 4567` finds a number stored as `0770 123 4567` or `07701234567`.
-- **Phone numbers** are stored as typed, except that the patient and doctor forms turn Arabic-keyboard digits
-  into 0-9 (`toLatinDigits()`). Build WhatsApp links only with `whatsappLink(phone, text,
+- **Phone numbers** are stored as typed, except that Arabic-keyboard digits become 0-9: every phone box is a
+  `PhoneInput` (converts while typing), and the patient and doctor forms convert again on save
+  (`toLatinDigits()`). Build WhatsApp links only with `whatsappLink(phone, text,
   countryCode)` / `whatsappNumber()` from `src/lib/whatsapp.ts`, passing `useSettings().countryCode`: a
   local number's leading 0 becomes the country code (`0770 123 4567` → `wa.me/9647701234567`), `+` and `00`
   numbers keep their own, and 11 digits or more count as already international. Compare two numbers with
@@ -547,7 +548,8 @@ function Things() {
   near the top (patient, appointment and treatment plan pages, and under the Patient field of the booking
   and treatment forms once a patient is picked). Load the fields with
   `usePatientMedical()` or add `MEDICAL_FIELDS` to your query. Never hide it behind a tab.
-- **Money** always goes through `useSettings().money(amount)`, which uses the clinic currency. Dates and
+- **Money** always goes through `useSettings().money(amount)`, which uses the clinic currency (Latin digits;
+  IQD, in `WHOLE_UNIT_CURRENCIES` in `format.ts`, never shows decimals: `IQD 1,250,000`). Dates and
   times go through `formatDate`, `formatTime`, `formatDateTime`; today is `todayISO()` (local time).
 - **Links** to records use `patientHref`, `appointmentHref`, `treatmentHref`, `paymentHref`, `userHref`.
 
@@ -558,6 +560,7 @@ function Things() {
 whatsapp, trigger, user) and `statusTone(kind, status)` for other views that must match the badge colours,
 `Button` and `LinkButton` (primary, secondary, danger, ghost, success; sm, md; `icon`, `loading`),
 `Segmented` (joined view switch, e.g. Day / Week / List), `FormActions` (sticky Save / Cancel bar), `Field` (label wrapping one input), `TextInput`,
+`NumberInput` (every amount, price or age box; `decimals={false}` for whole numbers), `PhoneInput` (every phone box),
 `SelectInput`, `TextArea`, `Toggle`,
 `SearchInput`, `Toolbar`, `Table`, `Th`, `Td` (with `label` for the phone cards), `ClickableRow`, `TableLoading`, `TableMessage`, `Pagination`, `DetailList` and
 `DetailRow`, `Tabs`, `Alert`, `Spinner`, `PageLoading`, `EmptyState`, `NoAccess`, `NotFoundCard`; plus
@@ -585,6 +588,14 @@ writing new class lists.
   first (the row's name or date) and action cells `label="…"` with the same text as its `Th`; empty cells
   are hidden. End every form with `<FormActions>` (a Save / Cancel bar that sticks to the bottom of the
   screen). Inputs use 16 px text on phones so iPhones do not zoom in.
+- **Number and phone boxes:** use `NumberInput` and `PhoneInput`, never `type="number"`. Iraqi keyboards type
+  Arabic-Indic digits (٠-٩) even in an English screen; `type="number"` quietly empties itself on them.
+  `NumberInput` is a text box (`inputMode` decimal or numeric, `dir="ltr"`) that keeps only the number while
+  typing (`cleanNumberText()`: Arabic digits become 0-9, `٫` becomes `.`, separators are dropped), so
+  `onChange` gets `"1250000"` for `١٬٢٥٠٬٠٠٠`; two or more dots count as thousands separators. Money boxes
+  pass `decimals={currencyDecimals(currency) > 0}`, so IQD boxes take whole dinars only ("1.500" → "1500").
+  `PhoneInput` only turns Arabic digits into 0-9. Both put the cursor back where it was after cleaning. They
+  check no min or max: forms check limits when saving (age 0-120, cost a number, amount above 0).
 - Empty lists: `<TableMessage icon={SomeIcon}>` or `<EmptyState>` show a small drawing; keep the text short.
 - Tailwind utility classes go inline; `globals.css` only holds the import, the tokens and body colours.
 - **Use logical classes** (`ms-`, `me-`, `ps-`, `pe-`, `start-`, `end-`, `text-start`, `text-end`,

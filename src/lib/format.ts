@@ -1,20 +1,54 @@
+import { toLatinDigits } from "./phone";
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-/** Formats money in the clinic currency, e.g. formatMoney(4500, "USD") → "$4,500". */
+/**
+ * Currencies shown without decimals. IQD has 3 decimal places on paper (fils) and browsers disagree about
+ * it, but Iraqi prices are whole dinars, so it is pinned to none.
+ */
+const WHOLE_UNIT_CURRENCIES = new Set(["IQD"]);
+
+/**
+ * Formats money in the clinic currency, e.g. formatMoney(4500, "USD") → "$4,500" and
+ * formatMoney(1250000, "IQD") → "IQD 1,250,000". Digits are always 0-9.
+ */
 export function formatMoney(amount: number | string | null | undefined, currency?: string | null): string {
   const value = Number(amount) || 0;
   const code = (currency || "USD").toUpperCase();
+  const decimals = WHOLE_UNIT_CURRENCIES.has(code) ? 0 : 2;
   try {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: code,
       currencyDisplay: "narrowSymbol",
       minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
+      maximumFractionDigits: decimals,
     }).format(value);
   } catch {
-    return `${code} ${value.toLocaleString("en-US")}`;
+    return `${code} ${new Intl.NumberFormat("en-US", { maximumFractionDigits: decimals }).format(value)}`;
   }
+}
+
+/** How many decimals amounts in this currency have on screen and in number boxes: 0 for IQD, 2 otherwise. */
+export function currencyDecimals(currency?: string | null): number {
+  return WHOLE_UNIT_CURRENCIES.has((currency || "USD").toUpperCase()) ? 0 : 2;
+}
+
+/**
+ * What a number box keeps of the typed text. Arabic-keyboard digits become 0-9 and the Arabic decimal mark (٫)
+ * becomes "."; thousands separators, spaces and letters are dropped. A "." only counts next to a digit (so
+ * "د.ع 25,000" → "25000"), and two or more of them are thousands separators ("1.250.000" → "1250000").
+ * With `decimals` off every "." is a separator: "1.500" → "1500" (whole dinars, ages).
+ */
+export function cleanNumberText(value: string, decimals = true): string {
+  const text = toLatinDigits(value).replace(/٫/g, ".");
+  let kept = "";
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (char >= "0" && char <= "9") kept += char;
+    else if (char === "." && decimals && (/\d/.test(text[i - 1] ?? "") || /\d/.test(text[i + 1] ?? ""))) kept += ".";
+  }
+  return kept.split(".").length > 2 ? kept.replace(/\./g, "") : kept;
 }
 
 /** "2026-09-08" → "8 Sep 2026". Works on the date part only, so time zones cannot shift the day. */

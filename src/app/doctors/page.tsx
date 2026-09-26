@@ -4,8 +4,25 @@ import { useState, type ChangeEvent, type FormEvent } from "react";
 import { BriefcaseMedical, Pencil, Plus } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Badge, Button, Card, Field, PageContainer, PageHeader, Pagination, SearchInput, SelectInput, Table,
-  TableLoading, TableMessage, Td, TextInput, Th, Toggle, Toolbar,
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Field,
+  PageContainer,
+  PageHeader,
+  Pagination,
+  PhoneInput,
+  SearchInput,
+  SelectInput,
+  Table,
+  TableLoading,
+  TableMessage,
+  Td,
+  TextInput,
+  Th,
+  Toggle,
+  Toolbar,
 } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
@@ -222,7 +239,7 @@ function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doctor | null; onC
         </Field>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Phone">
-            <TextInput type="tel" name="phone_number" value={form.phone_number} onChange={handleChange} />
+            <PhoneInput name="phone_number" value={form.phone_number} onChange={handleChange} />
           </Field>
           <Field label="Email">
             <TextInput type="email" name="email" value={form.email} onChange={handleChange} />

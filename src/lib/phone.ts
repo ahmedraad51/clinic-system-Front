@@ -1,6 +1,6 @@
 /**
- * Phone number helpers. The patient and doctor forms save numbers as typed, only with Arabic digits turned
- * into 0-9 ("0770 123 4567", "+964 770 123 4567"); these turn them into what WhatsApp and the search need.
+ * Phone number helpers. Numbers are saved as typed, only with Arabic digits turned into 0-9 by the phone boxes
+ * (PhoneInput) ("0770 123 4567", "+964 770 123 4567"); these turn them into what WhatsApp and the search need.
  */
 
 /** Iraq. Used when Clinic Settings has no phone_country_code. */

@@ -3,7 +3,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { Check, Save, Users } from "lucide-react";
-import { Alert, Button, Card, Field, FormActions, LinkButton, SelectInput, TextArea, TextInput } from "@/components/ui";
+import { Alert, Button, Card, Field, FormActions, LinkButton, NumberInput, PhoneInput, SelectInput, TextArea, TextInput } from "@/components/ui";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { errorMessage, getList, type FilterRow } from "@/lib/frappe";
@@ -184,6 +184,10 @@ export default function PatientForm({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (ageOnly && form.age !== "" && Number(form.age) > 120) {
+      setError("Enter an age between 0 and 120.");
+      return;
+    }
     // The same phone number usually means the same person: ask before making a second record.
     const phoneChanged = !currentName || !samePhone(form.phone_number, initial.phone_number);
     if (phoneChanged && duplicates.byPhone.length > 0 && !askDuplicate) {
@@ -252,7 +256,7 @@ export default function PatientForm({
           {ageOnly ? (
             <div>
               <Field label="Age">
-                <TextInput type="number" name="age" min={0} max={120} inputMode="numeric" value={form.age} onChange={handleChange} />
+                <NumberInput name="age" decimals={false} maxLength={3} value={form.age} onChange={handleChange} />
               </Field>
               <button
                 type="button"
@@ -283,10 +287,10 @@ export default function PatientForm({
             </div>
           )}
           <Field label="Phone Number" required>
-            <TextInput type="tel" name="phone_number" value={form.phone_number} onChange={handleChange} required />
+            <PhoneInput name="phone_number" value={form.phone_number} onChange={handleChange} required />
           </Field>
           <Field label="Secondary Phone">
-            <TextInput type="tel" name="secondary_phone" value={form.secondary_phone} onChange={handleChange} />
+            <PhoneInput name="secondary_phone" value={form.secondary_phone} onChange={handleChange} />
           </Field>
           <Field label="Email">
             <TextInput type="email" name="email" value={form.email} onChange={handleChange} />

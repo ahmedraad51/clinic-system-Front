@@ -141,6 +141,10 @@ Paths are inside `D:\Projects\alkhokh_pet_store_front`.
 - **Back end:** none. (The CSRF question in `docs/backend-todo.md` section 5 stays as it is.)
 
 ### 3. IQD amounts with no decimals, and Arabic digits in number fields
+- **Brought in** (2026-09-26): `formatMoney` and `cleanNumberText` in `src/lib/format.ts`, `NumberInput` and
+  `PhoneInput` in the UI kit (used for amounts, prices, the cost of a plan, the age and every phone box), and
+  `e2e/tests/numbers.spec.ts`. Money boxes take whole dinars when the currency is IQD. Thousands separators
+  while typing were left out: the box shows the plain number.
 - **What:** `formatMoney` always shows IQD without decimals. Amount, phone and age fields accept digits typed
   on an Arabic keyboard. Optional: amount fields show thousands separators while typing
   (`1,250,000`).
