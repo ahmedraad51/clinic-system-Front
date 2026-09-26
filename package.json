@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test:e2e": "playwright test --project=e2e",
-    "screenshots": "playwright test --project=screens"
+    "screenshots": "playwright test --project=screens",
+    "screenshots:readme": "playwright test --project=readme"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.18",

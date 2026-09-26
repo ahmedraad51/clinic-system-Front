@@ -14,8 +14,6 @@ calculations, role-based access, scheduled reports and WhatsApp appointment remi
 > you can clone it and see every screen without standing up Frappe first. Both are single flags —
 > see [Running against the real backend](#running-against-the-real-backend). To see the app as a
 > receptionist or a doctor, open **Profile → Try Another User**.
->
-> The screenshots below show the older design and will be retaken.
 
 ---
 
@@ -76,14 +74,24 @@ own `fetch`. That is what makes the dummy-data switch a one-line change.
 
 ## Screens
 
+The pictures are taken from the running app with the dummy data (`npm run screenshots:readme`).
+
 <table>
 <tr>
-<td width="50%"><img src="docs/screenshots/patients.png" alt="Patients"><br><b>Patients</b> — searchable by name or phone.</td>
-<td width="50%"><img src="docs/screenshots/appointments.png" alt="Appointments"><br><b>Appointments</b> — filter by status; colour-coded badges.</td>
+<td width="50%"><img src="docs/screenshots/today.png" alt="Today board"><br><b>Today</b> — the front desk's day by doctor: one tap to confirm, complete or mark a no-show, late patients highlighted, balances and quick payments.</td>
+<td width="50%"><img src="docs/screenshots/appointments.png" alt="Appointment calendar"><br><b>Appointments</b> — a day calendar with a column per doctor and their working hours; click a free time to book, drag to move.</td>
 </tr>
 <tr>
+<td><img src="docs/screenshots/patient.png" alt="Patient page"><br><b>Patient</b> — medical alerts on top, call and WhatsApp, last and next visit, balance, and a timeline.</td>
+<td><img src="docs/screenshots/dental-chart.png" alt="Dental chart"><br><b>Dental chart</b> — adult and child teeth, the five surfaces, crowns, root canals, implants and more, with a note per tooth.</td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/patients.png" alt="Patients"><br><b>Patients</b> — search by name, phone or ID; alerts and the next visit at a glance.</td>
 <td><img src="docs/screenshots/treatments.png" alt="Treatments"><br><b>Treatment plans</b> — type, tooth, cost and remaining balance.</td>
-<td><img src="docs/screenshots/payments.png" alt="Payments"><br><b>Payments</b> — linked to a patient and a treatment plan.</td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/payments.png" alt="Payments"><br><b>Payments</b> — linked to a patient and a plan, with printable receipts and an end-of-day report.</td>
+<td><img src="docs/screenshots/dashboard.png" alt="Dashboard"><br><b>Dashboard</b> — today, the next seven days, and the month's money.</td>
 </tr>
 </table>
 
@@ -293,6 +301,7 @@ npm run build             # production build
 npx playwright install chromium   # once, before the first test run
 npm run test:e2e          # browser tests (builds, then serves on port 3100)
 npm run screenshots       # every page at desktop, tablet and phone size, into screenshots/
+npm run screenshots:readme   # the pictures in this README, into docs/screenshots/
 ```
 
 The browser tests walk through the daily work: adding a patient, booking an appointment (and the

@@ -6,6 +6,7 @@ import { defineConfig, devices } from "@playwright/test";
  *
  *   npm run test:e2e      the tests in e2e/tests
  *   npm run screenshots   every page at desktop, tablet and phone size, saved to screenshots/
+ *   npm run screenshots:readme   the pictures in README.md, saved to docs/screenshots/
  */
 const PORT = Number(process.env.E2E_PORT || 3100);
 const BASE_URL = `http://localhost:${PORT}`;
@@ -29,6 +30,11 @@ export default defineConfig({
     {
       name: "screens",
       testDir: "e2e/screens",
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "readme",
+      testDir: "e2e/readme",
       use: { ...devices["Desktop Chrome"] },
     },
   ],

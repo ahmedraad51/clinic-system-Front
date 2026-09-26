@@ -47,6 +47,7 @@ Both flags are set this way on purpose. Leave them alone unless the task is abou
 | `npx tsc --noEmit` | Type-check only. It also checks the route types Next generates in `.next/` (created by `dev`/`build`). |
 | `npm run test:e2e` | Playwright tests in `e2e/tests` (Chromium only). Builds, then serves the build on port **3100** (`E2E_PORT`), so it never clashes with `npm run dev` on 3000. `SKIP_BUILD=1` reuses the last build. Output goes to `test-results/` and `playwright-report/` (ignored by git). |
 | `npm run screenshots` | Full-page screenshots of every page at desktop 1440×900, tablet 1024×768 and phone 390×844, saved to `screenshots/<size>/<page>.png` (ignored by git). `PAGES=dashboard,patients` limits it; `SKIP_BUILD=1` works here too. |
+| `npm run screenshots:readme` | Retakes the pictures in `README.md` into `docs/screenshots/` (desktop, dummy data). Run it after a visible change and commit the images. `SKIP_BUILD=1` works here too |
 
 The Frappe address comes from the `FRAPPE_URL` environment variable (for example in `.env.local`), default
 `http://dent_clinic.localhost:8000`. See `next.config.ts`.
@@ -164,7 +165,7 @@ src/
     └── links.ts              URL builders for records (always use these)
 docs/
 ├── backend-todo.md           what the back end must provide for this front end
-└── screenshots/              images used by README.md (from the older design; retake them)
+└── screenshots/              images used by README.md (retake with npm run screenshots:readme)
 public/                       placeholder SVGs from create-next-app (unused)
 e2e/
 ├── helpers.ts                waitForData, navigate (client-side, keeps the dummy data), openFromMenu, pickLink
@@ -602,7 +603,6 @@ Updated on 2026-09-26.
 - **No right-to-left layout yet.** The classes are ready (see Styling), but there is no Arabic text or `dir`
   switch.
 - `enable_patient_portal` is saved but not used by the front end.
-- `README.md` screenshots show the older design.
 - Deleting is blocked for records that others link to (Frappe's normal rule). Users are disabled, not deleted.
 
 ---

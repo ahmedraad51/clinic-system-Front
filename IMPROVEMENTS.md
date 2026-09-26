@@ -5,8 +5,6 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Retake the README screenshots (docs/screenshots) so they show the new design; they still show the old
-  blue look.
 
 ## Backlog
 
@@ -126,7 +124,10 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-26 - **Patient list with alerts and next visit.** Each patient in the list now shows small red
   or yellow markers for medical alerts (allergy, blood thinner, heart, diabetes, pregnancy) and the date
   and time of their next booked visit. Age and gender moved next to the patient ID, so the list fits a
-  tablet without cutting off the balance. Commit PENDING.
+  tablet without cutting off the balance. Commit 3ba0c5e.
+- 2026-09-26 - **New README pictures.** The pictures in the README now show the new design, including the
+  Today board, the calendar, the patient page and the dental chart. They can be retaken any time with one
+  command (npm run screenshots:readme). Commit PENDING.
 
 ## Questions for the owner
 
