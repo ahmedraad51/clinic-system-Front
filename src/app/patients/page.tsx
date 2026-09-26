@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { HeartPulse, UserPlus, UserSearch } from "lucide-react";
+import { HeartPulse, MessageCircle, UserPlus, UserSearch } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Card, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination,
@@ -10,11 +10,12 @@ import {
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
-import { getList } from "@/lib/frappe";
+import { getList, type FilterRow } from "@/lib/frappe";
 import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
 import { cx, display, formatShortDate, formatTime, todayISO } from "@/lib/format";
 import { appointmentHref, patientHref } from "@/lib/links";
 import { MEDICAL_FIELDS, medicalFlags } from "@/lib/medical";
+import { whatsappLink } from "@/lib/whatsapp";
 import { GENDERS, type Appointment, type Patient } from "@/lib/types";
 
 export default function PatientsPage() {
@@ -27,18 +28,23 @@ export default function PatientsPage() {
 
 function PatientsList() {
   const { can } = useSession();
-  const { money } = useSettings();
+  const { money, settings, clinicName } = useSettings();
   const [search, setSearch] = useState("");
   const [gender, setGender] = useState("");
+  // Collections: only patients with money left to pay, biggest balance first.
+  const [owing, setOwing] = useState(false);
   const debounced = useDebounced(search);
   const showBalance = can("view_payments");
   const showNext = can("view_appointments");
 
   const list = usePagedList<Patient>("Patient", {
     fields: ["name", "full_name", "phone_number", "gender", "age", "email", "total_remaining", ...MEDICAL_FIELDS],
-    filters: gender ? [["gender", "=", gender]] : undefined,
+    filters:
+      gender || owing
+        ? [...(gender ? [["gender", "=", gender] as FilterRow] : []), ...(owing ? [["total_remaining", ">", 0] as FilterRow] : [])]
+        : undefined,
     orFilters: searchFilters(debounced, ["full_name", "phone_number", "secondary_phone", "name"]),
-    orderBy: "full_name asc",
+    orderBy: owing ? "total_remaining desc" : "full_name asc",
   });
   const columns = 2 + (showNext ? 1 : 0) + (showBalance ? 1 : 0);
 
@@ -74,7 +80,12 @@ function PatientsList() {
     };
   }, [pageKey, showNext]);
   const nextFor = (patient: string) => (next.key === pageKey ? next.byPatient[patient] : undefined);
-  const filtered = Boolean(debounced.trim() || gender);
+  const filtered = Boolean(debounced.trim() || gender || owing);
+  const reminder = (patient: Patient) =>
+    whatsappLink(
+      patient.phone_number,
+      `Hello ${patient.full_name}, this is a friendly reminder from ${clinicName} that ${money(patient.total_remaining)} is still to be paid for your treatment. You can pay at your next visit or call us to arrange it. Thank you!`,
+    );
 
   return (
     <PageContainer>
@@ -92,6 +103,17 @@ function PatientsList() {
 
       <Toolbar>
         <SearchInput value={search} onChange={setSearch} placeholder="Search patients..." />
+        {showBalance && (
+          <SelectInput
+            value={owing ? "owing" : ""}
+            onChange={(e) => setOwing(e.target.value === "owing")}
+            className="sm:w-44"
+            aria-label="Balance"
+          >
+            <option value="">All balances</option>
+            <option value="owing">Owes money</option>
+          </SelectInput>
+        )}
         <SelectInput value={gender} onChange={(e) => setGender(e.target.value)} className="sm:w-44" aria-label="Gender">
           <option value="">All genders</option>
           {GENDERS.map((g) => (
@@ -148,7 +170,21 @@ function PatientsList() {
                   {showBalance && (
                     <Td label="Balance" className="text-end whitespace-nowrap">
                       {Number(patient.total_remaining) > 0 ? (
-                        <span className="font-medium text-red-600">{money(patient.total_remaining)}</span>
+                        <span className="inline-flex items-center gap-2">
+                          <span className="font-medium text-red-600">{money(patient.total_remaining)}</span>
+                          {owing && settings.enable_whatsapp !== 0 && reminder(patient) && (
+                            <a
+                              href={reminder(patient)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Send a WhatsApp reminder about the balance"
+                              className="inline-flex items-center gap-1 min-h-9 pointer-coarse:min-h-11 px-2.5 rounded-lg bg-green-50 border border-green-200 text-xs font-medium text-green-800 hover:bg-green-100"
+                            >
+                              <MessageCircle size={13} />
+                              Remind
+                            </a>
+                          )}
+                        </span>
                       ) : (
                         <span className="text-gray-500">{money(0)}</span>
                       )}

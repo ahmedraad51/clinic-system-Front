@@ -128,3 +128,17 @@ test("the checklist recognises what is already written", async ({ page }) => {
   await expect(box).toHaveAttribute("aria-pressed", "true");
   await expect(box).toBeDisabled();
 });
+
+test("the patient list shows who owes money, biggest balance first", async ({ page }) => {
+  await page.goto("/patients");
+  await waitForData(page);
+  await page.getByLabel("Balance").selectOption("owing");
+  await expect(page.getByText("6 records")).toBeVisible();
+  const first = page.getByRole("row").nth(1);
+  await expect(first).toContainText("Tarek Hassan");
+  await expect(first).toContainText("$18,000");
+  await expect(first.getByRole("link", { name: "Remind" })).toHaveAttribute(
+    "href",
+    /^https:\/\/wa\.me\/201287714520\?text=Hello%20Tarek%20Hassan%2C%20this%20is%20a%20friendly%20reminder/,
+  );
+});

@@ -5,13 +5,11 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Patients who owe money: an "Owes money" filter in the patient list, with a ready WhatsApp reminder about
-  the balance.
+- Send the payment receipt on WhatsApp as a short message (amount, date, what it was for, balance left).
 
 ## Backlog
 
-1. Send the payment receipt on WhatsApp as a short message (amount, date, what it was for, balance left).
-2. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+1. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -168,7 +166,10 @@ Each finished item says what changed, when, and which commit holds it.
   no longer scrolls while it is open. Commit 90c7f2a.
 - 2026-09-26 - **X-rays and photos.** Each patient now has an "X-rays & Photos" tab. Staff can take a
   photo straight from the tablet camera or add image and PDF files; they show as thumbnails and open full
-  size. Files are kept private to the clinic. Commit PENDING.
+  size. Files are kept private to the clinic. Commit eb780f1.
+- 2026-09-26 - **Who owes money.** The patient list has a new "Owes money" filter that shows only patients
+  with a balance, biggest first. Each has a "Remind" button that opens WhatsApp with a polite message
+  about the amount left to pay. Commit PENDING.
 
 ## Questions for the owner
 
