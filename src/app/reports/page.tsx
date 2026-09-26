@@ -166,7 +166,7 @@ function Reports() {
         {range === "custom" && (
           <div className="flex items-center gap-2">
             <TextInput type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} aria-label="From date" className="sm:w-40" />
-            <span className="text-gray-400 text-sm">to</span>
+            <span className="text-gray-500 text-sm">to</span>
             <TextInput type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} aria-label="To date" className="sm:w-40" />
           </div>
         )}
@@ -245,7 +245,7 @@ function Reports() {
             </tbody>
           </Table>
           {payments.length > 10 && (
-            <p className="px-5 py-3 text-xs text-gray-400">
+            <p className="px-5 py-3 text-xs text-gray-500">
               Showing the latest 10 of {payments.length}. Export CSV for the full list.
             </p>
           )}
@@ -329,7 +329,7 @@ function Bars({
   money: (amount: number) => string;
   empty: string;
 }) {
-  if (rows.length === 0) return <p className="text-sm text-gray-400">{empty}</p>;
+  if (rows.length === 0) return <p className="text-sm text-gray-500">{empty}</p>;
   const max = Math.max(...rows.map(([, amount]) => amount));
   return (
     <div className="space-y-3">

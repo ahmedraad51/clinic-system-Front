@@ -3,6 +3,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Save } from "lucide-react";
 import { Alert, Button, Card, Field, FormActions, LinkButton, SelectInput, TextArea, TextInput } from "@/components/ui";
+import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import LinkSelect from "@/components/ui/LinkSelect";
 import { errorMessage, getList } from "@/lib/frappe";
@@ -101,10 +102,14 @@ export default function AppointmentForm({
   const doctors = useDoctors();
   // A new booking with no doctor given starts with the doctor used last time on this computer.
   const [remembered] = useState(() => (!currentName && !initial.doctor ? readLastDoctor() : null));
-  const [form, setForm] = useState<AppointmentFormData>(() =>
+  // What the form started with, to tell whether anything was changed.
+  const [baseline] = useState<AppointmentFormData>(() =>
     remembered ? { ...initial, doctor: remembered.name } : initial,
   );
+  const [form, setForm] = useState<AppointmentFormData>(baseline);
   const [saving, setSaving] = useState(false);
+  // Set once saved, so the page can move on without the unsaved-changes question.
+  const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const [clash, setClash] = useState<Appointment | null>(null);
 
@@ -117,6 +122,7 @@ export default function AppointmentForm({
     setError("");
     try {
       await onSubmit(form);
+      setDone(true);
       const doctor = doctors.find((d) => d.name === form.doctor);
       if (doctor) saveLastDoctor({ name: doctor.name, full_name: doctor.full_name });
     } catch (err) {
@@ -163,8 +169,11 @@ export default function AppointmentForm({
       ? `Clinic hours: ${formatTime(settings.opening_time)} to ${formatTime(settings.closing_time)}`
       : undefined;
 
+  const dirty = !done && JSON.stringify(form) !== JSON.stringify(baseline);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <UnsavedChangesGuard when={dirty} />
       <Card>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Patient" required className="sm:col-span-2">

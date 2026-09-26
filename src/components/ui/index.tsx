@@ -178,7 +178,7 @@ export function StatCard({
       </div>
       <div className="text-2xl font-bold text-gray-800 truncate">{value}</div>
       <div className="text-sm text-gray-500 mt-1">{title}</div>
-      {hint && <div className="text-xs text-gray-400 mt-1">{hint}</div>}
+      {hint && <div className="text-xs text-gray-500 mt-1">{hint}</div>}
     </>
   );
   const className = "block bg-white rounded-2xl border border-gray-100 shadow-sm p-5";
@@ -284,7 +284,7 @@ export function LinkButton({
 /* --------------------------------------------------------------- inputs -- */
 
 export const inputClass =
-  "w-full min-h-11 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm max-sm:text-base text-gray-800 placeholder:text-gray-400 " +
+  "w-full min-h-11 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm max-sm:text-base text-gray-800 placeholder:text-gray-500 " +
   "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500";
 
 /** A label above one input. The input goes inside as children, so clicking the label focuses it. */
@@ -308,7 +308,7 @@ export function Field({
         {required && <span className="text-red-500 ms-0.5">*</span>}
       </span>
       {children}
-      {hint && <span className="block text-xs text-gray-400 mt-1">{hint}</span>}
+      {hint && <span className="block text-xs text-gray-500 mt-1">{hint}</span>}
     </label>
   );
 }
@@ -383,7 +383,7 @@ export function SearchInput({
 }) {
   return (
     <div className="relative flex-1 min-w-0 sm:min-w-[240px]">
-      <Search size={16} className="absolute start-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+      <Search size={16} className="absolute start-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
       <input
         type="search"
         value={value}
@@ -397,7 +397,7 @@ export function SearchInput({
           type="button"
           onClick={() => onChange("")}
           aria-label="Clear search"
-          className="absolute end-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+          className="absolute end-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700"
         >
           <X size={16} />
         </button>
@@ -535,6 +535,27 @@ export function ClickableRow({ href, children, dimmed = false }: { href: string;
   );
 }
 
+/** Grey placeholder rows while a list loads, so the page keeps its shape. Screen readers hear "Loading...". */
+export function TableLoading({ colSpan, rows = 5 }: { colSpan: number; rows?: number }) {
+  return (
+    <>
+      {Array.from({ length: rows }, (_, row) => (
+        <tr key={row} aria-hidden={row > 0 ? true : undefined}>
+          <td colSpan={colSpan} className="px-5 py-4 border-b border-gray-50 max-sm:block">
+            {row === 0 && <span className="sr-only" role="status">Loading...</span>}
+            <div className="flex items-center gap-6 animate-pulse">
+              <div className="h-4 w-1/4 rounded bg-gray-100" />
+              <div className="h-4 w-1/6 rounded bg-gray-100 max-sm:hidden" />
+              <div className="h-4 w-1/5 rounded bg-gray-100" />
+              <div className="h-4 w-1/6 rounded bg-gray-100 max-sm:hidden" />
+            </div>
+          </td>
+        </tr>
+      ))}
+    </>
+  );
+}
+
 /** A message across the whole table, e.g. "Loading...". With an icon it is a friendly empty state. */
 export function TableMessage({ colSpan, children, icon }: { colSpan: number; children: ReactNode; icon?: LucideIcon }) {
   return (
@@ -566,7 +587,7 @@ export function Pagination({
 }) {
   if (total === 0) return null;
   if (total <= pageSize) {
-    return <p className="px-5 py-3 text-xs text-gray-400">{total === 1 ? "1 record" : `${total} records`}</p>;
+    return <p className="px-5 py-3 text-xs text-gray-500">{total === 1 ? "1 record" : `${total} records`}</p>;
   }
   const pages = Math.ceil(total / pageSize);
   const from = (page - 1) * pageSize + 1;
@@ -678,7 +699,7 @@ export function Alert({
 
 export function PageLoading({ label = "Loading..." }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center gap-3 py-24 text-gray-400" role="status">
+    <div className="flex items-center justify-center gap-3 py-24 text-gray-500" role="status">
       <Spinner size={20} />
       <span className="text-sm">{label}</span>
     </div>
@@ -721,7 +742,7 @@ export function EmptyState({
     <div className="flex flex-col items-center text-center py-12 px-6">
       <EmptyDrawing icon={Icon} />
       <p className="font-semibold text-gray-700">{title}</p>
-      {text && <p className="text-sm text-gray-400 mt-1 max-w-sm">{text}</p>}
+      {text && <p className="text-sm text-gray-500 mt-1 max-w-sm">{text}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );

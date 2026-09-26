@@ -190,9 +190,9 @@ export default function LinkSelect({
             onClick={() => setOpen(true)}
             className={cx(inputClass, "text-start flex items-center justify-between gap-2 pe-16")}
           >
-            <span className={cx("truncate", value ? "text-gray-800" : "text-gray-400")}>{shownLabel || placeholder}</span>
+            <span className={cx("truncate", value ? "text-gray-800" : "text-gray-500")}>{shownLabel || placeholder}</span>
           </button>
-          <span className="absolute end-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-gray-400">
+          <span className="absolute end-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-gray-500">
             {value && !required && !disabled && (
               <button
                 type="button"
@@ -225,7 +225,7 @@ export default function LinkSelect({
           className="absolute z-30 mt-1 w-full max-h-64 overflow-auto rounded-xl border border-gray-100 bg-white shadow-lg py-1"
         >
           {options.length === 0 ? (
-            <li className="px-3.5 py-2.5 text-sm text-gray-400">{searching ? "Searching..." : "No matches"}</li>
+            <li className="px-3.5 py-2.5 text-sm text-gray-500">{searching ? "Searching..." : "No matches"}</li>
           ) : (
             options.map((option, index) => (
               <li key={option.name} role="option" aria-selected={option.name === value}>
@@ -239,7 +239,7 @@ export default function LinkSelect({
                   )}
                 >
                   <span className="block font-medium">{option.label}</span>
-                  {option.detail && <span className="block text-xs text-gray-400">{option.detail}</span>}
+                  {option.detail && <span className="block text-xs text-gray-500">{option.detail}</span>}
                 </button>
               </li>
             ))

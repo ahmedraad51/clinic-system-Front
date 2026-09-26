@@ -184,7 +184,7 @@ function AppointmentDetail() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <StatusBadge kind="whatsapp" status={log.status} />
-                    <span className="text-xs text-gray-400">{formatDateTime(log.sent_at)}</span>
+                    <span className="text-xs text-gray-500">{formatDateTime(log.sent_at)}</span>
                   </div>
                   {log.message && <p className="text-sm text-gray-600 mt-1">{log.message}</p>}
                   {log.error_message && <p className="text-xs text-red-600 mt-1">{log.error_message}</p>}

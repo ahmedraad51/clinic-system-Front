@@ -163,9 +163,9 @@ function TodayBoard() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Count label="Still to come" value={counts.toCome} tone="text-primary-700" />
-        <Count label="Late" value={counts.late} tone={counts.late ? "text-amber-600" : "text-gray-400"} />
+        <Count label="Late" value={counts.late} tone={counts.late ? "text-amber-600" : "text-gray-500"} />
         <Count label="Completed" value={counts.done} tone="text-green-700" />
-        <Count label="No show" value={counts.missed} tone={counts.missed ? "text-red-600" : "text-gray-400"} />
+        <Count label="No show" value={counts.missed} tone={counts.missed ? "text-red-600" : "text-gray-500"} />
       </div>
 
       {groups.length === 0 ? (

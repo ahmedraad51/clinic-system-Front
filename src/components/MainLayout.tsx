@@ -29,10 +29,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="min-h-screen bg-gray-50 print:bg-white">
+      {/* First thing a keyboard user reaches: jump past the menu. */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:start-3 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-3 focus:text-sm focus:font-medium focus:text-primary-700 focus:shadow-lg"
+      >
+        Skip to content
+      </a>
       <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} />
       <div className="lg:ps-64 flex flex-col min-h-screen print:ps-0">
         <Topbar onOpenMenu={() => setMenuOpen(true)} />
-        <main className="flex-1 pt-16 print:pt-0">{children}</main>
+        <main id="main" tabIndex={-1} className="flex-1 pt-16 print:pt-0 focus:outline-none">{children}</main>
       </div>
     </div>
   );

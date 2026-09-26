@@ -83,11 +83,11 @@ function Estimate() {
 
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 py-5">
           <div>
-            <dt className="text-xs text-gray-400">Patient</dt>
+            <dt className="text-xs text-gray-500">Patient</dt>
             <dd className="text-sm font-medium text-gray-800 mt-0.5">{patient.full_name}</dd>
           </div>
           <div>
-            <dt className="text-xs text-gray-400">Phone</dt>
+            <dt className="text-xs text-gray-500">Phone</dt>
             <dd className="text-sm font-medium text-gray-800 mt-0.5">{display(patient.phone_number)}</dd>
           </div>
         </dl>

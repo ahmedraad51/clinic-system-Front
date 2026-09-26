@@ -172,7 +172,7 @@ function TreatmentDetail() {
           </div>
           <div>
             <p className="text-xs text-gray-500">Remaining</p>
-            <p data-testid="plan-remaining" className={cx("text-xl sm:text-2xl font-bold mt-1", remaining > 0 ? "text-red-600" : "text-gray-400")}>
+            <p data-testid="plan-remaining" className={cx("text-xl sm:text-2xl font-bold mt-1", remaining > 0 ? "text-red-600" : "text-gray-500")}>
               {money(remaining)}
             </p>
           </div>
@@ -181,7 +181,7 @@ function TreatmentDetail() {
           <div className="w-full bg-gray-100 rounded-full h-2" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
             <div className="bg-green-500 h-2 rounded-full transition-all" style={{ width: `${percent}%` }} />
           </div>
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-gray-500 mt-2">
             {plan.status === "Cancelled" ? "Cancelled plans have nothing left to pay." : `${percent}% paid`}
           </p>
         </div>
@@ -244,7 +244,7 @@ function TreatmentDetail() {
               {!data ? (
                 <PageLoading />
               ) : data.payments.length === 0 ? (
-                <p className="px-6 pb-6 text-sm text-gray-400">No payments for this plan yet.</p>
+                <p className="px-6 pb-6 text-sm text-gray-500">No payments for this plan yet.</p>
               ) : (
                 <Table>
                   <tbody>

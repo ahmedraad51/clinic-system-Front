@@ -6,7 +6,7 @@ import { FileText, Plus, Receipt } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Card, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination,
-  SearchInput, SelectInput, StatusBadge, Table, TableMessage, Td, TextInput, Th, Toolbar,
+  SearchInput, SelectInput, StatusBadge, Table, TableLoading, TableMessage, Td, TextInput, Th, Toolbar,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -81,7 +81,7 @@ function PaymentsList() {
           sum ? (
             <>
               {filtered ? "Total for these filters: " : "Total received: "}
-              <span className={sum.key === sumKey ? "font-semibold text-gray-800" : "text-gray-400"}>{money(sum.total)}</span>
+              <span className={sum.key === sumKey ? "font-semibold text-gray-800" : "text-gray-500"}>{money(sum.total)}</span>
             </>
           ) : (
             "Every payment received, newest first."
@@ -113,7 +113,7 @@ function PaymentsList() {
         </SelectInput>
         <div className="flex items-center gap-2 min-w-0">
           <TextInput type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From date" className="min-w-0 flex-1 sm:flex-none sm:w-40" />
-          <span className="text-gray-400 text-sm">to</span>
+          <span className="text-gray-500 text-sm">to</span>
           <TextInput type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To date" className="min-w-0 flex-1 sm:flex-none sm:w-40" />
         </div>
       </Toolbar>
@@ -133,7 +133,7 @@ function PaymentsList() {
           </thead>
           <tbody>
             {list.initialLoading ? (
-              <TableMessage colSpan={5}>Loading...</TableMessage>
+              <TableLoading colSpan={5} />
             ) : list.rows.length === 0 ? (
               <TableMessage icon={Receipt} colSpan={5}>{filtered ? "No payments match these filters." : "No payments yet."}</TableMessage>
             ) : (
@@ -143,7 +143,7 @@ function PaymentsList() {
                     <Link href={paymentHref(pay.name)} className="font-medium text-gray-800 hover:text-primary-600">
                       {formatDate(pay.payment_date)}
                     </Link>
-                    <span className="block text-xs text-gray-400">{pay.name}</span>
+                    <span className="block text-xs text-gray-500">{pay.name}</span>
                   </Td>
                   <Td label="Patient">
                     <Link href={patientHref(pay.patient)} className="text-gray-700 hover:text-primary-600">

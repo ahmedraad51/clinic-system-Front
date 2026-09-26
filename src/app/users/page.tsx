@@ -7,7 +7,7 @@ import { Shield, UserPlus, UserSearch } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Button, Card, ClickableRow, Field, PageContainer, PageHeader, Pagination, SearchInput,
-  SelectInput, StatusBadge, Table, TableMessage, Td, TextInput, Th, Toggle, Toolbar,
+  SelectInput, StatusBadge, Table, TableLoading, TableMessage, Td, TextInput, Th, Toggle, Toolbar,
 } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
@@ -74,7 +74,7 @@ function UsersList() {
           </thead>
           <tbody>
             {list.initialLoading ? (
-              <TableMessage colSpan={4}>Loading...</TableMessage>
+              <TableLoading colSpan={4} />
             ) : list.rows.length === 0 ? (
               <TableMessage icon={UserSearch} colSpan={4}>No users found.</TableMessage>
             ) : (

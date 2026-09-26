@@ -8,7 +8,7 @@ import RequirePermission from "@/components/Guard";
 import AppointmentCalendar, { type CalendarView } from "@/components/AppointmentCalendar";
 import {
   Alert, Button, Card, ClickableRow, LinkButton, PageContainer, PageHeader, PageLoading, Pagination,
-  SearchInput, Segmented, SelectInput, StatusBadge, Table, TableMessage, Td, TextInput, Th, Toolbar,
+  SearchInput, Segmented, SelectInput, StatusBadge, Table, TableLoading, TableMessage, Td, TextInput, Th, Toolbar,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -236,7 +236,7 @@ function AppointmentsList() {
           </thead>
           <tbody>
             {list.initialLoading ? (
-              <TableMessage colSpan={6}>Loading...</TableMessage>
+              <TableLoading colSpan={6} />
             ) : list.rows.length === 0 ? (
               <TableMessage icon={CalendarX} colSpan={6}>
                 {filtered ? "No appointments match these filters." : "No appointments yet."}

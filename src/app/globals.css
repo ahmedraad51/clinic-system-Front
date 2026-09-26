@@ -29,6 +29,15 @@
   --text-sm--line-height: 1.4rem;
 }
 
+/* A clear focus ring for keyboard users on links and other focusable things without their own ring. */
+@layer base {
+  :where(a, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
+
 body {
   background-color: #f8fafc;
   color: #1f2937;

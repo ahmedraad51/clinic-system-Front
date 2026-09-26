@@ -5,7 +5,7 @@ import { BriefcaseMedical, Pencil, Plus } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Badge, Button, Card, Field, PageContainer, PageHeader, Pagination, SearchInput, SelectInput, Table,
-  TableMessage, Td, TextInput, Th, Toggle, Toolbar,
+  TableLoading, TableMessage, Td, TextInput, Th, Toggle, Toolbar,
 } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
@@ -77,7 +77,7 @@ function DoctorsList() {
           </thead>
           <tbody>
             {list.initialLoading ? (
-              <TableMessage colSpan={6}>Loading...</TableMessage>
+              <TableLoading colSpan={6} />
             ) : list.rows.length === 0 ? (
               <TableMessage icon={BriefcaseMedical} colSpan={6}>
                 {debounced || status ? "No doctors match." : "No doctors yet. Add the first one."}
@@ -100,7 +100,7 @@ function DoctorsList() {
                   <Td label="Working hours" className="whitespace-nowrap">
                     {doctor.start_time && doctor.end_time
                       ? `${formatTime(doctor.start_time)} – ${formatTime(doctor.end_time)}`
-                      : <span className="text-gray-400">Clinic hours</span>}
+                      : <span className="text-gray-500">Clinic hours</span>}
                   </Td>
                   <Td label="Status">
                     <Badge tone={Number(doctor.is_active) === 1 ? "green" : "gray"}>

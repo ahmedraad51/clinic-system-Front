@@ -170,7 +170,7 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
       <div className="absolute inset-0 bg-black/30" onClick={onClose} aria-hidden="true" />
       <div role="dialog" aria-modal="true" aria-label="Search" className="relative w-full max-w-xl bg-white rounded-2xl shadow-xl overflow-hidden">
         <div className="flex items-center gap-3 px-4 border-b border-gray-100">
-          <Search size={20} className="text-gray-400 shrink-0" />
+          <Search size={20} className="text-gray-500 shrink-0" />
           <input
             ref={inputRef}
             autoFocus
@@ -186,9 +186,9 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
             aria-controls={listId}
             aria-activedescendant={results.length ? optionId(active) : undefined}
             aria-autocomplete="list"
-            className="flex-1 min-w-0 h-14 text-base text-gray-800 placeholder:text-gray-400 focus:outline-none bg-transparent"
+            className="flex-1 min-w-0 h-14 text-base text-gray-800 placeholder:text-gray-500 focus:outline-none bg-transparent"
           />
-          {searching && <Spinner size={16} className="text-gray-400" />}
+          {searching && <Spinner size={16} className="text-gray-500" />}
           <button
             type="button"
             onClick={onClose}
@@ -207,7 +207,7 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
             return (
               <li key={`${result.kind}-${result.key}`}>
                 {(index === 0 && result.kind === "patient") || index === firstAction ? (
-                  <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
                     {result.kind === "patient" ? "Patients" : "Actions"}
                   </p>
                 ) : null}
@@ -239,7 +239,7 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
             );
           })}
         </ul>
-        <p className="hidden sm:block px-4 py-2 text-xs text-gray-400 border-t border-gray-100">
+        <p className="hidden sm:block px-4 py-2 text-xs text-gray-500 border-t border-gray-100">
           ↑ ↓ to move · Enter to open · Esc to close
         </p>
       </div>

@@ -55,7 +55,7 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
               {displayName.charAt(0).toUpperCase()}
             </span>
             <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[160px] truncate">{displayName}</span>
-            <ChevronDown size={14} className="text-gray-400" />
+            <ChevronDown size={14} className="text-gray-500" />
           </button>
 
           {open && (

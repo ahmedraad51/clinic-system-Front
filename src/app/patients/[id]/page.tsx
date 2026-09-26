@@ -229,7 +229,7 @@ function PatientDetail() {
               href={`tel:${patient.secondary_phone.replace(/\s/g, "")}`}
               className="inline-flex items-center gap-2 min-h-11 px-4 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-700 hover:bg-gray-100"
             >
-              <Phone size={16} className="text-gray-400" />
+              <Phone size={16} className="text-gray-500" />
               {patient.secondary_phone}
             </a>
           )}
@@ -244,7 +244,7 @@ function PatientDetail() {
                   <span className="block text-xs font-normal text-gray-500">{lastVisit.reason_for_visit || lastVisit.doctor_name}</span>
                 </Link>
               ) : data ? (
-                <span className="text-gray-400">None yet</span>
+                <span className="text-gray-500">None yet</span>
               ) : (
                 "…"
               )}
@@ -259,7 +259,7 @@ function PatientDetail() {
                   <span className="block text-xs font-normal text-gray-500">{nextVisit.doctor_name}</span>
                 </Link>
               ) : data ? (
-                <span className="text-gray-400">Not booked</span>
+                <span className="text-gray-500">Not booked</span>
               ) : (
                 "…"
               )}
@@ -419,7 +419,7 @@ function PatientDetail() {
                     </Td>
                     <Td label="Cost" className="text-end whitespace-nowrap">{money(plan.total_cost)}</Td>
                     <Td label="Remaining" className="text-end whitespace-nowrap">
-                      <span className={Number(plan.remaining_amount) > 0 ? "font-medium text-red-600" : "text-gray-400"}>
+                      <span className={Number(plan.remaining_amount) > 0 ? "font-medium text-red-600" : "text-gray-500"}>
                         {money(plan.remaining_amount)}
                       </span>
                     </Td>

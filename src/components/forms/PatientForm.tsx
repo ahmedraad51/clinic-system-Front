@@ -3,6 +3,7 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Save } from "lucide-react";
 import { Alert, Button, Card, Field, FormActions, LinkButton, SelectInput, TextArea, TextInput } from "@/components/ui";
+import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import { errorMessage } from "@/lib/frappe";
 import { GENDERS, type Patient } from "@/lib/types";
 
@@ -65,6 +66,8 @@ export default function PatientForm({
 }) {
   const [form, setForm] = useState<PatientFormData>(initial);
   const [saving, setSaving] = useState(false);
+  // Set once saved, so the page can move on without the unsaved-changes question.
+  const [done, setDone] = useState(false);
   const [error, setError] = useState("");
 
   const handleChange = (event: InputEvent) => {
@@ -77,6 +80,7 @@ export default function PatientForm({
     setError("");
     try {
       await onSubmit(form);
+      setDone(true);
     } catch (err) {
       console.error(err);
       setError(errorMessage(err, "Could not save the patient. Please try again."));
@@ -85,8 +89,11 @@ export default function PatientForm({
     }
   };
 
+  const dirty = !done && JSON.stringify(form) !== JSON.stringify(initial);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <UnsavedChangesGuard when={dirty} />
       <Card title="Basic Information">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Full Name" required className="sm:col-span-2">

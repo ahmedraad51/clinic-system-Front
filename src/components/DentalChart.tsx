@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Check, Plus, RotateCcw, Save, Sparkles, X } from "lucide-react";
+import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import { Alert, Button, LinkButton, Segmented, StatusBadge, TextArea } from "@/components/ui";
 import {
   CONDITION_LABELS, FINDING_LABELS, LEGACY_LABELS, SURFACE_LABELS, cleanChart, describeTooth, isChildTooth,
@@ -255,6 +256,7 @@ export default function DentalChart({
 
   return (
     <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 w-full space-y-5">
+      <UnsavedChangesGuard when={dirty && canEdit && Boolean(onSave)} />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-gray-800">Dental Chart</h2>
@@ -291,7 +293,7 @@ export default function DentalChart({
 
       <div className="overflow-x-auto -mx-2 px-2">
         <div className="w-max mx-auto">
-          <div className="flex justify-between text-xs text-gray-400 px-1 mb-1">
+          <div className="flex justify-between text-xs text-gray-500 px-1 mb-1">
             <span>Patient&apos;s right</span>
             <span className="font-medium text-gray-500">Upper jaw</span>
             <span>Patient&apos;s left</span>
@@ -448,7 +450,7 @@ function ToothPanel({
           type="button"
           onClick={onClose}
           aria-label="Close tooth panel"
-          className="w-11 h-11 -me-2 -mt-2 flex items-center justify-center rounded-lg text-gray-400 hover:bg-white hover:text-gray-700"
+          className="w-11 h-11 -me-2 -mt-2 flex items-center justify-center rounded-lg text-gray-500 hover:bg-white hover:text-gray-700"
         >
           <X size={18} />
         </button>

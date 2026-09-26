@@ -106,7 +106,7 @@ function DayReport() {
                 <div key={row.method} className="rounded-xl border border-gray-100 px-4 py-3">
                   <p className="text-xs text-gray-500">{row.method}</p>
                   <p className="text-lg font-bold text-gray-800">{money(row.total)}</p>
-                  <p className="text-xs text-gray-400">{row.count === 1 ? "1 payment" : `${row.count} payments`}</p>
+                  <p className="text-xs text-gray-500">{row.count === 1 ? "1 payment" : `${row.count} payments`}</p>
                 </div>
               ))}
               <div className="rounded-xl bg-primary-50 px-4 py-3 print:bg-white print:border print:border-gray-300">

@@ -3,6 +3,7 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Save } from "lucide-react";
 import { Alert, Button, Card, Field, FormActions, LinkButton, SelectInput, TextArea, TextInput } from "@/components/ui";
+import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import LinkSelect from "@/components/ui/LinkSelect";
 import { errorMessage } from "@/lib/frappe";
 import { useDoctors } from "@/lib/hooks";
@@ -86,6 +87,8 @@ export default function TreatmentForm({
   const doctors = useDoctors();
   const [form, setForm] = useState<TreatmentFormData>(initial);
   const [saving, setSaving] = useState(false);
+  // Set once saved, so the page can move on without the unsaved-changes question.
+  const [done, setDone] = useState(false);
   const [error, setError] = useState("");
 
   const handleChange = (event: InputEvent) => {
@@ -108,6 +111,7 @@ export default function TreatmentForm({
     setError("");
     try {
       await onSubmit(form);
+      setDone(true);
     } catch (err) {
       console.error(err);
       setError(errorMessage(err, "Could not save the treatment plan. Please try again."));
@@ -120,8 +124,11 @@ export default function TreatmentForm({
   // Older plans may hold free text such as "36, 37"; keep it as an option so it is not lost.
   const customTooth = form.tooth_number && !ALL_TEETH.has(form.tooth_number);
 
+  const dirty = !done && JSON.stringify(form) !== JSON.stringify(initial);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <UnsavedChangesGuard when={dirty} />
       <Card>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Patient" required className="sm:col-span-2">

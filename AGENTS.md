@@ -137,6 +137,7 @@ src/
 │   ├── AppointmentCalendar.tsx  the day and week time grid on /appointments
 │   ├── Guard.tsx             RequirePermission
 │   ├── DentalChart.tsx       the odontogram (adult and child teeth, surfaces, conditions), saved to Patient.dental_chart
+│   ├── UnsavedChangesGuard.tsx  asks before leaving a form with unsaved changes
 │   ├── ClinicLetterhead.tsx  the clinic header on printouts (receipt, estimate)
 │   ├── ToothLogo.tsx         the app logo (inline SVG)
 │   ├── MedicalAlerts.tsx     the red/yellow medical alerts band (show it wherever treatment is decided)
@@ -469,6 +470,14 @@ function Things() {
 - **Forms** live in `src/components/forms/`, one per doctype, shared by the new and edit pages. Each exports
   `EMPTY_…` (or `empty…()`), `…ToForm(doc)` and `…Payload(form)`. The page passes `onSubmit`, which saves,
   shows a toast and navigates; the form shows `errorMessage(err)` if it throws.
+- **Unsaved changes:** every form renders `<UnsavedChangesGuard when={dirty} />` (`src/components/`), where
+  `dirty` compares the form with its starting values and turns false once saved. It asks before closing the
+  tab and before following any in-app link; navigation in code (`router.push` after a save) is not stopped.
+- **Loading:** lists show `<TableLoading colSpan={…} />` (skeleton rows with a hidden "Loading..." that
+  screen readers and `waitForData()` use); single records show `PageLoading`.
+- **Contrast:** readable text is `text-gray-500` or darker (4.8:1 on white). `text-gray-300`/`400` only for
+  decoration and disabled things. Links and other focusable things get a primary focus ring from
+  `globals.css`; `MainLayout` has a "Skip to content" link to `#main`.
 - **Messages:** `useToast().success/error/info`. Never use `alert()`. Ask before deleting with
   `ConfirmDialog`.
 - **Medical safety:** every screen where treatment is decided or done shows `<MedicalAlerts patient={…} />`
@@ -486,7 +495,7 @@ whatsapp, trigger, user) and `statusTone(kind, status)` for other views that mus
 `Button` and `LinkButton` (primary, secondary, danger, ghost, success; sm, md; `icon`, `loading`),
 `Segmented` (joined view switch, e.g. Day / Week / List), `FormActions` (sticky Save / Cancel bar), `Field` (label wrapping one input), `TextInput`,
 `SelectInput`, `TextArea`, `Toggle`,
-`SearchInput`, `Toolbar`, `Table`, `Th`, `Td` (with `label` for the phone cards), `ClickableRow`, `TableMessage`, `Pagination`, `DetailList` and
+`SearchInput`, `Toolbar`, `Table`, `Th`, `Td` (with `label` for the phone cards), `ClickableRow`, `TableLoading`, `TableMessage`, `Pagination`, `DetailList` and
 `DetailRow`, `Tabs`, `Alert`, `Spinner`, `PageLoading`, `EmptyState`, `NoAccess`, `NotFoundCard`; plus
 `Modal` and `ConfirmDialog` in `Modal.tsx`, and `LinkSelect` for searchable Link fields. Use these instead of
 writing new class lists.

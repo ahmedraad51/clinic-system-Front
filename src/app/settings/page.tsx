@@ -4,6 +4,7 @@ import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import ToothLogo from "@/components/ToothLogo";
 import { Save, Trash2, Upload } from "lucide-react";
 import RequirePermission from "@/components/Guard";
+import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import {
   Alert, Button, Card, Field, FormActions, PageContainer, PageHeader, PageLoading, SelectInput, TextInput, Toggle,
 } from "@/components/ui";
@@ -86,6 +87,8 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<SettingsForm>(() => toForm(initial));
+  // The last saved values, to tell whether anything is still unsaved.
+  const [baseline, setBaseline] = useState<SettingsForm>(form);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -143,6 +146,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
           .map((type) => ({ treatment_type: type, price: Number(form.prices[type]) })),
       });
       toast.success("Settings saved.");
+      setBaseline(form);
       refresh();
       onSaved();
     } catch (err) {
@@ -159,6 +163,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <UnsavedChangesGuard when={JSON.stringify(form) !== JSON.stringify(baseline)} />
       <Card title="Clinic">
         <div className="flex items-center gap-4 mb-5">
           {form.logo ? (
@@ -218,7 +223,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
             <TextInput type="time" name="closing_time" value={form.closing_time} onChange={handleChange} />
           </Field>
         </div>
-        <p className="text-xs text-gray-400 mt-3">Shown as a hint when booking an appointment.</p>
+        <p className="text-xs text-gray-500 mt-3">Shown as a hint when booking an appointment.</p>
       </Card>
 
       <Card title="Price List">

@@ -200,7 +200,7 @@ function UserDetail() {
 
             {PERMISSION_GROUPS.map((group) => (
               <div key={group.group}>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{group.group}</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{group.group}</p>
                 <div className="flex flex-wrap gap-2">
                   {group.items.map((item) => {
                     const on = current.perms[item.key];

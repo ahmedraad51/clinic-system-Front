@@ -69,12 +69,12 @@ function Profile() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {PERMISSION_GROUPS.map((group) => (
             <div key={group.group}>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{group.group}</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{group.group}</p>
               <ul className="space-y-1.5">
                 {group.items.map((item) => {
                   const on = can(item.key);
                   return (
-                    <li key={item.key} className={cx("flex items-center gap-2 text-sm", on ? "text-gray-800" : "text-gray-400")}>
+                    <li key={item.key} className={cx("flex items-center gap-2 text-sm", on ? "text-gray-800" : "text-gray-500")}>
                       {on ? <Check size={15} className="text-green-600" /> : <X size={15} />}
                       {item.label}
                     </li>

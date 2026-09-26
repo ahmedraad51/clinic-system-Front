@@ -84,7 +84,7 @@ function PaymentDetail() {
 
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 py-5">
           <div>
-            <dt className="text-xs text-gray-400">Received from</dt>
+            <dt className="text-xs text-gray-500">Received from</dt>
             <dd className="text-sm font-medium text-gray-800 mt-0.5">
               <Link href={patientHref(payment.patient)} className="hover:text-primary-600">
                 {payment.patient_name || payment.patient}
@@ -92,7 +92,7 @@ function PaymentDetail() {
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-gray-400">For</dt>
+            <dt className="text-xs text-gray-500">For</dt>
             <dd className="text-sm font-medium text-gray-800 mt-0.5">
               {payment.treatment_plan ? (
                 <Link href={treatmentHref(payment.treatment_plan)} className="hover:text-primary-600">
@@ -104,16 +104,16 @@ function PaymentDetail() {
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-gray-400">Payment method</dt>
+            <dt className="text-xs text-gray-500">Payment method</dt>
             <dd className="text-sm font-medium text-gray-800 mt-0.5">{payment.payment_method}</dd>
           </div>
           <div>
-            <dt className="text-xs text-gray-400">Date</dt>
+            <dt className="text-xs text-gray-500">Date</dt>
             <dd className="text-sm font-medium text-gray-800 mt-0.5">{formatDate(payment.payment_date)}</dd>
           </div>
           {payment.notes && (
             <div className="sm:col-span-2">
-              <dt className="text-xs text-gray-400">Notes</dt>
+              <dt className="text-xs text-gray-500">Notes</dt>
               <dd className="text-sm text-gray-700 mt-0.5 whitespace-pre-line">{payment.notes}</dd>
             </div>
           )}

@@ -436,7 +436,7 @@ export default function AppointmentCalendar({
           <span className="w-4 border-t-2 border-red-500" />
           Now
         </span>
-        {canBook && <span className="text-gray-400">Click an empty time to book it.</span>}
+        {canBook && <span className="text-gray-500">Click an empty time to book it.</span>}
       </div>
     </div>
   );

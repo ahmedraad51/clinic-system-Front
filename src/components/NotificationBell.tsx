@@ -75,10 +75,10 @@ export default function NotificationBell() {
           <div className="absolute end-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-lg border border-gray-100">
             <div className="px-4 py-3 border-b border-gray-100">
               <p className="text-sm font-semibold text-gray-800">Today</p>
-              <p className="text-xs text-gray-400">Appointments still to come</p>
+              <p className="text-xs text-gray-500">Appointments still to come</p>
             </div>
             {items.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-center text-gray-400">Nothing left for today.</p>
+              <p className="px-4 py-6 text-sm text-center text-gray-500">Nothing left for today.</p>
             ) : (
               <ul className="max-h-80 overflow-y-auto py-1">
                 {items.map((item) => (
@@ -91,7 +91,7 @@ export default function NotificationBell() {
                       <span className="text-xs font-semibold text-primary-600 w-16 shrink-0">{formatTime(item.appointment_time)}</span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-medium text-gray-800 truncate">{item.patient_name || item.name}</span>
-                        <span className="block text-xs text-gray-400 truncate">{item.doctor_name}</span>
+                        <span className="block text-xs text-gray-500 truncate">{item.doctor_name}</span>
                       </span>
                       <StatusBadge kind="appointment" status={item.status} />
                     </Link>

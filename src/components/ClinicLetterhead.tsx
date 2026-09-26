@@ -29,7 +29,7 @@ export default function ClinicLetterhead({ kind, reference, date }: { kind: stri
         </div>
       </div>
       <div className="text-end shrink-0">
-        <p className="text-xs uppercase tracking-wider text-gray-400">{kind}</p>
+        <p className="text-xs uppercase tracking-wider text-gray-500">{kind}</p>
         {reference && <p className="text-sm font-semibold text-gray-800">{reference}</p>}
         {date && <p className="text-xs text-gray-500">{date}</p>}
       </div>

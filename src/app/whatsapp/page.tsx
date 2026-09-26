@@ -6,7 +6,7 @@ import { MessageCircle, Pencil, Plus, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Badge, Button, Card, EmptyState, Field, PageContainer, PageHeader, PageLoading, Pagination,
-  SearchInput, SelectInput, StatusBadge, Table, TableMessage, Tabs, Td, TextArea, TextInput, Th, Toggle, Toolbar,
+  SearchInput, SelectInput, StatusBadge, Table, TableLoading, TableMessage, Tabs, Td, TextArea, TextInput, Th, Toggle, Toolbar,
 } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { useSettings } from "@/context/SettingsContext";
@@ -274,7 +274,7 @@ function TemplateModal({
         <div>
           <p className="text-sm font-medium text-gray-700 mb-1.5">Preview</p>
           <div className="rounded-2xl rounded-ss-sm bg-green-50 border border-green-100 px-4 py-3 text-sm text-gray-800 whitespace-pre-line min-h-[3rem]">
-            {preview || <span className="text-gray-400">The message will show here.</span>}
+            {preview || <span className="text-gray-500">The message will show here.</span>}
           </div>
         </div>
 
@@ -354,7 +354,7 @@ function MessageLog() {
           </thead>
           <tbody>
             {list.initialLoading ? (
-              <TableMessage colSpan={4}>Loading...</TableMessage>
+              <TableLoading colSpan={4} />
             ) : list.rows.length === 0 ? (
               <TableMessage icon={MessageCircle} colSpan={4}>No messages found.</TableMessage>
             ) : (
@@ -376,7 +376,7 @@ function MessageLog() {
                     ) : (
                       "—"
                     )}
-                    {log.phone_number && <span className="block text-xs text-gray-400">{log.phone_number}</span>}
+                    {log.phone_number && <span className="block text-xs text-gray-500">{log.phone_number}</span>}
                   </Td>
                   <Td label="Status">
                     <StatusBadge kind="whatsapp" status={log.status} />

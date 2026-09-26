@@ -5,19 +5,17 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
-  form with unsaved changes, clear error messages.
+- Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Backlog
 
-1. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
-2. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
+1. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
    and warn when booking outside them.
-3. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
+2. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
    check.
-4. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
+3. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
    treatment plan page for its tooth.
-5. Show the medical alerts in the booking and treatment forms as soon as a patient is picked.
+4. Show the medical alerts in the booking and treatment forms as soon as a patient is picked.
 
 ## Done
 
@@ -87,7 +85,13 @@ Each finished item says what changed, when, and which commit holds it.
   every treatment, every payment and the balance ("Print statement" on the patient's Payments tab); an
   appointment card to hand to the patient ("Print Card" on an appointment); and an end-of-day report with
   the payments of the day by method, the total and the cash that should be in the drawer, with lines to
-  sign ("End-of-Day Report" on Payments and "Day Report" on Today). Commit PENDING.
+  sign ("End-of-Day Report" on Payments and "Day Report" on Today). Commit d3f6651.
+- 2026-09-26 - **Quality and comfort.** Leaving a form (or the dental chart) with unsaved changes now asks
+  "Leave without saving?" first, and so does closing the browser tab. Small grey text and field hints are
+  darker and easier to read. Keyboard users see a clear ring on the focused link, and the first Tab press
+  offers "Skip to content". Lists show grey placeholder rows while they load instead of a bare
+  "Loading..." line. Error messages were already short, plain sentences, so they were left as they are.
+  Commit PENDING.
 
 ## Questions for the owner
 

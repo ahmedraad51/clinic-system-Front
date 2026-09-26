@@ -6,7 +6,7 @@ import { ClipboardList, Plus } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Card, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination,
-  SearchInput, SelectInput, StatusBadge, Table, TableMessage, Td, Th, Toolbar,
+  SearchInput, SelectInput, StatusBadge, Table, TableLoading, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -98,7 +98,7 @@ function TreatmentsList() {
           </thead>
           <tbody>
             {list.initialLoading ? (
-              <TableMessage colSpan={7}>Loading...</TableMessage>
+              <TableLoading colSpan={7} />
             ) : list.rows.length === 0 ? (
               <TableMessage icon={ClipboardList} colSpan={7}>
                 {filtered ? "No treatment plans match these filters." : "No treatment plans yet."}
@@ -110,7 +110,7 @@ function TreatmentsList() {
                     <Link href={treatmentHref(plan.name)} className="font-medium text-gray-800 hover:text-primary-600">
                       {plan.treatment_type}
                     </Link>
-                    <span className="block text-xs text-gray-400">{plan.name}</span>
+                    <span className="block text-xs text-gray-500">{plan.name}</span>
                   </Td>
                   <Td label="Patient">
                     <Link href={patientHref(plan.patient)} className="text-gray-700 hover:text-primary-600">
@@ -124,7 +124,7 @@ function TreatmentsList() {
                   </Td>
                   <Td label="Cost" className="text-end whitespace-nowrap">{money(plan.total_cost)}</Td>
                   <Td label="Remaining" className="text-end whitespace-nowrap">
-                    <span className={Number(plan.remaining_amount) > 0 ? "font-medium text-red-600" : "text-gray-400"}>
+                    <span className={Number(plan.remaining_amount) > 0 ? "font-medium text-red-600" : "text-gray-500"}>
                       {money(plan.remaining_amount)}
                     </span>
                   </Td>

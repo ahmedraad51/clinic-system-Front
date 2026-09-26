@@ -101,7 +101,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
             )}
             <span className="font-bold text-gray-800 text-lg truncate">{clinicName}</span>
           </Link>
-          <button type="button" onClick={onClose} className="lg:hidden w-11 h-11 -me-2 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100" aria-label="Close menu">
+          <button type="button" onClick={onClose} className="lg:hidden w-11 h-11 -me-2 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100" aria-label="Close menu">
             <X size={18} />
           </button>
         </div>
@@ -113,7 +113,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
             if (items.length === 0) return null;
             return (
               <div key={group.group}>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">{group.group}</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 mb-2">{group.group}</p>
                 <div className="space-y-1">
                   {items.map((item) => {
                     const active = pathname === item.path || pathname.startsWith(item.path + "/");
@@ -150,11 +150,11 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               </span>
               <span className="min-w-0">
                 <span className="block text-sm font-medium text-gray-800 truncate">{displayName}</span>
-                <span className="block text-xs text-gray-400 truncate">{roleLabel}</span>
+                <span className="block text-xs text-gray-500 truncate">{roleLabel}</span>
               </span>
             </Link>
             {!authDisabled && (
-              <button type="button" onClick={handleLogout} className="text-gray-400 hover:text-red-500 transition" aria-label="Log out">
+              <button type="button" onClick={handleLogout} className="text-gray-500 hover:text-red-500 transition" aria-label="Log out">
                 <LogOut size={16} />
               </button>
             )}

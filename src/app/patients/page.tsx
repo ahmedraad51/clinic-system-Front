@@ -6,7 +6,7 @@ import { UserPlus, UserSearch } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Card, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination,
-  SearchInput, SelectInput, Table, TableMessage, Td, Th, Toolbar,
+  SearchInput, SelectInput, Table, TableLoading, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -81,7 +81,7 @@ function PatientsList() {
           </thead>
           <tbody>
             {list.initialLoading ? (
-              <TableMessage colSpan={columns}>Loading...</TableMessage>
+              <TableLoading colSpan={columns} />
             ) : list.rows.length === 0 ? (
               <TableMessage icon={UserSearch} colSpan={columns}>
                 {filtered ? "No patients match your search." : "No patients yet."}
@@ -93,7 +93,7 @@ function PatientsList() {
                     <Link href={patientHref(patient.name)} className="font-medium text-gray-800 hover:text-primary-600">
                       {patient.full_name}
                     </Link>
-                    <span className="block text-xs text-gray-400">{patient.name}</span>
+                    <span className="block text-xs text-gray-500">{patient.name}</span>
                   </Td>
                   <Td label="Phone" className="whitespace-nowrap">{display(patient.phone_number)}</Td>
                   <Td label="Gender">{display(patient.gender)}</Td>
@@ -103,7 +103,7 @@ function PatientsList() {
                       {Number(patient.total_remaining) > 0 ? (
                         <span className="font-medium text-red-600">{money(patient.total_remaining)}</span>
                       ) : (
-                        <span className="text-gray-400">{money(0)}</span>
+                        <span className="text-gray-500">{money(0)}</span>
                       )}
                     </Td>
                   )}

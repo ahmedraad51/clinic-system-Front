@@ -3,6 +3,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Save } from "lucide-react";
 import { Alert, Button, Card, Field, FormActions, LinkButton, SelectInput, TextArea, TextInput } from "@/components/ui";
+import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import LinkSelect from "@/components/ui/LinkSelect";
 import { errorMessage, getList } from "@/lib/frappe";
 import { todayISO } from "@/lib/format";
@@ -61,6 +62,8 @@ export default function PaymentForm({
   const [form, setForm] = useState<PaymentFormData>(initial);
   const [plansFor, setPlansFor] = useState<{ patient: string; plans: TreatmentPlan[] }>({ patient: "", plans: [] });
   const [saving, setSaving] = useState(false);
+  // Set once saved, so the page can move on without the unsaved-changes question.
+  const [done, setDone] = useState(false);
   const [error, setError] = useState("");
 
   // Load the chosen patient's treatment plans.
@@ -114,6 +117,7 @@ export default function PaymentForm({
     setError("");
     try {
       await onSubmit(form);
+      setDone(true);
     } catch (err) {
       console.error(err);
       setError(errorMessage(err, "Could not save the payment. Please try again."));
@@ -122,8 +126,11 @@ export default function PaymentForm({
     }
   };
 
+  const dirty = !done && JSON.stringify(form) !== JSON.stringify(initial);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <UnsavedChangesGuard when={dirty} />
       <Card>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Patient" required className="sm:col-span-2">

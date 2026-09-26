@@ -231,11 +231,11 @@ function AppointmentList({
   empty: string;
   showDate: boolean;
 }) {
-  if (!rows) return <p className="px-6 pb-6 text-sm text-gray-400">Loading...</p>;
+  if (!rows) return <p className="px-6 pb-6 text-sm text-gray-500">Loading...</p>;
   if (rows.length === 0) {
     return (
       <div className="px-6 pb-6">
-        <p className="text-sm text-gray-400">{empty}</p>
+        <p className="text-sm text-gray-500">{empty}</p>
         <LinkButton href="/appointments/new" size="sm" variant="secondary" icon={Plus} className="mt-3">
           New Appointment
         </LinkButton>
@@ -249,11 +249,11 @@ function AppointmentList({
           <Link href={appointmentHref(a.name)} className="flex items-center gap-4 px-6 py-3 hover:bg-gray-50">
             <span className="w-20 shrink-0">
               <span className="block text-sm font-semibold text-primary-600">{formatTime(a.appointment_time)}</span>
-              {showDate && <span className="block text-xs text-gray-400">{formatDate(a.appointment_date)}</span>}
+              {showDate && <span className="block text-xs text-gray-500">{formatDate(a.appointment_date)}</span>}
             </span>
             <span className="flex-1 min-w-0">
               <span className="block text-sm font-medium text-gray-800 truncate">{a.patient_name || a.name}</span>
-              <span className="block text-xs text-gray-400 truncate">
+              <span className="block text-xs text-gray-500 truncate">
                 {[a.doctor_name, a.reason_for_visit].filter(Boolean).join(" · ")}
               </span>
             </span>
