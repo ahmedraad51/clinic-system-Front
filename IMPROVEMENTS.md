@@ -5,12 +5,11 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Faster payments: after picking a patient, choose their treatment plan by itself when only one has a
-  balance, and offer "Pay the full balance" in one tap.
+- Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Backlog
 
-1. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+
 
 ## Done
 
@@ -138,7 +137,10 @@ Each finished item says what changed, when, and which commit holds it.
   text can be changed, and WhatsApp opens with the message ready to send. The buttons at the top of the
   appointment, treatment plan and payment pages were tidied: Delete is now a small red bin icon, and
   "Print Card" and "Send Message" sit with the part of the page they belong to, so the top fits on one
-  line. Commit PENDING.
+  line. Commit ba95aab.
+- 2026-09-26 - **Faster payments.** When a new payment is for a patient with only one treatment plan still
+  to pay, that plan is chosen automatically. A "Pay full balance" button fills in the amount left in one
+  tap. Commit PENDING.
 
 ## Questions for the owner
 

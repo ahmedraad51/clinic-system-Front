@@ -59,6 +59,8 @@ export default function PaymentForm({
   onSubmit: (data: PaymentFormData) => Promise<void>;
 }) {
   const { money, currency } = useSettings();
+  // Editing keeps what was saved; only a new payment gets its plan picked automatically.
+  const isNew = initial.amount === "";
   const [form, setForm] = useState<PaymentFormData>(initial);
   const [plansFor, setPlansFor] = useState<{ patient: string; plans: TreatmentPlan[] }>({ patient: "", plans: [] });
   const [saving, setSaving] = useState(false);
@@ -78,7 +80,13 @@ export default function PaymentForm({
           ["name", "treatment_type", "tooth_number", "status", "total_cost", "remaining_amount"],
           { filters: [["patient", "=", patient]], orderBy: "name desc", limit: 0 },
         );
-        if (!cancelled) setPlansFor({ patient, plans });
+        if (cancelled) return;
+        setPlansFor({ patient, plans });
+        // A new payment for a patient with exactly one plan to pay off: choose that plan.
+        const open = plans.filter((p) => p.status !== "Cancelled" && Number(p.remaining_amount) > 0);
+        if (isNew && open.length === 1) {
+          setForm((prev) => (prev.patient === patient && !prev.treatment_plan ? { ...prev, treatment_plan: open[0].name } : prev));
+        }
       } catch (err) {
         console.error(err);
       }
@@ -87,7 +95,7 @@ export default function PaymentForm({
     return () => {
       cancelled = true;
     };
-  }, [form.patient]);
+  }, [form.patient, isNew]);
 
   const plans = plansFor.patient === form.patient ? plansFor.plans : [];
   const selectedPlan = plans.find((plan) => plan.name === form.treatment_plan);
@@ -169,7 +177,22 @@ export default function PaymentForm({
           <Field
             label={`Amount (${currency})`}
             required
-            hint={maxAmount !== undefined ? `Up to ${money(maxAmount)} for this plan.` : undefined}
+            hint={
+              maxAmount !== undefined && maxAmount > 0 ? (
+                <span className="flex flex-wrap items-center gap-2">
+                  Up to {money(maxAmount)} for this plan.
+                  {Number(form.amount) !== maxAmount && (
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, amount: String(maxAmount) })}
+                      className="rounded-lg border border-primary-200 bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700 hover:bg-primary-100"
+                    >
+                      Pay full balance
+                    </button>
+                  )}
+                </span>
+              ) : undefined
+            }
           >
             <TextInput
               type="number"

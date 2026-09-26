@@ -211,7 +211,7 @@ on the form, and a click made while the save is still running is overridden by t
 | `/treatments/[id]` | `view_treatments` | `MedicalAlerts` for the patient, cost/paid/remaining with a progress bar, details, status buttons, payments of the plan, **Treatment Sessions** (add, edit, delete in a dialog), and the patient's **dental chart** read-only, opened at the plan's tooth (`initialTooth`), loaded with `usePatientChart()` |
 | `/treatments/[id]/edit` | `edit_treatments` | Shared `TreatmentForm` with status |
 | `/payments` | `view_payments` | Search, method filter, date range, paging, total of everything that matches |
-| `/payments/new` | `add_payments` | Shared `PaymentForm`. Reads `?patient=&treatment=`. Blocks amounts above what the plan has left |
+| `/payments/new` | `add_payments` | Shared `PaymentForm`. Reads `?patient=&treatment=`. A new payment for a patient with exactly one plan with a balance picks that plan; **Pay full balance** fills the amount. Blocks amounts above what the plan has left |
 | `/payments/day` | `view_payments` | End-of-day report for `?date=` (default today): totals per payment method and overall, every payment of the day, the cash that should be in the drawer, and Counted by / Checked by lines. Linked from Payments and the Today board |
 | `/payments/[id]` | `view_payments` | Printable receipt with clinic details; Edit/Delete (`add_payments`) |
 | `/payments/[id]/edit` | `add_payments` | Shared `PaymentForm` |
