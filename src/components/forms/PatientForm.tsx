@@ -2,11 +2,12 @@
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
-import { Save, Users } from "lucide-react";
+import { Check, Save, Users } from "lucide-react";
 import { Alert, Button, Card, Field, FormActions, LinkButton, SelectInput, TextArea, TextInput } from "@/components/ui";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { errorMessage, getList, type FilterRow } from "@/lib/frappe";
+import { cx, isBlankMedical } from "@/lib/format";
 import { useDebounced } from "@/lib/hooks";
 import { patientHref } from "@/lib/links";
 import { GENDERS, type Patient } from "@/lib/types";
@@ -56,6 +57,38 @@ export function patientPayload(form: PatientFormData) {
 }
 
 type InputEvent = ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
+
+type MedicalField = "allergies" | "current_medications" | "chronic_diseases";
+
+/**
+ * The usual medical questions as tick boxes. Ticking writes the word into the existing text field, so the
+ * back end needs no new fields and the medical alerts find it. A box is also shown ticked when the text
+ * already says it in other words (e.g. "Warfarin 3mg"); such a box can only be cleared in the text.
+ */
+const CHECKLIST: Array<{ label: string; field: MedicalField; term: string; finds: RegExp }> = [
+  { label: "Takes blood thinners", field: "current_medications", term: "Blood thinners", finds: /blood thinner|warfarin|aspirin|clopidogrel|heparin|apixaban|rivaroxaban|dabigatran|anticoagula/i },
+  { label: "Diabetes", field: "chronic_diseases", term: "Diabetes", finds: /diabet/i },
+  { label: "Heart disease", field: "chronic_diseases", term: "Heart disease", finds: /heart|cardiac|angina|arrhythmia|atrial fibrillation|pacemaker/i },
+  { label: "High blood pressure", field: "chronic_diseases", term: "High blood pressure", finds: /high blood pressure|hypertension/i },
+  { label: "Pregnant", field: "chronic_diseases", term: "Pregnant", finds: /pregnan/i },
+  { label: "Allergic to penicillin", field: "allergies", term: "Penicillin", finds: /penicillin|amoxicillin/i },
+  { label: "Allergic to latex", field: "allergies", term: "Latex", finds: /latex/i },
+  { label: "Allergic to local anaesthetic", field: "allergies", term: "Local anaesthetic", finds: /anaesthetic|anesthetic|lidocaine|articaine/i },
+];
+
+/** Adds a term to a comma-separated medical text, replacing "None" and the like. */
+function addTerm(text: string, term: string): string {
+  return isBlankMedical(text) ? term : `${text.trim().replace(/[,.\s]+$/, "")}, ${term}`;
+}
+
+/** Removes a term that the checklist added, and tidies the commas. */
+function removeTerm(text: string, term: string): string {
+  return text
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part && part.toLowerCase() !== term.toLowerCase())
+    .join(", ");
+}
 
 const digitsOf = (phone?: string) => (phone || "").replace(/\D/g, "");
 /** Two phone numbers are the same when their last 8 digits match, so "+20 100 234 5678" = "0100 234 5678". */
@@ -227,6 +260,37 @@ export default function PatientForm({
       </Card>
 
       <Card title="Medical Information">
+        <div className="mb-5">
+          <p className="text-sm font-medium text-gray-700">Quick checklist</p>
+          <p className="text-xs text-gray-500 mb-2">Tick what applies; it is written into the fields below.</p>
+          <div className="flex flex-wrap gap-2">
+            {CHECKLIST.map((item) => {
+              const text = form[item.field];
+              const on = item.finds.test(text);
+              // Ticked because of other words in the text: can only be changed in the text itself.
+              const fixed = on && !text.split(",").some((part) => part.trim().toLowerCase() === item.term.toLowerCase());
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  aria-pressed={on}
+                  disabled={fixed}
+                  title={fixed ? "Written in the text below; change it there." : undefined}
+                  onClick={() =>
+                    setForm({ ...form, [item.field]: on ? removeTerm(text, item.term) : addTerm(text, item.term) })
+                  }
+                  className={cx(
+                    "inline-flex items-center gap-1.5 min-h-11 px-3.5 rounded-xl border text-sm font-medium transition disabled:cursor-default",
+                    on ? "bg-red-50 border-red-200 text-red-800" : "bg-white border-gray-200 text-gray-700 hover:border-primary-300",
+                  )}
+                >
+                  {on && <Check size={14} />}
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Allergies" hint="Shown as a warning on the patient page.">
             <TextArea name="allergies" value={form.allergies} onChange={handleChange} rows={2} />

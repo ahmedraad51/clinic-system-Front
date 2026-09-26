@@ -5,19 +5,16 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Quick medical checklist in the patient form: tick boxes for the usual questions (blood thinners,
-  diabetes, heart problems, high blood pressure, pregnancy, common allergies) that write into the existing
-  medical fields, so the alerts are always found.
+- Tomorrow's reminders: a list of tomorrow's appointments with one tap to send each patient a WhatsApp
+  reminder from a template, for clinics that remind by hand.
 
 ## Backlog
 
-1. Tomorrow's reminders: a list of tomorrow's appointments with one tap to send each patient a WhatsApp
-   reminder from a template, for clinics that remind by hand.
-2. Clinic working days: choose the days the clinic is open in Settings; the week calendar shades closed
+1. Clinic working days: choose the days the clinic is open in Settings; the week calendar shades closed
    days and booking on a closed day asks first.
-3. Reports for the manager: revenue by doctor, and appointments by outcome (completed, no-show, cancelled)
+2. Reports for the manager: revenue by doctor, and appointments by outcome (completed, no-show, cancelled)
    with the no-show rate for the period.
-4. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+3. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -152,7 +149,12 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-26 - **No more double patients.** When adding a patient, the form checks as you type: if the
   phone number (written any way, with or without spaces or the country code) or the exact name is already
   registered, it shows that patient with a link to open them. Saving with the same phone number asks
-  first. Commit PENDING.
+  first. Commit ce54fcd.
+- 2026-09-26 - **Quick medical checklist.** The patient form now starts the medical part with tick boxes
+  for the usual questions: blood thinners, diabetes, heart disease, high blood pressure, pregnancy, and
+  allergies to penicillin, latex or local anaesthetic. Ticking one writes it into the right field, so the
+  medical alerts never miss it. Things already written (like "Warfarin 3mg") show as ticked. Commit
+  PENDING.
 
 ## Questions for the owner
 

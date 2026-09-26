@@ -99,3 +99,32 @@ test("adding a patient who is already registered warns first", async ({ page }) 
   await page.getByRole("dialog", { name: "Leave without saving?" }).getByRole("button", { name: "Leave without saving" }).click();
   await expect(page.getByRole("heading", { name: "Nadia Samir" })).toBeVisible();
 });
+
+test("the quick medical checklist fills the medical fields", async ({ page }) => {
+  await page.goto("/patients/new");
+  await page.getByRole("button", { name: "Diabetes" }).click();
+  await page.getByRole("button", { name: "Takes blood thinners" }).click();
+  await page.getByRole("button", { name: "Allergic to latex" }).click();
+  await expect(page.getByLabel("Chronic Diseases")).toHaveValue("Diabetes");
+  await expect(page.getByLabel("Current Medications")).toHaveValue("Blood thinners");
+  await expect(page.getByLabel("Allergies")).toHaveValue("Latex");
+  // A second tap takes it off again.
+  await page.getByRole("button", { name: "Diabetes" }).click();
+  await expect(page.getByLabel("Chronic Diseases")).toHaveValue("");
+
+  await page.getByLabel("Full Name").fill("Checklist Patient");
+  await page.getByLabel("Phone Number").fill("+20 100 999 0000");
+  await page.getByRole("button", { name: "Save Patient" }).click();
+  const alerts = page.getByRole("alert").filter({ hasText: "Medical alerts" });
+  await expect(alerts).toContainText("Allergy: Latex");
+  await expect(alerts).toContainText("Blood thinner");
+});
+
+test("the checklist recognises what is already written", async ({ page }) => {
+  // Amir Zaki takes Warfarin 3mg.
+  await page.goto("/patients/PAT-2026-00008/edit");
+  await waitForData(page);
+  const box = page.getByRole("button", { name: "Takes blood thinners" });
+  await expect(box).toHaveAttribute("aria-pressed", "true");
+  await expect(box).toBeDisabled();
+});
