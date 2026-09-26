@@ -1,24 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Calendar, CalendarDays, CreditCard, Pencil, Plus, Stethoscope, Trash2, Wallet } from "lucide-react";
+import {
+  Calendar, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, CreditCard, History, MessageCircle,
+  Pencil, Phone, Plus, Stethoscope, Trash2, Wallet, type LucideIcon,
+} from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import DentalChart from "@/components/DentalChart";
+import MedicalAlerts from "@/components/MedicalAlerts";
 import {
-  Alert, Button, Card, ClickableRow, DetailList, DetailRow, EmptyState, LinkButton, NotFoundCard,
-  PageContainer, PageHeader, PageLoading, StatCard, StatusBadge, Table, Tabs, Td, Th,
+  Button, Card, ClickableRow, DetailList, DetailRow, EmptyState, LinkButton, NotFoundCard,
+  PageContainer, PageHeader, PageLoading, StatusBadge, Table, Tabs, Td, Th,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { deleteDoc, errorMessage, getList, updateDoc, type FilterRow } from "@/lib/frappe";
-import { display, formatDate, formatTime, isBlankMedical } from "@/lib/format";
+import { cx, display, formatDate, formatMonth, formatTime, todayISO } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
 import { appointmentHref, patientHref, paymentHref, routeId, treatmentHref } from "@/lib/links";
-import type { Appointment, DentalChartData, Patient, Payment, TreatmentPlan } from "@/lib/types";
+import type { Appointment, DentalChartData, Patient, Payment, TreatmentPlan, TreatmentSession } from "@/lib/types";
 
 type TabKey = "overview" | "appointments" | "treatments" | "payments" | "chart";
 
@@ -26,6 +30,7 @@ interface Related {
   id: string;
   appointments: Appointment[];
   plans: TreatmentPlan[];
+  sessions: TreatmentSession[];
   payments: Payment[];
 }
 
@@ -36,6 +41,14 @@ export default function PatientDetailPage() {
     </RequirePermission>
   );
 }
+
+/** Digits for a wa.me link: "+20 100 234 5678" → "201002345678". Empty when it does not look like a number. */
+function whatsappNumber(phone?: string): string {
+  const digits = (phone || "").replace(/\D/g, "");
+  return digits.length >= 8 ? digits : "";
+}
+
+const isBooked = (a: Appointment) => a.status === "Scheduled" || a.status === "Confirmed";
 
 function PatientDetail() {
   const params = useParams();
@@ -59,7 +72,7 @@ function PatientDetail() {
     const load = async () => {
       const byPatient: FilterRow[] = [["patient", "=", id]];
       try {
-        const [appointments, plans, payments] = await Promise.all([
+        const [appointments, plans, sessions, payments] = await Promise.all([
           showAppointments
             ? getList<Appointment>(
                 "Appointment",
@@ -74,6 +87,13 @@ function PatientDetail() {
                 { filters: byPatient, orderBy: "name desc", limit: 200 },
               )
             : Promise.resolve([]),
+          showTreatments
+            ? getList<TreatmentSession>(
+                "Treatment Session",
+                ["name", "treatment_plan", "doctor_name", "session_date", "session_time", "status", "notes"],
+                { filters: byPatient, orderBy: "session_date desc", limit: 200 },
+              )
+            : Promise.resolve([]),
           showPayments
             ? getList<Payment>(
                 "Payment",
@@ -82,7 +102,7 @@ function PatientDetail() {
               )
             : Promise.resolve([]),
         ]);
-        if (!cancelled) setRelated({ id, appointments, plans, payments });
+        if (!cancelled) setRelated({ id, appointments, plans, sessions, payments });
       } catch (err) {
         console.error(err);
       }
@@ -97,6 +117,7 @@ function PatientDetail() {
   if (notFound || !patient) return <NotFoundCard error={error} what="Patient" backHref="/patients" backLabel="Back to Patients" />;
 
   const data = related && related.id === id ? related : null;
+  const today = todayISO();
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -122,6 +143,13 @@ function PatientDetail() {
     }
   };
 
+  // Last visit: the latest completed appointment (or, failing that, the latest past one that was kept).
+  const past = (data?.appointments ?? []).filter((a) => a.appointment_date <= today);
+  const lastVisit =
+    past.find((a) => a.status === "Completed") ?? past.find((a) => a.appointment_date < today && a.status !== "Cancelled" && a.status !== "No Show");
+  // Next appointment: the soonest booked one from today on. The list is newest first.
+  const nextVisit = [...(data?.appointments ?? [])].reverse().find((a) => a.appointment_date >= today && isBooked(a));
+
   const tabs: Array<{ key: TabKey; label: string; count?: number }> = [
     { key: "overview", label: "Overview" },
     ...(showAppointments ? [{ key: "appointments" as const, label: "Appointments", count: data?.appointments.length }] : []),
@@ -130,14 +158,9 @@ function PatientDetail() {
     { key: "chart", label: "Dental Chart" },
   ];
 
-  const subtitle = [
-    patient.name,
-    patient.age ? `${patient.age} years` : "",
-    patient.gender,
-    patient.phone_number,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const subtitle = [patient.age ? `${patient.age} years` : "", patient.gender, patient.name].filter(Boolean).join(" · ");
+  const whatsapp = whatsappNumber(patient.phone_number);
+  const remaining = Number(patient.total_remaining) || 0;
 
   return (
     <PageContainer>
@@ -148,11 +171,7 @@ function PatientDetail() {
         actions={
           <>
             {can("add_appointments") && (
-              <LinkButton
-                href={`/appointments/new?patient=${encodeURIComponent(id)}`}
-                variant="secondary"
-                icon={CalendarDays}
-              >
+              <LinkButton href={`/appointments/new?patient=${encodeURIComponent(id)}`} icon={CalendarDays}>
                 New Appointment
               </LinkButton>
             )}
@@ -162,75 +181,141 @@ function PatientDetail() {
               </LinkButton>
             )}
             {can("edit_patients") && (
-              <LinkButton href={`${patientHref(id)}/edit`} icon={Pencil}>
+              <LinkButton href={`${patientHref(id)}/edit`} variant="secondary" icon={Pencil}>
                 Edit
               </LinkButton>
             )}
             {can("delete_patients") && (
-              <Button variant="ghost" icon={Trash2} onClick={() => setConfirmDelete(true)} className="text-red-600 hover:bg-red-50">
-                Delete
-              </Button>
+              <Button
+                variant="ghost"
+                icon={Trash2}
+                onClick={() => setConfirmDelete(true)}
+                aria-label="Delete patient"
+                title="Delete patient"
+                className="text-red-600 hover:bg-red-50 px-3"
+              />
             )}
           </>
         }
       />
 
-      {!isBlankMedical(patient.allergies) && (
-        <Alert tone="red" title="Allergies">
-          {patient.allergies}
-        </Alert>
-      )}
-      {(!isBlankMedical(patient.chronic_diseases) || !isBlankMedical(patient.current_medications)) && (
-        <Alert tone="yellow" title="Medical conditions">
-          {[
-            !isBlankMedical(patient.chronic_diseases) ? patient.chronic_diseases : "",
-            !isBlankMedical(patient.current_medications) ? `Takes ${patient.current_medications}` : "",
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-        </Alert>
-      )}
+      <MedicalAlerts patient={patient} />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Appointments" value={patient.total_appointments ?? 0} icon={Calendar} tone="primary" />
-        <StatCard title="Treatments" value={patient.total_treatments ?? 0} icon={Stethoscope} tone="green" />
-        {showPayments && <StatCard title="Total Paid" value={money(patient.total_paid)} icon={CreditCard} tone="purple" />}
-        {showPayments && (
-          <StatCard
-            title="Remaining"
-            value={money(patient.total_remaining)}
-            icon={Wallet}
-            tone={Number(patient.total_remaining) > 0 ? "red" : "gray"}
-          />
-        )}
-      </div>
+      {/* Contact and the facts a dentist wants before the patient sits down. */}
+      <Card>
+        <div className="flex flex-wrap gap-2">
+          {patient.phone_number && (
+            <a
+              href={`tel:${patient.phone_number.replace(/\s/g, "")}`}
+              className="inline-flex items-center gap-2 min-h-11 px-4 rounded-xl bg-gray-50 border border-gray-200 text-sm font-medium text-gray-800 hover:bg-gray-100"
+            >
+              <Phone size={16} className="text-primary-600" />
+              {patient.phone_number}
+            </a>
+          )}
+          {whatsapp && (
+            <a
+              href={`https://wa.me/${whatsapp}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 min-h-11 px-4 rounded-xl bg-green-50 border border-green-200 text-sm font-medium text-green-800 hover:bg-green-100"
+            >
+              <MessageCircle size={16} />
+              WhatsApp
+            </a>
+          )}
+          {patient.secondary_phone && (
+            <a
+              href={`tel:${patient.secondary_phone.replace(/\s/g, "")}`}
+              className="inline-flex items-center gap-2 min-h-11 px-4 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              <Phone size={16} className="text-gray-400" />
+              {patient.secondary_phone}
+            </a>
+          )}
+        </div>
+
+        <dl className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 mt-5 pt-5 border-t border-gray-100">
+          {showAppointments && (
+            <Fact icon={History} label="Last visit">
+              {lastVisit ? (
+                <Link href={appointmentHref(lastVisit.name)} className="hover:text-primary-600">
+                  {formatDate(lastVisit.appointment_date)}
+                  <span className="block text-xs font-normal text-gray-500">{lastVisit.reason_for_visit || lastVisit.doctor_name}</span>
+                </Link>
+              ) : data ? (
+                <span className="text-gray-400">None yet</span>
+              ) : (
+                "…"
+              )}
+            </Fact>
+          )}
+          {showAppointments && (
+            <Fact icon={CalendarClock} label="Next appointment">
+              {nextVisit ? (
+                <Link href={appointmentHref(nextVisit.name)} className="hover:text-primary-600">
+                  {nextVisit.appointment_date === today ? "Today" : formatDate(nextVisit.appointment_date)},{" "}
+                  {formatTime(nextVisit.appointment_time)}
+                  <span className="block text-xs font-normal text-gray-500">{nextVisit.doctor_name}</span>
+                </Link>
+              ) : data ? (
+                <span className="text-gray-400">Not booked</span>
+              ) : (
+                "…"
+              )}
+            </Fact>
+          )}
+          {showPayments && (
+            <Fact icon={Wallet} label="Balance to pay">
+              <span className={remaining > 0 ? "text-red-600" : "text-gray-500"}>{money(remaining)}</span>
+              {remaining > 0 && can("add_payments") && (
+                <Link
+                  href={`/payments/new?patient=${encodeURIComponent(id)}`}
+                  className="block text-xs font-medium text-primary-700 hover:underline"
+                >
+                  Add payment
+                </Link>
+              )}
+            </Fact>
+          )}
+          {showPayments && (
+            <Fact icon={CreditCard} label="Paid so far">
+              {money(patient.total_paid)}
+            </Fact>
+          )}
+        </dl>
+      </Card>
 
       <Tabs tabs={tabs} active={tab} onChange={setTab} />
 
       {tab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card title="Contact and Basic Information">
-            <DetailList>
-              <DetailRow label="Full Name">{patient.full_name}</DetailRow>
-              <DetailRow label="Patient ID">{patient.name}</DetailRow>
-              <DetailRow label="Gender">{patient.gender}</DetailRow>
-              <DetailRow label="Date of Birth">{patient.date_of_birth ? formatDate(patient.date_of_birth) : ""}</DetailRow>
-              <DetailRow label="Age">{patient.age ? `${patient.age} years` : ""}</DetailRow>
-              <DetailRow label="Phone">{patient.phone_number}</DetailRow>
-              <DetailRow label="Secondary Phone">{patient.secondary_phone}</DetailRow>
-              <DetailRow label="Email">{patient.email}</DetailRow>
-              <DetailRow label="Address">{patient.address}</DetailRow>
-            </DetailList>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          <Card title="Timeline" className="lg:col-span-2">
+            {!data ? <PageLoading /> : <Timeline data={data} today={today} money={money} />}
           </Card>
-          <Card title="Medical Information">
-            <DetailList>
-              <DetailRow label="Allergies">{patient.allergies}</DetailRow>
-              <DetailRow label="Current Medications">{patient.current_medications}</DetailRow>
-              <DetailRow label="Chronic Diseases">{patient.chronic_diseases}</DetailRow>
-              <DetailRow label="Medical History">{patient.medical_history}</DetailRow>
-              <DetailRow label="Notes">{patient.notes}</DetailRow>
-            </DetailList>
-          </Card>
+          <div className="space-y-6">
+            <Card title="Contact and Basic Information">
+              <DetailList>
+                <DetailRow label="Patient ID">{patient.name}</DetailRow>
+                <DetailRow label="Gender">{patient.gender}</DetailRow>
+                <DetailRow label="Date of Birth">{patient.date_of_birth ? formatDate(patient.date_of_birth) : ""}</DetailRow>
+                <DetailRow label="Age">{patient.age ? `${patient.age} years` : ""}</DetailRow>
+                <DetailRow label="Phone">{patient.phone_number}</DetailRow>
+                <DetailRow label="Secondary Phone">{patient.secondary_phone}</DetailRow>
+                <DetailRow label="Email">{patient.email}</DetailRow>
+                <DetailRow label="Address">{patient.address}</DetailRow>
+              </DetailList>
+            </Card>
+            <Card title="Medical Information">
+              <DetailList>
+                <DetailRow label="Allergies">{patient.allergies}</DetailRow>
+                <DetailRow label="Current Medications">{patient.current_medications}</DetailRow>
+                <DetailRow label="Chronic Diseases">{patient.chronic_diseases}</DetailRow>
+                <DetailRow label="Medical History">{patient.medical_history}</DetailRow>
+                <DetailRow label="Notes">{patient.notes}</DetailRow>
+              </DetailList>
+            </Card>
+          </div>
         </div>
       )}
 
@@ -416,5 +501,130 @@ function PatientDetail() {
         onCancel={() => setConfirmDelete(false)}
       />
     </PageContainer>
+  );
+}
+
+function Fact({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-3 min-w-0">
+      <span className="w-9 h-9 shrink-0 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center">
+        <Icon size={18} />
+      </span>
+      <div className="min-w-0">
+        <dt className="text-xs text-gray-500">{label}</dt>
+        <dd className="text-sm font-semibold text-gray-800 mt-0.5">{children}</dd>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------- timeline -- */
+
+interface TimelineItem {
+  key: string;
+  date: string;
+  time?: string;
+  icon: LucideIcon;
+  tone: string;
+  title: string;
+  detail?: string;
+  href: string;
+  badge?: ReactNode;
+}
+
+/** Visits, treatment sessions and payments in one list, newest first, with upcoming ones on top. */
+function Timeline({ data, today, money }: { data: Related; today: string; money: (amount: number) => string }) {
+  const plans = new Map(data.plans.map((plan) => [plan.name, plan]));
+  const items: TimelineItem[] = [
+    ...data.appointments.map((a): TimelineItem => ({
+      key: a.name,
+      date: a.appointment_date,
+      time: a.appointment_time,
+      icon: a.status === "Completed" ? CalendarCheck : Calendar,
+      tone: "bg-blue-50 text-blue-600",
+      title: a.reason_for_visit || "Appointment",
+      detail: [formatTime(a.appointment_time), a.doctor_name].filter(Boolean).join(" · "),
+      href: appointmentHref(a.name),
+      badge: <StatusBadge kind="appointment" status={a.status} />,
+    })),
+    ...data.sessions.map((s): TimelineItem => {
+      const plan = plans.get(s.treatment_plan);
+      const what = plan ? `${plan.treatment_type}${plan.tooth_number ? ` · tooth ${plan.tooth_number}` : ""}` : "Treatment";
+      return {
+        key: s.name,
+        date: s.session_date,
+        time: s.session_time,
+        icon: ClipboardList,
+        tone: "bg-primary-50 text-primary-600",
+        title: `${what} session`,
+        detail: [s.notes, s.doctor_name].filter(Boolean).join(" · "),
+        href: treatmentHref(s.treatment_plan),
+        badge: <StatusBadge kind="session" status={s.status} />,
+      };
+    }),
+    ...data.payments.map((p): TimelineItem => ({
+      key: p.name,
+      date: p.payment_date,
+      icon: CreditCard,
+      tone: "bg-green-50 text-green-600",
+      title: `Paid ${money(Number(p.amount) || 0)}`,
+      detail: [p.payment_method, p.treatment_type].filter(Boolean).join(" · "),
+      href: paymentHref(p.name),
+    })),
+  ].sort((x, y) => (y.date + (y.time ?? "")).localeCompare(x.date + (x.time ?? "")));
+
+  if (items.length === 0) {
+    return <EmptyState icon={History} title="Nothing yet" text="Visits, treatment sessions and payments will show here." />;
+  }
+
+  // Group: upcoming first, then by month.
+  const groups: Array<{ label: string; items: TimelineItem[] }> = [];
+  items.forEach((item) => {
+    const label = item.date > today ? "Upcoming" : item.date === today ? "Today" : formatMonth(item.date.slice(0, 7));
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) last.items.push(item);
+    else groups.push({ label, items: [item] });
+  });
+  // Upcoming is sorted newest first; show the soonest first instead.
+  groups.forEach((group) => {
+    if (group.label === "Upcoming") group.items.reverse();
+  });
+
+  return (
+    <div className="space-y-5">
+      {groups.map((group) => (
+        <section key={group.label}>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">{group.label}</h3>
+          <ol className="relative border-s-2 border-gray-100 ms-4 space-y-1">
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <li key={item.key} className="relative ps-6">
+                  <span
+                    className={cx(
+                      "absolute -start-[17px] top-2.5 w-8 h-8 rounded-full ring-4 ring-white flex items-center justify-center",
+                      item.tone,
+                    )}
+                  >
+                    <Icon size={15} />
+                  </span>
+                  <Link
+                    href={item.href}
+                    className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl px-3 py-2.5 min-h-11 hover:bg-gray-50"
+                  >
+                    <span className="text-xs font-medium text-gray-500 w-20 shrink-0">{formatDate(item.date)}</span>
+                    <span className="flex-1 min-w-[10rem]">
+                      <span className="block text-sm font-medium text-gray-800">{item.title}</span>
+                      {item.detail && <span className="block text-xs text-gray-500">{item.detail}</span>}
+                    </span>
+                    {item.badge}
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      ))}
+    </div>
   );
 }

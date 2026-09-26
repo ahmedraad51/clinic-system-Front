@@ -131,6 +131,7 @@ src/
 │   ├── Guard.tsx             RequirePermission
 │   ├── DentalChart.tsx       the odontogram (adult and child teeth, surfaces, conditions), saved to Patient.dental_chart
 │   ├── ToothLogo.tsx         the app logo (inline SVG)
+│   ├── MedicalAlerts.tsx     the red/yellow medical alerts band (show it wherever treatment is decided)
 │   ├── forms/                PatientForm, AppointmentForm, TreatmentForm, PaymentForm (shared by new and edit)
 │   └── ui/
 │       ├── index.tsx         the UI kit (cards, buttons, inputs, tables, badges, paging, tabs, alerts, …)
@@ -148,6 +149,7 @@ src/
     ├── hooks.ts              usePagedList, useDocument, useDoctors, useDebounced, searchFilters
     ├── format.ts             money, dates, times, week helpers, cx(), CSV download
     ├── dentalChart.ts        parseDentalChart (both shapes), cleanChart, tooth names, surface layout, labels
+    ├── medical.ts            medicalFlags(): allergy, blood thinner, diabetes, heart, pregnancy from the medical text
     ├── theme.ts              the clinic colour: presets, contrast fix, applyThemeColor, the boot script
     └── links.ts              URL builders for records (always use these)
 docs/
@@ -179,15 +181,15 @@ on the form, and a click made while the save is still running is overridden by t
 | `/dashboard` | none (cards appear per permission) | Greeting; counts for today's appointments, patients, active plans; revenue this month and amount owed; today's list and the next 7 days; quick actions |
 | `/patients` | `view_patients` | Server-side search (name, phone, second phone, ID), gender filter, paging, balance column (with `view_payments`) |
 | `/patients/new` | `add_patients` | Shared `PatientForm`. Opens the new record after saving |
-| `/patients/[id]` | `view_patients` | Allergy and medical-condition alerts, totals, tabs: Overview, Appointments, Treatment Plans, Payments, Dental Chart. Buttons: New Appointment, New Treatment, Edit, Delete (each by permission) |
+| `/patients/[id]` | `view_patients` | `MedicalAlerts` band; a summary card with tap-to-call (`tel:`) and WhatsApp (`https://wa.me/<digits>`) buttons, last visit, next appointment, balance to pay (with Add payment) and paid so far; tabs: **Overview** (a timeline of appointments, treatment sessions and payments, grouped Upcoming / Today / by month, beside the contact and medical cards), Appointments, Treatment Plans, Payments, Dental Chart. Buttons: New Appointment, New Treatment, Edit, Delete (icon; each by permission) |
 | `/patients/[id]/edit` | `edit_patients` | Shared `PatientForm` |
 | `/appointments` | `view_appointments` | Three views, chosen with `?view=day\|week\|list` (default `day`, or `list` when `?date=` is given). **Day**: one column per active doctor, rows from Clinic Settings opening to closing time (stretched to fit), blocks as long as the appointment and coloured by status, overlapping ones side by side, a red "now" line; `?day=YYYY-MM-DD` and `?doctor=` pick the day and one doctor. **Week**: one column per day (the week starts on `WEEK_STARTS_ON` in `format.ts`, Sunday). Clicking an empty 15-minute slot opens `/appointments/new` with date, time and doctor filled in (needs `add_appointments`). **List**: search, date filter (All/Today/Tomorrow/Upcoming/Past, also `?date=today`), status filter, paging. The grid is `src/components/AppointmentCalendar.tsx` |
 | `/appointments/new` | `add_appointments` | Shared `AppointmentForm`. Reads `?patient=`, `?date=`, `?time=HH:MM` and `?doctor=`; Back returns to that day in the calendar. Warns if the doctor already has an overlapping appointment (always checked for a new booking) |
-| `/appointments/[id]` | `view_appointments` | Details, status buttons, Edit/Delete (`edit_appointments`), WhatsApp messages for this appointment |
+| `/appointments/[id]` | `view_appointments` | `MedicalAlerts` for the patient, details, status buttons, Edit/Delete (`edit_appointments`), WhatsApp messages for this appointment |
 | `/appointments/[id]/edit` | `edit_appointments` | Shared `AppointmentForm` with status |
 | `/treatments` | `view_treatments` | Search, type and status filters, paging |
 | `/treatments/new` | `add_treatments` | Shared `TreatmentForm`. Reads `?patient=` and `?tooth=`. New plans are always `Planned` |
-| `/treatments/[id]` | `view_treatments` | Cost/paid/remaining with a progress bar, details, status buttons, payments of the plan, **Treatment Sessions** (add, edit, delete in a dialog) |
+| `/treatments/[id]` | `view_treatments` | `MedicalAlerts` for the patient, cost/paid/remaining with a progress bar, details, status buttons, payments of the plan, **Treatment Sessions** (add, edit, delete in a dialog) |
 | `/treatments/[id]/edit` | `edit_treatments` | Shared `TreatmentForm` with status |
 | `/payments` | `view_payments` | Search, method filter, date range, paging, total of everything that matches |
 | `/payments/new` | `add_payments` | Shared `PaymentForm`. Reads `?patient=&treatment=`. Blocks amounts above what the plan has left |
@@ -250,6 +252,7 @@ Rules for data code:
 | `usePagedList<T>(doctype, { fields, filters, orFilters, orderBy, pageSize })` | A page of rows plus the total. Changing the query goes back to page 1. Returns `rows, total, page, setPage, pageSize, initialLoading, loading, error, reload` |
 | `useDocument<T>(doctype, name)` | One doc. `reload()` fetches again but keeps the old copy on screen meanwhile. `notFound` is true when the load failed; `error` is empty for a real 404 and holds the reason otherwise (for example no permission) |
 | `useDoctors()` | Active doctors (`is_active = 1`) for dropdowns |
+| `usePatientMedical(patient)` | The patient's medical fields (`MEDICAL_FIELDS`) for `MedicalAlerts` on another record's page |
 | `useDoctorList()` | The same, as `{ doctors, loading }`, for screens that would look empty while doctors load (the calendar) |
 | `useDebounced(value, ms)` | Waits until typing stops |
 
@@ -454,6 +457,9 @@ function Things() {
   shows a toast and navigates; the form shows `errorMessage(err)` if it throws.
 - **Messages:** `useToast().success/error/info`. Never use `alert()`. Ask before deleting with
   `ConfirmDialog`.
+- **Medical safety:** every screen where treatment is decided or done shows `<MedicalAlerts patient={…} />`
+  near the top (patient, appointment and treatment plan pages today). Load the fields with
+  `usePatientMedical()` or add `MEDICAL_FIELDS` to your query. Never hide it behind a tab.
 - **Money** always goes through `useSettings().money(amount)`, which uses the clinic currency. Dates and
   times go through `formatDate`, `formatTime`, `formatDateTime`; today is `todayISO()` (local time).
 - **Links** to records use `patientHref`, `appointmentHref`, `treatmentHref`, `paymentHref`, `userHref`.

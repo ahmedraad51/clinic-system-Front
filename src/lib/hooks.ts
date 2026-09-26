@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getCount, getDoc, getList, errorMessage, isNotFound, type FilterRow } from "./frappe";
-import type { BaseDoc, Doctor } from "./types";
+import { MEDICAL_FIELDS, type MedicalFields } from "./medical";
+import type { BaseDoc, Doctor, Patient } from "./types";
 
 /** Returns the value once it has stopped changing for `delay` ms. Used for search boxes. */
 export function useDebounced<T>(value: T, delay = 300): T {
@@ -175,3 +176,31 @@ export function useDoctorList() {
 }
 
 const NO_DOCTORS: Doctor[] = [];
+
+/**
+ * The medical fields of one patient, for the MedicalAlerts band on pages about something else
+ * (an appointment, a treatment plan). Null until loaded, or when there is no patient.
+ */
+export function usePatientMedical(patient: string | undefined) {
+  const [result, setResult] = useState<{ patient: string; fields: MedicalFields | null } | null>(null);
+  useEffect(() => {
+    if (!patient) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const rows = await getList<Patient>("Patient", ["name", ...MEDICAL_FIELDS], {
+          filters: [["name", "=", patient]],
+          limit: 1,
+        });
+        if (!cancelled) setResult({ patient, fields: rows[0] ?? null });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [patient]);
+  return result && result.patient === patient ? result.fields : null;
+}

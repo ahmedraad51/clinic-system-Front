@@ -5,33 +5,32 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Patient page built for the dentist: a header with age, phone (tap to call, WhatsApp), medical alerts,
-  last visit, next appointment and balance; a timeline of visits, treatments and payments.
+- Today board for the front desk: today's patients grouped by doctor, one-tap Confirmed / Completed / No
+  Show, late patients highlighted, quick Add Payment.
 
 ## Backlog
 
-1. Today board for the front desk: today's patients grouped by doctor, one-tap Confirmed / Completed / No
-   Show, late patients highlighted, quick Add Payment.
-2. Global search in the top bar (also Ctrl+K): find a patient by name, phone or ID from any page, plus
+1. Global search in the top bar (also Ctrl+K): find a patient by name, phone or ID from any page, plus
    quick actions (New Appointment, Add Patient).
-3. Faster booking: "next free time" for the chosen doctor, show that doctor's day while booking, remember
+2. Faster booking: "next free time" for the chosen doctor, show that doctor's day while booking, remember
    the last doctor used.
-4. Doctors page: list, add and edit doctors (name, specialization, phone, email, active). Permission:
+3. Doctors page: list, add and edit doctors (name, specialization, phone, email, active). Permission:
    manage_users.
-5. Price list: a default price per treatment type (in Settings) that fills in the cost automatically, and
+4. Price list: a default price per treatment type (in Settings) that fills in the cost automatically, and
    a printable treatment estimate for the patient.
-6. Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
+5. Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
    payment method.
-7. Phone and tablet polish: tables turn into cards on small screens, sticky Save buttons, larger inputs.
-8. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
+6. Phone and tablet polish: tables turn into cards on small screens, sticky Save buttons, larger inputs.
+7. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
    form with unsaved changes, clear error messages.
-9. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
-10. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
-    and warn when booking outside them.
-11. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
+8. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+9. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
+   and warn when booking outside them.
+10. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
     check.
-12. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
+11. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
     treatment plan page for its tooth.
+12. Show the medical alerts in the booking and treatment forms as soon as a patient is picked.
 
 ## Done
 
@@ -61,7 +60,13 @@ Each finished item says what changed, when, and which commit holds it.
   each of its five surfaces (M, O, D, B, L) and whole-tooth conditions: crown, root canal, implant,
   bridge, missing, to extract. Each tooth can have a note, shows its treatment plans, and has a "New
   treatment for this tooth" button that fills in the tooth number. A Findings list sums up the mouth.
-  Charts saved the old way still open, with the old marks kept and labelled. Commit PENDING.
+  Charts saved the old way still open, with the old marks kept and labelled. Commit 9c2b91a.
+- 2026-09-26 - **Patient page for the dentist.** A red "Medical alerts" band now spots allergies, blood
+  thinners (like warfarin or aspirin), diabetes, heart and blood pressure problems, and pregnancy from
+  what was typed in the medical fields. It also shows on the appointment and treatment plan pages, where
+  treatment is decided. The patient page has one-tap Call and WhatsApp buttons, last visit, next
+  appointment, balance to pay (with an Add payment link) and a timeline of visits, treatment sessions and
+  payments. Commit PENDING.
 
 ## Questions for the owner
 

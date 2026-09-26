@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { MessageCircle, Pencil, Stethoscope, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
+import MedicalAlerts from "@/components/MedicalAlerts";
 import {
   Button, Card, DetailList, DetailRow, LinkButton, NotFoundCard, PageContainer, PageHeader, PageLoading, StatusBadge,
 } from "@/components/ui";
@@ -13,7 +14,7 @@ import { useSession } from "@/context/SessionContext";
 import { useToast } from "@/context/ToastContext";
 import { deleteDoc, errorMessage, getList, updateDoc } from "@/lib/frappe";
 import { cx, formatDate, formatDateTime, formatTime } from "@/lib/format";
-import { useDocument } from "@/lib/hooks";
+import { useDocument, usePatientMedical } from "@/lib/hooks";
 import { appointmentHref, patientHref, routeId } from "@/lib/links";
 import { APPOINTMENT_STATUSES, type Appointment, type AppointmentStatus, type WhatsAppLog } from "@/lib/types";
 
@@ -32,6 +33,7 @@ function AppointmentDetail() {
   const { can } = useSession();
   const id = routeId(params.id);
   const { doc: appointment, loading, notFound, error, reload } = useDocument<Appointment>("Appointment", id);
+  const medical = usePatientMedical(appointment?.patient);
   const [updating, setUpdating] = useState<AppointmentStatus | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -123,6 +125,8 @@ function AppointmentDetail() {
           </>
         }
       />
+
+      <MedicalAlerts patient={medical} />
 
       <Card title="Details">
         <DetailList>

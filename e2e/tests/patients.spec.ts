@@ -23,3 +23,31 @@ test("add a patient", async ({ page }) => {
   await page.getByRole("searchbox").fill("Laila Test");
   await expect(page.getByRole("link", { name: "Laila Test Patient" })).toBeVisible();
 });
+
+test("medical alerts show on the patient, the appointment and the treatment plan", async ({ page }) => {
+  await page.goto("/patients/PAT-2026-00008");
+  await waitForData(page);
+  const alerts = page.getByRole("alert").filter({ hasText: "Medical alerts" });
+  await expect(alerts).toContainText("Allergy: Aspirin");
+  await expect(alerts).toContainText("Blood thinner: warfarin");
+  await expect(alerts).toContainText("Heart / blood pressure");
+
+  // The summary: tap to call, WhatsApp, last visit, balance.
+  await expect(page.getByRole("link", { name: "+20 122 340 9915" })).toHaveAttribute("href", "tel:+201223409915");
+  await expect(page.getByRole("main").getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", "https://wa.me/201223409915");
+  await expect(page.getByText("Last visit")).toBeVisible();
+  await expect(page.getByText("Wisdom tooth extraction").first()).toBeVisible();
+
+  // The same band on a treatment plan for this patient.
+  await page.getByRole("tab", { name: /Treatment Plans/ }).click();
+  await page.getByRole("link", { name: "Crown" }).click();
+  await expect(page.getByRole("heading", { name: "Crown · Tooth 37" })).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: "Blood thinner" })).toBeVisible();
+});
+
+test("a healthy patient shows no medical alert", async ({ page }) => {
+  await page.goto("/patients/PAT-2026-00007");
+  await waitForData(page);
+  await expect(page.getByRole("heading", { name: "Dina Rashad" })).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: "Medical alerts" })).toHaveCount(0);
+});

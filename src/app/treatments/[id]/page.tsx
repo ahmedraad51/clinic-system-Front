@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ClipboardList, CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
+import MedicalAlerts from "@/components/MedicalAlerts";
 import {
   Alert, Button, Card, ClickableRow, DetailList, DetailRow, EmptyState, Field, LinkButton, NotFoundCard,
   PageContainer, PageHeader, PageLoading, SelectInput, StatusBadge, Table, Td, TextArea, TextInput, Th,
@@ -15,7 +16,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { createDoc, deleteDoc, errorMessage, getList, updateDoc } from "@/lib/frappe";
 import { cx, display, formatDate, formatTime, todayISO } from "@/lib/format";
-import { useDoctors, useDocument } from "@/lib/hooks";
+import { useDoctors, useDocument, usePatientMedical } from "@/lib/hooks";
 import { patientHref, paymentHref, routeId } from "@/lib/links";
 import {
   SESSION_STATUSES, TREATMENT_STATUSES,
@@ -44,6 +45,7 @@ function TreatmentDetail() {
   const { money } = useSettings();
   const id = routeId(params.id);
   const { doc: plan, loading, notFound, error, reload } = useDocument<TreatmentPlan>("Treatment Plan", id);
+  const medical = usePatientMedical(plan?.patient);
   const [related, setRelated] = useState<Related | null>(null);
   const [relatedVersion, setRelatedVersion] = useState(0);
   const [updating, setUpdating] = useState<TreatmentStatus | null>(null);
@@ -155,6 +157,8 @@ function TreatmentDetail() {
           </>
         }
       />
+
+      <MedicalAlerts patient={medical} />
 
       <Card>
         <div className="grid grid-cols-3 gap-4 text-center sm:text-start">
