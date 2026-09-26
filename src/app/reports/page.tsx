@@ -12,7 +12,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { getList, type FilterRow } from "@/lib/frappe";
 import { addDays, downloadCsv, formatDate, formatMonth, monthStart, todayISO } from "@/lib/format";
 import { patientHref, paymentHref, treatmentHref } from "@/lib/links";
-import type { Payment, TreatmentPlan } from "@/lib/types";
+import type { Appointment, Payment, TreatmentPlan } from "@/lib/types";
 
 const RANGES = [
   { value: "this_month", label: "This month" },
@@ -47,6 +47,10 @@ interface ReportData {
   key: string;
   payments: Payment[];
   outstanding: TreatmentPlan[];
+  /** Plan → doctor, to share revenue out by doctor. */
+  planDoctors: Record<string, string>;
+  /** Appointments in the period up to today, for the outcomes. */
+  appointments: Appointment[];
 }
 
 function groupSum(rows: Payment[], keyOf: (row: Payment) => string): Array<[string, number]> {
@@ -82,10 +86,11 @@ function Reports() {
         ...(end ? [["payment_date", "<=", end] as FilterRow] : []),
       ];
       try {
-        const [payments, outstanding] = await Promise.all([
+        const today = todayISO();
+        const [payments, outstanding, plans, appointments] = await Promise.all([
           getList<Payment>(
             "Payment",
-            ["name", "patient", "patient_name", "payment_date", "amount", "payment_method", "treatment_type"],
+            ["name", "patient", "patient_name", "payment_date", "amount", "payment_method", "treatment_type", "treatment_plan"],
             { filters: filters.length ? filters : undefined, orderBy: "payment_date desc, name desc", limit: 0 },
           ),
           getList<TreatmentPlan>(
@@ -93,8 +98,17 @@ function Reports() {
             ["name", "patient", "patient_name", "treatment_type", "tooth_number", "status", "total_cost", "paid_amount", "remaining_amount"],
             { filters: [["remaining_amount", ">", 0]], orderBy: "remaining_amount desc", limit: 0 },
           ),
+          getList<TreatmentPlan>("Treatment Plan", ["name", "doctor_name"], { limit: 0 }),
+          getList<Appointment>("Appointment", ["name", "status"], {
+            filters: [
+              ...(start ? [["appointment_date", ">=", start] as FilterRow] : []),
+              ["appointment_date", "<=", end && end < today ? end : today],
+            ],
+            limit: 0,
+          }),
         ]);
-        if (!cancelled) setData({ key, payments, outstanding });
+        const planDoctors = Object.fromEntries(plans.map((plan) => [plan.name, plan.doctor_name || ""]));
+        if (!cancelled) setData({ key, payments, outstanding, planDoctors, appointments });
       } catch (err) {
         console.error(err);
       }
@@ -130,6 +144,15 @@ function Reports() {
   const byMonth = groupSum(payments, (row) => (row.payment_date || "").slice(0, 7))
     .sort((a, b) => (a[0] < b[0] ? 1 : -1))
     .map(([month, total]): [string, number] => [formatMonth(month), total]);
+  const byDoctor = groupSum(payments, (row) =>
+    row.treatment_plan ? data.planDoctors[row.treatment_plan] || "No doctor on the plan" : "General payments",
+  ).sort((a, b) => b[1] - a[1]);
+  const outcome = (status: string) => data.appointments.filter((a) => a.status === status).length;
+  const completed = outcome("Completed");
+  const noShows = outcome("No Show");
+  const cancelledVisits = outcome("Cancelled");
+  const stillOpen = outcome("Scheduled") + outcome("Confirmed");
+  const noShowRate = completed + noShows > 0 ? Math.round((noShows / (completed + noShows)) * 100) : null;
   const rangeLabel = from || to ? `${from ? formatDate(from) : "the start"} to ${to ? formatDate(to) : "today"}` : "all time";
 
   const exportPayments = () =>
@@ -194,6 +217,36 @@ function Reports() {
           </Card>
           <Card title="Revenue by Month">
             <Bars rows={byMonth} money={money} empty="No payments in this period." />
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card title="Revenue by Doctor">
+            <Bars rows={byDoctor} money={money} empty="No payments in this period." />
+          </Card>
+          <Card title="Appointments">
+            {data.appointments.length === 0 ? (
+              <p className="text-sm text-gray-500">No appointments in this period.</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-baseline gap-2">
+                  <span className={noShowRate !== null && noShowRate >= 15 ? "text-3xl font-bold text-red-600" : "text-3xl font-bold text-gray-800"}>
+                    {noShowRate === null ? "—" : `${noShowRate}%`}
+                  </span>
+                  <span className="text-sm text-gray-500">no-show rate (no-shows out of visits that were due)</span>
+                </div>
+                <Bars
+                  rows={[
+                    ["Completed", completed],
+                    ["No show", noShows],
+                    ["Cancelled", cancelledVisits],
+                    ["Still open (not marked)", stillOpen],
+                  ]}
+                  money={(n) => String(n)}
+                  empty=""
+                />
+              </div>
+            )}
           </Card>
         </div>
 

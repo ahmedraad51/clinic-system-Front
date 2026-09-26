@@ -5,12 +5,11 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Reports for the manager: revenue by doctor, and appointments by outcome (completed, no-show, cancelled)
-  with the no-show rate for the period.
+- Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Backlog
 
-1. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+
 
 ## Done
 
@@ -157,7 +156,10 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-26 - **Clinic working days.** Settings now has "Open on" day buttons (in the dummy data the
   clinic is closed on Fridays). Closed days are shaded and marked "Closed" in the calendar, and booking on
   a closed day shows a note and asks "Book anyway?". Also: the automatic tests now always run as if it
-  were Saturday 26 September 2026, so they give the same result on any day. Commit PENDING.
+  were Saturday 26 September 2026, so they give the same result on any day. Commit 378b3bb.
+- 2026-09-26 - **Reports for the manager.** Reports now also show the money each doctor brought in during
+  the chosen period, and how appointments ended: completed, no-show, cancelled and not yet marked, with
+  the no-show rate (shown in red when it is 15% or more). Commit PENDING.
 
 ## Questions for the owner
 
