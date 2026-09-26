@@ -97,6 +97,10 @@ src/lib/frappe.ts   the only module that touches data
 - **One permission guard per page.** Each page wraps its content in `<RequirePermission permission="…">`
   from `src/components/Guard.tsx`. It shows a spinner while the session loads and a "no access" card when the
   user lacks the permission.
+- **Global search.** `GlobalSearch` in the top bar (and Ctrl+K / ⌘K anywhere) finds patients (`view_patients`)
+  by name, phone, second phone or ID, and lists quick actions filtered by permission. Add new everyday
+  actions to `ACTIONS` in `GlobalSearch.tsx`. The top bar must not get `backdrop-blur` or a `transform`:
+  either makes `position: fixed` overlays inside it (search, bell, profile menu) cover only the bar.
 - **One data seam.** No page calls `fetch` or axios itself. That is why switching to dummy data is a
   one-line change. Keep it that way.
 
@@ -126,7 +130,8 @@ src/
 ├── components/
 │   ├── MainLayout.tsx        shell + the login guard
 │   ├── Sidebar.tsx           nav in three groups (CLINIC, FINANCE, SYSTEM), hidden items by permission, user card
-│   ├── Topbar.tsx            mobile menu button, bell, settings, profile dropdown, logout
+│   ├── Topbar.tsx            mobile menu button, global search, bell, settings, profile dropdown, logout
+│   ├── GlobalSearch.tsx      search button and Ctrl+K / ⌘K palette: patients by name, phone or ID, and quick actions
 │   ├── NotificationBell.tsx  today's Scheduled/Confirmed appointments
 │   ├── AppointmentCalendar.tsx  the day and week time grid on /appointments
 │   ├── Guard.tsx             RequirePermission

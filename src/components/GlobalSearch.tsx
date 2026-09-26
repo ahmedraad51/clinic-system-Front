@@ -1,0 +1,248 @@
+"use client";
+
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useRouter } from "next/navigation";
+import {
+  CalendarDays, CalendarPlus, ClipboardCheck, CreditCard, Search, Stethoscope, User, UserPlus, type LucideIcon,
+} from "lucide-react";
+import { Spinner } from "@/components/ui";
+import { useSession } from "@/context/SessionContext";
+import { getList, type FilterRow } from "@/lib/frappe";
+import { cx } from "@/lib/format";
+import { useDebounced } from "@/lib/hooks";
+import { patientHref } from "@/lib/links";
+import type { Patient, PermissionKey } from "@/lib/types";
+
+/**
+ * Search from any page: the button in the top bar, or Ctrl+K (⌘K on a Mac).
+ * Finds patients by name, phone or ID, and offers the everyday actions. Arrow keys move, Enter opens.
+ */
+
+interface Action {
+  label: string;
+  hint: string;
+  href: string;
+  icon: LucideIcon;
+  permission?: PermissionKey;
+  /** Extra words that find it. */
+  words: string;
+}
+
+const ACTIONS: Action[] = [
+  { label: "New Appointment", hint: "Book a visit", href: "/appointments/new", icon: CalendarPlus, permission: "add_appointments", words: "book booking visit" },
+  { label: "Add Patient", hint: "Register a new patient", href: "/patients/new", icon: UserPlus, permission: "add_patients", words: "register new" },
+  { label: "Today", hint: "The front desk board", href: "/today", icon: ClipboardCheck, permission: "view_appointments", words: "board front desk" },
+  { label: "Appointment Calendar", hint: "Day and week view", href: "/appointments?view=day", icon: CalendarDays, permission: "view_appointments", words: "calendar schedule diary" },
+  { label: "New Treatment Plan", hint: "Plan work for a patient", href: "/treatments/new", icon: Stethoscope, permission: "add_treatments", words: "treatment plan" },
+  { label: "Record Payment", hint: "Take a payment", href: "/payments/new", icon: CreditCard, permission: "add_payments", words: "pay money cash card receipt" },
+];
+
+interface Result {
+  kind: "patient" | "action";
+  key: string;
+  label: string;
+  hint: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+export default function GlobalSearch() {
+  const [open, setOpen] = useState(false);
+
+  // Ctrl+K / ⌘K from anywhere.
+  useEffect(() => {
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label="Search patients and actions"
+        aria-keyshortcuts="Control+K"
+        className={cx(
+          "flex items-center gap-2 h-11 rounded-xl bg-gray-50 text-gray-500 hover:bg-gray-100 transition",
+          "w-11 justify-center sm:w-72 sm:justify-start sm:px-3.5",
+        )}
+      >
+        <Search size={18} className="shrink-0" />
+        <span className="hidden sm:inline text-sm">Search patients...</span>
+        <kbd className="hidden sm:inline ms-auto rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-xs font-sans text-gray-500">
+          Ctrl K
+        </kbd>
+      </button>
+      {open && <SearchDialog onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+function SearchDialog({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
+  const { can } = useSession();
+  const listId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState("");
+  const [highlight, setHighlight] = useState(0);
+  const [found, setFound] = useState<{ query: string; patients: Patient[] } | null>(null);
+  const debounced = useDebounced(query.trim(), 200);
+  const canSearch = can("view_patients");
+
+  useEffect(() => {
+    if (!debounced || !canSearch) return;
+    let cancelled = false;
+    const load = async () => {
+      const like = `%${debounced}%`;
+      const orFilters: FilterRow[] = [
+        ["full_name", "like", like],
+        ["phone_number", "like", like],
+        ["secondary_phone", "like", like],
+        ["name", "like", like],
+      ];
+      try {
+        const patients = await getList<Patient>("Patient", ["name", "full_name", "phone_number", "age"], {
+          orFilters,
+          orderBy: "full_name asc",
+          limit: 8,
+        });
+        if (!cancelled) setFound({ query: debounced, patients });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [debounced, canSearch]);
+
+  const needle = query.trim().toLowerCase();
+  const patients = needle && found?.query === debounced ? found.patients : [];
+  const searching = Boolean(needle && canSearch && (found?.query !== debounced || debounced !== query.trim()));
+  const actions = ACTIONS.filter((a) => !a.permission || can(a.permission)).filter(
+    (a) => !needle || `${a.label} ${a.hint} ${a.words}`.toLowerCase().includes(needle),
+  );
+  const results: Result[] = [
+    ...patients.map((p) => ({
+      kind: "patient" as const,
+      key: p.name,
+      label: p.full_name,
+      hint: [p.phone_number, p.age ? `${p.age} years` : "", p.name].filter(Boolean).join(" · "),
+      href: patientHref(p.name),
+      icon: User,
+    })),
+    ...actions.map((a) => ({ kind: "action" as const, key: a.href, label: a.label, hint: a.hint, href: a.href, icon: a.icon })),
+  ];
+  const active = Math.min(highlight, Math.max(0, results.length - 1));
+
+  const go = (result: Result) => {
+    onClose();
+    router.push(result.href);
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setHighlight(Math.min(active + 1, results.length - 1));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setHighlight(Math.max(active - 1, 0));
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      if (results[active]) go(results[active]);
+    } else if (event.key === "Escape") {
+      onClose();
+    }
+  };
+
+  const optionId = (index: number) => `${listId}-${index}`;
+  const firstAction = patients.length;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[10vh] print:hidden">
+      <div className="absolute inset-0 bg-black/30" onClick={onClose} aria-hidden="true" />
+      <div role="dialog" aria-modal="true" aria-label="Search" className="relative w-full max-w-xl bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="flex items-center gap-3 px-4 border-b border-gray-100">
+          <Search size={20} className="text-gray-400 shrink-0" />
+          <input
+            ref={inputRef}
+            autoFocus
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setHighlight(0);
+            }}
+            onKeyDown={onKeyDown}
+            placeholder={canSearch ? "Patient name, phone or ID, or an action..." : "Search actions..."}
+            role="combobox"
+            aria-expanded="true"
+            aria-controls={listId}
+            aria-activedescendant={results.length ? optionId(active) : undefined}
+            aria-autocomplete="list"
+            className="flex-1 min-w-0 h-14 text-base text-gray-800 placeholder:text-gray-400 focus:outline-none bg-transparent"
+          />
+          {searching && <Spinner size={16} className="text-gray-400" />}
+          <button
+            type="button"
+            onClick={onClose}
+            className="shrink-0 rounded-md border border-gray-200 px-1.5 py-0.5 text-xs text-gray-500 hover:bg-gray-50"
+          >
+            Esc
+          </button>
+        </div>
+
+        <ul id={listId} role="listbox" aria-label="Results" className="max-h-[60vh] overflow-y-auto py-2">
+          {needle && canSearch && !searching && patients.length === 0 && (
+            <li className="px-4 py-3 text-sm text-gray-500">No patient matches &quot;{query.trim()}&quot;.</li>
+          )}
+          {results.map((result, index) => {
+            const Icon = result.icon;
+            return (
+              <li key={`${result.kind}-${result.key}`}>
+                {(index === 0 && result.kind === "patient") || index === firstAction ? (
+                  <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                    {result.kind === "patient" ? "Patients" : "Actions"}
+                  </p>
+                ) : null}
+                <div
+                  id={optionId(index)}
+                  role="option"
+                  aria-selected={index === active}
+                  onMouseEnter={() => setHighlight(index)}
+                  onClick={() => go(result)}
+                  className={cx(
+                    "mx-2 flex items-center gap-3 rounded-xl px-3 py-2.5 min-h-11 cursor-pointer",
+                    index === active ? "bg-primary-50" : "hover:bg-gray-50",
+                  )}
+                >
+                  <span
+                    className={cx(
+                      "w-9 h-9 shrink-0 rounded-lg flex items-center justify-center",
+                      result.kind === "patient" ? "bg-primary-100 text-primary-700" : "bg-gray-100 text-gray-600",
+                    )}
+                  >
+                    <Icon size={17} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-gray-800 truncate">{result.label}</span>
+                    <span className="block text-xs text-gray-500 truncate">{result.hint}</span>
+                  </span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="hidden sm:block px-4 py-2 text-xs text-gray-400 border-t border-gray-100">
+          ↑ ↓ to move · Enter to open · Esc to close
+        </p>
+      </div>
+    </div>
+  );
+}

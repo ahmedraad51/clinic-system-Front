@@ -127,6 +127,9 @@ independent switches grouped by area.
 
 ### Routes
 
+Press **Ctrl+K** (⌘K on a Mac), or use the search box in the top bar, to find a patient by name, phone
+or ID from any page, or to jump to an everyday action such as New Appointment.
+
 Every screen checks the user's permission (see [Roles and permissions](#roles-and-permissions)) and hides
 what they are not allowed to do.
 

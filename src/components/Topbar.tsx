@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Settings, ChevronDown, User, LogOut, Menu } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useSession } from "@/context/SessionContext";
+import GlobalSearch from "./GlobalSearch";
 import NotificationBell from "./NotificationBell";
 
 export default function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
@@ -23,12 +24,15 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
   const iconButton =
     "w-11 h-11 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition";
 
+  // No backdrop-blur on the bar: it would trap the fixed overlays of the search, bell and profile menus inside it.
   return (
-    <header className="h-16 bg-white/95 backdrop-blur border-b border-gray-100 flex items-center justify-between px-4 sm:px-6 fixed top-0 end-0 start-0 lg:start-64 z-30 print:hidden">
-      <button type="button" onClick={onOpenMenu} className={`${iconButton} lg:hidden`} aria-label="Open menu">
-        <Menu size={18} />
-      </button>
-      <div className="hidden lg:block" />
+    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 sm:px-6 fixed top-0 end-0 start-0 lg:start-64 z-30 print:hidden">
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={onOpenMenu} className={`${iconButton} lg:hidden`} aria-label="Open menu">
+          <Menu size={18} />
+        </button>
+        <GlobalSearch />
+      </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
         {can("view_appointments") && <NotificationBell />}

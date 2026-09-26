@@ -5,30 +5,28 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Global search in the top bar (also Ctrl+K): find a patient by name, phone or ID from any page, plus
-  quick actions (New Appointment, Add Patient).
+- Faster booking: "next free time" for the chosen doctor, show that doctor's day while booking, remember
+  the last doctor used.
 
 ## Backlog
 
-1. Faster booking: "next free time" for the chosen doctor, show that doctor's day while booking, remember
-   the last doctor used.
-2. Doctors page: list, add and edit doctors (name, specialization, phone, email, active). Permission:
+1. Doctors page: list, add and edit doctors (name, specialization, phone, email, active). Permission:
    manage_users.
-3. Price list: a default price per treatment type (in Settings) that fills in the cost automatically, and
+2. Price list: a default price per treatment type (in Settings) that fills in the cost automatically, and
    a printable treatment estimate for the patient.
-4. Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
+3. Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
    payment method.
-5. Phone and tablet polish: tables turn into cards on small screens, sticky Save buttons, larger inputs.
-6. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
+4. Phone and tablet polish: tables turn into cards on small screens, sticky Save buttons, larger inputs.
+5. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
    form with unsaved changes, clear error messages.
-7. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
-8. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
+6. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+7. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
    and warn when booking outside them.
-9. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
+8. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
    check.
-10. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
-    treatment plan page for its tooth.
-11. Show the medical alerts in the booking and treatment forms as soon as a patient is picked.
+9. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
+   treatment plan page for its tooth.
+10. Show the medical alerts in the booking and treatment forms as soon as a patient is picked.
 
 ## Done
 
@@ -69,7 +67,12 @@ Each finished item says what changed, when, and which commit holds it.
   grouped by doctor, with big one-tap buttons for Confirm, Completed and No show (and Undo for mistakes).
   Patients more than 10 minutes late are highlighted, a red chip warns about serious medical alerts, and
   the amount each patient owes is shown with an Add Payment button. A Walk-in button books a patient for
-  right now. The dashboard and the bell now open this board. Commit PENDING.
+  right now. The dashboard and the bell now open this board. Commit feabde6.
+- 2026-09-26 - **Search from anywhere.** A search box at the top of every page (or press Ctrl+K) finds a
+  patient by name, phone number or patient ID as you type, and offers quick actions like New Appointment,
+  Add Patient, Today and Record Payment. Works with the keyboard: arrows to move, Enter to open. Also
+  fixed a small bug where the bell and profile menus did not close when you clicked elsewhere on the page.
+  Commit PENDING.
 
 ## Questions for the owner
 
