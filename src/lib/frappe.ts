@@ -9,6 +9,7 @@ import {
   mockDeleteDoc,
   mockCall,
   mockUpload,
+  mockAttach,
 } from "./mockData";
 
 /**
@@ -173,6 +174,46 @@ export async function uploadFile(file: File): Promise<string> {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data.message.file_url;
+}
+
+/** A File record, as attachFile() returns it and getList("File", …) lists it. */
+export interface FileDoc {
+  name: string;
+  file_name: string;
+  file_url: string;
+  is_private?: number;
+  attached_to_doctype?: string;
+  attached_to_name?: string;
+  creation?: string;
+}
+
+/**
+ * Uploads a file attached to a record (e.g. an X-ray on a Patient). Medical files are private, so only
+ * logged-in staff can open them. Returns the new File record.
+ */
+export async function attachFile(file: File, doctype: string, name: string): Promise<FileDoc> {
+  if (MOCK_DATA) return (await mockAttach(file, doctype, name)) as unknown as FileDoc;
+  initAuth();
+  const form = new FormData();
+  form.append("file", file, file.name);
+  form.append("is_private", "1");
+  form.append("doctype", doctype);
+  form.append("docname", name);
+  form.append("folder", "Home/Attachments");
+  const res = await api.post("/frappe/api/method/upload_file", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.message as FileDoc;
+}
+
+/**
+ * The address to show or open a file. Frappe gives paths such as "/files/logo.png" or
+ * "/private/files/x-ray.jpg", which must go through the /frappe rewrite; data URLs (dummy data) and full
+ * addresses are used as they are.
+ */
+export function fileHref(url: string | null | undefined): string {
+  if (!url) return "";
+  return url.startsWith("/") && !url.startsWith("/frappe/") ? `/frappe${url}` : url;
 }
 
 /** True when a request failed because the doc does not exist (HTTP 404, or the dummy data's "not found"). */

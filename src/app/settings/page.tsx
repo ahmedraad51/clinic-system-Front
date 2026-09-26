@@ -10,7 +10,7 @@ import {
 } from "@/components/ui";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
-import { errorMessage, updateDoc, uploadFile } from "@/lib/frappe";
+import { errorMessage, updateDoc, uploadFile, fileHref } from "@/lib/frappe";
 import { cx } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
 import { DEFAULT_THEME_COLOR, normalizeHex, readableBrand, THEME_PRESETS } from "@/lib/theme";
@@ -176,7 +176,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
         <div className="flex items-center gap-4 mb-5">
           {form.logo ? (
             // eslint-disable-next-line @next/next/no-img-element -- the logo is an uploaded file of unknown size
-            <img src={form.logo} alt="Clinic logo" className="w-16 h-16 rounded-2xl object-contain bg-gray-50 border border-gray-100" />
+            <img src={fileHref(form.logo)} alt="Clinic logo" className="w-16 h-16 rounded-2xl object-contain bg-gray-50 border border-gray-100" />
           ) : (
             <span className="w-16 h-16 rounded-2xl bg-primary-600 flex items-center justify-center text-white">
               <ToothLogo size={30} />

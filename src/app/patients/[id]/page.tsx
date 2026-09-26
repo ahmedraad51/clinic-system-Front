@@ -10,6 +10,7 @@ import {
 import RequirePermission from "@/components/Guard";
 import DentalChart from "@/components/DentalChart";
 import MedicalAlerts from "@/components/MedicalAlerts";
+import PatientFiles from "@/components/PatientFiles";
 import {
   Button, Card, ClickableRow, DetailList, DetailRow, EmptyState, LinkButton, NotFoundCard,
   PageContainer, PageHeader, PageLoading, StatusBadge, Table, Tabs, Td, Th,
@@ -25,7 +26,7 @@ import { whatsappNumber } from "@/lib/whatsapp";
 import { appointmentHref, patientHref, paymentHref, routeId, treatmentHref } from "@/lib/links";
 import type { Appointment, DentalChartData, Patient, Payment, TreatmentPlan, TreatmentSession } from "@/lib/types";
 
-type TabKey = "overview" | "appointments" | "treatments" | "payments" | "chart";
+type TabKey = "overview" | "appointments" | "treatments" | "payments" | "chart" | "files";
 
 interface Related {
   id: string;
@@ -151,6 +152,7 @@ function PatientDetail() {
     ...(showTreatments ? [{ key: "treatments" as const, label: "Treatment Plans", count: data?.plans.length }] : []),
     ...(showPayments ? [{ key: "payments" as const, label: "Payments", count: data?.payments.length }] : []),
     { key: "chart", label: "Dental Chart" },
+    { key: "files", label: "X-rays & Photos" },
   ];
 
   const subtitle = [patient.age ? `${patient.age} years` : "", patient.gender, patient.name].filter(Boolean).join(" · ");
@@ -497,6 +499,8 @@ function PatientDetail() {
           }
         />
       )}
+
+      {tab === "files" && <PatientFiles patient={patient.name} canEdit={can("edit_patients")} />}
 
       <ConfirmDialog
         open={confirmDelete}

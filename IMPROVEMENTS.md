@@ -5,15 +5,13 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Patient files: attach X-rays and photos to a patient (upload from the computer or tablet camera,
-  thumbnails on the patient page, open full size).
+- Patients who owe money: an "Owes money" filter in the patient list, with a ready WhatsApp reminder about
+  the balance.
 
 ## Backlog
 
-1. Patients who owe money: an "Owes money" filter in the patient list, with a ready WhatsApp reminder
-   about the balance.
-2. Send the payment receipt on WhatsApp as a short message (amount, date, what it was for, balance left).
-3. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+1. Send the payment receipt on WhatsApp as a short message (amount, date, what it was for, balance left).
+2. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -167,7 +165,10 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-26 - **Dialogs work well with the keyboard.** When a question box opens (for example "Delete
   this patient?"), the keyboard focus now goes into it, starting on the safe choice (Cancel); Tab stays
   inside the box, Escape closes it, and the focus goes back to the button that opened it. The page behind
-  no longer scrolls while it is open. Commit PENDING.
+  no longer scrolls while it is open. Commit 90c7f2a.
+- 2026-09-26 - **X-rays and photos.** Each patient now has an "X-rays & Photos" tab. Staff can take a
+  photo straight from the tablet camera or add image and PDF files; they show as thumbnails and open full
+  size. Files are kept private to the clinic. Commit PENDING.
 
 ## Questions for the owner
 

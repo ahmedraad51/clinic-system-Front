@@ -152,7 +152,7 @@ what they are not allowed to do.
 | `/patients` | List with server-side search (name, phone, ID), gender filter and paging |
 | `/recall` | Patients due for a check-up (not seen for 6 months and nothing booked), with Call, WhatsApp reminder and Book |
 | `/patients/new`, `/patients/[id]/edit` | Create or edit — basic details plus medical history, allergies, medications |
-| `/patients/[id]` | Medical alerts (allergies, blood thinners, diabetes, heart problems, pregnancy), tap-to-call and WhatsApp buttons, last visit, next appointment and balance, a timeline of visits, treatment sessions and payments, and tabs for appointments, treatment plans, payments and the dental chart |
+| `/patients/[id]` | Medical alerts (allergies, blood thinners, diabetes, heart problems, pregnancy), tap-to-call and WhatsApp buttons, last visit, next appointment and balance, a timeline of visits, treatment sessions and payments, and tabs for appointments, treatment plans, payments and the dental chart, plus X-rays and photos (take a photo with the tablet camera or add files) |
 | `/patients/[id]/estimate` | A printable treatment estimate of the patient's open plans, with totals and signature lines |
 | `/patients/[id]/statement` | A printable statement of all treatments, payments and the balance |
 | `/patients/[id]/chart` | The dental chart and its findings, ready to print for the patient file or a referral |

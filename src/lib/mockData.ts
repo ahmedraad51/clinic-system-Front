@@ -384,6 +384,7 @@ const store: Store = {
   "Clinic Settings": clinicSettings,
   "WhatsApp Template": whatsappTemplates,
   "WhatsApp Log": whatsappLogs,
+  File: [],
 };
 
 /* ------------------------------------------------------------- internals -- */
@@ -404,6 +405,7 @@ const NAME_SERIES: Record<string, { prefix: string; year: boolean }> = {
   Payment: { prefix: "PAY", year: true },
   "WhatsApp Template": { prefix: "WAT", year: false },
   "WhatsApp Log": { prefix: "WAL", year: true },
+  File: { prefix: "FILE", year: false },
 };
 
 /** Which doctypes link to which, so a delete can be refused the way Frappe refuses it. */
@@ -769,13 +771,32 @@ export async function mockCall(method: string, args: Record<string, MockValue>):
   throw new Error(`The method ${method} is not available with dummy data.`);
 }
 
-/** Reads the file into a data URL, which works as an image src in the browser. */
-export async function mockUpload(file: File): Promise<string> {
-  await latency();
+/** Reads a file into a data URL, which works as an image src in the browser. */
+function readAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
     reader.onerror = () => reject(new Error("Could not read the file."));
     reader.readAsDataURL(file);
+  });
+}
+
+export async function mockUpload(file: File): Promise<string> {
+  await latency();
+  return readAsDataUrl(file);
+}
+
+/** Like Frappe's upload_file with doctype and docname: a private File record attached to the doc. */
+export async function mockAttach(file: File, doctype: string, name: string): Promise<MockDoc> {
+  const url = await readAsDataUrl(file);
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return mockCreateDoc("File", {
+    file_name: file.name,
+    file_url: url,
+    is_private: 1,
+    attached_to_doctype: doctype,
+    attached_to_name: name,
+    creation: `${todayISO()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`,
   });
 }

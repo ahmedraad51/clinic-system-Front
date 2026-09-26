@@ -7,6 +7,7 @@ import ToothLogo from "@/components/ToothLogo";
 import { Button, NotFoundCard, PageContainer, PageHeader, PageLoading } from "@/components/ui";
 import { useSettings } from "@/context/SettingsContext";
 import { formatLongDate, formatTime } from "@/lib/format";
+import { fileHref } from "@/lib/frappe";
 import { useDocument } from "@/lib/hooks";
 import { appointmentHref, routeId } from "@/lib/links";
 import type { Appointment } from "@/lib/types";
@@ -49,7 +50,7 @@ function AppointmentCard() {
         <div className="flex items-center gap-3">
           {settings.logo ? (
             // eslint-disable-next-line @next/next/no-img-element -- the logo is an uploaded file of unknown size
-            <img src={settings.logo} alt="" className="w-11 h-11 rounded-xl object-contain" />
+            <img src={fileHref(settings.logo)} alt="" className="w-11 h-11 rounded-xl object-contain" />
           ) : (
             <span className="w-11 h-11 shrink-0 rounded-xl bg-primary-600 text-white flex items-center justify-center">
               <ToothLogo size={22} />

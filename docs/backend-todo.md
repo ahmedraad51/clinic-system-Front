@@ -97,7 +97,11 @@ change `src/context/SessionContext.tsx` to call it with `callMethod`.
 - `GET /api/method/frappe.desk.reportview.get_count` with `doctype`, `fields`, `filters`, `or_filters`,
   `distinct` — used for the count when a search box is filled. **Check that this works for every role**; if
   not, add a small whitelisted count method.
-- `POST /api/method/upload_file` (multipart, `is_private=0`) for the clinic logo.
+- `POST /api/method/upload_file` (multipart, `is_private=0`) for the clinic logo, and with `doctype=Patient`,
+  `docname=<patient>`, `is_private=1` for X-rays and photos. The front end lists them with
+  `GET /api/resource/File` filtered on `attached_to_doctype` and `attached_to_name`, deletes them with
+  `DELETE /api/resource/File/<name>`, and shows them at `/frappe<file_url>` through the rewrite (the session
+  cookie opens private files). Every role that can see patients must be able to read these File records.
 - `POST /api/method/frappe.core.doctype.user.user.update_password` with `old_password`, `new_password`.
 - `POST /api/method/login`, `GET /api/method/logout`.
 

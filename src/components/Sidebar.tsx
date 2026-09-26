@@ -24,6 +24,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { cx } from "@/lib/format";
+import { fileHref } from "@/lib/frappe";
 import type { PermissionKey } from "@/lib/types";
 
 interface MenuItem {
@@ -95,7 +96,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           <Link href="/dashboard" onClick={onClose} className="flex items-center gap-3 min-w-0">
             {settings.logo ? (
               // eslint-disable-next-line @next/next/no-img-element -- the logo is an uploaded file of unknown size
-              <img src={settings.logo} alt="" className="w-9 h-9 rounded-xl object-contain bg-gray-50" />
+              <img src={fileHref(settings.logo)} alt="" className="w-9 h-9 rounded-xl object-contain bg-gray-50" />
             ) : (
               <span className="w-9 h-9 shrink-0 bg-primary-600 rounded-xl flex items-center justify-center text-white">
                 <ToothLogo size={20} />

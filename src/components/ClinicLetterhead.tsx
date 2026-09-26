@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import ToothLogo from "@/components/ToothLogo";
 import { useSettings } from "@/context/SettingsContext";
+import { fileHref } from "@/lib/frappe";
 
 /**
  * The top of every printout: the clinic logo, name, contact details and tax number on the start side, and
@@ -16,7 +17,7 @@ export default function ClinicLetterhead({ kind, reference, date }: { kind: stri
       <div className="flex items-center gap-3 min-w-0">
         {settings.logo ? (
           // eslint-disable-next-line @next/next/no-img-element -- the logo is an uploaded file of unknown size
-          <img src={settings.logo} alt="" className="w-12 h-12 rounded-xl object-contain" />
+          <img src={fileHref(settings.logo)} alt="" className="w-12 h-12 rounded-xl object-contain" />
         ) : (
           <span className="w-12 h-12 shrink-0 bg-primary-600 rounded-xl flex items-center justify-center text-white print:border print:border-gray-300">
             <ToothLogo size={24} />
