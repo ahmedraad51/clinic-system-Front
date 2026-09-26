@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  Calendar, CalendarDays, CreditCard, Plus, Stethoscope, TrendingUp, UserPlus, Users, Wallet,
+  BellRing, Calendar, CalendarDays, CalendarX, ChevronRight, CreditCard, MessageCircle, Plus, Stethoscope, TrendingUp, UserPlus,
+  Users, Wallet,
 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import { Card, EmptyState, LinkButton, PageContainer, PageHeader, Segmented, StatCard, StatusBadge } from "@/components/ui";
@@ -12,9 +13,12 @@ import { useSettings } from "@/context/SettingsContext";
 import { getCount, getList, type FilterRow } from "@/lib/frappe";
 import { addDays, formatDate, formatLongDate, formatTime, monthStart, todayISO } from "@/lib/format";
 import { appointmentHref } from "@/lib/links";
-import type { Appointment, Payment, TreatmentPlan } from "@/lib/types";
+import { DEFAULT_RECALL_MONTHS, RECALL_APPOINTMENT_FIELDS, dueForRecall } from "@/lib/recall";
+import type { Appointment, Patient, Payment, TreatmentPlan } from "@/lib/types";
 
 interface DashboardData {
+  /** For the "Needs attention" card; null when the user may not see that part. */
+  attention: { openPast: number | null; toRemind: number | null; recallDue: number | null; owing: number | null };
   patients: number;
   activePlans: number;
   monthRevenue: number;
@@ -50,7 +54,7 @@ function Dashboard() {
   // A doctor sees their own patients first; "Everyone" shows the whole clinic.
   const [everyone, setEveryone] = useState(false);
   const mine = myDoctor && !everyone ? myDoctor.name : "";
-  const { money } = useSettings();
+  const { money, settings } = useSettings();
   const [data, setData] = useState<DashboardData | null>(null);
   const today = todayISO();
 
@@ -92,8 +96,42 @@ function Dashboard() {
               })
             : nothing<Appointment>(),
         ]);
+        // The "Needs attention" counts, each only when the user may see it.
+        const [openPast, tomorrowBooked, owing, recall] = await Promise.all([
+          seeAppointments
+            ? getCount("Appointment", [
+                ["appointment_date", "<", today],
+                ["status", "in", ["Scheduled", "Confirmed"]],
+                ...(mine ? [["doctor", "=", mine] as FilterRow] : []),
+              ])
+            : Promise.resolve(null),
+          seeAppointments && settings.enable_whatsapp !== 0
+            ? getList<Appointment>("Appointment", ["name"], {
+                filters: [
+                  ["appointment_date", "=", addDays(today, 1)],
+                  ["status", "in", ["Scheduled", "Confirmed"]],
+                  ...(mine ? [["doctor", "=", mine] as FilterRow] : []),
+                ],
+                limit: 0,
+              })
+            : Promise.resolve(null),
+          seeMoney ? getCount("Patient", [["total_remaining", ">", 0]]) : Promise.resolve(null),
+          seePatients && seeAppointments
+            ? Promise.all([
+                getList<Patient>("Patient", ["name"], { limit: 0 }),
+                getList<Appointment>("Appointment", RECALL_APPOINTMENT_FIELDS, { limit: 0 }),
+              ])
+            : Promise.resolve(null),
+        ]);
+        const reminded = readRemindersOpened();
         if (cancelled) return;
         setData({
+          attention: {
+            openPast,
+            toRemind: tomorrowBooked ? tomorrowBooked.filter((a) => !reminded.includes(a.name)).length : null,
+            recallDue: recall ? dueForRecall(recall[0], recall[1], today, DEFAULT_RECALL_MONTHS).length : null,
+            owing,
+          },
           patients,
           activePlans,
           monthRevenue: monthPayments.reduce((sum, row) => sum + (Number(row.amount) || 0), 0),
@@ -109,7 +147,7 @@ function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, [today, seePatients, seeAppointments, seeTreatments, seeMoney, mine]);
+  }, [today, seePatients, seeAppointments, seeTreatments, seeMoney, mine, settings.enable_whatsapp]);
 
   const stillToCome = data?.today.filter((a) => a.status === "Scheduled" || a.status === "Confirmed").length ?? 0;
   const loadingValue = "…";
@@ -175,6 +213,8 @@ function Dashboard() {
           />
         )}
       </div>
+
+      {data && <NeedsAttention attention={data.attention} />}
 
       {seeAppointments && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -282,5 +322,58 @@ function AppointmentList({
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Reminders already opened on this computer (see the Today board). */
+function readRemindersOpened(): string[] {
+  try {
+    const list = JSON.parse(localStorage.getItem("reminders_opened") || "[]") as unknown;
+    return Array.isArray(list) ? list.filter((n): n is string => typeof n === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+/** A short to-do list for the start of the day. Rows with nothing to do are left out. */
+function NeedsAttention({ attention }: { attention: DashboardData["attention"] }) {
+  const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+  const rows = [
+    attention.openPast
+      ? { href: "/today", icon: CalendarX, tone: "text-amber-700 bg-amber-50", text: `${attention.openPast} past ${plural(attention.openPast, "appointment", "appointments")} to close`, hint: "Mark them Completed or No show" }
+      : null,
+    attention.toRemind
+      ? { href: "/today", icon: MessageCircle, tone: "text-green-700 bg-green-50", text: `${attention.toRemind} ${plural(attention.toRemind, "reminder", "reminders")} to send for tomorrow`, hint: "WhatsApp, one tap each" }
+      : null,
+    attention.recallDue
+      ? { href: "/recall", icon: BellRing, tone: "text-primary-700 bg-primary-50", text: `${attention.recallDue} ${plural(attention.recallDue, "patient", "patients")} due for a check-up`, hint: "Not seen for 6 months, nothing booked" }
+      : null,
+    attention.owing
+      ? { href: "/patients?balance=owing", icon: Wallet, tone: "text-red-700 bg-red-50", text: `${attention.owing} ${plural(attention.owing, "patient owes", "patients owe")} money`, hint: "See balances and send reminders" }
+      : null,
+  ].filter((row) => row !== null);
+  if (rows.length === 0) return null;
+  return (
+    <Card title="Needs attention" flush>
+      <ul className="divide-y divide-gray-100">
+        {rows.map((row) => {
+          const Icon = row.icon;
+          return (
+            <li key={row.text}>
+              <Link href={row.href} className="flex items-center gap-3 px-5 sm:px-6 py-3 min-h-11 hover:bg-gray-50">
+                <span className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center ${row.tone}`}>
+                  <Icon size={18} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-medium text-gray-800">{row.text}</span>
+                  <span className="block text-xs text-gray-500">{row.hint}</span>
+                </span>
+                <ChevronRight size={16} className="text-gray-400 rtl:rotate-180" />
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </Card>
   );
 }

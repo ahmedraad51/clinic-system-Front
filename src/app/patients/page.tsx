@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { HeartPulse, MessageCircle, UserPlus, UserSearch } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Card, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination,
+  Alert, Card, ClickableRow, LinkButton, PageContainer, PageHeader, PageLoading, Pagination,
   SearchInput, SelectInput, Table, TableLoading, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
@@ -21,7 +22,10 @@ import { GENDERS, type Appointment, type Patient } from "@/lib/types";
 export default function PatientsPage() {
   return (
     <RequirePermission permission="view_patients">
-      <PatientsList />
+      {/* useSearchParams() needs a Suspense boundary, or the production build fails. */}
+      <Suspense fallback={<PageLoading />}>
+        <PatientsList />
+      </Suspense>
     </RequirePermission>
   );
 }
@@ -32,7 +36,9 @@ function PatientsList() {
   const [search, setSearch] = useState("");
   const [gender, setGender] = useState("");
   // Collections: only patients with money left to pay, biggest balance first.
-  const [owing, setOwing] = useState(false);
+  // ?balance=owing (from the dashboard) opens on it.
+  const searchParams = useSearchParams();
+  const [owing, setOwing] = useState(() => searchParams.get("balance") === "owing");
   const debounced = useDebounced(search);
   const showBalance = can("view_payments");
   const showNext = can("view_appointments");

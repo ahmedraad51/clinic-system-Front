@@ -12,11 +12,9 @@ import { useSettings } from "@/context/SettingsContext";
 import { errorMessage, getList } from "@/lib/frappe";
 import { formatDate, todayISO } from "@/lib/format";
 import { patientHref } from "@/lib/links";
+import { DEFAULT_RECALL_MONTHS, RECALL_APPOINTMENT_FIELDS, RECALL_PERIODS, dueForRecall } from "@/lib/recall";
 import { whatsappLink } from "@/lib/whatsapp";
 import type { Appointment, Patient } from "@/lib/types";
-
-/** How long since the last visit before a patient is due, in months. */
-const PERIODS = [3, 6, 9, 12] as const;
 
 export default function RecallPage() {
   return (
@@ -24,20 +22,6 @@ export default function RecallPage() {
       <Recall />
     </RequirePermission>
   );
-}
-
-interface Due {
-  patient: Patient;
-  /** The last kept visit, or "" when the patient has never been seen. */
-  lastVisit: string;
-}
-
-/** The date that is `months` months before `iso`. */
-function monthsBefore(iso: string, months: number): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  const date = new Date(y, m - 1 - months, d);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 /**
@@ -48,7 +32,7 @@ function monthsBefore(iso: string, months: number): string {
 function Recall() {
   const { can } = useSession();
   const { clinicName } = useSettings();
-  const [months, setMonths] = useState<number>(6);
+  const [months, setMonths] = useState<number>(DEFAULT_RECALL_MONTHS);
   const [data, setData] = useState<{ patients: Patient[]; appointments: Appointment[] } | null>(null);
   const [error, setError] = useState("");
 
@@ -58,7 +42,7 @@ function Recall() {
       try {
         const [patients, appointments] = await Promise.all([
           getList<Patient>("Patient", ["name", "full_name", "phone_number", "age"], { orderBy: "full_name asc", limit: 0 }),
-          getList<Appointment>("Appointment", ["patient", "appointment_date", "status"], { limit: 0 }),
+          getList<Appointment>("Appointment", RECALL_APPOINTMENT_FIELDS, { limit: 0 }),
         ]);
         if (!cancelled) setData({ patients, appointments });
       } catch (err) {
@@ -73,23 +57,7 @@ function Recall() {
   }, []);
 
   const today = todayISO();
-  const cutoff = monthsBefore(today, months);
-  let due: Due[] = [];
-  if (data) {
-    const last = new Map<string, string>();
-    const booked = new Set<string>();
-    data.appointments.forEach((a) => {
-      if (a.appointment_date >= today && (a.status === "Scheduled" || a.status === "Confirmed")) booked.add(a.patient);
-      if (a.appointment_date <= today && a.status === "Completed" && a.appointment_date > (last.get(a.patient) ?? "")) {
-        last.set(a.patient, a.appointment_date);
-      }
-    });
-    due = data.patients
-      .filter((p) => !booked.has(p.name) && (last.get(p.name) ?? "") < cutoff)
-      .map((patient) => ({ patient, lastVisit: last.get(patient.name) ?? "" }))
-      // Longest wait first; patients never seen at the end.
-      .sort((x, y) => (x.lastVisit || "9999").localeCompare(y.lastVisit || "9999"));
-  }
+  const due = data ? dueForRecall(data.patients, data.appointments, today, months) : [];
 
   const whatsapp = (p: Patient) =>
     whatsappLink(
@@ -106,7 +74,7 @@ function Recall() {
           <label className="flex items-center gap-2 text-sm text-gray-600 whitespace-nowrap">
             Not seen for
             <SelectInput value={String(months)} onChange={(e) => setMonths(Number(e.target.value))} className="w-auto">
-              {PERIODS.map((m) => (
+              {RECALL_PERIODS.map((m) => (
                 <option key={m} value={m}>
                   {m} months
                 </option>

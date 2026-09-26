@@ -5,18 +5,15 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- "Needs attention" on the dashboard: one small card with counts and links for past appointments still
-  open, tomorrow's reminders to send, patients due for a check-up, and money owed, so the day starts with
-  a clear to-do list.
+- Book the next session from a treatment plan: one button that opens the booking form with the patient,
+  the plan's doctor and the reason ("Crown · tooth 36") filled in.
 
 ## Backlog
 
-1. Book the next session from a treatment plan: one button that opens the booking form with the patient,
-   the plan's doctor and the reason ("Crown · tooth 36") filled in.
-2. Lab work: on a crown, bridge or implant plan, record when the work was sent to the lab and when it is
+1. Lab work: on a crown, bridge or implant plan, record when the work was sent to the lab and when it is
    due back; the Today board lists lab work due and late, so the patient is not booked before it arrives.
-3. Patient form: let the receptionist type an age when the date of birth is not known.
-4. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+2. Patient form: let the receptionist type an age when the date of birth is not known.
+3. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -179,7 +176,11 @@ Each finished item says what changed, when, and which commit holds it.
   about the amount left to pay. Commit aa8c50f.
 - 2026-09-26 - **Receipt on WhatsApp.** A payment receipt now has a WhatsApp button that sends the patient
   a short thank-you with the amount, date, what it was for, the receipt number and how much is still left
-  to pay. Commit PENDING.
+  to pay. Commit 5a1e090.
+- 2026-09-26 - **"Needs attention" on the dashboard.** The dashboard now starts with a short to-do list:
+  past appointments still to close, tomorrow's reminders to send, patients due for a check-up, and
+  patients who owe money. Each line opens the right page. Lines with nothing to do are hidden. Commit
+  PENDING.
 
 ## Questions for the owner
 
