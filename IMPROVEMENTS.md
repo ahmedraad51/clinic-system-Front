@@ -185,7 +185,7 @@ Each finished item says what changed, when, and which commit holds it.
   Commit fb514c0.
 - 2026-09-26 - **Age instead of a birth date.** Many patients do not know their exact date of birth. The
   patient form now has an "Only know the age?" link that swaps the date box for an Age box, so the
-  receptionist can type "42" and move on. Commit PENDING.
+  receptionist can type "42" and move on. Commit 39844fc.
 
 ## Questions for the owner
 
