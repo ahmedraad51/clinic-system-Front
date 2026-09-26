@@ -26,6 +26,8 @@ export interface PatientFormData {
   chronic_diseases: string;
   medical_history: string;
   notes: string;
+  /** Only used when the date of birth is not known. */
+  age: string;
 }
 
 export const EMPTY_PATIENT: PatientFormData = {
@@ -41,6 +43,7 @@ export const EMPTY_PATIENT: PatientFormData = {
   chronic_diseases: "",
   medical_history: "",
   notes: "",
+  age: "",
 };
 
 export function patientToForm(patient: Patient): PatientFormData {
@@ -53,7 +56,9 @@ export function patientToForm(patient: Patient): PatientFormData {
 
 /** What gets posted. Empty dates go as null, which Frappe stores as "not set". */
 export function patientPayload(form: PatientFormData) {
-  return { ...form, date_of_birth: form.date_of_birth || null };
+  const { age, ...rest } = form;
+  // With a date of birth the server works the age out; without one, the typed age is saved.
+  return { ...rest, date_of_birth: form.date_of_birth || null, ...(form.date_of_birth ? {} : { age: Number(age) || null }) };
 }
 
 type InputEvent = ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
@@ -169,6 +174,8 @@ export default function PatientForm({
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const [askDuplicate, setAskDuplicate] = useState(false);
+  // Patients who only told their age: show an Age box instead of the date of birth.
+  const [ageOnly, setAgeOnly] = useState(() => !initial.date_of_birth && Boolean(initial.age));
   const duplicates = usePossibleDuplicates(form.full_name, form.phone_number, currentName);
 
   const handleChange = (event: InputEvent) => {
@@ -241,9 +248,40 @@ export default function PatientForm({
               ))}
             </SelectInput>
           </Field>
-          <Field label="Date of Birth" hint="Age is worked out from this.">
-            <TextInput type="date" name="date_of_birth" value={form.date_of_birth} onChange={handleChange} />
-          </Field>
+          {/* The switch sits outside the label, so the field's name stays just "Age" or "Date of Birth". */}
+          {ageOnly ? (
+            <div>
+              <Field label="Age">
+                <TextInput type="number" name="age" min={0} max={120} inputMode="numeric" value={form.age} onChange={handleChange} />
+              </Field>
+              <button
+                type="button"
+                onClick={() => {
+                  setAgeOnly(false);
+                  setForm({ ...form, age: "" });
+                }}
+                className="mt-1 text-xs text-primary-700 underline"
+              >
+                Enter the date of birth instead
+              </button>
+            </div>
+          ) : (
+            <div>
+              <Field label="Date of Birth" hint="Age is worked out from this.">
+                <TextInput type="date" name="date_of_birth" value={form.date_of_birth} onChange={handleChange} />
+              </Field>
+              <button
+                type="button"
+                onClick={() => {
+                  setAgeOnly(true);
+                  setForm({ ...form, date_of_birth: "" });
+                }}
+                className="mt-1 text-xs text-primary-700 underline"
+              >
+                Only know the age?
+              </button>
+            </div>
+          )}
           <Field label="Phone Number" required>
             <TextInput type="tel" name="phone_number" value={form.phone_number} onChange={handleChange} required />
           </Field>

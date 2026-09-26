@@ -5,7 +5,6 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Patient form: let the receptionist type an age when the date of birth is not known.
 
 ## Backlog
 
@@ -121,7 +120,7 @@ Each finished item says what changed, when, and which commit holds it.
   that day. Commit 3400546.
 - 2026-09-26 - **Dental chart follows the chosen tooth.** On a phone or narrow screen, the chart now
   slides sideways to show the tooth that is open (for example the tooth of a treatment plan). Commit
-  PENDING.
+  5319cbc.
 - 2026-09-26 - **Patient list with alerts and next visit.** Each patient in the list now shows small red
   or yellow markers for medical alerts (allergy, blood thinner, heart, diabetes, pregnancy) and the date
   and time of their next booked visit. Age and gender moved next to the patient ID, so the list fits a
@@ -149,7 +148,7 @@ Each finished item says what changed, when, and which commit holds it.
   for the usual questions: blood thinners, diabetes, heart disease, high blood pressure, pregnancy, and
   allergies to penicillin, latex or local anaesthetic. Ticking one writes it into the right field, so the
   medical alerts never miss it. Things already written (like "Warfarin 3mg") show as ticked. Commit
-  PENDING.
+  0a6dc24.
 - 2026-09-26 - **Tomorrow's reminders.** The Today board now lists tomorrow's patients with a "Send
   reminder" button. It opens WhatsApp with the day-before reminder already written (from your WhatsApp
   templates), and the row is then marked as done so nobody gets two. Commit caadb3c.
@@ -176,22 +175,24 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-26 - **"Needs attention" on the dashboard.** The dashboard now starts with a short to-do list:
   past appointments still to close, tomorrow's reminders to send, patients due for a check-up, and
   patients who owe money. Each line opens the right page. Lines with nothing to do are hidden. Commit
-  PENDING.
+  d7eda4e.
 - 2026-09-26 - **Book the next visit from a treatment plan.** A treatment plan now has a "Book Visit"
   button. It opens the booking form with the patient, the plan's doctor and the reason (for example "Crown
   · tooth 36") already filled in. Commit 5829642.
 - 2026-09-26 - **Lab work.** Crown, bridge, implant and whitening plans have a "Lab Work" card: which lab,
   when the work was sent, when it is due back, and one tap for "Received today". The Today board lists lab
   work that is late or due in the next two days, so a patient is not seated before their crown is back.
-  Commit PENDING.
+  Commit fb514c0.
+- 2026-09-26 - **Age instead of a birth date.** Many patients do not know their exact date of birth. The
+  patient form now has an "Only know the age?" link that swaps the date box for an Age box, so the
+  receptionist can type "42" and move on. Commit PENDING.
 
 ## Questions for the owner
 
-- Your `npm run dev` on port 3000 restarted itself when I changed `next.config.ts` (item 1), and afterwards
-  it stopped answering for more than 10 minutes while using a lot of processor time. I did not stop it
-  (you asked me not to). If the app at http://localhost:3000 does not open, stop it with Ctrl+C and run
-  `npm run dev` again. My tests use their own copy of the app on port 3100, so they are not affected.
-
+- (Answered 2026-09-26) Your `npm run dev` broke after I changed `next.config.ts`, installed packages and ran
+  tests at the same time. You deleted `.next` and restarted it. From now on I never start a second `next dev`,
+  my tests use their own copy on port 3100, I never run `npm audit fix --force`, and whenever I change
+  `next.config.ts` or the packages I will write "Please restart your dev server" in the Done entry.
 - Which day does your clinic week start on? The week calendar starts on **Sunday** (the working week in
   most of the region). If you prefer Saturday or Monday, it is one setting (`WEEK_STARTS_ON` in
   `src/lib/format.ts`).

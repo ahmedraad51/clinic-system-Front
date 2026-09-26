@@ -48,6 +48,9 @@ After adding fetch fields, run a patch that fills them for existing records (fet
 
 These come from the README, not from the doctype JSON files. Check each one in the back-end repo.
 
+- **Patient:** `age` (Int). The form sends `age` **only when `date_of_birth` is empty** (some patients do not
+  know their birth date). Keep the typed value in that case, and work `age` out from `date_of_birth` only
+  when a date is set. `age` must therefore not be read only.
 - **Doctor:** `full_name`, `specialization` (Select: General Dentist, Orthodontist, Endodontist, Periodontist,
   Oral Surgeon, Pediatric Dentist, Prosthodontist), `phone_number`, `email`, `start_time` and `end_time`
   (Time, the doctor's working hours; both may be empty), `is_active` (Check). Dropdowns and the calendar only

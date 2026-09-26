@@ -142,3 +142,15 @@ test("the patient list shows who owes money, biggest balance first", async ({ pa
     /^https:\/\/wa\.me\/201287714520\?text=Hello%20Tarek%20Hassan%2C%20this%20is%20a%20friendly%20reminder/,
   );
 });
+
+test("a patient who only knows their age", async ({ page }) => {
+  await page.goto("/patients/new");
+  await page.getByLabel("Full Name").fill("Age Only Patient");
+  await page.getByLabel("Phone Number").fill("+20 100 777 1234");
+  await page.getByRole("button", { name: "Only know the age?" }).click();
+  // exact: the Allergies hint ("...patient page") also contains "age".
+  await page.getByLabel("Age", { exact: true }).fill("42");
+  await page.getByRole("button", { name: "Save Patient" }).click();
+  await expect(page.getByRole("heading", { name: "Age Only Patient" })).toBeVisible();
+  await expect(page.getByText(/42 years/).first()).toBeVisible();
+});
