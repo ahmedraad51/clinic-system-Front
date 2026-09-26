@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, Plus, Printer, RotateCcw, Save, Sparkles, X } from "lucide-react";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
@@ -171,6 +171,17 @@ export default function DentalChart({
     return onlyChild || (patientAge !== undefined && patientAge > 0 && patientAge < 6) ? "child" : "adult";
   });
 
+  // On a narrow screen the chart scrolls sideways: keep the chosen tooth in view.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const box = scrollRef.current;
+    const button = selected === null ? null : box?.querySelector<HTMLElement>(`[data-tooth="${selected}"]`);
+    if (!box || !button || box.scrollWidth <= box.clientWidth) return;
+    const boxRect = box.getBoundingClientRect();
+    const rect = button.getBoundingClientRect();
+    box.scrollLeft += rect.left + rect.width / 2 - (boxRect.left + boxRect.width / 2);
+  }, [selected, dentition]);
+
   const clean = cleanChart(chart);
   const dirty = JSON.stringify(clean) !== JSON.stringify(saved);
   const upper: readonly number[] = dentition === "adult" ? UPPER_TEETH : CHILD_UPPER_TEETH;
@@ -235,6 +246,7 @@ export default function DentalChart({
         type="button"
         onClick={() => setSelected(selected === tooth ? null : tooth)}
         aria-pressed={selected === tooth}
+        data-tooth={tooth}
         aria-label={`Tooth ${tooth}, ${toothName(tooth)}${description ? `: ${description}` : ""}`}
         title={`${tooth} · ${toothName(tooth)}${description ? ` · ${description}` : ""}`}
         className={cx(
@@ -305,7 +317,7 @@ export default function DentalChart({
         </div>
       </div>
 
-      <div className="overflow-x-auto -mx-2 px-2">
+      <div ref={scrollRef} className="overflow-x-auto -mx-2 px-2">
         <div className="w-max mx-auto">
           <div className="flex justify-between text-xs text-gray-500 px-1 mb-1">
             <span>Patient&apos;s right</span>

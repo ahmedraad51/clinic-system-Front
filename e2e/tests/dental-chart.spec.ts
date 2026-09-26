@@ -60,3 +60,15 @@ test("a treatment plan shows the chart at its tooth, and the chart prints", asyn
   await waitForData(page);
   await expect(page.getByRole("button", { name: /^36\s/ })).toContainText("Crown, root canal");
 });
+
+test("on a phone the chart scrolls to the chosen tooth", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  // Amir Zaki's crown on tooth 37, at the far end of the lower jaw.
+  await page.goto("/treatments/TRT-2026-00013");
+  await waitForData(page);
+  const tooth = page.getByRole("button", { name: /^Tooth 37,/ });
+  // Scroll the page only (not the chart) so the test sees what the app did.
+  await page.getByRole("heading", { name: "Dental Chart" }).scrollIntoViewIfNeeded();
+  await expect(tooth).toHaveAttribute("aria-pressed", "true");
+  await expect(tooth).toBeInViewport({ ratio: 0.9 });
+});

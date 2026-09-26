@@ -5,13 +5,11 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Dental chart on a phone or narrow screen: scroll the chart so the chosen tooth is in view (on the plan
-  page tooth 37 was off-screen).
+- Patient list: show a small medical-alert marker and the next appointment in each row.
 
 ## Backlog
 
-1. Patient list: show a small medical-alert marker and the next appointment in each row.
-2. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+1. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -120,7 +118,10 @@ Each finished item says what changed, when, and which commit holds it.
   list is not empty. Commit a379754.
 - 2026-09-26 - **Calendar on a phone.** On a phone the day calendar now shows one doctor at a time, full
   width, with arrows to go to the next or previous doctor. It opens on the first doctor who has patients
-  that day. Commit PENDING.
+  that day. Commit 3400546.
+- 2026-09-26 - **Dental chart follows the chosen tooth.** On a phone or narrow screen, the chart now
+  slides sideways to show the tooth that is open (for example the tooth of a treatment plan). Commit
+  PENDING.
 
 ## Questions for the owner
 
