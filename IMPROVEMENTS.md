@@ -5,10 +5,19 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
+- Past appointments still waiting for an outcome: show them on the Today board ("Earlier, still open") so
+  the front desk marks them Completed or No Show. Seen in the review: 8 Sep and 14 Sep appointments are
+  still "Scheduled".
 
 ## Backlog
 
-1. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+1. Send a WhatsApp message by hand from an appointment (and the Today board): pick a template, the
+   patient's name, date, time, doctor and clinic are filled in, and WhatsApp opens with the text ready.
+2. Faster payments: after picking a patient, choose their treatment plan by itself when only one has a
+   balance, and offer "Pay the full balance" in one tap.
+3. Detail pages: show Delete as an icon button, like the patient page, so the header buttons fit on one
+   line on a tablet (seen on the appointment page).
+4. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
