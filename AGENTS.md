@@ -29,7 +29,7 @@ accurate.
 | `npm run dev` | Works. Dev output goes to `.next/dev`, so `npm run build` can run while it is up. Changing `next.config.ts` restarts it, and the first page after that can take several minutes to compile. | |
 | `npm run build` | **Passes** (checked 2026-09-26): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-26). `npx tsc --noEmit` passes too. | |
-| Tests | **Playwright tests pass** (77 tests, checked 2026-09-26): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (82 tests, checked 2026-09-26): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -145,6 +145,7 @@ src/
 │   ├── PatientFiles.tsx      X-rays and photos attached to a patient
 │   ├── LabWorkCard.tsx       lab work of a treatment plan; labState() and LAB_BADGES
 │   ├── ClinicLetterhead.tsx  the clinic header on printouts (receipt, estimate)
+│   ├── ReceiptSlip.tsx       "Print Slip" and "Slip Settings" under a payment receipt (thermal receipt printers)
 │   ├── ToothLogo.tsx         the app logo (inline SVG)
 │   ├── MedicalAlerts.tsx     the red/yellow medical alerts band (show it wherever treatment is decided)
 │   ├── forms/                PatientForm, AppointmentForm, TreatmentForm, PaymentForm (shared by new and edit)
@@ -168,6 +169,7 @@ src/
     ├── whatsapp.ts           PLACEHOLDERS, fillTemplate(), whatsappNumber(), whatsappLink() (wa.me links)
     ├── phone.ts              toLatinDigits(), dialableNumber() (0770… → 964770…), samePhone(), phoneSearchPattern()
     ├── recall.ts             dueForRecall(), monthsBefore(), the recall periods
+    ├── receiptSlip.ts        the thermal receipt slip: buildReceiptSlip(), printHtml(), this computer's paper settings
     ├── theme.ts              the clinic colour: presets, contrast fix, applyThemeColor, the boot script
     └── links.ts              URL builders for records (always use these)
 docs/
@@ -220,7 +222,7 @@ on the form, and a click made while the save is still running is overridden by t
 | `/payments` | `view_payments` | Search, method filter, date range, paging, total of everything that matches |
 | `/payments/new` | `add_payments` | Shared `PaymentForm`. Reads `?patient=&treatment=`. A new payment for a patient with exactly one plan with a balance picks that plan; **Pay full balance** fills the amount. Blocks amounts above what the plan has left |
 | `/payments/day` | `view_payments` | End-of-day report for `?date=` (default today): totals per payment method and overall, every payment of the day, the cash that should be in the drawer, and Counted by / Checked by lines. Linked from Payments and the Today board |
-| `/payments/[id]` | `view_payments` | Printable receipt with clinic details; Edit/Delete (`add_payments`); **WhatsApp** opens `wa.me` with a short receipt (amount, date, treatment, receipt number and method, and what the patient still has to pay) when `enable_whatsapp` is on |
+| `/payments/[id]` | `view_payments` | Printable receipt with clinic details; under it a **Receipt slip** row (`ReceiptSlipControls`): **Print Slip** prints the receipt for a 58 or 80 mm thermal receipt printer (clinic, receipt number, date, patient, what it was for, method, amount, **Left on this treatment** as it was right after this payment (the plan's cost minus its payments up to this one, so a reprint shows the same figure; none for a general payment or a cancelled plan), notes, and "Printed <time> by <user>"; the button waits until that balance has loaded) and **Slip Settings** sets this computer's paper width (58, 80 or 40-120 mm), side margin (0-10 mm) and text size, with **Print Test Slip**, kept in `localStorage.receipt_slip_paper`; Edit/Delete (`add_payments`); **WhatsApp** opens `wa.me` with a short receipt (amount, date, treatment, receipt number and method, and what the patient still has to pay) when `enable_whatsapp` is on |
 | `/payments/[id]/edit` | `add_payments` | Shared `PaymentForm` |
 | `/reports` | `view_reports`, and Clinic Settings `enable_financial_reports` | Period picker; revenue, count, average, outstanding; revenue by treatment, method and month; latest payments; outstanding balances; CSV export of both; revenue by **doctor** (through each payment's treatment plan; payments without a plan are "General payments") and **Appointments** outcomes up to today (completed, no show, cancelled, still open) with the no-show rate, no-shows out of completed plus no-shows, shown red at 15% or more |
 | `/doctors` | `manage_users` | Doctor list (search, Active / Not active filter, paging); Add Doctor and Edit in a dialog: name, specialization (`DOCTOR_SPECIALIZATIONS`), phone, email, working hours (`start_time`, `end_time`; both or neither, end after start) and Active. No delete: switch Active off |
@@ -604,6 +606,15 @@ writing new class lists.
 - Add `print:hidden` to anything that should not appear on paper. Printouts (receipt, estimate, statement,
   day report) put `ClinicLetterhead` at the top of a `Card` with `print:shadow-none print:border-0`, and
   give tinted boxes `print:bg-white print:border` so they survive printers that drop backgrounds.
+- **Receipt slips** (thermal printers) are not a printout of the page: `buildReceiptSlip()` in
+  `src/lib/receiptSlip.ts` builds a small HTML page of its own (every value escaped, every size from the paper
+  settings, black on white, system fonts) and `printHtml(html, { pageWidthMm })` prints it through a hidden
+  frame (`data-print-frame`). CSS has no "as long as the content" page size, so `printHtml` measures the slip
+  and adds `@page { size: <width>mm <length>mm }` before printing. While a print is open, more calls are
+  ignored (a double click prints once); the frame is removed after `afterprint` (or 60 s) and focus goes back
+  where it was. The print dialog opens on the printer used last. Tests capture it by replacing `window.print`
+  in child frames with `page.addInitScript`, sending `afterprint` like a browser (see
+  `e2e/tests/receipt-slip.spec.ts`).
 - Badge colours: Appointments Scheduled blue, Confirmed green, Completed gray, Cancelled red, No Show
   yellow. Treatments Planned blue, In Progress yellow, Completed green, Cancelled red. Sessions Scheduled
   blue, Completed green, Cancelled red. Methods Cash green, Card blue, Bank Transfer purple. WhatsApp Sent

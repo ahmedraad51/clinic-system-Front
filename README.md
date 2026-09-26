@@ -166,7 +166,7 @@ what they are not allowed to do.
 | `/treatments/[id]` | Money summary with progress, status changes, its payments, and its treatment sessions, and the patient's dental chart opened at the plan's tooth |
 | `/payments` | Ledger with search, method and date filters, and the total |
 | `/payments/new`, `/payments/[id]/edit` | Record or edit a payment (pre-fills from a treatment plan; cannot go above what is left) |
-| `/payments/[id]` | Printable receipt |
+| `/payments/[id]` | Printable receipt, and a receipt slip for 58 or 80 mm thermal receipt printers (paper size set per computer) |
 | `/reports` | Revenue by treatment, method and month for a chosen period, outstanding balances, CSV export |
 | `/doctors` | The clinic's doctors: add and edit name, specialization, phone, email, working hours, and switch a doctor off when they leave |
 | `/users`, `/users/[id]` | Staff accounts, roles, enable/disable, and the 14 permission switches with role presets |

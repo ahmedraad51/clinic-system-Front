@@ -157,6 +157,10 @@ Paths are inside `D:\Projects\alkhokh_pet_store_front`.
 - **Back end:** none. (Frappe's currency precision for IQD can be set to 0 as well.)
 
 ### 4. 80 mm (and 58 mm) thermal receipt slips
+- **Brought in** (2026-09-26): `src/lib/receiptSlip.ts` (`buildReceiptSlip`, `printHtml`, paper settings),
+  `src/components/ReceiptSlip.tsx` (the row under the payment receipt and its settings dialog) and
+  `e2e/tests/receipt-slip.spec.ts`. The slip shows what was left on the treatment right after that payment
+  (so a reprint is the same) and who printed it and when; the page is sized to the slip's measured length.
 - **What:** a "Print slip" button on the payment page next to the A4 receipt. It builds a narrow receipt and
   prints it through a hidden frame, so the page itself does not change. Each computer keeps its own paper
   width (58 / 80 mm or custom), margin and text size, with a test print that uses a worst-case example.

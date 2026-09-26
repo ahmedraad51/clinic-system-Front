@@ -202,7 +202,12 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-26 - **Iraqi dinars and Arabic-keyboard digits** (from the pet store study, item 3). Amounts in
   IQD are now always shown without decimals, like "IQD 1,250,000". Every amount, price, age and phone box
   accepts digits typed on an Arabic keyboard (١٢٣) and turns them into 1 2 3 while you type, instead of
-  silently losing them. Commit PENDING.
+  silently losing them. Commit b75ed3d.
+- 2026-09-26 - **Receipt slips for thermal printers** (from the pet store study, item 4). Under every
+  payment receipt there is now a "Print Slip" button that prints a narrow receipt for a 58 or 80 mm
+  receipt printer: the clinic, the receipt number, the patient, what was paid, how, what was left on that
+  treatment right after the payment, and who printed it. "Slip Settings" sets this computer's paper width, margin and text size, with a test
+  print. The A4 receipt is unchanged. Commit PENDING.
 
 ## Questions for the owner
 

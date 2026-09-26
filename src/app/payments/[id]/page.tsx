@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import ClinicLetterhead from "@/components/ClinicLetterhead";
+import ReceiptSlipControls from "@/components/ReceiptSlip";
 import { MessageCircle, Pencil, Printer, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import { Button, Card, LinkButton, NotFoundCard, PageContainer, PageHeader, PageLoading } from "@/components/ui";
@@ -11,12 +12,12 @@ import { ConfirmDialog } from "@/components/ui/Modal";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
-import { deleteDoc, errorMessage, getList } from "@/lib/frappe";
+import { deleteDoc, errorMessage, getDoc, getList } from "@/lib/frappe";
 import { formatDate } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
 import { patientHref, paymentHref, routeId, treatmentHref } from "@/lib/links";
 import { whatsappLink } from "@/lib/whatsapp";
-import type { Patient, Payment } from "@/lib/types";
+import type { Patient, Payment, TreatmentPlan } from "@/lib/types";
 
 export default function PaymentDetailPage() {
   return (
@@ -30,7 +31,7 @@ function PaymentDetail() {
   const params = useParams();
   const router = useRouter();
   const toast = useToast();
-  const { can } = useSession();
+  const { can, displayName } = useSession();
   const { money, settings, clinicName, countryCode } = useSettings();
   const id = routeId(params.id);
   const { doc: payment, loading, notFound, error } = useDocument<Payment>("Payment", id);
@@ -60,6 +61,41 @@ function PaymentDetail() {
     };
   }, [patientId]);
 
+  // For the receipt slip: what was left on the treatment plan right after this payment (later payments do
+  // not count, so a reprint shows the same figure). null when it could not be worked out.
+  const planId = payment?.treatment_plan ?? "";
+  const paidOn = payment?.payment_date ?? "";
+  const [planBalance, setPlanBalance] = useState<{ key: string; left: number | null } | null>(null);
+
+  useEffect(() => {
+    if (!planId) return;
+    let cancelled = false;
+    const key = `${id}|${planId}|${paidOn}`;
+    const load = async () => {
+      let left: number | null = null;
+      try {
+        const [plan, payments] = await Promise.all([
+          getDoc<TreatmentPlan>("Treatment Plan", planId),
+          getList<Payment>("Payment", ["name", "payment_date", "amount"], { filters: [["treatment_plan", "=", planId]], limit: 0 }),
+        ]);
+        if (plan.status !== "Cancelled") {
+          // This payment and the ones before it (same day: by receipt number).
+          const paid = payments
+            .filter((row) => row.payment_date < paidOn || (row.payment_date === paidOn && row.name <= id))
+            .reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+          left = Math.max(0, (Number(plan.total_cost) || 0) - paid);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      if (!cancelled) setPlanBalance({ key, left });
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, planId, paidOn]);
+
   if (loading) return <PageLoading />;
   if (notFound || !payment) return <NotFoundCard error={error} what="Payment" backHref="/payments" backLabel="Back to Payments" />;
 
@@ -79,6 +115,24 @@ function PaymentDetail() {
           countryCode,
         )
       : "";
+
+  // The same receipt for a thermal receipt printer; Print Slip waits until the plan balance has loaded.
+  const balance = planId && planBalance?.key === `${id}|${planId}|${paidOn}` ? planBalance : null;
+  const slip = planId && !balance ? null : {
+    clinicName,
+    clinicAddress: settings.address,
+    clinicPhone: settings.phone,
+    taxNumber: settings.tax_number,
+    receiptNo: id,
+    date: formatDate(payment.payment_date),
+    patient: payment.patient_name || payment.patient,
+    forWhat: payment.treatment_plan ? payment.treatment_type || "Treatment" : "General payment",
+    method: payment.payment_method,
+    amount: money(payment.amount),
+    balance: balance && balance.left !== null ? { label: "Left on this treatment", amount: money(balance.left) } : undefined,
+    notes: payment.notes || undefined,
+    printedBy: displayName,
+  };
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -178,6 +232,8 @@ function PaymentDetail() {
           <span className="text-sm font-medium text-green-800">Amount paid</span>
           <span className="text-2xl font-bold text-green-700">{money(payment.amount)}</span>
         </div>
+
+        <ReceiptSlipControls data={slip} />
       </Card>
 
       <ConfirmDialog
