@@ -5,16 +5,14 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Tomorrow's reminders: a list of tomorrow's appointments with one tap to send each patient a WhatsApp
-  reminder from a template, for clinics that remind by hand.
+- Clinic working days: choose the days the clinic is open in Settings; the week calendar shades closed
+  days and booking on a closed day asks first.
 
 ## Backlog
 
-1. Clinic working days: choose the days the clinic is open in Settings; the week calendar shades closed
-   days and booking on a closed day asks first.
-2. Reports for the manager: revenue by doctor, and appointments by outcome (completed, no-show, cancelled)
+1. Reports for the manager: revenue by doctor, and appointments by outcome (completed, no-show, cancelled)
    with the no-show rate for the period.
-3. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+2. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -155,6 +153,9 @@ Each finished item says what changed, when, and which commit holds it.
   allergies to penicillin, latex or local anaesthetic. Ticking one writes it into the right field, so the
   medical alerts never miss it. Things already written (like "Warfarin 3mg") show as ticked. Commit
   PENDING.
+- 2026-09-26 - **Tomorrow's reminders.** The Today board now lists tomorrow's patients with a "Send
+  reminder" button. It opens WhatsApp with the day-before reminder already written (from your WhatsApp
+  templates), and the row is then marked as done so nobody gets two. Commit PENDING.
 
 ## Questions for the owner
 

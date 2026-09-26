@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, CheckCheck, Clock, CreditCard, FileText, HeartPulse, Plus, RefreshCw, UserX } from "lucide-react";
+import { Check, CheckCheck, Clock, CreditCard, FileText, HeartPulse, MessageCircle, Plus, RefreshCw, UserX } from "lucide-react";
 import FinishVisitDialog from "@/components/FinishVisitDialog";
 import RequirePermission from "@/components/Guard";
 import {
@@ -12,10 +12,11 @@ import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { errorMessage, getList, updateDoc } from "@/lib/frappe";
-import { cx, formatDate, formatLongDate, formatTime, fromMinutes, toMinutes, todayISO } from "@/lib/format";
+import { addDays, cx, formatDate, formatLongDate, formatTime, fromMinutes, todayISO, toMinutes } from "@/lib/format";
 import { appointmentHref, patientHref } from "@/lib/links";
 import { MEDICAL_FIELDS, medicalFlags } from "@/lib/medical";
-import type { Appointment, AppointmentStatus, Patient } from "@/lib/types";
+import { fillTemplate, whatsappLink } from "@/lib/whatsapp";
+import type { Appointment, AppointmentStatus, Patient, WhatsAppTemplate } from "@/lib/types";
 
 /** Minutes after the start time before a patient who has not been seen counts as late. */
 const LATE_AFTER = 10;
@@ -34,6 +35,10 @@ interface Board {
   patients: Record<string, Patient>;
   /** Past appointments never marked Completed, No Show or Cancelled. */
   earlier: Appointment[];
+  /** Tomorrow's booked appointments, to remind by hand. */
+  tomorrow: Appointment[];
+  /** The template used for those reminders (the "24 Hours Before" one when there is one). */
+  template: WhatsAppTemplate | null;
 }
 
 /**
@@ -45,7 +50,9 @@ function TodayBoard() {
   // A doctor sees their own patients first; "Everyone" shows the whole clinic.
   const [everyone, setEveryone] = useState(false);
   const mine = myDoctor && !everyone ? myDoctor.name : "";
-  const { money } = useSettings();
+  const { money, settings, clinicName } = useSettings();
+  // Reminders opened from this computer, so nobody gets two.
+  const [reminded, setReminded] = useState<string[]>(() => readReminded());
   const toast = useToast();
   const today = todayISO();
   const [board, setBoard] = useState<Board | null>(null);
@@ -79,7 +86,23 @@ function TodayBoard() {
             limit: 50,
           },
         );
-        const ids = [...new Set(appointments.map((a) => a.patient))];
+        const [tomorrow, templates] = await Promise.all([
+          getList<Appointment>(
+            "Appointment",
+            ["name", "patient", "patient_name", "doctor", "doctor_name", "appointment_date", "appointment_time", "status"],
+            {
+              filters: [["appointment_date", "=", addDays(today, 1)], ["status", "in", ["Scheduled", "Confirmed"]]],
+              orderBy: "appointment_time asc",
+              limit: 0,
+            },
+          ),
+          getList<WhatsAppTemplate>("WhatsApp Template", ["name", "template_name", "trigger", "message"], {
+            filters: [["is_active", "=", 1]],
+            limit: 0,
+          }).catch(() => [] as WhatsAppTemplate[]),
+        ]);
+        const template = templates.find((t) => t.trigger === "24 Hours Before") ?? templates[0] ?? null;
+        const ids = [...new Set([...appointments, ...tomorrow].map((a) => a.patient))];
         const rows = ids.length
           ? await getList<Patient>("Patient", ["name", "phone_number", "total_remaining", ...MEDICAL_FIELDS], {
               filters: [["name", "in", ids]],
@@ -87,7 +110,7 @@ function TodayBoard() {
             })
           : [];
         if (!cancelled) {
-          setBoard({ date: today, appointments, earlier, patients: Object.fromEntries(rows.map((p) => [p.name, p])) });
+          setBoard({ date: today, appointments, earlier, tomorrow, template, patients: Object.fromEntries(rows.map((p) => [p.name, p])) });
           setError("");
         }
       } catch (err) {
@@ -154,6 +177,25 @@ function TodayBoard() {
 
   const canEdit = can("edit_appointments");
   // Resolved ones drop off the list straight away.
+  const tomorrowList = (board?.tomorrow ?? []).filter((a) => !mine || a.doctor === mine);
+  const reminderText = (a: Appointment) =>
+    fillTemplate(
+      board?.template?.message ??
+        "Hello {{ patient_name }}, this is a reminder of your appointment at {{ clinic_name }} on {{ appointment_date }} at {{ appointment_time }}.",
+      {
+        patient_name: a.patient_name || a.patient,
+        appointment_date: formatDate(a.appointment_date),
+        appointment_time: formatTime(a.appointment_time),
+        doctor_name: a.doctor_name || "",
+        clinic_name: clinicName,
+      },
+    );
+  const markReminded = (name: string) => {
+    const next = [...reminded.filter((n) => n !== name), name];
+    setReminded(next);
+    saveReminded(next);
+  };
+
   const earlierOpen = (board?.earlier ?? []).filter(
     (a) => (a.status === "Scheduled" || a.status === "Confirmed") && (!mine || a.doctor === mine),
   );
@@ -335,6 +377,51 @@ function TodayBoard() {
           ))}
         </div>
       )}
+      {settings.enable_whatsapp !== 0 && tomorrowList.length > 0 && (
+        <Card
+          title={`Tomorrow's reminders (${tomorrowList.filter((a) => !reminded.includes(a.name)).length} to send)`}
+          flush
+          actions={<span className="text-xs text-gray-500">{board?.template ? board.template.template_name : "Default message"}</span>}
+        >
+          <ul className="divide-y divide-gray-100">
+            {tomorrowList.map((a) => {
+              const link = whatsappLink(board?.patients[a.patient]?.phone_number, reminderText(a));
+              const done = reminded.includes(a.name);
+              return (
+                <li key={a.name} className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <span className="w-[5.5rem] shrink-0 font-semibold text-gray-800 whitespace-nowrap">{formatTime(a.appointment_time)}</span>
+                  <div className="min-w-0 flex-1">
+                    <Link href={appointmentHref(a.name)} className="font-medium text-gray-800 hover:text-primary-600">
+                      {a.patient_name || a.patient}
+                    </Link>
+                    <p className="text-sm text-gray-500">{a.doctor_name}</p>
+                  </div>
+                  {done ? (
+                    <span className="inline-flex items-center gap-1.5 text-sm text-green-700">
+                      <Check size={15} />
+                      Reminder opened
+                    </span>
+                  ) : link ? (
+                    <a
+                      href={link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => markReminded(a.name)}
+                      className="inline-flex items-center gap-1.5 min-h-9 pointer-coarse:min-h-11 px-3 rounded-xl bg-green-50 border border-green-200 text-sm font-medium text-green-800 hover:bg-green-100"
+                    >
+                      <MessageCircle size={15} />
+                      Send reminder
+                    </a>
+                  ) : (
+                    <span className="text-sm text-gray-500">No phone number</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
+
       {earlierOpen.length > 0 && (
         <Card
           title={`Earlier, still open (${earlierOpen.length})`}
@@ -392,4 +479,25 @@ function Count({ label, value, tone }: { label: string; value: number; tone: str
       <p className="text-sm text-gray-500">{label}</p>
     </div>
   );
+}
+
+const REMINDED_KEY = "reminders_opened";
+
+/** Reminders opened on this computer (appointment names). Kept for a few days' worth of appointments. */
+function readReminded(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const list = JSON.parse(localStorage.getItem(REMINDED_KEY) || "[]") as unknown;
+    return Array.isArray(list) ? list.filter((n): n is string => typeof n === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveReminded(list: string[]): void {
+  try {
+    localStorage.setItem(REMINDED_KEY, JSON.stringify(list.slice(-200)));
+  } catch {
+    // Not remembering is fine.
+  }
 }

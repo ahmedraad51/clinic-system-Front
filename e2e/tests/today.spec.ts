@@ -41,3 +41,19 @@ test("past appointments without an outcome are listed to be closed", async ({ pa
   await expect(earlier.getByRole("heading")).toHaveText("Earlier, still open (4)");
   await expect(earlier.getByText("Tarek Hassan")).toHaveCount(0);
 });
+
+test("tomorrow's reminders open WhatsApp with the message ready", async ({ page, context }) => {
+  // Never leave the test machine: the WhatsApp page itself is not needed.
+  await context.route("https://wa.me/**", (route) => route.abort());
+  await page.goto("/today");
+  const card = page.locator("section").filter({ has: page.getByRole("heading", { name: /Tomorrow's reminders/ }) });
+  // Tomorrow: Dina Rashad with Dr. Sarah Mansour at 11:00.
+  await expect(card.getByRole("heading")).toHaveText("Tomorrow's reminders (1 to send)");
+  const send = card.getByRole("link", { name: "Send reminder" });
+  await expect(send).toHaveAttribute("href", /^https:\/\/wa\.me\/201005541287\?text=Hello%20Dina%20Rashad%2C%20this%20is%20a%20reminder/);
+  const popup = context.waitForEvent("page");
+  await send.click();
+  await (await popup).close();
+  await expect(card.getByText("Reminder opened")).toBeVisible();
+  await expect(card.getByRole("heading")).toHaveText("Tomorrow's reminders (0 to send)");
+});
