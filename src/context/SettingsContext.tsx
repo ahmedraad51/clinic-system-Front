@@ -3,9 +3,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { useAuth } from "./AuthContext";
 import { getDoc } from "@/lib/frappe";
-import { formatMoney } from "@/lib/format";
 import { applyThemeColor } from "@/lib/theme";
-import type { ClinicSettings } from "@/lib/types";
+import { WEEK_DAYS, type ClinicSettings } from "@/lib/types";
+import { formatMoney, weekdayIndex } from "@/lib/format";
 
 /** Used until the real settings arrive, and for any field the backend leaves empty. */
 const DEFAULTS: ClinicSettings = {
@@ -22,6 +22,8 @@ interface SettingsContextType {
   currency: string;
   /** The price list: treatment type → usual price. Types without a price are missing. */
   prices: Record<string, number>;
+  /** False on a day the clinic is closed (Clinic Settings → working_days). Every day is open when none are set. */
+  isOpenOn: (iso: string) => boolean;
   /** Formats an amount in the clinic currency. */
   money: (amount: number | string | null | undefined) => string;
   /** Call after saving the settings page. */
@@ -65,11 +67,21 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     });
     return list;
   }, [settings.treatment_prices]);
+  const isOpenOn = useCallback(
+    (iso: string) => {
+      const days = (settings.working_days || "")
+        .split(",")
+        .map((d) => d.trim())
+        .filter((d) => (WEEK_DAYS as readonly string[]).includes(d));
+      return days.length === 0 || days.includes(WEEK_DAYS[weekdayIndex(iso)]);
+    },
+    [settings.working_days],
+  );
   const money = useCallback((amount: number | string | null | undefined) => formatMoney(amount, currency), [currency]);
 
   const value = useMemo(
-    () => ({ settings, clinicName, currency, prices, money, refresh }),
-    [settings, clinicName, currency, prices, money, refresh],
+    () => ({ settings, clinicName, currency, prices, isOpenOn, money, refresh }),
+    [settings, clinicName, currency, prices, isOpenOn, money, refresh],
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

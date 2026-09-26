@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../fixtures";
 import { waitForData } from "../helpers";
 
 test("find a patient by phone from any page with Ctrl+K", async ({ page }) => {

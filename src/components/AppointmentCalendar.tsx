@@ -68,6 +68,8 @@ interface Column {
   items: Appointment[];
   /** The doctor's working hours in minutes, when known. Time outside them is shaded. */
   hours?: { start: number; end: number };
+  /** The clinic is closed that day (Clinic Settings → working_days). */
+  closed?: boolean;
 }
 
 /** An appointment being dragged, and where it would land. */
@@ -160,6 +162,7 @@ export default function AppointmentCalendar({
   closingTime,
   canBook,
   canMove = false,
+  isOpenOn = () => true,
 }: {
   view: CalendarView;
   /** The day shown, or any day of the week shown. */
@@ -174,6 +177,8 @@ export default function AppointmentCalendar({
   canBook: boolean;
   /** Appointments can be dragged to another time, day or doctor (edit_appointments). */
   canMove?: boolean;
+  /** Whether the clinic is open on a date; closed days are shaded. */
+  isOpenOn?: (iso: string) => boolean;
 }) {
   const toast = useToast();
   const router = useRouter();
@@ -266,6 +271,7 @@ export default function AppointmentCalendar({
         today: date === today,
         items,
         hours: doctorHours(doctor),
+        closed: !isOpenOn(date),
       };
     });
   } else {
@@ -280,6 +286,7 @@ export default function AppointmentCalendar({
         today: day === today,
         items: rows.filter((a) => a.appointment_date === day),
         hours: doctorFilter ? doctorHours(doctors.find((d) => d.name === doctorFilter)) : undefined,
+        closed: !isOpenOn(day),
       };
     });
   }
@@ -410,6 +417,7 @@ export default function AppointmentCalendar({
   return (
     <div className="space-y-3">
       {result?.error && <Alert tone="red">{result.error}</Alert>}
+      {view === "day" && !isOpenOn(date) && <Alert tone="yellow">The clinic is closed on this day.</Alert>}
 
       <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {loading && (
@@ -495,6 +503,7 @@ export default function AppointmentCalendar({
                       >
                         {column.subtitle}
                       </p>
+                      {column.closed && <p className="text-xs font-medium text-gray-500">Closed</p>}
                     </>
                   )}
                 </div>
@@ -524,6 +533,9 @@ export default function AppointmentCalendar({
                   className={cx("relative border-e border-gray-100 last:border-e-0", column.today && view === "week" && "bg-primary-50/40")}
                   style={{ height, ...gridLines }}
                 >
+                  {column.closed && (
+                    <div className="absolute inset-0 pointer-events-none" style={OFF_HOURS} aria-hidden="true" />
+                  )}
                   {column.hours && column.hours.start > dayStart && (
                     <div
                       className="absolute inset-x-0 top-0 pointer-events-none"

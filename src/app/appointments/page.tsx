@@ -72,7 +72,7 @@ function Appointments() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { can, doctor: myDoctor } = useSession();
-  const { settings } = useSettings();
+  const { settings, isOpenOn } = useSettings();
   const { doctors, loading: doctorsLoading } = useDoctorList();
 
   const requested = searchParams.get("view");
@@ -174,6 +174,7 @@ function Appointments() {
           closingTime={settings.closing_time}
           canBook={can("add_appointments")}
           canMove={can("edit_appointments")}
+          isOpenOn={isOpenOn}
         />
       )}
     </PageContainer>

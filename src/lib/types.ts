@@ -57,6 +57,9 @@ export const DOCTOR_SPECIALIZATIONS = [
   "General Dentist", "Orthodontist", "Endodontist", "Periodontist", "Oral Surgeon", "Pediatric Dentist", "Prosthodontist",
 ] as const;
 
+/** Week days in Date.getDay() order (0 = Sunday), as saved in Clinic Settings → working_days. */
+export const WEEK_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+
 /** Appointment lengths offered in the form, in minutes. */
 export const DURATIONS = [15, 30, 45, 60, 90, 120] as const;
 
@@ -231,6 +234,8 @@ export interface ClinicSettings extends BaseDoc {
   enable_financial_reports?: number;
   /** The usual price of each treatment type; fills in Treatment Plan.total_cost. */
   treatment_prices?: TreatmentPrice[];
+  /** The days the clinic is open, e.g. "Saturday,Sunday,Monday". Empty means every day. */
+  working_days?: string;
 }
 
 export interface WhatsAppTemplate extends BaseDoc {

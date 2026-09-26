@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../fixtures";
 import { openFromMenu, pickLink } from "../helpers";
 
 test("a new payment picks the only open plan and pays the full balance in one tap", async ({ page }) => {

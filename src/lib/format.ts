@@ -98,6 +98,11 @@ export function weekStart(iso: string): string {
   return addDays(iso, -((localDate(iso).getDay() - WEEK_STARTS_ON + 7) % 7));
 }
 
+/** 0 (Sunday) to 6 (Saturday) for "YYYY-MM-DD". */
+export function weekdayIndex(iso: string): number {
+  return localDate(iso).getDay();
+}
+
 /** 630 → "10:30". */
 export function fromMinutes(minutes: number): string {
   return `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;

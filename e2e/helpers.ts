@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { FIXED_NOW } from "./fixtures";
 
 /**
  * The dummy data lives in the browser's memory and is reset by a full page load.
@@ -36,9 +37,9 @@ export async function pickLink(page: Page, fieldLabel: string, search: string, o
   await page.getByRole("listbox").getByRole("button", { name: new RegExp(optionText) }).click();
 }
 
-/** Today as YYYY-MM-DD in local time, like the app's todayISO(). */
+/** The tests' fixed "today" (see fixtures.ts) as YYYY-MM-DD, like the app's todayISO(). */
 export function today() {
-  const d = new Date();
+  const d = FIXED_NOW;
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }

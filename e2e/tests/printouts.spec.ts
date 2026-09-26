@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../fixtures";
 import { openFromMenu, waitForData } from "../helpers";
 
 test("end-of-day report adds up today's payments by method", async ({ page }) => {

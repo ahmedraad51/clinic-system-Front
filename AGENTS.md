@@ -176,7 +176,9 @@ e2e/
 IMPROVEMENTS.md               the improvement backlog and log, written for the clinic owner
 ```
 
-**Writing browser tests.** The dummy data lives in browser memory and a full page load resets it, so a
+**Writing browser tests.** Import `test` and `expect` from `e2e/fixtures.ts`, not `@playwright/test`: it fixes the
+browser clock at 26 Sep 2026 08:30 (`FIXED_NOW`, a Saturday; the dummy clinic is closed on Fridays), so the
+results do not depend on the day the tests run. `today()` in `e2e/helpers.ts` returns that date. The dummy data lives in browser memory and a full page load resets it, so a
 test calls `page.goto` once and then moves by clicking links, or with `navigate(page, path)` from
 `e2e/helpers.ts`, which calls the app's own router. Select by role and label (`getByRole`, `getByLabel`);
 add a `data-testid` only for values with no label, such as the plan's Paid and Remaining amounts. Next adds
@@ -220,7 +222,7 @@ on the form, and a click made while the save is still running is overridden by t
 | `/users` | `manage_users` | Staff list (without Administrator and Guest), search, status filter, Add User dialog (can apply the role's usual permissions) |
 | `/users/[id]` | `manage_users` | Clinic role, enable/disable, the 14 permission switches with presets. `[id]` is `encodeURIComponent(btoa(user.name))` |
 | `/whatsapp` | `manage_users` | Templates (add, edit, delete, placeholders, live preview) and the message log |
-| `/settings` | `manage_users` | Clinic Settings: name, logo upload, contact, tax number, currency, working hours, feature switches, theme colour, **Price List** (a usual price per treatment type, saved in `treatment_prices`) |
+| `/settings` | `manage_users` | Clinic Settings: name, logo upload, contact, tax number, currency, working hours, feature switches, theme colour, **Price List** (a usual price per treatment type, saved in `treatment_prices`), and **Open on** day toggles saved as `working_days` (`useSettings().isOpenOn(iso)`; nothing set means open every day). Closed days are shaded "Closed" in the calendar, the day view shows a notice, and booking on one shows a note and asks "Book anyway?" |
 | `/profile` | none | My details, what I can do, change password, and (login off only) Try Another User |
 
 Links use `<Link>` from `next/link`; buttons that navigate after an action use `router.push`. Table rows are

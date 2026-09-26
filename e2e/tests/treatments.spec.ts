@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../fixtures";
 import { openFromMenu, pickLink, waitForData } from "../helpers";
 
 test("create a treatment plan and pay part of it", async ({ page }) => {

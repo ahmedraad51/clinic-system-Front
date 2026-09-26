@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../fixtures";
 import { waitForData } from "../helpers";
 
 test("send a WhatsApp message by hand from an appointment", async ({ page }) => {

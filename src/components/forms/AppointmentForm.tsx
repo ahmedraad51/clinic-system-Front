@@ -99,7 +99,7 @@ export default function AppointmentForm({
   cancelHref: string;
   onSubmit: (data: AppointmentFormData) => Promise<void>;
 }) {
-  const { settings } = useSettings();
+  const { settings, isOpenOn } = useSettings();
   const doctors = useDoctors();
   // A new booking with no doctor given starts with the doctor used last time on this computer.
   const [remembered] = useState(() => (!currentName && !initial.doctor ? readLastDoctor() : null));
@@ -115,6 +115,7 @@ export default function AppointmentForm({
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const [clash, setClash] = useState<Appointment | null>(null);
+  const [askClosed, setAskClosed] = useState(false);
 
   const handleChange = (event: InputEvent) => {
     setForm({ ...form, [event.target.name]: event.target.value });
@@ -150,6 +151,16 @@ export default function AppointmentForm({
       await save();
       return;
     }
+    // A day the clinic is closed: ask first, then go on with the clash check.
+    if (!isOpenOn(form.appointment_date)) {
+      setAskClosed(true);
+      return;
+    }
+    await checkClashAndSave();
+  };
+
+  const checkClashAndSave = async () => {
+    setAskClosed(false);
     setSaving(true);
     setError("");
     try {
@@ -238,6 +249,7 @@ export default function AppointmentForm({
               openingTime={chosenDoctor?.start_time && chosenDoctor.end_time ? chosenDoctor.start_time : settings.opening_time}
               closingTime={chosenDoctor?.start_time && chosenDoctor.end_time ? chosenDoctor.end_time : settings.closing_time}
               ownHours={Boolean(chosenDoctor?.start_time && chosenDoctor.end_time)}
+              closed={!isOpenOn(form.appointment_date)}
               onPick={(appointment_time) => setForm({ ...form, appointment_time })}
             />
           )}
@@ -271,6 +283,16 @@ export default function AppointmentForm({
           Cancel
         </LinkButton>
       </FormActions>
+
+      <ConfirmDialog
+        open={askClosed}
+        title="The clinic is closed on this day"
+        danger={false}
+        confirmLabel="Book anyway"
+        message={<p>{formatDate(form.appointment_date)} is not one of the clinic&apos;s working days (Settings). Book it anyway?</p>}
+        onCancel={() => setAskClosed(false)}
+        onConfirm={checkClashAndSave}
+      />
 
       <ConfirmDialog
         open={clash !== null}
@@ -342,6 +364,7 @@ function DoctorDay({
   openingTime,
   closingTime,
   ownHours = false,
+  closed = false,
   onPick,
 }: {
   doctor: string;
@@ -354,6 +377,8 @@ function DoctorDay({
   closingTime?: string;
   /** True when the hours are the doctor's own, not the clinic's. */
   ownHours?: boolean;
+  /** The clinic is closed on this date. */
+  closed?: boolean;
   onPick: (time: string) => void;
 }) {
   const key = `${doctor}|${date}`;
@@ -406,7 +431,7 @@ function DoctorDay({
   const now = new Date();
   const earliest = date === today ? Math.max(open, Math.ceil((now.getHours() * 60 + now.getMinutes()) / STEP) * STEP) : open;
   const free: number[] = [];
-  if (date >= today) {
+  if (date >= today && !closed) {
     for (let t = earliest; t + duration <= close && free.length < 8; t += STEP) {
       if (!overlaps(t, t + duration)) free.push(t);
     }
@@ -447,6 +472,8 @@ function DoctorDay({
           </div>
           {date < today ? (
             <p className="text-sm text-amber-700">This date is in the past.</p>
+          ) : closed ? (
+            <p className="text-sm font-medium text-amber-700">The clinic is closed on this day.</p>
           ) : (
             <div>
               <p className="text-xs font-medium text-gray-500 mb-1.5">Free for {duration} minutes — tap to choose</p>

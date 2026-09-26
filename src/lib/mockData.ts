@@ -333,6 +333,7 @@ const clinicSettings: MockDoc[] = [
     enable_whatsapp: 1,
     enable_patient_portal: 0,
     enable_financial_reports: 1,
+    working_days: "Saturday,Sunday,Monday,Tuesday,Wednesday,Thursday",
     treatment_prices: [
       { treatment_type: "Filling", price: 900 },
       { treatment_type: "Root Canal", price: 4500 },

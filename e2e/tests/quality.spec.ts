@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../fixtures";
 import { openFromMenu, waitForData } from "../helpers";
 
 test("leaving a form with unsaved changes asks first", async ({ page }) => {

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../fixtures";
 import { openFromMenu } from "../helpers";
 
 test("add a doctor, who can then be booked in the calendar", async ({ page }) => {

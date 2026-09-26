@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../fixtures";
 import { openFromMenu } from "../helpers";
 
 test("the recall list shows patients due for a check-up", async ({ page }) => {

@@ -14,7 +14,7 @@ import { errorMessage, updateDoc, uploadFile } from "@/lib/frappe";
 import { cx } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
 import { DEFAULT_THEME_COLOR, normalizeHex, readableBrand, THEME_PRESETS } from "@/lib/theme";
-import { CURRENCIES, TREATMENT_TYPES, type ClinicSettings } from "@/lib/types";
+import { CURRENCIES, TREATMENT_TYPES, WEEK_DAYS, type ClinicSettings } from "@/lib/types";
 
 const SETTINGS = "Clinic Settings";
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
@@ -28,6 +28,8 @@ interface SettingsForm {
   currency: string;
   opening_time: string;
   closing_time: string;
+  /** Open days, in WEEK_DAYS order. */
+  working_days: string[];
   theme_color: string;
   logo: string;
   enable_whatsapp: boolean;
@@ -47,6 +49,11 @@ function toForm(doc: ClinicSettings): SettingsForm {
     currency: doc.currency || "USD",
     opening_time: (doc.opening_time ?? "").slice(0, 5),
     closing_time: (doc.closing_time ?? "").slice(0, 5),
+    // Nothing saved yet means open every day.
+    working_days: (() => {
+      const saved = (doc.working_days || "").split(",").map((d) => d.trim()).filter((d) => (WEEK_DAYS as readonly string[]).includes(d));
+      return saved.length ? saved : [...WEEK_DAYS];
+    })(),
     theme_color: normalizeHex(doc.theme_color) ?? DEFAULT_THEME_COLOR,
     logo: doc.logo ?? "",
     enable_whatsapp: Number(doc.enable_whatsapp) === 1,
@@ -135,6 +142,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
         currency: form.currency,
         opening_time: form.opening_time || null,
         closing_time: form.closing_time || null,
+        working_days: WEEK_DAYS.filter((d) => form.working_days.includes(d)).join(","),
         theme_color: form.theme_color,
         logo: form.logo,
         enable_whatsapp: form.enable_whatsapp ? 1 : 0,
@@ -224,6 +232,34 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
           </Field>
         </div>
         <p className="text-xs text-gray-500 mt-3">Shown as a hint when booking an appointment.</p>
+        <div className="mt-5">
+          <p className="text-sm font-medium text-gray-700">Open on</p>
+          <p className="text-xs text-gray-500 mb-2">Closed days are shaded in the calendar, and booking on them asks first.</p>
+          <div className="flex flex-wrap gap-2">
+            {WEEK_DAYS.map((day) => {
+              const on = form.working_days.includes(day);
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      working_days: on ? form.working_days.filter((d) => d !== day) : [...form.working_days, day],
+                    })
+                  }
+                  className={cx(
+                    "min-h-11 px-3.5 rounded-xl border text-sm font-medium transition",
+                    on ? "bg-primary-600 border-primary-600 text-white" : "bg-white border-gray-200 text-gray-600 hover:border-primary-300",
+                  )}
+                >
+                  {day.slice(0, 3)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </Card>
 
       <Card title="Price List">

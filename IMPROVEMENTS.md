@@ -5,14 +5,12 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Clinic working days: choose the days the clinic is open in Settings; the week calendar shades closed
-  days and booking on a closed day asks first.
+- Reports for the manager: revenue by doctor, and appointments by outcome (completed, no-show, cancelled)
+  with the no-show rate for the period.
 
 ## Backlog
 
-1. Reports for the manager: revenue by doctor, and appointments by outcome (completed, no-show, cancelled)
-   with the no-show rate for the period.
-2. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+1. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -155,7 +153,11 @@ Each finished item says what changed, when, and which commit holds it.
   PENDING.
 - 2026-09-26 - **Tomorrow's reminders.** The Today board now lists tomorrow's patients with a "Send
   reminder" button. It opens WhatsApp with the day-before reminder already written (from your WhatsApp
-  templates), and the row is then marked as done so nobody gets two. Commit PENDING.
+  templates), and the row is then marked as done so nobody gets two. Commit caadb3c.
+- 2026-09-26 - **Clinic working days.** Settings now has "Open on" day buttons (in the dummy data the
+  clinic is closed on Fridays). Closed days are shaded and marked "Closed" in the calendar, and booking on
+  a closed day shows a note and asks "Book anyway?". Also: the automatic tests now always run as if it
+  were Saturday 26 September 2026, so they give the same result on any day. Commit PENDING.
 
 ## Questions for the owner
 

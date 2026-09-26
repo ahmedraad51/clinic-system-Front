@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../fixtures";
 import { navigate, waitForData } from "../helpers";
 
 test("a receptionist cannot open Reports", async ({ page }) => {
