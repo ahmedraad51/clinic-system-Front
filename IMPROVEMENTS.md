@@ -5,13 +5,11 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Lab work: on a crown, bridge or implant plan, record when the work was sent to the lab and when it is
-  due back; the Today board lists lab work due and late, so the patient is not booked before it arrives.
+- Patient form: let the receptionist type an age when the date of birth is not known.
 
 ## Backlog
 
-1. Patient form: let the receptionist type an age when the date of birth is not known.
-2. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+1. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -181,7 +179,11 @@ Each finished item says what changed, when, and which commit holds it.
   PENDING.
 - 2026-09-26 - **Book the next visit from a treatment plan.** A treatment plan now has a "Book Visit"
   button. It opens the booking form with the patient, the plan's doctor and the reason (for example "Crown
-  · tooth 36") already filled in. Commit PENDING.
+  · tooth 36") already filled in. Commit 5829642.
+- 2026-09-26 - **Lab work.** Crown, bridge, implant and whitening plans have a "Lab Work" card: which lab,
+  when the work was sent, when it is due back, and one tap for "Received today". The Today board lists lab
+  work that is late or due in the next two days, so a patient is not seated before their crown is back.
+  Commit PENDING.
 
 ## Questions for the owner
 

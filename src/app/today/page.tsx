@@ -4,19 +4,20 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, CheckCheck, Clock, CreditCard, FileText, HeartPulse, MessageCircle, Plus, RefreshCw, UserX } from "lucide-react";
 import FinishVisitDialog from "@/components/FinishVisitDialog";
+import { LAB_BADGES, labState } from "@/components/LabWorkCard";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Button, Card, EmptyState, LinkButton, PageContainer, PageHeader, PageLoading, Segmented, StatusBadge,
+  Alert, Badge, Button, Card, EmptyState, LinkButton, PageContainer, PageHeader, PageLoading, Segmented, StatusBadge,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { errorMessage, getList, updateDoc } from "@/lib/frappe";
 import { addDays, cx, formatDate, formatLongDate, formatTime, fromMinutes, todayISO, toMinutes } from "@/lib/format";
-import { appointmentHref, patientHref } from "@/lib/links";
+import { appointmentHref, patientHref, treatmentHref } from "@/lib/links";
 import { MEDICAL_FIELDS, medicalFlags } from "@/lib/medical";
 import { fillTemplate, whatsappLink } from "@/lib/whatsapp";
-import type { Appointment, AppointmentStatus, Patient, WhatsAppTemplate } from "@/lib/types";
+import type { Appointment, AppointmentStatus, Patient, TreatmentPlan, WhatsAppTemplate } from "@/lib/types";
 
 /** Minutes after the start time before a patient who has not been seen counts as late. */
 const LATE_AFTER = 10;
@@ -39,6 +40,8 @@ interface Board {
   tomorrow: Appointment[];
   /** The template used for those reminders (the "24 Hours Before" one when there is one). */
   template: WhatsAppTemplate | null;
+  /** Lab work sent and not back yet. */
+  lab: TreatmentPlan[];
 }
 
 /**
@@ -101,6 +104,11 @@ function TodayBoard() {
             limit: 0,
           }).catch(() => [] as WhatsAppTemplate[]),
         ]);
+        const lab = await getList<TreatmentPlan>(
+          "Treatment Plan",
+          ["name", "patient", "patient_name", "doctor", "treatment_type", "tooth_number", "lab_name", "lab_sent_date", "lab_due_date", "lab_received_date"],
+          { filters: [["lab_sent_date", "is", "set"], ["lab_received_date", "is", "not set"]], orderBy: "lab_due_date asc", limit: 0 },
+        ).catch(() => [] as TreatmentPlan[]);
         const template = templates.find((t) => t.trigger === "24 Hours Before") ?? templates[0] ?? null;
         const ids = [...new Set([...appointments, ...tomorrow].map((a) => a.patient))];
         const rows = ids.length
@@ -110,7 +118,7 @@ function TodayBoard() {
             })
           : [];
         if (!cancelled) {
-          setBoard({ date: today, appointments, earlier, tomorrow, template, patients: Object.fromEntries(rows.map((p) => [p.name, p])) });
+          setBoard({ date: today, appointments, earlier, tomorrow, template, lab, patients: Object.fromEntries(rows.map((p) => [p.name, p])) });
           setError("");
         }
       } catch (err) {
@@ -195,6 +203,11 @@ function TodayBoard() {
     setReminded(next);
     saveReminded(next);
   };
+
+  // Late, or due back within two days.
+  const labDue = (board?.lab ?? []).filter(
+    (p) => (!mine || p.doctor === mine) && (!p.lab_due_date || p.lab_due_date <= addDays(today, 2)),
+  );
 
   const earlierOpen = (board?.earlier ?? []).filter(
     (a) => (a.status === "Scheduled" || a.status === "Confirmed") && (!mine || a.doctor === mine),
@@ -415,6 +428,34 @@ function TodayBoard() {
                   ) : (
                     <span className="text-sm text-gray-500">No phone number</span>
                   )}
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
+
+      {can("view_treatments") && labDue.length > 0 && (
+        <Card title={`Lab work due (${labDue.length})`} flush actions={<span className="text-xs text-gray-500">Check it is back before the patient comes</span>}>
+          <ul className="divide-y divide-gray-100">
+            {labDue.map((p) => {
+              const state = labState(p, today);
+              return (
+                <li key={p.name}>
+                  <Link href={treatmentHref(p.name)} className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-1 hover:bg-gray-50">
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium text-gray-800">{p.patient_name || p.patient}</span>
+                      <span className="block text-sm text-gray-500">
+                        {p.treatment_type}
+                        {p.tooth_number ? ` · tooth ${p.tooth_number}` : ""}
+                        {p.lab_name ? ` · ${p.lab_name}` : ""}
+                      </span>
+                    </span>
+                    <span className="text-sm text-gray-600 whitespace-nowrap">
+                      {p.lab_due_date ? `Due ${formatDate(p.lab_due_date)}` : "No due date"}
+                    </span>
+                    <Badge tone={LAB_BADGES[state].tone}>{LAB_BADGES[state].label}</Badge>
+                  </Link>
                 </li>
               );
             })}

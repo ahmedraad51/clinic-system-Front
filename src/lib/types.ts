@@ -173,7 +173,15 @@ export interface TreatmentPlan extends BaseDoc {
   paid_amount?: number;
   /** Read-only, computed by the server. */
   remaining_amount?: number;
+  /** Lab work (crowns, bridges, implant crowns): the lab, and when the work was sent, is due and came back. */
+  lab_name?: string;
+  lab_sent_date?: string;
+  lab_due_date?: string;
+  lab_received_date?: string;
 }
+
+/** Treatment types that usually need lab work; the plan page offers the Lab Work card for these. */
+export const LAB_TREATMENT_TYPES = ["Crown", "Bridge", "Implant", "Whitening"] as const;
 
 export interface TreatmentSession extends BaseDoc {
   patient: string;

@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { CalendarPlus, ClipboardList, CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import DentalChart from "@/components/DentalChart";
+import LabWorkCard from "@/components/LabWorkCard";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
   Alert, Button, Card, DetailList, DetailRow, EmptyState, Field, LinkButton, NotFoundCard,
@@ -20,7 +21,7 @@ import { cx, display, formatDate, formatTime, todayISO } from "@/lib/format";
 import { useDoctors, useDocument, usePatientChart, usePatientMedical } from "@/lib/hooks";
 import { patientHref, paymentHref, routeId } from "@/lib/links";
 import {
-  SESSION_STATUSES, TREATMENT_STATUSES,
+  LAB_TREATMENT_TYPES, SESSION_STATUSES, TREATMENT_STATUSES,
   type Payment, type TreatmentPlan, type TreatmentSession, type TreatmentStatus,
 } from "@/lib/types";
 
@@ -281,6 +282,10 @@ function TreatmentDetail() {
           )}
         </div>
       </div>
+
+      {((LAB_TREATMENT_TYPES as readonly string[]).includes(plan.treatment_type) || plan.lab_sent_date) && (
+        <LabWorkCard plan={plan} canEdit={canEdit} onSaved={reload} />
+      )}
 
       {patientChart && (
         // The whole mouth, read only, opened at this plan's tooth. Marking is done on the patient page.

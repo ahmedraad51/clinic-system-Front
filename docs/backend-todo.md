@@ -17,6 +17,8 @@ match, and update `src/lib/types.ts`, the mock and `AGENTS.md`.
 | Payment | `patient_name` | Data, read only, `fetch_from: patient.full_name` | |
 | Payment | `treatment_type` | Data, read only, `fetch_from: treatment_plan.treatment_type` | Used by the payment list and the "revenue by treatment" report. |
 | Clinic Settings | `treatment_prices` | Table (child doctype, e.g. **Clinic Treatment Price**, `istable`) | The price list. Child fields: `treatment_type` (Select, the Treatment Plan types) and `price` (Currency). The front end sends and reads `[{ "treatment_type": "Crown", "price": 6000 }]` and only uses it to pre-fill `Treatment Plan.total_cost`. |
+| Treatment Plan | `lab_name` | Data | The dental lab doing the work (crowns, bridges, implant crowns). |
+| Treatment Plan | `lab_sent_date`, `lab_due_date`, `lab_received_date` | Date | When the work went to the lab, is due back, and came back. The Today board lists plans with `lab_sent_date` set and `lab_received_date` not set. |
 | WhatsApp Log | `patient_name` | Data, read only, `fetch_from: patient.full_name` | |
 
 **`Patient.dental_chart`, version 2.** Only teeth with something marked are stored:
