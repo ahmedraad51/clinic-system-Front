@@ -5,11 +5,17 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+- Dialogs for keyboard users: when a dialog opens, move the keyboard focus into it, keep Tab inside it,
+  and put the focus back where it was when it closes.
 
 ## Backlog
 
-
+1. Patient files: attach X-rays and photos to a patient (upload from the computer or tablet camera,
+   thumbnails on the patient page, open full size).
+2. Patients who owe money: an "Owes money" filter in the patient list, with a ready WhatsApp reminder
+   about the balance.
+3. Send the payment receipt on WhatsApp as a short message (amount, date, what it was for, balance left).
+4. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
