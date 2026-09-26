@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Save } from "lucide-react";
 import { Alert, Button, Card, Field, LinkButton, SelectInput, TextArea, TextInput } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import LinkSelect from "@/components/ui/LinkSelect";
 import { errorMessage, getList } from "@/lib/frappe";
-import { formatDate, formatTime, toMinutes } from "@/lib/format";
+import { cx, formatDate, formatTime, fromMinutes, toMinutes, todayISO } from "@/lib/format";
 import { useDoctors } from "@/lib/hooks";
 import { useSettings } from "@/context/SettingsContext";
 import { APPOINTMENT_STATUSES, DURATIONS, type Appointment } from "@/lib/types";
@@ -99,7 +99,11 @@ export default function AppointmentForm({
 }) {
   const { settings } = useSettings();
   const doctors = useDoctors();
-  const [form, setForm] = useState<AppointmentFormData>(initial);
+  // A new booking with no doctor given starts with the doctor used last time on this computer.
+  const [remembered] = useState(() => (!currentName && !initial.doctor ? readLastDoctor() : null));
+  const [form, setForm] = useState<AppointmentFormData>(() =>
+    remembered ? { ...initial, doctor: remembered.name } : initial,
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [clash, setClash] = useState<Appointment | null>(null);
@@ -113,6 +117,8 @@ export default function AppointmentForm({
     setError("");
     try {
       await onSubmit(form);
+      const doctor = doctors.find((d) => d.name === form.doctor);
+      if (doctor) saveLastDoctor({ name: doctor.name, full_name: doctor.full_name });
     } catch (err) {
       console.error(err);
       setError(errorMessage(err, "Could not save the appointment. Please try again."));
@@ -175,7 +181,11 @@ export default function AppointmentForm({
           <Field label="Doctor" required className="sm:col-span-2">
             <SelectInput name="doctor" value={form.doctor} onChange={handleChange} required>
               <option value="">Select Doctor</option>
-              {doctorMissing && <option value={form.doctor}>{doctorLabel || form.doctor}</option>}
+              {doctorMissing && (
+                <option value={form.doctor}>
+                  {doctorLabel || (remembered?.name === form.doctor ? remembered.full_name : form.doctor)}
+                </option>
+              )}
               {doctors.map((doctor) => (
                 <option key={doctor.name} value={doctor.name}>
                   {doctor.specialization ? `${doctor.full_name} · ${doctor.specialization}` : doctor.full_name}
@@ -198,6 +208,19 @@ export default function AppointmentForm({
               ))}
             </SelectInput>
           </Field>
+          {form.doctor && form.appointment_date && (
+            <DoctorDay
+              doctor={form.doctor}
+              doctorName={doctors.find((d) => d.name === form.doctor)?.full_name || doctorLabel || remembered?.full_name}
+              date={form.appointment_date}
+              time={form.appointment_time}
+              duration={Number(form.duration_minutes) || 30}
+              currentName={currentName}
+              openingTime={settings.opening_time}
+              closingTime={settings.closing_time}
+              onPick={(appointment_time) => setForm({ ...form, appointment_time })}
+            />
+          )}
           {showStatus && (
             <Field label="Status">
               <SelectInput name="status" value={form.status} onChange={handleChange}>
@@ -250,5 +273,194 @@ export default function AppointmentForm({
         }}
       />
     </form>
+  );
+}
+
+/* -------------------------------------------------- last doctor used -- */
+
+const LAST_DOCTOR_KEY = "last_doctor";
+
+interface RememberedDoctor {
+  name: string;
+  full_name: string;
+}
+
+function readLastDoctor(): RememberedDoctor | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = JSON.parse(localStorage.getItem(LAST_DOCTOR_KEY) || "null") as Partial<RememberedDoctor> | null;
+    if (raw && typeof raw.name === "string" && raw.name) return { name: raw.name, full_name: String(raw.full_name || raw.name) };
+  } catch {
+    // Storage is off or holds something else; start without a doctor.
+  }
+  return null;
+}
+
+function saveLastDoctor(doctor: RememberedDoctor): void {
+  try {
+    localStorage.setItem(LAST_DOCTOR_KEY, JSON.stringify(doctor));
+  } catch {
+    // Not remembering is fine.
+  }
+}
+
+/* -------------------------------------------------- the doctor's day -- */
+
+const STEP = 15;
+
+/**
+ * The chosen doctor's bookings on the chosen date, and the free times that fit the chosen length,
+ * so the receptionist can pick a time with one tap instead of guessing.
+ */
+function DoctorDay({
+  doctor,
+  doctorName,
+  date,
+  time,
+  duration,
+  currentName,
+  openingTime,
+  closingTime,
+  onPick,
+}: {
+  doctor: string;
+  doctorName?: string;
+  date: string;
+  time: string;
+  duration: number;
+  currentName?: string;
+  openingTime?: string;
+  closingTime?: string;
+  onPick: (time: string) => void;
+}) {
+  const key = `${doctor}|${date}`;
+  const [result, setResult] = useState<{ key: string; rows: Appointment[] } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const [forDoctor, forDate] = key.split("|");
+    const load = async () => {
+      try {
+        const rows = await getList<Appointment>(
+          "Appointment",
+          ["name", "patient_name", "appointment_time", "duration_minutes", "status"],
+          {
+            filters: [
+              ["doctor", "=", forDoctor],
+              ["appointment_date", "=", forDate],
+              ["status", "not in", ["Cancelled", "No Show"]],
+            ],
+            orderBy: "appointment_time asc",
+            limit: 0,
+          },
+        );
+        if (!cancelled) setResult({ key, rows });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [key]);
+
+  const loaded = result?.key === key;
+  const booked = (loaded ? result.rows : []).filter((a) => a.name !== currentName);
+  const span = (a: Appointment) => {
+    const start = toMinutes(a.appointment_time);
+    return { start, end: start + (Number(a.duration_minutes) || 30) };
+  };
+  const overlaps = (start: number, end: number) =>
+    booked.find((a) => {
+      const other = span(a);
+      return other.start < end && start < other.end;
+    });
+
+  const today = todayISO();
+  const open = toMinutes(openingTime) || 9 * 60;
+  const close = toMinutes(closingTime) || 18 * 60;
+  const now = new Date();
+  const earliest = date === today ? Math.max(open, Math.ceil((now.getHours() * 60 + now.getMinutes()) / STEP) * STEP) : open;
+  const free: number[] = [];
+  if (date >= today) {
+    for (let t = earliest; t + duration <= close && free.length < 8; t += STEP) {
+      if (!overlaps(t, t + duration)) free.push(t);
+    }
+  }
+  const chosen = time ? toMinutes(time) : null;
+  const clash = chosen !== null ? overlaps(chosen, chosen + duration) : undefined;
+
+  return (
+    <div className="sm:col-span-2 rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-3" aria-live="polite">
+      <p className="text-sm font-semibold text-gray-700">
+        {doctorName ? `${doctorName}, ` : ""}
+        {formatDate(date)}
+      </p>
+      {!loaded ? (
+        <p className="text-sm text-gray-500">Loading the doctor&apos;s day...</p>
+      ) : (
+        <>
+          <div>
+            <p className="text-xs font-medium text-gray-500 mb-1.5">Booked</p>
+            {booked.length === 0 ? (
+              <p className="text-sm text-gray-600">Nothing booked yet.</p>
+            ) : (
+              <ul className="flex flex-wrap gap-1.5">
+                {booked.map((a) => {
+                  const { start, end } = span(a);
+                  return (
+                    <li key={a.name} className="rounded-lg bg-white border border-gray-200 px-2.5 py-1 text-xs text-gray-700">
+                      <span className="font-semibold">
+                        {formatTime(fromMinutes(start))}–{formatTime(fromMinutes(end))}
+                      </span>{" "}
+                      {a.patient_name}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+          {date < today ? (
+            <p className="text-sm text-amber-700">This date is in the past.</p>
+          ) : (
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-1.5">Free for {duration} minutes — tap to choose</p>
+              {free.length === 0 ? (
+                <p className="text-sm text-gray-600">No free time of {duration} minutes left in clinic hours on this day.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {free.map((t, index) => {
+                    const value = fromMinutes(t);
+                    const selected = value === time;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => onPick(value)}
+                        aria-pressed={selected}
+                        className={cx(
+                          "min-h-9 pointer-coarse:min-h-11 px-3 rounded-lg border text-sm font-medium transition",
+                          selected
+                            ? "bg-primary-600 border-primary-600 text-white"
+                            : "bg-white border-gray-200 text-gray-700 hover:border-primary-300",
+                        )}
+                      >
+                        {index === 0 && !selected ? `Next free: ${formatTime(value)}` : formatTime(value)}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+          {clash && (
+            <p className="text-sm font-medium text-amber-700">
+              {formatTime(time)} overlaps {clash.patient_name || "another appointment"} at {formatTime(clash.appointment_time)}.
+            </p>
+          )}
+        </>
+      )}
+    </div>
   );
 }

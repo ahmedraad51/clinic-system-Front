@@ -5,28 +5,26 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Faster booking: "next free time" for the chosen doctor, show that doctor's day while booking, remember
-  the last doctor used.
+- Doctors page: list, add and edit doctors (name, specialization, phone, email, active). Permission:
+  manage_users.
 
 ## Backlog
 
-1. Doctors page: list, add and edit doctors (name, specialization, phone, email, active). Permission:
-   manage_users.
-2. Price list: a default price per treatment type (in Settings) that fills in the cost automatically, and
+1. Price list: a default price per treatment type (in Settings) that fills in the cost automatically, and
    a printable treatment estimate for the patient.
-3. Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
+2. Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
    payment method.
-4. Phone and tablet polish: tables turn into cards on small screens, sticky Save buttons, larger inputs.
-5. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
+3. Phone and tablet polish: tables turn into cards on small screens, sticky Save buttons, larger inputs.
+4. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
    form with unsaved changes, clear error messages.
-6. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
-7. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
+5. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+6. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
    and warn when booking outside them.
-8. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
+7. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
    check.
-9. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
+8. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
    treatment plan page for its tooth.
-10. Show the medical alerts in the booking and treatment forms as soon as a patient is picked.
+9. Show the medical alerts in the booking and treatment forms as soon as a patient is picked.
 
 ## Done
 
@@ -72,7 +70,11 @@ Each finished item says what changed, when, and which commit holds it.
   patient by name, phone number or patient ID as you type, and offers quick actions like New Appointment,
   Add Patient, Today and Record Payment. Works with the keyboard: arrows to move, Enter to open. Also
   fixed a small bug where the bell and profile menus did not close when you clicked elsewhere on the page.
-  Commit PENDING.
+  Commit 25cc51d.
+- 2026-09-26 - **Faster booking.** When you choose a doctor and a date, the booking form now shows that
+  doctor's appointments for the day and the free times that fit the visit length, starting with "Next
+  free". Tap a time to fill it in. If a typed time overlaps another patient, it says so right away. The
+  form also remembers the doctor you booked with last time. Commit PENDING.
 
 ## Questions for the owner
 
