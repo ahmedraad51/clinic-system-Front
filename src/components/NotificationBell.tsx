@@ -3,14 +3,20 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
-import { getList } from "@/lib/frappe";
+import { useSession } from "@/context/SessionContext";
+import { getList, type FilterRow } from "@/lib/frappe";
 import { formatTime, todayISO } from "@/lib/format";
 import { appointmentHref } from "@/lib/links";
 import { StatusBadge } from "@/components/ui";
 import type { Appointment } from "@/lib/types";
 
-/** Today's appointments that are still to come. Refreshes every five minutes and each time it opens. */
+/**
+ * Today's appointments that are still to come; for a doctor, only their own. Refreshes every five minutes
+ * and each time it opens.
+ */
 export default function NotificationBell() {
+  const { doctor } = useSession();
+  const mine = doctor?.name ?? "";
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Appointment[]>([]);
   const [tick, setTick] = useState(0);
@@ -31,6 +37,7 @@ export default function NotificationBell() {
             filters: [
               ["appointment_date", "=", todayISO()],
               ["status", "in", ["Scheduled", "Confirmed"]],
+              ...(mine ? [["doctor", "=", mine] as FilterRow] : []),
             ],
             orderBy: "appointment_time asc",
             limit: 20,
@@ -45,7 +52,7 @@ export default function NotificationBell() {
     return () => {
       cancelled = true;
     };
-  }, [tick]);
+  }, [tick, mine]);
 
   const toggle = () => {
     if (!open) setTick((t) => t + 1);
@@ -75,7 +82,7 @@ export default function NotificationBell() {
           <div className="absolute end-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-lg border border-gray-100">
             <div className="px-4 py-3 border-b border-gray-100">
               <p className="text-sm font-semibold text-gray-800">Today</p>
-              <p className="text-xs text-gray-500">Appointments still to come</p>
+              <p className="text-xs text-gray-500">{mine ? "Your patients still to come" : "Appointments still to come"}</p>
             </div>
             {items.length === 0 ? (
               <p className="px-4 py-6 text-sm text-center text-gray-500">Nothing left for today.</p>

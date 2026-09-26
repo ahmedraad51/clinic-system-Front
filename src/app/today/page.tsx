@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Check, CheckCheck, Clock, CreditCard, FileText, HeartPulse, Plus, RefreshCw, UserX } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Button, Card, EmptyState, LinkButton, PageContainer, PageHeader, PageLoading, StatusBadge,
+  Alert, Button, Card, EmptyState, LinkButton, PageContainer, PageHeader, PageLoading, Segmented, StatusBadge,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -38,7 +38,10 @@ interface Board {
  * no-show, late patients highlighted, medical alerts and balances at a glance, and quick payments.
  */
 function TodayBoard() {
-  const { can } = useSession();
+  const { can, doctor: myDoctor } = useSession();
+  // A doctor sees their own patients first; "Everyone" shows the whole clinic.
+  const [everyone, setEveryone] = useState(false);
+  const mine = myDoctor && !everyone ? myDoctor.name : "";
   const { money } = useSettings();
   const toast = useToast();
   const today = todayISO();
@@ -110,7 +113,7 @@ function TodayBoard() {
 
   if (!board && !error) return <PageLoading />;
 
-  const appointments = board?.appointments ?? [];
+  const appointments = (board?.appointments ?? []).filter((a) => !mine || a.doctor === mine);
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const open = (a: Appointment) => a.status === "Scheduled" || a.status === "Confirmed";
   const minutesLate = (a: Appointment) => (open(a) ? nowMinutes - toMinutes(a.appointment_time) : 0);
@@ -138,10 +141,21 @@ function TodayBoard() {
   return (
     <PageContainer>
       <PageHeader
-        title="Today"
+        title={mine ? "My Day" : "Today"}
         subtitle={formatLongDate(today)}
         actions={
           <>
+            {myDoctor && (
+              <Segmented
+                label="Whose patients"
+                value={everyone ? "everyone" : "mine"}
+                onChange={(next) => setEveryone(next === "everyone")}
+                options={[
+                  { value: "mine", label: "My patients" },
+                  { value: "everyone", label: "Everyone" },
+                ]}
+              />
+            )}
             {showMoney && (
               <LinkButton href="/payments/day" variant="secondary" icon={FileText}>
                 Day Report
@@ -172,7 +186,7 @@ function TodayBoard() {
         <Card>
           <EmptyState
             icon={Clock}
-            title="No appointments today"
+            title={mine ? "You have no patients today" : "No appointments today"}
             text="Walk-ins can be booked with the button above."
             action={
               <LinkButton href="/appointments?view=week" variant="secondary">

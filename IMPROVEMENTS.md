@@ -5,23 +5,19 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- "My day" for dentists: when the person using the app is a doctor (their email matches a Doctor), Today,
-  the dashboard and the calendar open on their own patients, with a switch to see everyone. Seen in the
-  review: Dr. Sarah Mansour's dashboard lists every doctor's patients.
+- Finish a visit: when an appointment is marked Completed, offer to write down what was done as a
+  treatment session on the patient's open plan (or start a new plan), so the dentist's notes are not lost.
 
 ## Backlog
 
-1. Finish a visit: when an appointment is marked Completed, offer to write down what was done as a
-   treatment session on the patient's open plan (or start a new plan), so the dentist's notes are not
-   lost.
-2. Recall list: patients not seen for six months with nothing booked, with one tap to call, send a
+1. Recall list: patients not seen for six months with nothing booked, with one tap to call, send a
    WhatsApp or book, so check-ups are not forgotten.
-3. Phone: the day calendar shows one doctor at a time with buttons for the next and previous doctor (five
+2. Phone: the day calendar shows one doctor at a time with buttons for the next and previous doctor (five
    columns are too narrow on a phone).
-4. Dental chart on a phone or narrow screen: scroll the chart so the chosen tooth is in view (on the plan
+3. Dental chart on a phone or narrow screen: scroll the chart so the chosen tooth is in view (on the plan
    page tooth 37 was off-screen).
-5. Patient list: show a small medical-alert marker and the next appointment in each row.
-6. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+4. Patient list: show a small medical-alert marker and the next appointment in each row.
+5. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -114,7 +110,11 @@ Each finished item says what changed, when, and which commit holds it.
   the chart and its findings. Each treatment plan page now shows the patient's chart (read only), opened
   at the plan's tooth, so the dentist sees the whole mouth while planning. Commit d4cbd25.
 - 2026-09-26 - **Treatment plan payments fit on a tablet.** The Payments box on a treatment plan page is
-  now a simple list, so the amount is no longer cut off on a tablet. Commit PENDING.
+  now a simple list, so the amount is no longer cut off on a tablet. Commit 6b62fb7.
+- 2026-09-26 - **"My Day" for dentists.** When a dentist uses the app (their user email is the same as on
+  the Doctors page), the dashboard, the Today board (now called "My Day") and the bell show their own
+  patients, and the appointment calendar opens on their own column. A "My patients / Everyone" switch
+  shows the whole clinic when needed. Commit PENDING.
 
 ## Questions for the owner
 

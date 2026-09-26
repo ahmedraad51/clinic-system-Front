@@ -388,7 +388,11 @@ username or `null`.
   refresh with a saved session never bounces to `/login`. This was tested with login turned on.
 
 `useSession()` (`src/context/SessionContext.tsx`) loads the user's `User` doc and `Clinic Permission` doc and
-returns `{ profile, roles, displayName, roleLabel, isSuperUser, can(flag), loading, refresh }`.
+returns `{ profile, roles, displayName, roleLabel, isSuperUser, doctor, can(flag), loading, refresh }`.
+`doctor` is the active Doctor whose `email` equals the user's email (or null). When it is set, the dashboard,
+the Today board (titled "My Day") and the bell show only that doctor's patients, with a **My patients /
+Everyone** switch on the first two, and `/appointments` opens on that doctor's column (`?doctor=all` shows
+everyone).
 
 ### Switching to the real back end and turning login on
 

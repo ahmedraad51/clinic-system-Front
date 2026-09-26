@@ -2,8 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { useAuth } from "./AuthContext";
-import { getDoc } from "@/lib/frappe";
-import { CLINIC_ROLES, PERMISSION_KEYS, type ClinicPermission, type PermissionKey, type User } from "@/lib/types";
+import { getDoc, getList } from "@/lib/frappe";
+import { CLINIC_ROLES, PERMISSION_KEYS, type ClinicPermission, type Doctor, type PermissionKey, type User } from "@/lib/types";
 
 /**
  * Who is logged in and what they may do.
@@ -22,6 +22,13 @@ interface SessionState {
   profile: User;
   roles: string[];
   perms: Perms;
+  doctor: MyDoctor | null;
+}
+
+/** The Doctor record of the person using the app, found by their email. */
+export interface MyDoctor {
+  name: string;
+  full_name: string;
 }
 
 interface SessionContextType {
@@ -31,6 +38,8 @@ interface SessionContextType {
   /** The role shown under the user's name, e.g. "Clinic Receptionist". */
   roleLabel: string;
   isSuperUser: boolean;
+  /** Set when the user is one of the clinic's doctors: screens then open on their own patients. */
+  doctor: MyDoctor | null;
   can: (permission: PermissionKey) => boolean;
   loading: boolean;
   /** Call after changing the current user's permissions. */
@@ -69,7 +78,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           // No Clinic Permission doc for this user: everything stays off.
         }
       }
-      if (!cancelled) setState({ forUser: user, profile, roles, perms });
+      // A doctor's user account and Doctor record share the email address.
+      let doctor: MyDoctor | null = null;
+      if (profile.email) {
+        try {
+          const rows = await getList<Doctor>("Doctor", ["name", "full_name"], {
+            filters: [["email", "=", profile.email], ["is_active", "=", 1]],
+            limit: 1,
+          });
+          if (rows[0]) doctor = { name: rows[0].name, full_name: rows[0].full_name };
+        } catch {
+          // Not allowed to read doctors: the screens simply show everyone.
+        }
+      }
+      if (!cancelled) setState({ forUser: user, profile, roles, perms, doctor });
     };
     load();
     return () => {
@@ -90,6 +112,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       displayName: current?.profile.full_name || current?.profile.first_name || user || "",
       roleLabel: clinicRole ?? (isSuperUser ? "System Manager" : "Staff"),
       isSuperUser,
+      doctor: current?.doctor ?? null,
       can: (permission) => Boolean(current?.perms[permission]),
       loading: Boolean(user) && !current,
       refresh,

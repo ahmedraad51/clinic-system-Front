@@ -71,7 +71,7 @@ export default function AppointmentsPage() {
 function Appointments() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { can } = useSession();
+  const { can, doctor: myDoctor } = useSession();
   const { settings } = useSettings();
   const { doctors, loading: doctorsLoading } = useDoctorList();
 
@@ -84,7 +84,9 @@ function Appointments() {
         : "day";
   const dayParam = searchParams.get("day");
   const day = isDate(dayParam) ? dayParam : todayISO();
-  const doctor = searchParams.get("doctor") || "";
+  // A doctor's calendar opens on their own column; ?doctor=all shows everyone.
+  const doctorParam = searchParams.get("doctor");
+  const doctor = doctorParam === null ? (myDoctor?.name ?? "") : doctorParam === "all" ? "" : doctorParam;
 
   const update = (patch: Record<string, string>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -144,7 +146,7 @@ function Appointments() {
             />
             <SelectInput
               value={doctor}
-              onChange={(event) => update({ doctor: event.target.value })}
+              onChange={(event) => update({ doctor: event.target.value || (myDoctor ? "all" : "") })}
               aria-label="Doctor"
               className="sm:w-auto sm:max-w-[15rem]"
             >

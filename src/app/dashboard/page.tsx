@@ -6,10 +6,10 @@ import {
   Calendar, CalendarDays, CreditCard, Plus, Stethoscope, TrendingUp, UserPlus, Users, Wallet,
 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
-import { Card, EmptyState, LinkButton, PageContainer, PageHeader, StatCard, StatusBadge } from "@/components/ui";
+import { Card, EmptyState, LinkButton, PageContainer, PageHeader, Segmented, StatCard, StatusBadge } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
-import { getCount, getList } from "@/lib/frappe";
+import { getCount, getList, type FilterRow } from "@/lib/frappe";
 import { addDays, formatDate, formatLongDate, formatTime, monthStart, todayISO } from "@/lib/format";
 import { appointmentHref } from "@/lib/links";
 import type { Appointment, Payment, TreatmentPlan } from "@/lib/types";
@@ -46,7 +46,10 @@ function greeting(): string {
 }
 
 function Dashboard() {
-  const { can, displayName } = useSession();
+  const { can, displayName, doctor: myDoctor } = useSession();
+  // A doctor sees their own patients first; "Everyone" shows the whole clinic.
+  const [everyone, setEveryone] = useState(false);
+  const mine = myDoctor && !everyone ? myDoctor.name : "";
   const { money } = useSettings();
   const [data, setData] = useState<DashboardData | null>(null);
   const today = todayISO();
@@ -71,7 +74,7 @@ function Dashboard() {
             : nothing<TreatmentPlan>(),
           seeAppointments
             ? getList<Appointment>("Appointment", APPOINTMENT_FIELDS, {
-                filters: [["appointment_date", "=", today]],
+                filters: [["appointment_date", "=", today], ...(mine ? [["doctor", "=", mine] as FilterRow] : [])],
                 orderBy: "appointment_time asc",
                 limit: 50,
               })
@@ -82,6 +85,7 @@ function Dashboard() {
                   ["appointment_date", ">", today],
                   ["appointment_date", "<=", addDays(today, 7)],
                   ["status", "in", ["Scheduled", "Confirmed"]],
+                  ...(mine ? [["doctor", "=", mine] as FilterRow] : []),
                 ],
                 orderBy: "appointment_date asc, appointment_time asc",
                 limit: 8,
@@ -105,7 +109,7 @@ function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, [today, seePatients, seeAppointments, seeTreatments, seeMoney]);
+  }, [today, seePatients, seeAppointments, seeTreatments, seeMoney, mine]);
 
   const stillToCome = data?.today.filter((a) => a.status === "Scheduled" || a.status === "Confirmed").length ?? 0;
   const loadingValue = "…";
@@ -119,12 +123,28 @@ function Dashboard() {
 
   return (
     <PageContainer>
-      <PageHeader title={`${greeting()}, ${displayName}`} subtitle={formatLongDate(today)} />
+      <PageHeader
+        title={`${greeting()}, ${displayName}`}
+        subtitle={formatLongDate(today)}
+        actions={
+          myDoctor && seeAppointments ? (
+            <Segmented
+              label="Whose appointments"
+              value={everyone ? "everyone" : "mine"}
+              onChange={(next) => setEveryone(next === "everyone")}
+              options={[
+                { value: "mine", label: "My patients" },
+                { value: "everyone", label: "Everyone" },
+              ]}
+            />
+          ) : undefined
+        }
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {seeAppointments && (
           <StatCard
-            title="Appointments today"
+            title={mine ? "My appointments today" : "Appointments today"}
             value={data ? data.today.length : loadingValue}
             hint={data ? `${stillToCome} still to come` : undefined}
             icon={Calendar}
@@ -159,7 +179,7 @@ function Dashboard() {
       {seeAppointments && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card
-            title="Today"
+            title={mine ? "My patients today" : "Today"}
             flush
             actions={
               <Link href="/today" className="text-sm text-primary-600 hover:underline">
@@ -174,7 +194,7 @@ function Dashboard() {
             />
           </Card>
           <Card
-            title="Next 7 days"
+            title={mine ? "My next 7 days" : "Next 7 days"}
             flush
             actions={
               <Link href="/appointments?date=upcoming" className="text-sm text-primary-600 hover:underline">
