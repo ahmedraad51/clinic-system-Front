@@ -45,7 +45,10 @@ After adding fetch fields, run a patch that fills them for existing records (fet
 
 These come from the README, not from the doctype JSON files. Check each one in the back-end repo.
 
-- **Doctor:** `is_active` (Check). Dropdowns only show doctors with `is_active = 1`.
+- **Doctor:** `full_name`, `specialization` (Select: General Dentist, Orthodontist, Endodontist, Periodontist,
+  Oral Surgeon, Pediatric Dentist, Prosthodontist), `phone_number`, `email`, `start_time` and `end_time`
+  (Time, the doctor's working hours; both may be empty), `is_active` (Check). Dropdowns and the calendar only
+  show doctors with `is_active = 1`. The `/doctors` page creates and edits these; it never deletes.
 - **Clinic Settings** (single doctype): `clinic_name`, `logo` (Attach Image), `phone`, `email`, `address`,
   `currency`, `tax_number`, `opening_time` (Time), `closing_time` (Time), `theme_color` (Color or Data, a hex
   colour such as `#0e7c86`; the whole front end is coloured from it), `enable_whatsapp`,
@@ -69,7 +72,7 @@ The UI hides screens with the Clinic Permission flags, but Frappe decides what d
   - their own `Clinic Permission` doc (named after their user ID),
   - the `Clinic Settings` single (for the currency and clinic name),
   - the `Doctor` list (for dropdowns).
-- **Users with `manage_users`** (normally Clinic Manager) must be able to read and write `User`,
+- **Users with `manage_users`** (normally Clinic Manager) must be able to read and write `Doctor`, `User`,
   `Clinic Permission`, `Clinic Settings`, `WhatsApp Template`, and read `WhatsApp Log`.
 - **Enforce the 14 flags on the server**, for example with `has_permission` / `permission_query_conditions`
   hooks, or by giving each role DocType permissions that match the presets in `ROLE_PRESETS`

@@ -123,6 +123,7 @@ src/
 │   ├── treatments/    page · new · [id] · [id]/edit
 │   ├── payments/      page · new · [id] · [id]/edit
 │   ├── reports/page.tsx
+│   ├── doctors/page.tsx           doctors list with add/edit dialog
 │   ├── users/         page · [id]
 │   ├── whatsapp/page.tsx
 │   ├── settings/page.tsx
@@ -203,6 +204,7 @@ on the form, and a click made while the save is still running is overridden by t
 | `/payments/[id]` | `view_payments` | Printable receipt with clinic details; Edit/Delete (`add_payments`) |
 | `/payments/[id]/edit` | `add_payments` | Shared `PaymentForm` |
 | `/reports` | `view_reports`, and Clinic Settings `enable_financial_reports` | Period picker; revenue, count, average, outstanding; revenue by treatment, method and month; latest payments; outstanding balances; CSV export of both |
+| `/doctors` | `manage_users` | Doctor list (search, Active / Not active filter, paging); Add Doctor and Edit in a dialog: name, specialization (`DOCTOR_SPECIALIZATIONS`), phone, email, working hours (`start_time`, `end_time`; both or neither, end after start) and Active. No delete: switch Active off |
 | `/users` | `manage_users` | Staff list (without Administrator and Guest), search, status filter, Add User dialog (can apply the role's usual permissions) |
 | `/users/[id]` | `manage_users` | Clinic role, enable/disable, the 14 permission switches with presets. `[id]` is `encodeURIComponent(btoa(user.name))` |
 | `/whatsapp` | `manage_users` | Templates (add, edit, delete, placeholders, live preview) and the message log |
@@ -330,7 +332,7 @@ Field names are Frappe fieldnames. Form state keys must match them exactly. Fiel
 | Doctype | Fields the UI edits | Read-only (server) |
 |---|---|---|
 | **Patient** | `full_name`\*, `gender`, `date_of_birth`, `phone_number`\*, `secondary_phone`, `email`, `address`, `allergies`, `current_medications`, `chronic_diseases`, `medical_history`, `notes`, `dental_chart` (JSON, from the chart) | `age`, `total_appointments`, `total_treatments`, `total_paid`, `total_remaining` |
-| **Doctor** | none (read for dropdowns: `full_name`, `specialization`, `is_active`) | |
+| **Doctor** | `full_name`*, `specialization`, `phone_number`, `email`, `start_time`, `end_time` †, `is_active` (on `/doctors`) | |
 | **Appointment** | `patient`\*, `doctor`\*, `appointment_date`\*, `appointment_time`\*, `duration_minutes`, `status`, `reason_for_visit`, `notes` | `patient_name`, `doctor_name` |
 | **Treatment Plan** | `patient`\*, `doctor`, `treatment_type`\*, `tooth_number` (FDI number from a dropdown), `total_cost`\*, `diagnosis`, `treatment_notes`, `status` (edit only; new plans are `Planned`) | `paid_amount`, `remaining_amount`, `patient_name`, `doctor_name` |
 | **Treatment Session** † | `patient`, `treatment_plan`, `doctor`, `session_date`\*, `session_time`, `status`, `notes` | `patient_name`, `doctor_name` |
@@ -404,7 +406,7 @@ doc means no section is open (the dashboard and profile still work).
 | Appointments | `view_appointments`, `add_appointments`, `edit_appointments` | menu, pages, bell; status buttons, Edit and Delete need `edit_appointments` |
 | Treatments | `view_treatments`, `add_treatments`, `edit_treatments` | menu, pages; status, Edit, Delete and sessions need `edit_treatments` |
 | Finance | `view_payments`, `add_payments`, `view_reports` | Payments menu and pages, balances and money cards; Add, Edit and Delete payments need `add_payments`; Reports needs `view_reports` |
-| System | `manage_users` | Users, WhatsApp and Settings pages and menu items, the settings icon |
+| System | `manage_users` | Doctors, Users, WhatsApp and Settings pages and menu items, the settings icon |
 
 **The UI only hides things.** The back end must refuse the data too. `/users/[id]` saves with `updateDoc`
 when the doc exists and `createDoc` when it does not, and refreshes the session when you edit yourself.

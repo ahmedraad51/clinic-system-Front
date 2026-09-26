@@ -151,6 +151,7 @@ what they are not allowed to do.
 | `/payments/new`, `/payments/[id]/edit` | Record or edit a payment (pre-fills from a treatment plan; cannot go above what is left) |
 | `/payments/[id]` | Printable receipt |
 | `/reports` | Revenue by treatment, method and month for a chosen period, outstanding balances, CSV export |
+| `/doctors` | The clinic's doctors: add and edit name, specialization, phone, email, working hours, and switch a doctor off when they leave |
 | `/users`, `/users/[id]` | Staff accounts, roles, enable/disable, and the 14 permission switches with role presets |
 | `/whatsapp` | Reminder templates with a live preview, and the message log |
 | `/settings` | Clinic name and logo, contact details, currency, working hours, feature switches, and the clinic colour (the whole app follows it) |

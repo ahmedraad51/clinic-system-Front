@@ -46,11 +46,11 @@ const T = (n: number) => "TRT-2026-" + String(n).padStart(5, "0");
 const A = (n: number) => "APT-2026-" + String(n).padStart(5, "0");
 
 const doctors: MockDoc[] = [
-  { name: D.sarah, full_name: "Dr. Sarah Mansour", specialization: "General Dentist", email: "sarah.mansour@dentclinic.test", phone_number: "+20 100 111 2233", is_active: 1 },
-  { name: D.omar, full_name: "Dr. Omar Khalil", specialization: "Orthodontist", email: "omar.khalil@dentclinic.test", phone_number: "+20 100 111 4455", is_active: 1 },
-  { name: D.leila, full_name: "Dr. Leila Haddad", specialization: "Endodontist", email: "leila.haddad@dentclinic.test", phone_number: "+20 100 111 6677", is_active: 1 },
-  { name: D.youssef, full_name: "Dr. Youssef Nabil", specialization: "Oral Surgeon", email: "youssef.nabil@dentclinic.test", phone_number: "+20 100 111 8899", is_active: 1 },
-  { name: D.hana, full_name: "Dr. Hana Aziz", specialization: "Pediatric Dentist", email: "hana.aziz@dentclinic.test", phone_number: "+20 100 222 1010", is_active: 1 },
+  { name: D.sarah, full_name: "Dr. Sarah Mansour", specialization: "General Dentist", email: "sarah.mansour@dentclinic.test", phone_number: "+20 100 111 2233", start_time: "09:00", end_time: "17:00", is_active: 1 },
+  { name: D.omar, full_name: "Dr. Omar Khalil", specialization: "Orthodontist", email: "omar.khalil@dentclinic.test", phone_number: "+20 100 111 4455", start_time: "12:00", end_time: "18:00", is_active: 1 },
+  { name: D.leila, full_name: "Dr. Leila Haddad", specialization: "Endodontist", email: "leila.haddad@dentclinic.test", phone_number: "+20 100 111 6677", start_time: "09:00", end_time: "18:00", is_active: 1 },
+  { name: D.youssef, full_name: "Dr. Youssef Nabil", specialization: "Oral Surgeon", email: "youssef.nabil@dentclinic.test", phone_number: "+20 100 111 8899", start_time: "08:00", end_time: "14:00", is_active: 1 },
+  { name: D.hana, full_name: "Dr. Hana Aziz", specialization: "Pediatric Dentist", email: "hana.aziz@dentclinic.test", phone_number: "+20 100 222 1010", start_time: "10:00", end_time: "16:00", is_active: 1 },
 ];
 
 const patients: MockDoc[] = [

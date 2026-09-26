@@ -52,6 +52,11 @@ export type WhatsAppTrigger = (typeof WHATSAPP_TRIGGERS)[number];
 export const WHATSAPP_STATUSES = ["Sent", "Failed", "Pending"] as const;
 export type WhatsAppStatus = (typeof WHATSAPP_STATUSES)[number];
 
+/** Doctor.specialization options (a Select field on the back end). */
+export const DOCTOR_SPECIALIZATIONS = [
+  "General Dentist", "Orthodontist", "Endodontist", "Periodontist", "Oral Surgeon", "Pediatric Dentist", "Prosthodontist",
+] as const;
+
 /** Appointment lengths offered in the form, in minutes. */
 export const DURATIONS = [15, 30, 45, 60, 90, 120] as const;
 
@@ -129,6 +134,9 @@ export interface Doctor extends BaseDoc {
   specialization?: string;
   phone_number?: string;
   email?: string;
+  /** Working hours, "09:00:00". Empty means the clinic hours. */
+  start_time?: string;
+  end_time?: string;
   is_active?: number;
 }
 

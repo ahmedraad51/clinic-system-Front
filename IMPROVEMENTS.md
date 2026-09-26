@@ -5,8 +5,9 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Doctors page: list, add and edit doctors (name, specialization, phone, email, active). Permission:
-  manage_users.
+- Phone and tablet polish: tables turn into cards on small screens, sticky Save buttons, larger inputs.
+  Seen in the screenshots: on a phone the payments list hides the Amount column and the date filters run
+  off the screen.
 
 ## Backlog
 
@@ -14,17 +15,16 @@ Each finished item says what changed, when, and which commit holds it.
    a printable treatment estimate for the patient.
 2. Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
    payment method.
-3. Phone and tablet polish: tables turn into cards on small screens, sticky Save buttons, larger inputs.
-4. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
+3. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
    form with unsaved changes, clear error messages.
-5. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
-6. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
+4. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+5. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
    and warn when booking outside them.
-7. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
+6. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
    check.
-8. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
+7. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
    treatment plan page for its tooth.
-9. Show the medical alerts in the booking and treatment forms as soon as a patient is picked.
+8. Show the medical alerts in the booking and treatment forms as soon as a patient is picked.
 
 ## Done
 
@@ -74,7 +74,11 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-26 - **Faster booking.** When you choose a doctor and a date, the booking form now shows that
   doctor's appointments for the day and the free times that fit the visit length, starting with "Next
   free". Tap a time to fill it in. If a typed time overlaps another patient, it says so right away. The
-  form also remembers the doctor you booked with last time. Commit PENDING.
+  form also remembers the doctor you booked with last time. Commit 5a8c4e9.
+- 2026-09-26 - **Doctors page.** Managers can now add and edit doctors (name, specialization, phone,
+  email, working hours) from a new Doctors page in the menu. A doctor who leaves is switched off instead
+  of deleted, so their old appointments keep their name. New doctors appear straight away in the booking
+  form and the calendar. Commit PENDING.
 
 ## Questions for the owner
 

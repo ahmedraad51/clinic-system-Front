@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import ToothLogo from "@/components/ToothLogo";
 import {
   LayoutDashboard,
+  BriefcaseMedical,
   ClipboardCheck,
   Users,
   Calendar,
@@ -53,6 +54,7 @@ const menuGroups: Array<{ group: string; items: MenuItem[] }> = [
   {
     group: "SYSTEM",
     items: [
+      { label: "Doctors", icon: BriefcaseMedical, path: "/doctors", permission: "manage_users" },
       { label: "Users", icon: UserCog, path: "/users", permission: "manage_users" },
       { label: "WhatsApp", icon: MessageCircle, path: "/whatsapp", permission: "manage_users" },
       { label: "Settings", icon: Settings, path: "/settings", permission: "manage_users" },
