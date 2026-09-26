@@ -5,11 +5,21 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+- Duplicate patients: when adding a patient whose phone number (or name) is already in the system, show
+  the existing patient first and ask before creating a second record.
 
 ## Backlog
 
-
+1. Quick medical checklist in the patient form: tick boxes for the usual questions (blood thinners,
+   diabetes, heart problems, high blood pressure, pregnancy, common allergies) that write into the
+   existing medical fields, so the alerts are always found.
+2. Tomorrow's reminders: a list of tomorrow's appointments with one tap to send each patient a WhatsApp
+   reminder from a template, for clinics that remind by hand.
+3. Clinic working days: choose the days the clinic is open in Settings; the week calendar shades closed
+   days and booking on a closed day asks first.
+4. Reports for the manager: revenue by doctor, and appointments by outcome (completed, no-show, cancelled)
+   with the no-show rate for the period.
+5. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
