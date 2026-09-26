@@ -5,8 +5,6 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
-  treatment plan page for its tooth.
 
 ## Backlog
 
@@ -97,7 +95,11 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-26 - **Move appointments by dragging.** In the calendar, an appointment can now be dragged with
   the mouse or a finger to another time, another doctor or (in the week view) another day. A dashed box
   shows where it will land, and the app asks "Move this appointment?" before saving, with a warning if the
-  new time overlaps another patient. A simple tap still opens the appointment. Commit PENDING.
+  new time overlaps another patient. A simple tap still opens the appointment. Commit 8648871.
+- 2026-09-26 - **Dental chart on paper and on the treatment plan.** The chart has a Print button that
+  makes a clean page for the patient file or a referral, with the clinic letterhead, the medical alerts,
+  the chart and its findings. Each treatment plan page now shows the patient's chart (read only), opened
+  at the plan's tooth, so the dentist sees the whole mouth while planning. Commit PENDING.
 
 ## Questions for the owner
 

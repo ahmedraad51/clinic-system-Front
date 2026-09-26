@@ -204,3 +204,28 @@ export function usePatientMedical(patient: string | undefined) {
   }, [patient]);
   return result && result.patient === patient ? result.fields : null;
 }
+
+/** A patient's dental chart and age, for showing the chart on another record's page (a treatment plan). */
+export function usePatientChart(patient: string | undefined) {
+  const [result, setResult] = useState<{ patient: string; doc: Pick<Patient, "name" | "dental_chart" | "age"> | null } | null>(null);
+  useEffect(() => {
+    if (!patient) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const rows = await getList<Patient>("Patient", ["name", "dental_chart", "age"], {
+          filters: [["name", "=", patient]],
+          limit: 1,
+        });
+        if (!cancelled) setResult({ patient, doc: rows[0] ?? null });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [patient]);
+  return result && result.patient === patient ? result.doc : null;
+}

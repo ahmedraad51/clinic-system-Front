@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Plus, RotateCcw, Save, Sparkles, X } from "lucide-react";
+import { Check, Plus, Printer, RotateCcw, Save, Sparkles, X } from "lucide-react";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import { Alert, Button, LinkButton, Segmented, StatusBadge, TextArea } from "@/components/ui";
 import {
@@ -141,6 +141,8 @@ export default function DentalChart({
   patientAge,
   plans = [],
   newTreatmentHref,
+  initialTooth,
+  printHref,
 }: {
   /** Patient.dental_chart as it came from the server, in either shape. */
   initialChart?: unknown;
@@ -152,13 +154,18 @@ export default function DentalChart({
   plans?: PlanOnTooth[];
   /** Link for "New treatment for this tooth", or nothing when the user may not add treatments. */
   newTreatmentHref?: (tooth: number) => string;
+  /** Open with this tooth selected, e.g. the tooth of a treatment plan. */
+  initialTooth?: number;
+  /** Where "Print" goes, e.g. /patients/<id>/chart. */
+  printHref?: string;
 }) {
   const [saved, setSaved] = useState<DentalChartData>(() => cleanChart(parseDentalChart(initialChart)));
   const [chart, setChart] = useState<DentalChartData>(saved);
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | null>(initialTooth ?? null);
   const [tool, setTool] = useState<Tool>("caries");
   const [saving, setSaving] = useState(false);
   const [dentition, setDentition] = useState<Dentition>(() => {
+    if (initialTooth) return isChildTooth(initialTooth) ? "child" : "adult";
     const marked = Object.keys(saved.teeth).map(Number);
     const onlyChild = marked.length > 0 && marked.every(isChildTooth);
     return onlyChild || (patientAge !== undefined && patientAge > 0 && patientAge < 6) ? "child" : "adult";
@@ -255,17 +262,24 @@ export default function DentalChart({
   };
 
   return (
-    <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 w-full space-y-5">
+    <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 w-full space-y-5 [print-color-adjust:exact] print:shadow-none print:border-0 print:p-0">
       <UnsavedChangesGuard when={dirty && canEdit && Boolean(onSave)} />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-gray-800">Dental Chart</h2>
           <p className="text-xs text-gray-500 mt-0.5">
             {findings.length === 0 ? "No findings" : findings.length === 1 ? "1 tooth with findings" : `${findings.length} teeth with findings`}
-            {" · "}click a tooth to {canEdit ? "mark it" : "see it"}
+            <span className="print:hidden">
+              {" · "}click a tooth to {canEdit ? "mark it" : "see it"}
+            </span>
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          {printHref && !dirty && (
+            <LinkButton href={printHref} variant="secondary" icon={Printer}>
+              Print
+            </LinkButton>
+          )}
           <Segmented
             label="Teeth"
             value={dentition}

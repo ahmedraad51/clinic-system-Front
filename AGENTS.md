@@ -195,6 +195,7 @@ on the form, and a click made while the save is still running is overridden by t
 | `/patients/[id]/edit` | `edit_patients` | Shared `PatientForm` |
 | `/patients/[id]/estimate` | `view_patients` and `view_treatments` | Printable treatment estimate on the clinic letterhead: the patient's Planned and In Progress plans with cost, paid and to pay, totals, a 30-day validity note (`VALID_DAYS`) and signature lines. Linked as **Print estimate** above the Treatment Plans tab |
 | `/patients/[id]/statement` | `view_patients` and `view_payments` | Printable statement: every plan that is not Cancelled (cost, paid, left), every payment, total for treatments, total paid and the balance (`total_remaining`). Linked as **Print statement** above the Payments tab |
+| `/patients/[id]/chart` | `view_patients` | Printable dental chart: letterhead, patient, `MedicalAlerts`, the chart read-only (Adult/Child switch and hints hidden on paper) and its Findings. Linked as **Print** in the chart header |
 | `/appointments` | `view_appointments` | Three views, chosen with `?view=day\|week\|list` (default `day`, or `list` when `?date=` is given). **Day**: one column per active doctor, rows from Clinic Settings opening to closing time (stretched to fit), blocks as long as the appointment and coloured by status, overlapping ones side by side, a red "now" line, and striped shading outside each doctor's `start_time`–`end_time`, which are also shown under the name (and in the week view when one doctor is chosen); `?day=YYYY-MM-DD` and `?doctor=` pick the day and one doctor. **Week**: one column per day (the week starts on `WEEK_STARTS_ON` in `format.ts`, Sunday). Clicking an empty 15-minute slot opens `/appointments/new` with date, time and doctor filled in (needs `add_appointments`). With `edit_appointments`, a Scheduled or Confirmed block can be dragged (mouse, pen or touch; pointer events, `touch-none` on the block) to another time, doctor column or day; a dashed preview snaps to 15 minutes, dropping asks "Move this appointment?" (with the same overlap check, then "Move anyway") and saves `appointment_date`, `appointment_time` and `doctor`. A click without moving still opens the appointment. **List**: search, date filter (All/Today/Tomorrow/Upcoming/Past, also `?date=today`), status filter, paging. The grid is `src/components/AppointmentCalendar.tsx` |
 | `/appointments/new` | `add_appointments` | Shared `AppointmentForm`. Reads `?patient=`, `?date=`, `?time=HH:MM` and `?doctor=`; Back returns to that day in the calendar. Once a doctor and date are chosen, the form shows that doctor's bookings for the day and up to 8 free times that fit the chosen length (within the doctor's own working hours when set, otherwise the clinic hours, and from now for today; tap one to fill in the time) and says when the typed time overlaps. With no `?doctor=`, it starts with the doctor of the last booking made on this computer (`localStorage.last_doctor`). Warns if the doctor already has an overlapping appointment (always checked for a new booking) |
 | `/appointments/[id]` | `view_appointments` | `MedicalAlerts` for the patient, details, status buttons, Edit/Delete (`edit_appointments`), WhatsApp messages for this appointment |
@@ -202,7 +203,7 @@ on the form, and a click made while the save is still running is overridden by t
 | `/appointments/[id]/card` | `view_appointments` | Printable appointment card for the patient (date, time, doctor, visit, the clinic phone and address). **Print Card** on the appointment page |
 | `/treatments` | `view_treatments` | Search, type and status filters, paging |
 | `/treatments/new` | `add_treatments` | Shared `TreatmentForm`. Reads `?patient=` and `?tooth=`. New plans are always `Planned`. Choosing a treatment type fills in its price-list price unless a different cost was typed |
-| `/treatments/[id]` | `view_treatments` | `MedicalAlerts` for the patient, cost/paid/remaining with a progress bar, details, status buttons, payments of the plan, **Treatment Sessions** (add, edit, delete in a dialog) |
+| `/treatments/[id]` | `view_treatments` | `MedicalAlerts` for the patient, cost/paid/remaining with a progress bar, details, status buttons, payments of the plan, **Treatment Sessions** (add, edit, delete in a dialog), and the patient's **dental chart** read-only, opened at the plan's tooth (`initialTooth`), loaded with `usePatientChart()` |
 | `/treatments/[id]/edit` | `edit_treatments` | Shared `TreatmentForm` with status |
 | `/payments` | `view_payments` | Search, method filter, date range, paging, total of everything that matches |
 | `/payments/new` | `add_payments` | Shared `PaymentForm`. Reads `?patient=&treatment=`. Blocks amounts above what the plan has left |
@@ -267,6 +268,7 @@ Rules for data code:
 | `usePagedList<T>(doctype, { fields, filters, orFilters, orderBy, pageSize })` | A page of rows plus the total. Changing the query goes back to page 1. Returns `rows, total, page, setPage, pageSize, initialLoading, loading, error, reload` |
 | `useDocument<T>(doctype, name)` | One doc. `reload()` fetches again but keeps the old copy on screen meanwhile. `notFound` is true when the load failed; `error` is empty for a real 404 and holds the reason otherwise (for example no permission) |
 | `useDoctors()` | Active doctors (`is_active = 1`) for dropdowns |
+| `usePatientChart(patient)` | The patient's `dental_chart` and `age`, for the chart on a treatment plan |
 | `usePatientMedical(patient)` | The patient's medical fields (`MEDICAL_FIELDS`) for `MedicalAlerts` on another record's page |
 | `useDoctorList()` | The same, as `{ doctors, loading }`, for screens that would look empty while doctors load (the calendar) |
 | `useDebounced(value, ms)` | Waits until typing stops |
@@ -562,6 +564,8 @@ Children under 6, or charts with only child teeth marked, open on the child teet
   clears it), toggle conditions, **Healthy** clears everything but the note, a free-text note, the patient's
   treatment plans whose `tooth_number` names this tooth, and **New treatment for this tooth**
   (`/treatments/new?patient=…&tooth=…`). A small dot by a tooth number means an open plan.
+- Props for other pages: `initialTooth` opens a tooth, `printHref` shows a Print link (to `/patients/<id>/chart`),
+  `canEdit={false}` makes it read-only.
 - Editing needs `edit_patients`; everyone else can still open a tooth to read it. **Save Chart** and
   **Undo** appear when something changed. The **Findings** list under the chart sums up every marked tooth.
 - **Data:** `DentalChartData` in `types.ts`, `{ "version": 2, "teeth": { "36": { "conditions": [...],

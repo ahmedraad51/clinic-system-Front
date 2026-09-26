@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ClipboardList, CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
+import DentalChart from "@/components/DentalChart";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
   Alert, Button, Card, ClickableRow, DetailList, DetailRow, EmptyState, Field, LinkButton, NotFoundCard,
@@ -16,7 +17,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { createDoc, deleteDoc, errorMessage, getList, updateDoc } from "@/lib/frappe";
 import { cx, display, formatDate, formatTime, todayISO } from "@/lib/format";
-import { useDoctors, useDocument, usePatientMedical } from "@/lib/hooks";
+import { useDoctors, useDocument, usePatientChart, usePatientMedical } from "@/lib/hooks";
 import { patientHref, paymentHref, routeId } from "@/lib/links";
 import {
   SESSION_STATUSES, TREATMENT_STATUSES,
@@ -46,6 +47,7 @@ function TreatmentDetail() {
   const id = routeId(params.id);
   const { doc: plan, loading, notFound, error, reload } = useDocument<TreatmentPlan>("Treatment Plan", id);
   const medical = usePatientMedical(plan?.patient);
+  const patientChart = usePatientChart(plan?.patient);
   const [related, setRelated] = useState<Related | null>(null);
   const [relatedVersion, setRelatedVersion] = useState(0);
   const [updating, setUpdating] = useState<TreatmentStatus | null>(null);
@@ -268,6 +270,19 @@ function TreatmentDetail() {
           )}
         </div>
       </div>
+
+      {patientChart && (
+        // The whole mouth, read only, opened at this plan's tooth. Marking is done on the patient page.
+        <DentalChart
+          key={`${patientChart.name}|${plan.tooth_number ?? ""}`}
+          initialChart={patientChart.dental_chart}
+          canEdit={false}
+          patientAge={patientChart.age}
+          initialTooth={/^\d{2}$/.test(plan.tooth_number ?? "") ? Number(plan.tooth_number) : undefined}
+          plans={[plan]}
+          printHref={`${patientHref(plan.patient)}/chart`}
+        />
+      )}
 
       <Card
         title="Sessions"

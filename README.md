@@ -146,6 +146,7 @@ what they are not allowed to do.
 | `/patients/[id]` | Medical alerts (allergies, blood thinners, diabetes, heart problems, pregnancy), tap-to-call and WhatsApp buttons, last visit, next appointment and balance, a timeline of visits, treatment sessions and payments, and tabs for appointments, treatment plans, payments and the dental chart |
 | `/patients/[id]/estimate` | A printable treatment estimate of the patient's open plans, with totals and signature lines |
 | `/patients/[id]/statement` | A printable statement of all treatments, payments and the balance |
+| `/patients/[id]/chart` | The dental chart and its findings, ready to print for the patient file or a referral |
 | `/appointments/[id]/card` | A printable appointment card to hand to the patient |
 | `/payments/day` | The end-of-day report: payments by method, the total, and the cash that should be in the drawer |
 | `/appointments` | The appointment book as a **day calendar** (a column per doctor, from opening to closing time, with a "now" line), a **week calendar**, or a **list** with search and filters. Click an empty time in the calendar to book it with the date, time and doctor already filled in, or drag an appointment to move it to another time or doctor |
@@ -153,7 +154,7 @@ what they are not allowed to do.
 | `/appointments/[id]` | Detail, one-click status changes, WhatsApp messages sent for it |
 | `/treatments` | Plans with cost and remaining balance, type and status filters |
 | `/treatments/new`, `/treatments/[id]/edit` | Create or edit — type, FDI tooth number, diagnosis, cost |
-| `/treatments/[id]` | Money summary with progress, status changes, its payments, and its treatment sessions |
+| `/treatments/[id]` | Money summary with progress, status changes, its payments, and its treatment sessions, and the patient's dental chart opened at the plan's tooth |
 | `/payments` | Ledger with search, method and date filters, and the total |
 | `/payments/new`, `/payments/[id]/edit` | Record or edit a payment (pre-fills from a treatment plan; cannot go above what is left) |
 | `/payments/[id]` | Printable receipt |

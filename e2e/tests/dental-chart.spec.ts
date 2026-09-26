@@ -45,3 +45,18 @@ test("a chart saved in the old format still loads", async ({ page }) => {
   await page.getByRole("button", { name: /^Tooth 24,/ }).click();
   await expect(page.getByText(/The old chart marked this tooth/)).toBeVisible();
 });
+
+test("a treatment plan shows the chart at its tooth, and the chart prints", async ({ page }) => {
+  // Nadia Samir's crown on tooth 36.
+  await page.goto("/treatments/TRT-2026-00002");
+  await waitForData(page);
+  await expect(page.getByText("Lower left first molar")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Tooth 36,/ })).toHaveAttribute("aria-pressed", "true");
+  // Read only here: no marking buttons.
+  await expect(page.getByRole("button", { name: "Root canal", exact: true })).toHaveCount(0);
+
+  await page.getByRole("link", { name: "Print", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Dental Chart" })).toBeVisible();
+  await waitForData(page);
+  await expect(page.getByRole("button", { name: /^36\s/ })).toContainText("Crown, root canal");
+});
