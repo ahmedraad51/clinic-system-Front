@@ -36,3 +36,23 @@ test("keyboard users can skip the menu", async ({ page }) => {
   await expect(skip).toBeFocused();
   await expect(skip).toBeVisible();
 });
+
+test("dialogs keep the keyboard inside and give the focus back", async ({ page }) => {
+  await page.goto("/patients/PAT-2026-00003");
+  await waitForData(page);
+  const trigger = page.getByRole("button", { name: "Delete patient" });
+  await trigger.focus();
+  await page.keyboard.press("Enter");
+
+  const dialog = page.getByRole("dialog", { name: "Delete this patient?" });
+  // The safe choice has the focus first.
+  await expect(dialog.getByRole("button", { name: "Cancel" })).toBeFocused();
+  // Tab moves around inside the dialog only.
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press("Tab");
+    await expect(dialog.locator(":focus")).toHaveCount(1);
+  }
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+});

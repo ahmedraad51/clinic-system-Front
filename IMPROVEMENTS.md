@@ -5,17 +5,15 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Dialogs for keyboard users: when a dialog opens, move the keyboard focus into it, keep Tab inside it,
-  and put the focus back where it was when it closes.
+- Patient files: attach X-rays and photos to a patient (upload from the computer or tablet camera,
+  thumbnails on the patient page, open full size).
 
 ## Backlog
 
-1. Patient files: attach X-rays and photos to a patient (upload from the computer or tablet camera,
-   thumbnails on the patient page, open full size).
-2. Patients who owe money: an "Owes money" filter in the patient list, with a ready WhatsApp reminder
+1. Patients who owe money: an "Owes money" filter in the patient list, with a ready WhatsApp reminder
    about the balance.
-3. Send the payment receipt on WhatsApp as a short message (amount, date, what it was for, balance left).
-4. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+2. Send the payment receipt on WhatsApp as a short message (amount, date, what it was for, balance left).
+3. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -165,7 +163,11 @@ Each finished item says what changed, when, and which commit holds it.
   were Saturday 26 September 2026, so they give the same result on any day. Commit 378b3bb.
 - 2026-09-26 - **Reports for the manager.** Reports now also show the money each doctor brought in during
   the chosen period, and how appointments ended: completed, no-show, cancelled and not yet marked, with
-  the no-show rate (shown in red when it is 15% or more). Commit PENDING.
+  the no-show rate (shown in red when it is 15% or more). Commit 4d5b290.
+- 2026-09-26 - **Dialogs work well with the keyboard.** When a question box opens (for example "Delete
+  this patient?"), the keyboard focus now goes into it, starting on the safe choice (Cancel); Tab stays
+  inside the box, Escape closes it, and the focus goes back to the button that opened it. The page behind
+  no longer scrolls while it is open. Commit PENDING.
 
 ## Questions for the owner
 

@@ -519,7 +519,7 @@ whatsapp, trigger, user) and `statusTone(kind, status)` for other views that mus
 `SelectInput`, `TextArea`, `Toggle`,
 `SearchInput`, `Toolbar`, `Table`, `Th`, `Td` (with `label` for the phone cards), `ClickableRow`, `TableLoading`, `TableMessage`, `Pagination`, `DetailList` and
 `DetailRow`, `Tabs`, `Alert`, `Spinner`, `PageLoading`, `EmptyState`, `NoAccess`, `NotFoundCard`; plus
-`Modal` and `ConfirmDialog` in `Modal.tsx`, and `LinkSelect` for searchable Link fields. Use these instead of
+`Modal` (moves focus in, traps Tab, restores focus on close, Escape closes, locks page scroll) and `ConfirmDialog` (focus starts on Cancel) in `Modal.tsx`, and `LinkSelect` for searchable Link fields. Use these instead of
 writing new class lists.
 
 ### Styling
