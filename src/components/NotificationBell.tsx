@@ -100,7 +100,7 @@ export default function NotificationBell() {
               </ul>
             )}
             <Link
-              href="/appointments?view=day"
+              href="/today"
               onClick={() => setOpen(false)}
               className="block px-4 py-2.5 text-sm text-center text-primary-600 font-medium border-t border-gray-100 hover:bg-gray-50 rounded-b-xl"
             >

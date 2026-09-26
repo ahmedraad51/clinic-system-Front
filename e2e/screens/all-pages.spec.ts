@@ -16,6 +16,7 @@ const MANAGER_ID = encodeURIComponent(Buffer.from("ahmed.ezzat@dentclinic.test")
 
 const PAGES: Array<[string, string]> = [
   ["dashboard", "/dashboard"],
+  ["today", "/today"],
   ["patients", "/patients"],
   ["patient-new", "/patients/new"],
   ["patient-detail", "/patients/PAT-2026-00001"],

@@ -129,7 +129,7 @@ function Dashboard() {
             hint={data ? `${stillToCome} still to come` : undefined}
             icon={Calendar}
             tone="primary"
-            href="/appointments?view=day"
+            href="/today"
           />
         )}
         {seePatients && (
@@ -162,7 +162,7 @@ function Dashboard() {
             title="Today"
             flush
             actions={
-              <Link href="/appointments?view=day" className="text-sm text-primary-600 hover:underline">
+              <Link href="/today" className="text-sm text-primary-600 hover:underline">
                 View all
               </Link>
             }

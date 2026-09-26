@@ -134,6 +134,7 @@ what they are not allowed to do.
 |---|---|
 | `/` | Redirects to `/dashboard` |
 | `/dashboard` | Today's appointments, the next 7 days, patient and plan counts, revenue this month, quick actions |
+| `/today` | The front desk's day: today's patients by doctor, one tap to confirm, complete or mark a no-show, late patients highlighted, medical alerts and balances at a glance, quick payments and walk-ins |
 | `/patients` | List with server-side search (name, phone, ID), gender filter and paging |
 | `/patients/new`, `/patients/[id]/edit` | Create or edit — basic details plus medical history, allergies, medications |
 | `/patients/[id]` | Medical alerts (allergies, blood thinners, diabetes, heart problems, pregnancy), tap-to-call and WhatsApp buttons, last visit, next appointment and balance, a timeline of visits, treatment sessions and payments, and tabs for appointments, treatment plans, payments and the dental chart |
