@@ -5,11 +5,11 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Send the payment receipt on WhatsApp as a short message (amount, date, what it was for, balance left).
+- Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Backlog
 
-1. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+
 
 ## Done
 
@@ -169,7 +169,10 @@ Each finished item says what changed, when, and which commit holds it.
   size. Files are kept private to the clinic. Commit eb780f1.
 - 2026-09-26 - **Who owes money.** The patient list has a new "Owes money" filter that shows only patients
   with a balance, biggest first. Each has a "Remind" button that opens WhatsApp with a polite message
-  about the amount left to pay. Commit PENDING.
+  about the amount left to pay. Commit aa8c50f.
+- 2026-09-26 - **Receipt on WhatsApp.** A payment receipt now has a WhatsApp button that sends the patient
+  a short thank-you with the amount, date, what it was for, the receipt number and how much is still left
+  to pay. Commit PENDING.
 
 ## Questions for the owner
 

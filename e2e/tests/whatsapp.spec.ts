@@ -18,3 +18,13 @@ test("send a WhatsApp message by hand from an appointment", async ({ page }) => 
     "https://wa.me/201002345678?text=Hello%20Nadia%2C%20see%20you%20on%20Tuesday%20at%2010.",
   );
 });
+
+test("send a payment receipt on WhatsApp", async ({ page }) => {
+  await page.goto("/payments/PAY-2026-00001");
+  await waitForData(page);
+  const link = page.getByRole("main").getByRole("link", { name: "WhatsApp" });
+  const href = decodeURIComponent((await link.getAttribute("href")) ?? "");
+  expect(href).toContain("https://wa.me/201002345678?text=");
+  expect(href).toContain("Hello Nadia Samir, thank you for your payment of $3,000 on 20 Aug 2026 for crown at DentClinic.");
+  expect(href).toContain("Receipt: PAY-2026-00001 (Bank Transfer). Still to pay: $3,000.");
+});

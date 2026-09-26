@@ -1,21 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import ClinicLetterhead from "@/components/ClinicLetterhead";
-import { Pencil, Printer, Trash2 } from "lucide-react";
+import { MessageCircle, Pencil, Printer, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import { Button, Card, LinkButton, NotFoundCard, PageContainer, PageHeader, PageLoading } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
-import { deleteDoc, errorMessage } from "@/lib/frappe";
+import { deleteDoc, errorMessage, getList } from "@/lib/frappe";
 import { formatDate } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
 import { patientHref, paymentHref, routeId, treatmentHref } from "@/lib/links";
-import type { Payment } from "@/lib/types";
+import { whatsappLink } from "@/lib/whatsapp";
+import type { Patient, Payment } from "@/lib/types";
 
 export default function PaymentDetailPage() {
   return (
@@ -30,16 +31,53 @@ function PaymentDetail() {
   const router = useRouter();
   const toast = useToast();
   const { can } = useSession();
-  const { money } = useSettings();
+  const { money, settings, clinicName } = useSettings();
   const id = routeId(params.id);
   const { doc: payment, loading, notFound, error } = useDocument<Payment>("Payment", id);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // The patient's phone and what is left to pay, for sending the receipt on WhatsApp.
+  const [patientInfo, setPatientInfo] = useState<{ id: string; row: Patient | null } | null>(null);
+  const patientId = payment?.patient ?? "";
+
+  useEffect(() => {
+    if (!patientId) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const rows = await getList<Patient>("Patient", ["name", "phone_number", "total_remaining"], {
+          filters: [["name", "=", patientId]],
+          limit: 1,
+        });
+        if (!cancelled) setPatientInfo({ id: patientId, row: rows[0] ?? null });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [patientId]);
 
   if (loading) return <PageLoading />;
   if (notFound || !payment) return <NotFoundCard error={error} what="Payment" backHref="/payments" backLabel="Back to Payments" />;
 
   const canChange = can("add_payments");
+  const contact = patientInfo?.id === payment.patient ? patientInfo.row : null;
+  const left = Number(contact?.total_remaining) || 0;
+  const receiptLink =
+    settings.enable_whatsapp !== 0 && contact
+      ? whatsappLink(
+          contact.phone_number,
+          [
+            `Hello ${payment.patient_name || payment.patient}, thank you for your payment of ${money(payment.amount)} on ${formatDate(payment.payment_date)}` +
+              `${payment.treatment_type ? ` for ${payment.treatment_type.toLowerCase()}` : ""} at ${clinicName}.`,
+            `Receipt: ${id} (${payment.payment_method}).`,
+            left > 0 ? `Still to pay: ${money(left)}.` : "Nothing is left to pay. Thank you!",
+          ].join(" "),
+        )
+      : "";
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -65,6 +103,17 @@ function PaymentDetail() {
             <Button variant="secondary" icon={Printer} onClick={() => window.print()}>
               Print
             </Button>
+            {receiptLink && (
+              <a
+                href={receiptLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-xl border border-green-200 bg-green-50 text-sm font-medium text-green-800 hover:bg-green-100"
+              >
+                <MessageCircle size={16} />
+                WhatsApp
+              </a>
+            )}
             {canChange && (
               <LinkButton href={`${paymentHref(id)}/edit`} icon={Pencil}>
                 Edit
