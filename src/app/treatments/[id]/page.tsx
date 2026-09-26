@@ -8,7 +8,7 @@ import RequirePermission from "@/components/Guard";
 import DentalChart from "@/components/DentalChart";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
-  Alert, Button, Card, ClickableRow, DetailList, DetailRow, EmptyState, Field, LinkButton, NotFoundCard,
+  Alert, Button, Card, DetailList, DetailRow, EmptyState, Field, LinkButton, NotFoundCard,
   PageContainer, PageHeader, PageLoading, SelectInput, StatusBadge, Table, Td, TextArea, TextInput, Th,
 } from "@/components/ui";
 import { ConfirmDialog, Modal } from "@/components/ui/Modal";
@@ -248,23 +248,23 @@ function TreatmentDetail() {
               ) : data.payments.length === 0 ? (
                 <p className="px-6 pb-6 text-sm text-gray-500">No payments for this plan yet.</p>
               ) : (
-                <Table>
-                  <tbody>
-                    {data.payments.map((pay) => (
-                      <ClickableRow key={pay.name} href={paymentHref(pay.name)}>
-                        <Td className="whitespace-nowrap">
-                          <Link href={paymentHref(pay.name)} className="text-gray-800 hover:text-primary-600">
-                            {formatDate(pay.payment_date)}
-                          </Link>
-                        </Td>
-                        <Td label="Method">
+                // A list, not a table: this box is narrow beside the details on a tablet.
+                <ul className="divide-y divide-gray-100 border-t border-gray-100">
+                  {data.payments.map((pay) => (
+                    <li key={pay.name}>
+                      <Link
+                        href={paymentHref(pay.name)}
+                        className="flex items-center justify-between gap-3 px-5 sm:px-6 py-3 min-h-11 hover:bg-gray-50"
+                      >
+                        <span className="min-w-0">
+                          <span className="block text-sm text-gray-800">{formatDate(pay.payment_date)}</span>
                           <StatusBadge kind="method" status={pay.payment_method} />
-                        </Td>
-                        <Td label="Amount" className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount)}</Td>
-                      </ClickableRow>
-                    ))}
-                  </tbody>
-                </Table>
+                        </span>
+                        <span className="font-medium text-green-600 whitespace-nowrap">{money(pay.amount)}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               )}
             </Card>
           )}

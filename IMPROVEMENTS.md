@@ -99,7 +99,9 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-26 - **Dental chart on paper and on the treatment plan.** The chart has a Print button that
   makes a clean page for the patient file or a referral, with the clinic letterhead, the medical alerts,
   the chart and its findings. Each treatment plan page now shows the patient's chart (read only), opened
-  at the plan's tooth, so the dentist sees the whole mouth while planning. Commit PENDING.
+  at the plan's tooth, so the dentist sees the whole mouth while planning. Commit d4cbd25.
+- 2026-09-26 - **Treatment plan payments fit on a tablet.** The Payments box on a treatment plan page is
+  now a simple list, so the amount is no longer cut off on a tablet. Commit PENDING.
 
 ## Questions for the owner
 
