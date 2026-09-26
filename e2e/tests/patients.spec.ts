@@ -63,3 +63,14 @@ test("the booking and treatment forms show the chosen patient's medical alerts",
   await waitForData(page);
   await expect(page.getByRole("alert").filter({ hasText: "Diabetes" })).toBeVisible();
 });
+
+test("the patient list shows medical alerts and the next visit", async ({ page }) => {
+  await page.goto("/patients");
+  await waitForData(page);
+  const amir = page.getByRole("row", { name: /Amir Zaki/ });
+  await expect(amir).toContainText("Blood thinner");
+  await expect(amir).toContainText("Allergy");
+  await expect(amir).toContainText("Not booked");
+  // Dina Rashad is booked for tomorrow at 11:00.
+  await expect(page.getByRole("row", { name: /Dina Rashad/ })).toContainText("11:00 AM");
+});

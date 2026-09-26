@@ -26,6 +26,13 @@ export function formatDate(value: string | null | undefined): string {
   return `${Number(day)} ${MONTHS[Number(month) - 1] ?? month} ${year}`;
 }
 
+/** Like formatDate, but without the year when it is this year: "27 Sep" (or "3 Jan 2027"). */
+export function formatShortDate(value: string | null | undefined): string {
+  const full = formatDate(value);
+  const year = String(new Date().getFullYear());
+  return full.endsWith(" " + year) ? full.slice(0, -year.length - 1) : full;
+}
+
 /** "14:30:00" → "2:30 PM". */
 export function formatTime(value: string | null | undefined): string {
   if (!value) return "—";

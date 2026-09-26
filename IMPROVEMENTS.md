@@ -5,7 +5,8 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Patient list: show a small medical-alert marker and the next appointment in each row.
+- Retake the README screenshots (docs/screenshots) so they show the new design; they still show the old
+  blue look.
 
 ## Backlog
 
@@ -122,6 +123,10 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-26 - **Dental chart follows the chosen tooth.** On a phone or narrow screen, the chart now
   slides sideways to show the tooth that is open (for example the tooth of a treatment plan). Commit
   PENDING.
+- 2026-09-26 - **Patient list with alerts and next visit.** Each patient in the list now shows small red
+  or yellow markers for medical alerts (allergy, blood thinner, heart, diabetes, pregnancy) and the date
+  and time of their next booked visit. Age and gender moved next to the patient ID, so the list fits a
+  tablet without cutting off the balance. Commit PENDING.
 
 ## Questions for the owner
 
