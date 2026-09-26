@@ -219,7 +219,7 @@ session cookie rides along. `errorMessage(err)` turns a failed call into a sente
 `src/lib/mockData.ts` instead — an in-memory store shaped like Frappe's REST responses: IDs use the
 real naming series (`PAT-2026-00001`), link fields hold the linked doc's `name`, list queries return
 only the requested fields and support filters, search, sorting and paging, and a missing doc rejects
-the way a 404 would. It ships with 10 patients, 5 doctors, 22 appointments, 15 treatment plans, 10
+the way a 404 would. It ships with 12 patients, 5 doctors, 24 appointments, 15 treatment plans, 10
 treatment sessions, 15 payments, 9 users, clinic settings, and WhatsApp templates and logs. A few
 appointments and payments are dated today, so the dashboard is never empty.
 
