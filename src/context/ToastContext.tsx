@@ -57,7 +57,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div
         aria-live="polite"
-        className="fixed bottom-4 end-4 z-[60] flex flex-col gap-2 w-[calc(100%-2rem)] max-w-sm print:hidden"
+        // On phones the messages sit under the top bar, so they never cover the Save bar or a bottom sheet.
+        className="fixed bottom-4 end-4 max-sm:bottom-auto max-sm:top-20 z-[60] flex flex-col gap-2 w-[calc(100%-2rem)] max-w-sm print:hidden"
       >
         {toasts.map((toast) => (
           <div

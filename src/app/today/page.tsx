@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, CheckCheck, Clock, CreditCard, FileText, HeartPulse, Plus, RefreshCw, UserX } from "lucide-react";
+import FinishVisitDialog from "@/components/FinishVisitDialog";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Button, Card, EmptyState, LinkButton, PageContainer, PageHeader, PageLoading, Segmented, StatusBadge,
@@ -49,6 +50,8 @@ function TodayBoard() {
   const [error, setError] = useState("");
   const [version, setVersion] = useState(0);
   const [saving, setSaving] = useState<string | null>(null);
+  // After "Completed": ask what was done.
+  const [finishing, setFinishing] = useState<Appointment | null>(null);
   const [now, setNow] = useState(() => new Date());
 
   const showMoney = can("view_payments");
@@ -104,6 +107,7 @@ function TodayBoard() {
         },
       );
       toast.success(`${appointment.patient_name || appointment.patient}: ${status}.`);
+      if (status === "Completed" && can("edit_treatments")) setFinishing({ ...appointment, appointment_date: today });
     } catch (err) {
       toast.error(errorMessage(err, "Could not change the status."));
     } finally {
@@ -313,6 +317,7 @@ function TodayBoard() {
           ))}
         </div>
       )}
+      {finishing && <FinishVisitDialog appointment={finishing} onClose={() => setFinishing(null)} />}
     </PageContainer>
   );
 }

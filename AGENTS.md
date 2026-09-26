@@ -138,6 +138,7 @@ src/
 │   ├── Guard.tsx             RequirePermission
 │   ├── DentalChart.tsx       the odontogram (adult and child teeth, surfaces, conditions), saved to Patient.dental_chart
 │   ├── UnsavedChangesGuard.tsx  asks before leaving a form with unsaved changes
+│   ├── FinishVisitDialog.tsx "What was done in this visit?" after an appointment is marked Completed
 │   ├── ClinicLetterhead.tsx  the clinic header on printouts (receipt, estimate)
 │   ├── ToothLogo.tsx         the app logo (inline SVG)
 │   ├── MedicalAlerts.tsx     the red/yellow medical alerts band (show it wherever treatment is decided)
@@ -484,7 +485,12 @@ function Things() {
 - **Contrast:** readable text is `text-gray-500` or darker (4.8:1 on white). `text-gray-300`/`400` only for
   decoration and disabled things. Links and other focusable things get a primary focus ring from
   `globals.css`; `MainLayout` has a "Skip to content" link to `#main`.
-- **Messages:** `useToast().success/error/info`. Never use `alert()`. Ask before deleting with
+- **Finishing a visit:** marking an appointment Completed (appointment page or Today board) opens
+  `FinishVisitDialog` for users with `edit_treatments`: pick one of the patient's open plans, write what was
+  done (saved as a Completed Treatment Session dated like the appointment), and optionally mark the plan
+  Completed; a Planned plan moves to In Progress. With no open plan it offers New Treatment Plan. Skip is
+  always there.
+- **Messages:** `useToast().success/error/info`. They appear bottom-right, and under the top bar on phones. Never use `alert()`. Ask before deleting with
   `ConfirmDialog`.
 - **Medical safety:** every screen where treatment is decided or done shows `<MedicalAlerts patient={…} />`
   near the top (patient, appointment and treatment plan pages, and under the Patient field of the booking

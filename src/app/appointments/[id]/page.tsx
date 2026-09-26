@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { MessageCircle, Pencil, Printer, Stethoscope, Trash2 } from "lucide-react";
+import FinishVisitDialog from "@/components/FinishVisitDialog";
 import RequirePermission from "@/components/Guard";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
@@ -35,6 +36,8 @@ function AppointmentDetail() {
   const { doc: appointment, loading, notFound, error, reload } = useDocument<Appointment>("Appointment", id);
   const medical = usePatientMedical(appointment?.patient);
   const [updating, setUpdating] = useState<AppointmentStatus | null>(null);
+  // After "Completed": ask what was done.
+  const [finishing, setFinishing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [logs, setLogs] = useState<{ id: string; rows: WhatsAppLog[] }>({ id: "", rows: [] });
@@ -74,6 +77,7 @@ function AppointmentDetail() {
       await updateDoc("Appointment", id, { status });
       toast.success(`Marked as ${status}.`);
       reload();
+      if (status === "Completed" && can("edit_treatments")) setFinishing(true);
     } catch (err) {
       toast.error(errorMessage(err, "Could not change the status."));
     } finally {
@@ -209,6 +213,7 @@ function AppointmentDetail() {
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
       />
+      {finishing && <FinishVisitDialog appointment={appointment} onClose={() => setFinishing(false)} />}
     </PageContainer>
   );
 }

@@ -5,19 +5,17 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Finish a visit: when an appointment is marked Completed, offer to write down what was done as a
-  treatment session on the patient's open plan (or start a new plan), so the dentist's notes are not lost.
+- Recall list: patients not seen for six months with nothing booked, with one tap to call, send a WhatsApp
+  or book, so check-ups are not forgotten.
 
 ## Backlog
 
-1. Recall list: patients not seen for six months with nothing booked, with one tap to call, send a
-   WhatsApp or book, so check-ups are not forgotten.
-2. Phone: the day calendar shows one doctor at a time with buttons for the next and previous doctor (five
+1. Phone: the day calendar shows one doctor at a time with buttons for the next and previous doctor (five
    columns are too narrow on a phone).
-3. Dental chart on a phone or narrow screen: scroll the chart so the chosen tooth is in view (on the plan
+2. Dental chart on a phone or narrow screen: scroll the chart so the chosen tooth is in view (on the plan
    page tooth 37 was off-screen).
-4. Patient list: show a small medical-alert marker and the next appointment in each row.
-5. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+3. Patient list: show a small medical-alert marker and the next appointment in each row.
+4. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -114,7 +112,12 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-26 - **"My Day" for dentists.** When a dentist uses the app (their user email is the same as on
   the Doctors page), the dashboard, the Today board (now called "My Day") and the bell show their own
   patients, and the appointment calendar opens on their own column. A "My patients / Everyone" switch
-  shows the whole clinic when needed. Commit PENDING.
+  shows the whole clinic when needed. Commit 8426828.
+- 2026-09-26 - **Finish a visit.** When a visit is marked Completed (on the Today board or the appointment
+  page), the app asks "What was done in this visit?". The dentist picks the patient's treatment plan,
+  types a note, and can tick "This treatment is now finished"; it is saved as a session on the plan. If
+  the patient has no open plan, it offers to start one. Also: on phones, messages now appear at the top so
+  they never cover a Save button. Commit PENDING.
 
 ## Questions for the owner
 

@@ -16,6 +16,8 @@ test("the front desk marks today's patients from the Today board", async ({ page
   await sarah.getByRole("button", { name: "Confirm" }).click();
   await expect(sarah.getByText("Confirmed", { exact: true })).toBeVisible();
   await hana.getByRole("button", { name: "Completed" }).click();
+  // Salma has no open treatment plan, so the visit dialog only offers to start one; skip it.
+  await page.getByRole("dialog", { name: "What was done in this visit?" }).getByRole("button", { name: "Skip" }).click();
   await expect(hana.getByText("Completed", { exact: true })).toBeVisible();
   await expect(page.getByText("Completed", { exact: true }).first()).toBeVisible();
 
