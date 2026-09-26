@@ -122,12 +122,30 @@ change `src/context/SessionContext.tsx` to call it with `callMethod`.
   cookie opens private files). Every role that can see patients must be able to read these File records.
 - `POST /api/method/frappe.core.doctype.user.user.update_password` with `old_password`, `new_password`.
 - `POST /api/method/login`, `GET /api/method/logout`.
+- `GET /api/method/frappe.auth.get_logged_user`: right after login (to check the session cookie was kept),
+  and whenever a call is refused with 401 or 403, to tell an **expired session** (answer `Guest`, or 403) from
+  a real "no permission". Keep this standard method available to every logged-in user. Frappe answers an
+  expired session with 403 PermissionError; if you ever change that to 401, the front end handles it the same.
+- Every request gives up after 15 seconds (uploads after 120, full-table reads with `limit_page_length=0` after
+  60). A read with no answer at all, or a 502/503/504 or plain-text 500 from the proxy when Frappe is down, is
+  sent again up to twice; saves are never sent twice by the front end.
+- Two-factor login is not supported yet: a login answer with `verification` / `tmp_id` shows a message
+  instead. Keep it off for clinic users, or tell us to add the OTP step.
+- A user whose password must be changed first (`message: "Password Reset"`) is told to ask an administrator;
+  the app has no "set a new password" page.
+- The Next.js rewrite waits up to 130 seconds for Frappe (`experimental.proxyTimeout` in `next.config.ts`). If
+  another proxy (Nginx) sits in front of Frappe, give it at least the same time for `/api/method/upload_file`.
 
 ## 5. Login and CSRF
 
 `src/lib/frappe.ts` reads a CSRF token from an `x-frappe-csrf-token` header on the login response and sends
-it on every later request. **Frappe does not send that header by default**, so POST, PUT and DELETE will
-fail with a CSRF error after login. Pick one:
+it on every later request. **Frappe does not send that header by default.**
+
+It may not be needed: the owner's other front end (a Vue app on Frappe) never sends a CSRF token and its saves
+work. Frappe only checks `X-Frappe-CSRF-Token` when the session already holds a CSRF token, and a session made
+by `/api/method/login` normally gets one only when the Frappe desk (`/app`) is opened in that same session.
+(That is how Frappe v14/v15 behave; confirm it on v16.) So first try without. If POST, PUT or DELETE fail with
+"Invalid Request" (`CSRFTokenError`), pick one:
 
 - For local development only: `bench --site dent_clinic.localhost set-config ignore_csrf 1`.
 - For real use: add a whitelisted method that returns `frappe.sessions.get_csrf_token()`, call it right after
@@ -135,7 +153,8 @@ fail with a CSRF error after login. Pick one:
 
 ## 6. Error messages
 
-The front end shows the back end's message to the user as it is (from `_server_messages` or `exception`).
+The front end shows the back end's message to the user as it is (from `_server_messages` or `exception`),
+only turning raw database errors (`Duplicate entry '…'`, `Data too long for column '…'`) into plain sentences.
 Write `frappe.throw` messages as short, plain sentences, for example: "Paid amount cannot be more than the
 total cost." The dummy data already uses messages like these.
 

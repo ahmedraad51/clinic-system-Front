@@ -191,6 +191,14 @@ Each finished item says what changed, when, and which commit holds it.
   link. Searching a patient by phone finds them however the number was typed (0770…, +964…, 00964… or
   Arabic digits), and the "Already registered?" check does the same. Settings has a new Phone Country Code
   (964 for Iraq). Commit 1e11fab.
+- 2026-09-26 - **Safer connection to the real server** (from the pet store study, item 2). This only
+  matters once the app talks to the real Frappe server. When a login expires, the app now asks for the
+  password again in a small window over the page, so nothing typed is lost, instead of saying "You do not
+  have permission" on every screen. Login checks that the browser really kept the session. The login page
+  has "Keep me logged in on this computer": switch it off on shared computers, and closing the browser logs
+  you out. No request waits forever (15 seconds), errors are explained in plain words, and a list that got
+  no answer is asked for again. **Please restart your `npm run dev`**: `next.config.ts` changed (the link to
+  the server now waits up to 2 minutes instead of 30 seconds). Commit PENDING.
 
 ## Questions for the owner
 

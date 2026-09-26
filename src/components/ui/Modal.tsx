@@ -14,18 +14,25 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), selec
  * with autoFocus, or else the first button or field of the body, so Cancel in a confirmation), keeps Tab
  * inside it, closes on Escape, and returns the focus to where it was. The page behind does not scroll.
  */
+/** Open dialogs, newest last. Only the newest one reacts to Escape and Tab. */
+const openDialogs: number[] = [];
+let lastDialogId = 0;
+
 export function Modal({
   open,
   title,
   onClose,
   children,
   wide = false,
+  priority = false,
 }: {
   open: boolean;
   title: string;
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
+  /** Above every other dialog (the "Log in again" dialog), still under toasts. */
+  priority?: boolean;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -37,6 +44,8 @@ export function Modal({
 
   useEffect(() => {
     if (!open) return;
+    const id = ++lastDialogId;
+    openDialogs.push(id);
     const before = document.activeElement as HTMLElement | null;
     const dialog = dialogRef.current;
     if (dialog && !dialog.contains(document.activeElement)) {
@@ -47,6 +56,8 @@ export function Modal({
     document.body.style.overflow = "hidden";
 
     const onKey = (event: KeyboardEvent) => {
+      // A dialog opened on top of this one handles the keys.
+      if (openDialogs[openDialogs.length - 1] !== id) return;
       if (event.key === "Escape") {
         closeRef.current();
         return;
@@ -66,6 +77,7 @@ export function Modal({
     };
     window.addEventListener("keydown", onKey);
     return () => {
+      openDialogs.splice(openDialogs.indexOf(id), 1);
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = scroll;
       if (before && document.contains(before)) before.focus();
@@ -75,7 +87,7 @@ export function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 print:hidden">
+    <div className={cx("fixed inset-0 flex items-end sm:items-center justify-center sm:p-4 print:hidden", priority ? "z-[55]" : "z-50")}>
       <div className="absolute inset-0 bg-black/30" onClick={onClose} aria-hidden="true" />
       <div
         ref={dialogRef}

@@ -358,9 +358,14 @@ the code stays intact. With `AUTH_DISABLED = true` the app uses a stand-in `Admi
 nowhere to log out to. The guard waits for the saved session to load, so refreshing a page keeps you
 logged in.
 
-Logging in posts to `/api/method/login`, stores the returned `x-frappe-csrf-token` in `localStorage`,
-and relies on the Frappe session cookie for everything after that. Frappe does not send that header by default;
-see section 5 of [`docs/backend-todo.md`](docs/backend-todo.md) for the fix.
+Logging in posts to `/api/method/login` and relies on the Frappe session cookie for everything after that. It
+then asks Frappe who is logged in, so a cookie the browser did not keep shows up at once. Switch off "Keep me
+logged in on this computer" on shared computers: closing the browser then logs you out. When the session
+expires, a "Log in again" dialog opens over the page, so nothing typed is lost; logging out from there goes
+to the login page and afterwards back to the page you were on. Every request gives up after 15 seconds (file
+uploads after 2 minutes, full lists for totals after 1 minute) with a clear message, and a list that got no
+answer, or found the server down, is asked for again. See section 5 of
+[`docs/backend-todo.md`](docs/backend-todo.md) about the CSRF token.
 
 ---
 

@@ -52,7 +52,7 @@ const allPerms = (value: boolean): Perms =>
   Object.fromEntries(PERMISSION_KEYS.map((key) => [key, value])) as Perms;
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, loginCount } = useAuth();
   const [state, setState] = useState<SessionState | null>(null);
   const [version, setVersion] = useState(0);
 
@@ -97,7 +97,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [user, version]);
+    // loginCount: logging in again (after the session ended) loads the roles and permissions again.
+  }, [user, version, loginCount]);
 
   const refresh = useCallback(() => setVersion((v) => v + 1), []);
 

@@ -1,36 +1,50 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import ToothLogo from "@/components/ToothLogo";
-import { Alert, Button, Field, TextInput } from "@/components/ui";
+import { Alert, Button, Field, PageLoading, TextInput, Toggle } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
-import { errorMessage } from "@/lib/frappe";
+import { errorMessage, SESSION_ENDED_MESSAGE } from "@/lib/frappe";
+import { safeNextPath } from "@/lib/links";
 
 /**
  * Parked in a private folder (_login) while login is switched off, so /login is not a route.
  * To turn it on, see "Switching to the real back end" in AGENTS.md.
  */
 export default function LoginPage() {
-  const { login, user, isLoading } = useAuth();
+  return (
+    <Suspense fallback={<PageLoading />}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
+  const { login, user, isLoading, sessionEnded } = useAuth();
   const router = useRouter();
+  const params = useSearchParams();
+  // The page to return to (MainLayout adds ?next=), checked so it cannot lead off the site.
+  const next = safeNextPath(params.get("next"));
+  const ended = sessionEnded || params.get("ended") === "1";
   const [usr, setUsr] = useState("");
   const [pwd, setPwd] = useState("");
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Someone who is already logged in goes straight to the app.
+  // Someone who is already logged in goes straight on.
   useEffect(() => {
-    if (!isLoading && user) router.replace("/dashboard");
-  }, [isLoading, user, router]);
+    if (!isLoading && user) router.replace(next);
+  }, [isLoading, user, router, next]);
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
     setError("");
     try {
-      await login(usr.trim(), pwd);
-      router.push("/dashboard");
+      await login(usr.trim(), pwd, remember);
+      router.replace(next);
     } catch (err) {
       setError(errorMessage(err, "Invalid username or password."));
       setLoading(false);
@@ -47,6 +61,12 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-gray-800 mt-4">DentClinic</h1>
           <p className="text-gray-500 text-sm mt-1">Log in to the clinic management system</p>
         </div>
+
+        {ended && !error && (
+          <div className="mb-4">
+            <Alert tone="yellow">{SESSION_ENDED_MESSAGE}</Alert>
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <Field label="Email or Username">
@@ -68,6 +88,12 @@ export default function LoginPage() {
               required
             />
           </Field>
+          <Toggle
+            checked={remember}
+            onChange={setRemember}
+            label="Keep me logged in on this computer"
+            description="Turn it off on a shared computer, so closing the browser logs you out."
+          />
 
           {error && <Alert tone="red">{error}</Alert>}
 

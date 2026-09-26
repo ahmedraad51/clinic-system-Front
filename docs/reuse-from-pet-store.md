@@ -112,6 +112,13 @@ Paths are inside `D:\Projects\alkhokh_pet_store_front`.
 - **Back end:** none needed. Optional: a `phone_country_code` field on Clinic Settings.
 
 ### 2. A safer connection to the real Frappe server
+- **Brought in** (2026-09-26): `src/lib/frappe.ts` (`getLoggedUser`, `onSessionEnded`, `onSessionRestored`,
+  `SessionEndedError`, `withReadRetry`, `isServerDown`, timeouts, plainer errors), `AuthContext` ("Keep me
+  logged in on this computer", `sessionEnded`, `loginCount`), `SessionEndedNotice`, `MainLayout` and
+  `src/app/_login/page.tsx` (`?next=` and `&ended=1`), `e2e/tests/connection.spec.ts`. Built differently on
+  purpose: an ended login keeps the page and asks for the password in a dialog (the pet store logs out and
+  leaves the page), and `MandatoryError` is not rewritten because Frappe's own message is already readable.
+  The text below is the original plan.
 - **What:** all inside `src/lib/frappe.ts`, `AuthContext` and the login page:
   - Detect an ended session (403, then `frappe.auth.get_logged_user` says Guest). Show one message, log out
     once, go to the login page, and return to the page afterwards.

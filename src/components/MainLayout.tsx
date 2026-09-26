@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { PageLoading } from "@/components/ui";
+import { loginHref } from "@/lib/links";
+import SessionEndedNotice from "./SessionEndedNotice";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 
@@ -14,15 +16,16 @@ import Topbar from "./Topbar";
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, sessionEnded } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isLoginPage = pathname === "/login";
   const mustLogin = !isLoading && !user && !isLoginPage;
 
   useEffect(() => {
-    if (mustLogin) router.replace("/login");
-  }, [mustLogin, router]);
+    // Remember the page, so logging in comes back to it.
+    if (mustLogin) router.replace(loginHref(window.location.pathname + window.location.search, sessionEnded));
+  }, [mustLogin, sessionEnded, router]);
 
   if (isLoginPage) return <>{children}</>;
   if (isLoading || !user) return <PageLoading />;
@@ -39,7 +42,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} />
       <div className="lg:ps-64 flex flex-col min-h-screen print:ps-0">
         <Topbar onOpenMenu={() => setMenuOpen(true)} />
-        <main id="main" tabIndex={-1} className="flex-1 pt-16 print:pt-0 focus:outline-none">{children}</main>
+        <main id="main" tabIndex={-1} className="flex-1 pt-16 print:pt-0 focus:outline-none">
+          {/* The login ended while this page was open: ask for the password again without leaving it. */}
+          {sessionEnded && <SessionEndedNotice />}
+          {children}
+        </main>
       </div>
     </div>
   );

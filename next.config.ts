@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
+  // The /frappe rewrite gives up after 30 seconds by default. The app itself waits up to 2 minutes for an
+  // upload (src/lib/frappe.ts), so the rewrite must wait a little longer.
+  experimental: {
+    proxyTimeout: 130_000,
+  },
   async rewrites() {
     return [
       {

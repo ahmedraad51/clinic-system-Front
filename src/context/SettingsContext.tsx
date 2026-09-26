@@ -36,7 +36,7 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | null>(null);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, loginCount } = useAuth();
   const [settings, setSettings] = useState<ClinicSettings>(DEFAULTS);
   const [version, setVersion] = useState(0);
 
@@ -57,7 +57,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [user, version]);
+    // loginCount: logging in again (after the session ended) loads the settings again.
+  }, [user, version, loginCount]);
 
   const refresh = useCallback(() => setVersion((v) => v + 1), []);
   const currency = settings.currency || "USD";

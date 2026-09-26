@@ -29,7 +29,7 @@ accurate.
 | `npm run dev` | Works. Dev output goes to `.next/dev`, so `npm run build` can run while it is up. Changing `next.config.ts` restarts it, and the first page after that can take several minutes to compile. | |
 | `npm run build` | **Passes** (checked 2026-09-26): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-26). `npx tsc --noEmit` passes too. | |
-| Tests | **Playwright tests pass** (63 tests, checked 2026-09-26): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (71 tests, checked 2026-09-26): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -139,6 +139,7 @@ src/
 │   ├── Guard.tsx             RequirePermission
 │   ├── DentalChart.tsx       the odontogram (adult and child teeth, surfaces, conditions), saved to Patient.dental_chart
 │   ├── UnsavedChangesGuard.tsx  asks before leaving a form with unsaved changes
+│   ├── SessionEndedNotice.tsx  "Log in again" dialog (and banner) when the server ended the login; the page stays
 │   ├── SendWhatsAppDialog.tsx a WhatsApp message by hand from a template (opens wa.me)
 │   ├── FinishVisitDialog.tsx "What was done in this visit?" after an appointment is marked Completed
 │   ├── PatientFiles.tsx      X-rays and photos attached to a patient
@@ -249,8 +250,11 @@ clickable through `ClickableRow`, and the first cell always holds a real link fo
 | `uploadFile(file)` | multipart `POST /frappe/api/method/upload_file`, returns `file_url` | a data URL |
 | `attachFile(file, doctype, name)` | the same with `doctype`, `docname`, `is_private=1`: a private File attached to the doc; returns the File record | a `File` doc holding a data URL |
 | `fileHref(url)` | turns a Frappe file path (`/files/…`, `/private/files/…`) into `/frappe/…` so it goes through the rewrite; use it for every `<img src>` or link to an uploaded file | data URLs unchanged |
-| `login(usr, pwd)` / `logout()` / `initAuth()` | as before: login saves the `x-frappe-csrf-token` response header to `localStorage.csrf_token` | not mocked |
-| `errorMessage(err, fallback)` | turns a failed call into a readable sentence (Frappe `_server_messages`, `exception`, 403, no connection) | uses the mock's `Error` text |
+| `login(usr, pwd)` / `logout()` / `initAuth()` | login posts to `/api/method/login` (saving an `x-frappe-csrf-token` response header to `localStorage.csrf_token` if there is one), then asks `getLoggedUser()` and **returns Frappe's user ID**. If Frappe still sees a guest (the check is refused or answers Guest: the browser did not keep the cookie) it throws `LOGIN_NOT_KEPT_MESSAGE`; any other failure of the check (timeout, server down) is thrown as it is; a two-factor answer (`verification` / `tmp_id`) throws `TWO_FACTOR_MESSAGE`, and an expired password (`message: "Password Reset"`) throws `PASSWORD_RESET_MESSAGE` | not mocked |
+| `getLoggedUser()` | `frappe.auth.get_logged_user`; the user ID, or `null` for Guest | not mocked |
+| `onSessionEnded(listener)` / `onSessionRestored(listener)` / `SessionEndedError` | Frappe answers an expired login with **403 (user Guest), not 401**. On any 401/403 (except the login calls) the axios interceptor asks `getLoggedUser()` once for the whole burst; if it is Guest, every failed call rejects with `SessionEndedError` ("Your session has ended. Please log in again.") and the listeners run once. The first request that works again after that runs the `onSessionRestored` listeners once (for example after logging in in another tab). A real "no permission" stays a 403 | not reached |
+| `withReadRetry(read)` / `isRetriableReadError(err)` / `isServerDown(err)` | `getList`, `getCount` and `getDoc` are sent again up to twice (after 0.5 s and 1 s) when **no answer** came back, or the Frappe server was down (the rewrite then answers 502/503/504, or 500 with a plain page instead of Frappe's JSON). Refusals, timeouts and ended logins are never retried, and saves are never retried | not reached |
+| `errorMessage(err, fallback)` | turns a failed call into a readable sentence: Frappe `_server_messages` or `exception` without HTML; `Duplicate entry '…'` and `Data too long for column '…'` as plain sentences; 403; a **timeout** (every request has `REQUEST_TIMEOUT_MS` = 15 s, uploads 120 s, `getList` with `limit: 0` 60 s: a read says "try again", a save says it may still have been saved); the server down; no connection | uses the mock's `Error` text |
 | `isNotFound(err)` | true for HTTP 404 or the mock's "… not found" | |
 
 Doctype and doc names are URL-encoded. The axios instance sets `withCredentials: true`.
@@ -300,6 +304,9 @@ Rules for data code:
 
 `next.config.ts` rewrites `/frappe/:path*` to `FRAPPE_URL`. The old hand-written proxy
 `src/app/api/frappe/[...path]/route.ts` is deleted. See `docs/backend-todo.md` for the CSRF question.
+The rewrite's own time limit is `experimental.proxyTimeout` = 130 s (Next's default is 30 s), a little longer
+than the app's longest wait (uploads, 120 s), so the app's timeout message is the one people see. Keep it above
+the timeouts in `src/lib/frappe.ts`.
 
 ---
 
@@ -398,18 +405,37 @@ dashboard and report totals.
 
 ## Auth: `src/context/AuthContext.tsx`
 
-`useAuth()` returns `{ user, isLoading, authDisabled, login, logout, switchUser? }`. `user` is the Frappe
-username or `null`.
+`useAuth()` returns `{ user, isLoading, authDisabled, sessionEnded, login, relogin, logout, switchUser? }`.
+`user` is the Frappe user ID or `null`.
 
-- The saved username lives in `localStorage.dental_user` and is read through `useSyncExternalStore`, so the
-  server render and the first client render agree. `isLoading` stays true until the browser has been read.
+- The saved user ID lives in `localStorage.dental_user` and is read through `useSyncExternalStore`, so the
+  server render and the first client render agree, and every tab stays in step. `isLoading` stays true until
+  the browser has been read.
+- **"Keep me logged in on this computer" off** (the login page's switch, for shared front-desk computers)
+  also saves `localStorage.dental_session_only = 1` and a cookie `dental_open=1` with no expiry date, which the
+  browser deletes when it closes. When the app starts and that cookie is gone, the saved user counts as logged
+  out, and `AuthProvider` calls Frappe's logout to end the old server session (it stays valid on the server
+  until then, or until it expires). A browser that restores its last session keeps the cookie.
 - **With `AUTH_DISABLED = true` (as now):** `user` starts as `"Administrator"`, `isLoading` is `false`,
   `logout()` does nothing, logout buttons are hidden, and `switchUser(name)` lets `/profile` act as another
   user (memory only).
-- **With `AUTH_DISABLED = false`:** `user` comes from `localStorage`. `login()` calls Frappe, saves the
-  username and tells every listener. `logout()` calls Frappe and clears it.
+- **With `AUTH_DISABLED = false`:** `user` comes from `localStorage`. `login(usr, pwd, remember)` calls
+  Frappe, saves the user ID Frappe returns and tells every listener. `logout()` calls Frappe and clears it.
+- **Session ended:** when `onSessionEnded` fires, `sessionEnded` becomes true but the user is kept, so the
+  open page and a half-filled form stay. `MainLayout` shows `SessionEndedNotice`: a "Log in again" dialog
+  (password only, focused; `Modal` with `priority`, so it sits above any page dialog) that calls
+  `relogin(pwd)`; closing it leaves a yellow banner to open it again; its Log out button ends the login and
+  goes to the login page. `sessionEnded` clears on a login here, on a login in another tab (the
+  `dental_login_at` storage key) and when requests work again (`onSessionRestored`).
+- **`loginCount`** goes up on every login, here or in another tab. `SessionProvider` and `SettingsProvider`
+  list it in their effect dependencies, so logging in again loads the roles, permissions and settings again
+  (they may have failed while the session was over).
 - **Guard:** `MainLayout` redirects to `/login` only when `isLoading` is false and there is no user, so a page
-  refresh with a saved session never bounces to `/login`. This was tested with login turned on.
+  refresh with a saved session never bounces to `/login`. The address is `loginHref(page, sessionEnded)`
+  (`src/lib/links.ts`): `/login?next=<the page>&ended=1`. The login page shows "Your session has ended" for
+  `ended=1`, and afterwards goes to `safeNextPath(next)`. That reads the path the way the browser will (so
+  `//other.site`, a backslash, or a tab or line break inside cannot lead off the site) and falls back to
+  `/dashboard`.
 
 `useSession()` (`src/context/SessionContext.tsx`) loads the user's `User` doc and `Clinic Permission` doc and
 returns `{ profile, roles, displayName, roleLabel, isSuperUser, doctor, can(flag), loading, refresh }`.
@@ -535,7 +561,8 @@ whatsapp, trigger, user) and `statusTone(kind, status)` for other views that mus
 `SelectInput`, `TextArea`, `Toggle`,
 `SearchInput`, `Toolbar`, `Table`, `Th`, `Td` (with `label` for the phone cards), `ClickableRow`, `TableLoading`, `TableMessage`, `Pagination`, `DetailList` and
 `DetailRow`, `Tabs`, `Alert`, `Spinner`, `PageLoading`, `EmptyState`, `NoAccess`, `NotFoundCard`; plus
-`Modal` (moves focus in, traps Tab, restores focus on close, Escape closes, locks page scroll) and `ConfirmDialog` (focus starts on Cancel) in `Modal.tsx`, and `LinkSelect` for searchable Link fields. Use these instead of
+`Modal` (moves focus in, traps Tab, restores focus on close, Escape closes, locks page scroll; with two open, only
+the newest reacts to Escape and Tab; `priority` puts it above other dialogs) and `ConfirmDialog` (focus starts on Cancel) in `Modal.tsx`, and `LinkSelect` for searchable Link fields. Use these instead of
 writing new class lists.
 
 ### Styling

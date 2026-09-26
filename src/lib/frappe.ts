@@ -37,9 +37,15 @@ export interface ListOptions {
 
 type DocData = Record<string, DocValue>;
 
+/** How long a request may take before it counts as failed. Uploads and whole-table reads get longer. */
+export const REQUEST_TIMEOUT_MS = 15_000;
+const UPLOAD_TIMEOUT_MS = 120_000;
+const FULL_LIST_TIMEOUT_MS = 60_000;
+
 const api = axios.create({
   baseURL: "",
   withCredentials: true,
+  timeout: REQUEST_TIMEOUT_MS,
   headers: {
     "Content-Type": "application/json",
     "Expect": "",
@@ -49,6 +55,129 @@ const api = axios.create({
 const resource = (doctype: string, name?: string) =>
   `/frappe/api/resource/${encodeURIComponent(doctype)}` + (name ? `/${encodeURIComponent(name)}` : "");
 
+/* ------------------------------------------------------------------------------------------------------
+   An ended login. Frappe answers a request from an expired session with 403 (as user "Guest"), the same
+   code as a real "no permission". So on a 401 or 403 we ask Frappe who is logged in, once for a whole
+   burst of failed requests, and only call it "session ended" when the answer is Guest.
+   ------------------------------------------------------------------------------------------------------ */
+
+export const SESSION_ENDED_MESSAGE = "Your session has ended. Please log in again.";
+
+/** Thrown instead of the 401/403 when the login has ended. errorMessage() shows its sentence. */
+export class SessionEndedError extends Error {
+  constructor() {
+    super(SESSION_ENDED_MESSAGE);
+    this.name = "SessionEndedError";
+  }
+}
+
+const LOGGED_USER_METHOD = "/frappe/api/method/frappe.auth.get_logged_user";
+const AUTH_CALLS = ["/api/method/login", "/api/method/logout", "frappe.auth.get_logged_user"];
+const sessionListeners = new Set<() => void>();
+const restoredListeners = new Set<() => void>();
+let sessionEndReported = false;
+let sessionProbe: Promise<boolean> | null = null;
+
+/** Runs `listener` once each time the login ends (AuthContext uses it to ask for the password again). */
+export function onSessionEnded(listener: () => void): () => void {
+  sessionListeners.add(listener);
+  return () => {
+    sessionListeners.delete(listener);
+  };
+}
+
+/** Runs `listener` when requests work again after an ended login (for example after logging in in another tab). */
+export function onSessionRestored(listener: () => void): () => void {
+  restoredListeners.add(listener);
+  return () => {
+    restoredListeners.delete(listener);
+  };
+}
+
+/** The user Frappe says is logged in, or null for Guest. */
+export async function getLoggedUser(): Promise<string | null> {
+  const res = await api.get(LOGGED_USER_METHOD);
+  const user = res.data?.message;
+  return typeof user === "string" && user && user !== "Guest" ? user : null;
+}
+
+/** True when Frappe no longer knows us. Parallel callers share one question. */
+function sessionIsGone(): Promise<boolean> {
+  if (!sessionProbe) {
+    sessionProbe = getLoggedUser()
+      .then((user) => !user)
+      .catch((err) => {
+        // Being refused the question itself means nobody is logged in.
+        const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+        return status === 401 || status === 403;
+      })
+      .finally(() => {
+        sessionProbe = null;
+      });
+  }
+  return sessionProbe;
+}
+
+api.interceptors.response.use(
+  (response) => {
+    // Any answer means the session works (again), so a later end is reported afresh.
+    if (sessionEndReported) {
+      sessionEndReported = false;
+      restoredListeners.forEach((listener) => listener());
+    }
+    return response;
+  },
+  async (error: unknown) => {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      const url = error.config?.url ?? "";
+      if ((status === 401 || status === 403) && !AUTH_CALLS.some((call) => url.includes(call)) && (await sessionIsGone())) {
+        if (!sessionEndReported) {
+          sessionEndReported = true;
+          sessionListeners.forEach((listener) => listener());
+        }
+        throw new SessionEndedError();
+      }
+    }
+    throw error;
+  },
+);
+
+/**
+ * True when the Frappe server itself did not answer: the Next.js rewrite then replies 502/503/504, or 500
+ * with a plain page instead of Frappe's JSON. (A real Frappe error is JSON with exc_type or exception.)
+ */
+export function isServerDown(err: unknown): boolean {
+  if (!axios.isAxiosError(err) || !err.response) return false;
+  const { status, data } = err.response;
+  if (status === 502 || status === 503 || status === 504) return true;
+  const frappeError =
+    typeof data === "object" && data !== null && ("exc_type" in data || "exception" in data || "_server_messages" in data);
+  return status === 500 && !frappeError;
+}
+
+/**
+ * A failed read worth sending again: no answer came back (not a refusal, a timeout or an ended login), or
+ * the server was down.
+ */
+export function isRetriableReadError(err: unknown): boolean {
+  if (!axios.isAxiosError(err) || axios.isCancel(err)) return false;
+  if (err.response) return isServerDown(err);
+  return err.code !== "ECONNABORTED" && err.code !== "ETIMEDOUT";
+}
+
+/** Runs a read, and runs it again up to twice (after 0.5 s, then 1 s) when no answer came back. Never used for saves. */
+export async function withReadRetry<T>(read: () => Promise<T>, retries = 2, delayMs = 500): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await read();
+    } catch (err) {
+      if (attempt >= retries || !isRetriableReadError(err)) throw err;
+      await new Promise((resolve) => setTimeout(resolve, delayMs * 2 ** attempt));
+    }
+  }
+}
+
 export const initAuth = () => {
   const csrf = localStorage.getItem("csrf_token");
   if (csrf) {
@@ -56,14 +185,37 @@ export const initAuth = () => {
   }
 };
 
-export const login = async (usr: string, pwd: string) => {
+export const LOGIN_NOT_KEPT_MESSAGE =
+  "You were logged in, but the browser did not keep the login. Ask whoever set up the system to check that the app reaches the server through its own address (FRAPPE_URL).";
+export const TWO_FACTOR_MESSAGE = "This account uses two-step login, which the app does not support yet. Ask an administrator.";
+export const PASSWORD_RESET_MESSAGE = "Your password has to be changed before you can log in. Ask an administrator to reset it.";
+
+/**
+ * Logs in and returns the user ID Frappe knows (an email, or "Administrator"), which may differ from what
+ * was typed. It then asks Frappe who is logged in, so a session cookie the browser did not keep is caught
+ * here instead of on the first save.
+ */
+export const login = async (usr: string, pwd: string): Promise<string> => {
   const res = await api.post("/frappe/api/method/login", { usr, pwd });
   const csrf = res.headers["x-frappe-csrf-token"];
   if (csrf) {
     api.defaults.headers.common["x-frappe-csrf-token"] = csrf;
     localStorage.setItem("csrf_token", csrf);
   }
-  return res.data;
+  // Two-factor login answers with a verification step instead of a session.
+  if (res.data?.verification || res.data?.tmp_id) throw new Error(TWO_FACTOR_MESSAGE);
+  // An expired password answers with a link to the password page instead of a session.
+  if (res.data?.message === "Password Reset" || String(res.data?.redirect_to ?? "").includes("update-password"))
+    throw new Error(PASSWORD_RESET_MESSAGE);
+  const user = await getLoggedUser().catch((err: unknown) => {
+    // Refused means Frappe sees a guest; any other failure (timeout, server down) is explained as it is.
+    const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+    if (status === 401 || status === 403) return null;
+    throw err;
+  });
+  if (!user) throw new Error(LOGIN_NOT_KEPT_MESSAGE);
+  sessionEndReported = false;
+  return user;
 };
 
 export const logout = async () => {
@@ -83,16 +235,20 @@ export async function getList<T extends BaseDoc = Doc>(
     return rows as unknown as T[];
   }
   initAuth();
-  const res = await api.get(resource(doctype), {
-    params: {
-      fields: JSON.stringify(fields),
-      filters: filters ? JSON.stringify(filters) : undefined,
-      or_filters: orFilters?.length ? JSON.stringify(orFilters) : undefined,
-      order_by: orderBy,
-      limit_start: start,
-      limit_page_length: limit,
-    },
-  });
+  const res = await withReadRetry(() =>
+    api.get(resource(doctype), {
+      // Loading every row (limit 0, for totals) can take longer than a page of rows.
+      timeout: limit === 0 ? FULL_LIST_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
+      params: {
+        fields: JSON.stringify(fields),
+        filters: filters ? JSON.stringify(filters) : undefined,
+        or_filters: orFilters?.length ? JSON.stringify(orFilters) : undefined,
+        order_by: orderBy,
+        limit_start: start,
+        limit_page_length: limit,
+      },
+    }),
+  );
   return res.data.data;
 }
 
@@ -102,27 +258,31 @@ export async function getCount(doctype: string, filters?: Filters, orFilters?: F
   initAuth();
   if (orFilters?.length) {
     // frappe.client.get_count has no or_filters, so searches use the list view's count method.
-    const res = await api.get("/frappe/api/method/frappe.desk.reportview.get_count", {
-      params: {
-        doctype,
-        fields: JSON.stringify(["name"]),
-        filters: JSON.stringify(filters ?? []),
-        or_filters: JSON.stringify(orFilters),
-        distinct: 0,
-      },
-    });
+    const res = await withReadRetry(() =>
+      api.get("/frappe/api/method/frappe.desk.reportview.get_count", {
+        params: {
+          doctype,
+          fields: JSON.stringify(["name"]),
+          filters: JSON.stringify(filters ?? []),
+          or_filters: JSON.stringify(orFilters),
+          distinct: 0,
+        },
+      }),
+    );
     return Number(res.data.message) || 0;
   }
-  const res = await api.get("/frappe/api/method/frappe.client.get_count", {
-    params: { doctype, filters: JSON.stringify(filters ?? []) },
-  });
+  const res = await withReadRetry(() =>
+    api.get("/frappe/api/method/frappe.client.get_count", {
+      params: { doctype, filters: JSON.stringify(filters ?? []) },
+    }),
+  );
   return Number(res.data.message) || 0;
 }
 
 export async function getDoc<T extends BaseDoc = Doc>(doctype: string, name: string): Promise<T> {
   if (MOCK_DATA) return (await mockGetDoc(doctype, name)) as unknown as T;
   initAuth();
-  const res = await api.get(resource(doctype, name));
+  const res = await withReadRetry(() => api.get(resource(doctype, name)));
   return res.data.data;
 }
 
@@ -172,6 +332,7 @@ export async function uploadFile(file: File): Promise<string> {
   // The instance default is JSON; multipart lets the browser set the boundary.
   const res = await api.post("/frappe/api/method/upload_file", form, {
     headers: { "Content-Type": "multipart/form-data" },
+    timeout: UPLOAD_TIMEOUT_MS,
   });
   return res.data.message.file_url;
 }
@@ -202,6 +363,7 @@ export async function attachFile(file: File, doctype: string, name: string): Pro
   form.append("folder", "Home/Attachments");
   const res = await api.post("/frappe/api/method/upload_file", form, {
     headers: { "Content-Type": "multipart/form-data" },
+    timeout: UPLOAD_TIMEOUT_MS,
   });
   return res.data.message as FileDoc;
 }
@@ -224,6 +386,16 @@ export function isNotFound(err: unknown): boolean {
 
 const stripTags = (text: string) => text.replace(/<[^>]*>/g, "").trim();
 
+/** Frappe's words without HTML, with two raw database errors turned into plain sentences. */
+function plainMessage(text: string): string {
+  const clean = stripTags(text);
+  const duplicate = clean.match(/Duplicate entry '([^']*)'/i);
+  if (duplicate) return `${duplicate[1] ? `"${duplicate[1]}"` : "This value"} is already used by another record.`;
+  const tooLong = clean.match(/Data too long for column '([^']*)'/i);
+  if (tooLong) return `Too much text for ${tooLong[1].replace(/_/g, " ")}. Please shorten it.`;
+  return clean;
+}
+
 /** Turns a failed request into a sentence people can read, using Frappe's own message when there is one. */
 export function errorMessage(err: unknown, fallback = "Something went wrong. Please try again."): string {
   if (axios.isAxiosError(err)) {
@@ -234,18 +406,30 @@ export function errorMessage(err: unknown, fallback = "Something went wrong. Ple
       try {
         const messages: string[] = JSON.parse(data._server_messages);
         const first = JSON.parse(messages[0]) as { message?: string };
-        if (first.message) return stripTags(first.message);
+        if (first.message) return plainMessage(first.message);
       } catch {
         // Not the usual shape; fall through to the other checks.
       }
     }
     if (typeof data?.exception === "string") {
       const [, ...rest] = data.exception.split(":");
-      return stripTags(rest.join(":") || data.exception);
+      return plainMessage(rest.join(":") || data.exception);
     }
-    if (typeof data?.message === "string") return stripTags(data.message);
+    if (typeof data?.message === "string") return plainMessage(data.message);
     if (err.response?.status === 403) return "You do not have permission to do this.";
-    if (!err.response) return "Cannot reach the server. Check that the backend is running.";
+    if (isServerDown(err)) {
+      // A gateway timeout can come after the server has already saved.
+      return (err.config?.method ?? "get").toLowerCase() === "get"
+        ? "The clinic server is not answering. Please try again in a moment."
+        : "The clinic server did not answer. It may still have been saved, so check before trying again.";
+    }
+    if (err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") {
+      // A save that timed out may still have gone through on the server.
+      return (err.config?.method ?? "get").toLowerCase() === "get"
+        ? "The server took too long to answer. Please try again."
+        : "The server took too long to answer. It may still have been saved, so check before trying again.";
+    }
+    if (!err.response) return "Cannot reach the server. Check the internet connection and try again.";
   }
   if (err instanceof Error && err.message) return err.message;
   return fallback;
