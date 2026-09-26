@@ -12,7 +12,7 @@ import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { errorMessage, getList, updateDoc } from "@/lib/frappe";
-import { cx, formatLongDate, formatTime, fromMinutes, toMinutes, todayISO } from "@/lib/format";
+import { cx, formatDate, formatLongDate, formatTime, fromMinutes, toMinutes, todayISO } from "@/lib/format";
 import { appointmentHref, patientHref } from "@/lib/links";
 import { MEDICAL_FIELDS, medicalFlags } from "@/lib/medical";
 import type { Appointment, AppointmentStatus, Patient } from "@/lib/types";
@@ -32,6 +32,8 @@ interface Board {
   date: string;
   appointments: Appointment[];
   patients: Record<string, Patient>;
+  /** Past appointments never marked Completed, No Show or Cancelled. */
+  earlier: Appointment[];
 }
 
 /**
@@ -68,6 +70,15 @@ function TodayBoard() {
           ],
           { filters: [["appointment_date", "=", today]], orderBy: "appointment_time asc", limit: 0 },
         );
+        const earlier = await getList<Appointment>(
+          "Appointment",
+          ["name", "patient", "patient_name", "doctor", "doctor_name", "appointment_date", "appointment_time", "status", "reason_for_visit"],
+          {
+            filters: [["appointment_date", "<", today], ["status", "in", ["Scheduled", "Confirmed"]]],
+            orderBy: "appointment_date desc, appointment_time desc",
+            limit: 50,
+          },
+        );
         const ids = [...new Set(appointments.map((a) => a.patient))];
         const rows = ids.length
           ? await getList<Patient>("Patient", ["name", "phone_number", "total_remaining", ...MEDICAL_FIELDS], {
@@ -76,7 +87,7 @@ function TodayBoard() {
             })
           : [];
         if (!cancelled) {
-          setBoard({ date: today, appointments, patients: Object.fromEntries(rows.map((p) => [p.name, p])) });
+          setBoard({ date: today, appointments, earlier, patients: Object.fromEntries(rows.map((p) => [p.name, p])) });
           setError("");
         }
       } catch (err) {
@@ -104,10 +115,13 @@ function TodayBoard() {
         prev && {
           ...prev,
           appointments: prev.appointments.map((a) => (a.name === appointment.name ? { ...a, status } : a)),
+          earlier: prev.earlier.map((a) => (a.name === appointment.name ? { ...a, status } : a)),
         },
       );
       toast.success(`${appointment.patient_name || appointment.patient}: ${status}.`);
-      if (status === "Completed" && can("edit_treatments")) setFinishing({ ...appointment, appointment_date: today });
+      if (status === "Completed" && can("edit_treatments")) {
+        setFinishing({ ...appointment, appointment_date: appointment.appointment_date || today });
+      }
     } catch (err) {
       toast.error(errorMessage(err, "Could not change the status."));
     } finally {
@@ -139,6 +153,10 @@ function TodayBoard() {
   });
 
   const canEdit = can("edit_appointments");
+  // Resolved ones drop off the list straight away.
+  const earlierOpen = (board?.earlier ?? []).filter(
+    (a) => (a.status === "Scheduled" || a.status === "Confirmed") && (!mine || a.doctor === mine),
+  );
   // A walk-in: book now, rounded up to the next quarter hour.
   const walkInTime = fromMinutes(Math.min(23 * 60 + 45, Math.ceil(nowMinutes / 15) * 15));
 
@@ -317,6 +335,51 @@ function TodayBoard() {
           ))}
         </div>
       )}
+      {earlierOpen.length > 0 && (
+        <Card
+          title={`Earlier, still open (${earlierOpen.length})`}
+          flush
+          actions={<span className="text-xs text-gray-500">Mark what happened, so the records stay right</span>}
+        >
+          <ul className="divide-y divide-gray-100">
+            {earlierOpen.map((a) => (
+              <li key={a.name} className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <div className="min-w-0 flex-1">
+                  <Link href={appointmentHref(a.name)} className="font-medium text-gray-800 hover:text-primary-600">
+                    {a.patient_name || a.patient}
+                  </Link>
+                  <p className="text-sm text-gray-500">
+                    {formatDate(a.appointment_date)}, {formatTime(a.appointment_time)}
+                    {a.doctor_name ? ` · ${a.doctor_name}` : ""}
+                    {a.reason_for_visit ? ` · ${a.reason_for_visit}` : ""}
+                  </p>
+                </div>
+                {canEdit && (
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="secondary" icon={CheckCheck} disabled={saving === a.name} onClick={() => setStatus(a, "Completed")}>
+                      Completed
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      icon={UserX}
+                      disabled={saving === a.name}
+                      onClick={() => setStatus(a, "No Show")}
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      No show
+                    </Button>
+                    <Button size="sm" variant="ghost" disabled={saving === a.name} onClick={() => setStatus(a, "Cancelled")}>
+                      Cancelled
+                    </Button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
       {finishing && <FinishVisitDialog appointment={finishing} onClose={() => setFinishing(null)} />}
     </PageContainer>
   );

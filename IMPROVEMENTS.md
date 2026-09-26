@@ -5,19 +5,16 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Past appointments still waiting for an outcome: show them on the Today board ("Earlier, still open") so
-  the front desk marks them Completed or No Show. Seen in the review: 8 Sep and 14 Sep appointments are
-  still "Scheduled".
+- Send a WhatsApp message by hand from an appointment (and the Today board): pick a template, the
+  patient's name, date, time, doctor and clinic are filled in, and WhatsApp opens with the text ready.
 
 ## Backlog
 
-1. Send a WhatsApp message by hand from an appointment (and the Today board): pick a template, the
-   patient's name, date, time, doctor and clinic are filled in, and WhatsApp opens with the text ready.
-2. Faster payments: after picking a patient, choose their treatment plan by itself when only one has a
+1. Faster payments: after picking a patient, choose their treatment plan by itself when only one has a
    balance, and offer "Pay the full balance" in one tap.
-3. Detail pages: show Delete as an icon button, like the patient page, so the header buttons fit on one
+2. Detail pages: show Delete as an icon button, like the patient page, so the header buttons fit on one
    line on a tablet (seen on the appointment page).
-4. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+3. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -136,7 +133,10 @@ Each finished item says what changed, when, and which commit holds it.
   tablet without cutting off the balance. Commit 3ba0c5e.
 - 2026-09-26 - **New README pictures.** The pictures in the README now show the new design, including the
   Today board, the calendar, the patient page and the dental chart. They can be retaken any time with one
-  command (npm run screenshots:readme). Commit PENDING.
+  command (npm run screenshots:readme). Commit c3d8842.
+- 2026-09-26 - **Close old appointments.** The Today board now lists past appointments that were never
+  marked (still "Scheduled" or "Confirmed") under "Earlier, still open", with one-tap Completed, No show
+  and Cancelled, so the records and reports stay right. Commit PENDING.
 
 ## Questions for the owner
 

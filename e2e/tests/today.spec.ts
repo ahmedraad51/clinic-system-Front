@@ -30,3 +30,14 @@ test("the front desk marks today's patients from the Today board", async ({ page
   await expect(page.getByRole("heading", { name: "New Payment" })).toBeVisible();
   await expect(page.getByText("Karim Fouad").first()).toBeVisible();
 });
+
+test("past appointments without an outcome are listed to be closed", async ({ page }) => {
+  await page.goto("/today");
+  const earlier = page.locator("section").filter({ has: page.getByRole("heading", { name: /Earlier, still open/ }) });
+  // In the dummy data five September appointments were never marked Completed or No Show.
+  await expect(earlier.getByRole("heading")).toHaveText("Earlier, still open (5)");
+  const tarek = earlier.getByRole("listitem").filter({ hasText: "Tarek Hassan" });
+  await tarek.getByRole("button", { name: "No show" }).click();
+  await expect(earlier.getByRole("heading")).toHaveText("Earlier, still open (4)");
+  await expect(earlier.getByText("Tarek Hassan")).toHaveCount(0);
+});
