@@ -5,11 +5,18 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+- "Needs attention" on the dashboard: one small card with counts and links for past appointments still
+  open, tomorrow's reminders to send, patients due for a check-up, and money owed, so the day starts with
+  a clear to-do list.
 
 ## Backlog
 
-
+1. Book the next session from a treatment plan: one button that opens the booking form with the patient,
+   the plan's doctor and the reason ("Crown · tooth 36") filled in.
+2. Lab work: on a crown, bridge or implant plan, record when the work was sent to the lab and when it is
+   due back; the Today board lists lab work due and late, so the patient is not booked before it arrives.
+3. Patient form: let the receptionist type an age when the date of birth is not known.
+4. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
