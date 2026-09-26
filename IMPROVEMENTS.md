@@ -5,10 +5,23 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
+- "My day" for dentists: when the person using the app is a doctor (their email matches a Doctor), Today,
+  the dashboard and the calendar open on their own patients, with a switch to see everyone. Seen in the
+  review: Dr. Sarah Mansour's dashboard lists every doctor's patients.
 
 ## Backlog
 
-1. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+1. Finish a visit: when an appointment is marked Completed, offer to write down what was done as a
+   treatment session on the patient's open plan (or start a new plan), so the dentist's notes are not
+   lost.
+2. Recall list: patients not seen for six months with nothing booked, with one tap to call, send a
+   WhatsApp or book, so check-ups are not forgotten.
+3. Phone: the day calendar shows one doctor at a time with buttons for the next and previous doctor (five
+   columns are too narrow on a phone).
+4. Dental chart on a phone or narrow screen: scroll the chart so the chosen tooth is in view (on the plan
+   page tooth 37 was off-screen).
+5. Patient list: show a small medical-alert marker and the next appointment in each row.
+6. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
