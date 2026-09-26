@@ -21,6 +21,7 @@ import { useToast } from "@/context/ToastContext";
 import { deleteDoc, errorMessage, getList, updateDoc, type FilterRow } from "@/lib/frappe";
 import { cx, display, formatDate, formatMonth, formatTime, todayISO } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
+import { whatsappNumber } from "@/lib/whatsapp";
 import { appointmentHref, patientHref, paymentHref, routeId, treatmentHref } from "@/lib/links";
 import type { Appointment, DentalChartData, Patient, Payment, TreatmentPlan, TreatmentSession } from "@/lib/types";
 
@@ -40,12 +41,6 @@ export default function PatientDetailPage() {
       <PatientDetail />
     </RequirePermission>
   );
-}
-
-/** Digits for a wa.me link: "+20 100 234 5678" → "201002345678". Empty when it does not look like a number. */
-function whatsappNumber(phone?: string): string {
-  const digits = (phone || "").replace(/\D/g, "");
-  return digits.length >= 8 ? digits : "";
 }
 
 const isBooked = (a: Appointment) => a.status === "Scheduled" || a.status === "Confirmed";

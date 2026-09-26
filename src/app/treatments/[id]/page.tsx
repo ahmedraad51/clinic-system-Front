@@ -152,9 +152,14 @@ function TreatmentDetail() {
               </LinkButton>
             )}
             {canEdit && (
-              <Button variant="ghost" icon={Trash2} onClick={() => setConfirmDelete(true)} className="text-red-600 hover:bg-red-50">
-                Delete
-              </Button>
+              <Button
+                variant="ghost"
+                icon={Trash2}
+                onClick={() => setConfirmDelete(true)}
+                aria-label="Delete treatment plan"
+                title="Delete treatment plan"
+                className="text-red-600 hover:bg-red-50 px-3"
+              />
             )}
           </>
         }

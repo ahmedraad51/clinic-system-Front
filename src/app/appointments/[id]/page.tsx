@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { MessageCircle, Pencil, Printer, Stethoscope, Trash2 } from "lucide-react";
 import FinishVisitDialog from "@/components/FinishVisitDialog";
+import SendWhatsAppDialog from "@/components/SendWhatsAppDialog";
+import { useSettings } from "@/context/SettingsContext";
 import RequirePermission from "@/components/Guard";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
@@ -38,6 +40,8 @@ function AppointmentDetail() {
   const [updating, setUpdating] = useState<AppointmentStatus | null>(null);
   // After "Completed": ask what was done.
   const [finishing, setFinishing] = useState(false);
+  const [messaging, setMessaging] = useState(false);
+  const { settings } = useSettings();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [logs, setLogs] = useState<{ id: string; rows: WhatsAppLog[] }>({ id: "", rows: [] });
@@ -70,6 +74,7 @@ function AppointmentDetail() {
 
   const canEdit = can("edit_appointments");
   const messages = logs.id === id ? logs.rows : [];
+  const canMessage = settings.enable_whatsapp !== 0 && Boolean(medical?.phone_number);
 
   const changeStatus = async (status: AppointmentStatus) => {
     setUpdating(status);
@@ -107,9 +112,6 @@ function AppointmentDetail() {
         back={{ href: "/appointments", label: "Appointments" }}
         actions={
           <>
-            <LinkButton href={`${appointmentHref(id)}/card`} variant="secondary" icon={Printer}>
-              Print Card
-            </LinkButton>
             {can("add_treatments") && (
               <LinkButton
                 href={`/treatments/new?patient=${encodeURIComponent(appointment.patient)}`}
@@ -125,9 +127,14 @@ function AppointmentDetail() {
               </LinkButton>
             )}
             {canEdit && (
-              <Button variant="ghost" icon={Trash2} onClick={() => setConfirmDelete(true)} className="text-red-600 hover:bg-red-50">
-                Delete
-              </Button>
+              <Button
+                variant="ghost"
+                icon={Trash2}
+                onClick={() => setConfirmDelete(true)}
+                aria-label="Delete appointment"
+                title="Delete appointment"
+                className="text-red-600 hover:bg-red-50 px-3"
+              />
             )}
           </>
         }
@@ -135,7 +142,14 @@ function AppointmentDetail() {
 
       <MedicalAlerts patient={medical} />
 
-      <Card title="Details">
+      <Card
+        title="Details"
+        actions={
+          <LinkButton href={`${appointmentHref(id)}/card`} variant="secondary" size="sm" icon={Printer}>
+            Print Card
+          </LinkButton>
+        }
+      >
         <DetailList>
           <DetailRow label="Patient">
             <Link href={patientHref(appointment.patient)} className="text-primary-600 hover:underline">
@@ -177,8 +191,18 @@ function AppointmentDetail() {
         </Card>
       )}
 
-      {messages.length > 0 && (
-        <Card title="WhatsApp Messages">
+      {(messages.length > 0 || canMessage) && (
+        <Card
+          title="WhatsApp Messages"
+          actions={
+            canMessage && (
+              <Button variant="secondary" size="sm" icon={MessageCircle} onClick={() => setMessaging(true)}>
+                Send Message
+              </Button>
+            )
+          }
+        >
+          {messages.length === 0 && <p className="text-sm text-gray-500">No messages for this appointment yet.</p>}
           <ul className="space-y-3">
             {messages.map((log) => (
               <li key={log.name} className="flex gap-3">
@@ -213,6 +237,9 @@ function AppointmentDetail() {
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
       />
+      {messaging && medical?.phone_number && (
+        <SendWhatsAppDialog appointment={appointment} phone={medical.phone_number} onClose={() => setMessaging(false)} />
+      )}
       {finishing && <FinishVisitDialog appointment={appointment} onClose={() => setFinishing(false)} />}
     </PageContainer>
   );

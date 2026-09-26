@@ -12,6 +12,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { errorMessage, getList } from "@/lib/frappe";
 import { formatDate, todayISO } from "@/lib/format";
 import { patientHref } from "@/lib/links";
+import { whatsappLink } from "@/lib/whatsapp";
 import type { Appointment, Patient } from "@/lib/types";
 
 /** How long since the last visit before a patient is due, in months. */
@@ -90,12 +91,11 @@ function Recall() {
       .sort((x, y) => (x.lastVisit || "9999").localeCompare(y.lastVisit || "9999"));
   }
 
-  const whatsapp = (p: Patient) => {
-    const digits = (p.phone_number || "").replace(/\D/g, "");
-    if (digits.length < 8) return "";
-    const text = `Hello ${p.full_name}, it is time for your dental check-up at ${clinicName}. Reply to this message and we will find a time that suits you.`;
-    return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
-  };
+  const whatsapp = (p: Patient) =>
+    whatsappLink(
+      p.phone_number,
+      `Hello ${p.full_name}, it is time for your dental check-up at ${clinicName}. Reply to this message and we will find a time that suits you.`,
+    );
 
   return (
     <PageContainer>

@@ -44,6 +44,7 @@ test("a payment cannot be more than what is left on the plan", async ({ page }) 
   await waitForData(page);
   // Bassel's filling costs 1,000 and 500 is paid.
   await page.getByRole("link", { name: "Add Payment" }).first().click();
+  await expect(page.getByRole("heading", { name: "New Payment" })).toBeVisible();
   await expect(page.getByLabel("Treatment Plan")).toHaveValue(/TRT-/);
   await page.getByLabel(/Amount/).fill("700");
   await page.getByRole("button", { name: "Save Payment" }).click();

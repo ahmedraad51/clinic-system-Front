@@ -5,16 +5,12 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Send a WhatsApp message by hand from an appointment (and the Today board): pick a template, the
-  patient's name, date, time, doctor and clinic are filled in, and WhatsApp opens with the text ready.
+- Faster payments: after picking a patient, choose their treatment plan by itself when only one has a
+  balance, and offer "Pay the full balance" in one tap.
 
 ## Backlog
 
-1. Faster payments: after picking a patient, choose their treatment plan by itself when only one has a
-   balance, and offer "Pay the full balance" in one tap.
-2. Detail pages: show Delete as an icon button, like the patient page, so the header buttons fit on one
-   line on a tablet (seen on the appointment page).
-3. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+1. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -136,7 +132,13 @@ Each finished item says what changed, when, and which commit holds it.
   command (npm run screenshots:readme). Commit c3d8842.
 - 2026-09-26 - **Close old appointments.** The Today board now lists past appointments that were never
   marked (still "Scheduled" or "Confirmed") under "Earlier, still open", with one-tap Completed, No show
-  and Cancelled, so the records and reports stay right. Commit PENDING.
+  and Cancelled, so the records and reports stay right. Commit c745f73.
+- 2026-09-26 - **WhatsApp by hand, and tidier buttons.** On an appointment, "Send Message" opens a short
+  form: pick a WhatsApp template, the patient's name, date, time, doctor and clinic are filled in, the
+  text can be changed, and WhatsApp opens with the message ready to send. The buttons at the top of the
+  appointment, treatment plan and payment pages were tidied: Delete is now a small red bin icon, and
+  "Print Card" and "Send Message" sit with the part of the page they belong to, so the top fits on one
+  line. Commit PENDING.
 
 ## Questions for the owner
 

@@ -71,9 +71,14 @@ function PaymentDetail() {
               </LinkButton>
             )}
             {canChange && (
-              <Button variant="ghost" icon={Trash2} onClick={() => setConfirmDelete(true)} className="text-red-600 hover:bg-red-50">
-                Delete
-              </Button>
+              <Button
+                variant="ghost"
+                icon={Trash2}
+                onClick={() => setConfirmDelete(true)}
+                aria-label="Delete payment"
+                title="Delete payment"
+                className="text-red-600 hover:bg-red-50 px-3"
+              />
             )}
           </>
         }

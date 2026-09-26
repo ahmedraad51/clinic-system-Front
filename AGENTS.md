@@ -139,6 +139,7 @@ src/
 │   ├── Guard.tsx             RequirePermission
 │   ├── DentalChart.tsx       the odontogram (adult and child teeth, surfaces, conditions), saved to Patient.dental_chart
 │   ├── UnsavedChangesGuard.tsx  asks before leaving a form with unsaved changes
+│   ├── SendWhatsAppDialog.tsx a WhatsApp message by hand from a template (opens wa.me)
 │   ├── FinishVisitDialog.tsx "What was done in this visit?" after an appointment is marked Completed
 │   ├── ClinicLetterhead.tsx  the clinic header on printouts (receipt, estimate)
 │   ├── ToothLogo.tsx         the app logo (inline SVG)
@@ -161,6 +162,7 @@ src/
     ├── format.ts             money, dates, times, week helpers, cx(), CSV download
     ├── dentalChart.ts        parseDentalChart (both shapes), cleanChart, tooth names, surface layout, labels
     ├── medical.ts            medicalFlags(): allergy, blood thinner, diabetes, heart, pregnancy from the medical text
+    ├── whatsapp.ts           PLACEHOLDERS, fillTemplate(), whatsappNumber(), whatsappLink() (wa.me links)
     ├── theme.ts              the clinic colour: presets, contrast fix, applyThemeColor, the boot script
     └── links.ts              URL builders for records (always use these)
 docs/
@@ -201,7 +203,7 @@ on the form, and a click made while the save is still running is overridden by t
 | `/patients/[id]/chart` | `view_patients` | Printable dental chart: letterhead, patient, `MedicalAlerts`, the chart read-only (Adult/Child switch and hints hidden on paper) and its Findings. Linked as **Print** in the chart header |
 | `/appointments` | `view_appointments` | Three views, chosen with `?view=day\|week\|list` (default `day`, or `list` when `?date=` is given). **Day**: one column per active doctor, rows from Clinic Settings opening to closing time (stretched to fit), blocks as long as the appointment and coloured by status, overlapping ones side by side, a red "now" line, and striped shading outside each doctor's `start_time`–`end_time`, which are also shown under the name (and in the week view when one doctor is chosen); `?day=YYYY-MM-DD` and `?doctor=` pick the day and one doctor. On phones (`useMediaQuery("(max-width: 639px)")`) the day view shows one doctor at a time with Previous / Next doctor buttons, starting with the first doctor who has patients. **Week**: one column per day (the week starts on `WEEK_STARTS_ON` in `format.ts`, Sunday). Clicking an empty 15-minute slot opens `/appointments/new` with date, time and doctor filled in (needs `add_appointments`). With `edit_appointments`, a Scheduled or Confirmed block can be dragged (mouse, pen or touch; pointer events, `touch-none` on the block) to another time, doctor column or day; a dashed preview snaps to 15 minutes, dropping asks "Move this appointment?" (with the same overlap check, then "Move anyway") and saves `appointment_date`, `appointment_time` and `doctor`. A click without moving still opens the appointment. **List**: search, date filter (All/Today/Tomorrow/Upcoming/Past, also `?date=today`), status filter, paging. The grid is `src/components/AppointmentCalendar.tsx` |
 | `/appointments/new` | `add_appointments` | Shared `AppointmentForm`. Reads `?patient=`, `?date=`, `?time=HH:MM` and `?doctor=`; Back returns to that day in the calendar. Once a doctor and date are chosen, the form shows that doctor's bookings for the day and up to 8 free times that fit the chosen length (within the doctor's own working hours when set, otherwise the clinic hours, and from now for today; tap one to fill in the time) and says when the typed time overlaps. With no `?doctor=`, it starts with the doctor of the last booking made on this computer (`localStorage.last_doctor`). Warns if the doctor already has an overlapping appointment (always checked for a new booking) |
-| `/appointments/[id]` | `view_appointments` | `MedicalAlerts` for the patient, details, status buttons, Edit/Delete (`edit_appointments`), WhatsApp messages for this appointment |
+| `/appointments/[id]` | `view_appointments` | `MedicalAlerts` for the patient, details (with **Print Card**), status buttons, Edit and an icon Delete (`edit_appointments`), and WhatsApp messages for this appointment with **Send Message** (`SendWhatsAppDialog`: pick an active template, placeholders filled, text editable, opens `wa.me` with it; shown when Clinic Settings `enable_whatsapp` is on and the patient has a phone). Completed opens `FinishVisitDialog` |
 | `/appointments/[id]/edit` | `edit_appointments` | Shared `AppointmentForm` with status |
 | `/appointments/[id]/card` | `view_appointments` | Printable appointment card for the patient (date, time, doctor, visit, the clinic phone and address). **Print Card** on the appointment page |
 | `/treatments` | `view_treatments` | Search, type and status filters, paging |
@@ -493,6 +495,8 @@ function Things() {
   done (saved as a Completed Treatment Session dated like the appointment), and optionally mark the plan
   Completed; a Planned plan moves to In Progress. With no open plan it offers New Treatment Plan. Skip is
   always there.
+- **Detail page headers** hold at most three actions: the main one (Edit), one or two secondary ones, and
+  Delete as an icon button with an `aria-label`. Actions about one part of the page go in that card's header.
 - **Messages:** `useToast().success/error/info`. They appear bottom-right, and under the top bar on phones. Never use `alert()`. Ask before deleting with
   `ConfirmDialog`.
 - **Medical safety:** every screen where treatment is decided or done shows `<MedicalAlerts patient={…} />`

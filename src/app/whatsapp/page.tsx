@@ -15,12 +15,12 @@ import { createDoc, deleteDoc, errorMessage, getList, updateDoc, type FilterRow 
 import { addDays, formatDate, formatDateTime, todayISO } from "@/lib/format";
 import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
 import { appointmentHref, patientHref } from "@/lib/links";
+import { PLACEHOLDERS, fillTemplate } from "@/lib/whatsapp";
 import {
   WHATSAPP_STATUSES, WHATSAPP_TRIGGERS, type WhatsAppLog, type WhatsAppTemplate, type WhatsAppTrigger,
 } from "@/lib/types";
 
 /** The values a template can use. The backend fills them in when it sends a message. */
-const PLACEHOLDERS = ["patient_name", "appointment_date", "appointment_time", "doctor_name", "clinic_name"] as const;
 
 const TRIGGER_HELP: Record<WhatsAppTrigger, string> = {
   "24 Hours Before": "Sent automatically about a day before the appointment.",
@@ -177,7 +177,7 @@ function TemplateModal({
     doctor_name: "Dr. Sarah Mansour",
     clinic_name: clinicName,
   };
-  const preview = form.message.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key: string) => sample[key] ?? match);
+  const preview = fillTemplate(form.message, sample);
 
   const insertPlaceholder = (key: string) => {
     const token = `{{ ${key} }}`;
