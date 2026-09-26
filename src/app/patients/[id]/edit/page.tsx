@@ -39,6 +39,7 @@ function EditPatient() {
       <PageHeader title={`Edit ${patient.full_name}`} back={{ href: patientHref(id), label: patient.full_name }} />
       <PatientForm
         initial={patientToForm(patient)}
+        currentName={id}
         submitLabel="Save Changes"
         cancelHref={patientHref(id)}
         onSubmit={handleSubmit}

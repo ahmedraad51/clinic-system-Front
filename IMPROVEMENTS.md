@@ -5,21 +5,19 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Duplicate patients: when adding a patient whose phone number (or name) is already in the system, show
-  the existing patient first and ask before creating a second record.
+- Quick medical checklist in the patient form: tick boxes for the usual questions (blood thinners,
+  diabetes, heart problems, high blood pressure, pregnancy, common allergies) that write into the existing
+  medical fields, so the alerts are always found.
 
 ## Backlog
 
-1. Quick medical checklist in the patient form: tick boxes for the usual questions (blood thinners,
-   diabetes, heart problems, high blood pressure, pregnancy, common allergies) that write into the
-   existing medical fields, so the alerts are always found.
-2. Tomorrow's reminders: a list of tomorrow's appointments with one tap to send each patient a WhatsApp
+1. Tomorrow's reminders: a list of tomorrow's appointments with one tap to send each patient a WhatsApp
    reminder from a template, for clinics that remind by hand.
-3. Clinic working days: choose the days the clinic is open in Settings; the week calendar shades closed
+2. Clinic working days: choose the days the clinic is open in Settings; the week calendar shades closed
    days and booking on a closed day asks first.
-4. Reports for the manager: revenue by doctor, and appointments by outcome (completed, no-show, cancelled)
+3. Reports for the manager: revenue by doctor, and appointments by outcome (completed, no-show, cancelled)
    with the no-show rate for the period.
-5. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+4. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -150,7 +148,11 @@ Each finished item says what changed, when, and which commit holds it.
   line. Commit ba95aab.
 - 2026-09-26 - **Faster payments.** When a new payment is for a patient with only one treatment plan still
   to pay, that plan is chosen automatically. A "Pay full balance" button fills in the amount left in one
-  tap. Commit PENDING.
+  tap. Commit 67626cd.
+- 2026-09-26 - **No more double patients.** When adding a patient, the form checks as you type: if the
+  phone number (written any way, with or without spaces or the country code) or the exact name is already
+  registered, it shows that patient with a link to open them. Saving with the same phone number asks
+  first. Commit PENDING.
 
 ## Questions for the owner
 

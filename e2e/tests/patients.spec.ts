@@ -74,3 +74,28 @@ test("the patient list shows medical alerts and the next visit", async ({ page }
   // Dina Rashad is booked for tomorrow at 11:00.
   await expect(page.getByRole("row", { name: /Dina Rashad/ })).toContainText("11:00 AM");
 });
+
+test("adding a patient who is already registered warns first", async ({ page }) => {
+  await page.goto("/dashboard");
+  await openFromMenu(page, "Patients");
+  await page.getByRole("link", { name: "Add Patient" }).first().click();
+  await page.getByLabel("Full Name").fill("N. Samir");
+  // Nadia Samir's number, typed the local way without spaces.
+  await page.getByLabel("Phone Number").fill("01002345678");
+
+  // A yellow notice (not role=alert, which is kept for red errors).
+  const warning = page.getByText("Already registered?").locator("..");
+  await expect(warning).toContainText("Nadia Samir");
+  await expect(warning).toContainText("same phone number");
+
+  await page.getByRole("button", { name: "Save Patient" }).click();
+  const ask = page.getByRole("dialog", { name: "This phone number is already registered" });
+  await expect(ask).toContainText("Nadia Samir");
+  await ask.getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByRole("heading", { name: "New Patient" })).toBeVisible();
+
+  // Opening the existing record is one click away.
+  await warning.getByRole("link", { name: "Nadia Samir" }).click();
+  await page.getByRole("dialog", { name: "Leave without saving?" }).getByRole("button", { name: "Leave without saving" }).click();
+  await expect(page.getByRole("heading", { name: "Nadia Samir" })).toBeVisible();
+});
