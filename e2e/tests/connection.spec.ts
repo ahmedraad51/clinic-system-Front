@@ -23,7 +23,7 @@ import { loginHref, safeNextPath } from "../../src/lib/links";
 
 type Reply = { status: number; data?: unknown } | "network" | "timeout";
 
-function useFakeServer(answer: (config: InternalAxiosRequestConfig) => Reply) {
+function startFakeServer(answer: (config: InternalAxiosRequestConfig) => Reply) {
   const original = api.defaults.adapter;
   api.defaults.adapter = (config: InternalAxiosRequestConfig) =>
     new Promise<AxiosResponse>((resolve, reject) => {
@@ -47,9 +47,23 @@ function useFakeServer(answer: (config: InternalAxiosRequestConfig) => Reply) {
 
 const forbidden: Reply = { status: 403, data: { exc_type: "PermissionError" } };
 
+/**
+ * Tests in one worker share src/lib/frappe.ts, which remembers that an ended login was already reported. One
+ * call that works resets it, so each test starts from a working session.
+ */
+async function startWithWorkingSession() {
+  const restore = startFakeServer(() => ({ status: 200, data: { data: [] } }));
+  try {
+    await api.get("/frappe/api/resource/Patient");
+  } finally {
+    restore();
+  }
+}
+
 test("an ended login is reported once, and not as missing permission", async () => {
+  await startWithWorkingSession();
   let probes = 0;
-  const restore = useFakeServer((config) => {
+  const restore = startFakeServer((config) => {
     if (config.url?.includes("frappe.auth.get_logged_user")) probes++;
     // Frappe answers an expired session with 403, and the "who is logged in?" question too.
     return forbidden;
@@ -78,8 +92,9 @@ test("an ended login is reported once, and not as missing permission", async () 
 });
 
 test("when requests work again after an ended login, the app is told once", async () => {
+  await startWithWorkingSession();
   let loggedIn = false;
-  const restore = useFakeServer((config) => {
+  const restore = startFakeServer((config) => {
     if (config.url?.includes("frappe.auth.get_logged_user")) return loggedIn ? { status: 200, data: { message: "nadia@dentclinic.test" } } : forbidden;
     return loggedIn ? { status: 200, data: { data: [] } } : forbidden;
   });
@@ -103,7 +118,8 @@ test("when requests work again after an ended login, the app is told once", asyn
 });
 
 test("a logged-in user without permission still sees the permission message", async () => {
-  const restore = useFakeServer((config) =>
+  await startWithWorkingSession();
+  const restore = startFakeServer((config) =>
     config.url?.includes("frappe.auth.get_logged_user") ? { status: 200, data: { message: "mariam@dentclinic.test" } } : forbidden,
   );
   let ended = 0;
@@ -121,7 +137,7 @@ test("a logged-in user without permission still sees the permission message", as
 
 test("login checks that the browser kept the session", async () => {
   let loggedIn = "Guest";
-  const restore = useFakeServer((config) => {
+  const restore = startFakeServer((config) => {
     if (config.url?.includes("/api/method/login")) return { status: 200, data: { message: "Logged In" } };
     if (config.url?.includes("frappe.auth.get_logged_user")) return { status: 200, data: { message: loggedIn } };
     return { status: 404 };
@@ -139,7 +155,7 @@ test("login checks that the browser kept the session", async () => {
 
 test("a login check that fails for another reason is explained as it is", async () => {
   let answer: "normal" | "twoFactor" | "passwordReset" = "normal";
-  const restore = useFakeServer((config) => {
+  const restore = startFakeServer((config) => {
     if (config.url?.includes("/api/method/login"))
       return {
         status: 200,
