@@ -388,9 +388,16 @@ function PatientDetail() {
       {tab === "chart" && (
         <DentalChart
           key={patient.name}
-          initialTeeth={patient.dental_chart}
+          initialChart={patient.dental_chart}
           onSave={saveChart}
           canEdit={can("edit_patients")}
+          patientAge={patient.age}
+          plans={data?.plans}
+          newTreatmentHref={
+            can("add_treatments")
+              ? (tooth) => `/treatments/new?patient=${encodeURIComponent(id)}&tooth=${tooth}`
+              : undefined
+          }
         />
       )}
 

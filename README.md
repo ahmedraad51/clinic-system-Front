@@ -165,7 +165,7 @@ src/
 │   ├── MainLayout.tsx          sidebar + topbar shell, and the login guard
 │   ├── Sidebar.tsx · Topbar.tsx · NotificationBell.tsx
 │   ├── Guard.tsx               hides a page from users without the permission
-│   ├── DentalChart.tsx         FDI-notation chart, 32 teeth, per-tooth status
+│   ├── DentalChart.tsx         odontogram: adult and child teeth, surfaces, conditions, notes
 │   ├── forms/                  patient, appointment, treatment and payment forms (new + edit)
 │   └── ui/                     shared cards, buttons, inputs, tables, badges, dialogs, pickers
 ├── context/                    auth, clinic settings, session/permissions, toast messages
@@ -178,9 +178,11 @@ src/
 docs/backend-todo.md            what the backend must provide for this front end
 ```
 
-**The dental chart** (`DentalChart.tsx`) lays out all 32 permanent teeth in FDI notation — upper jaw
-18→28, lower jaw 48→38. Clicking a tooth lets you mark it *Normal*, *Has Treatment* or *Pending
-Treatment*, and **Save Chart** stores it on the patient's `dental_chart` field.
+**The dental chart** (`DentalChart.tsx`) is an odontogram in FDI notation, with adult teeth (11–48) and
+child teeth (51–85). Each tooth is drawn by type with its five surfaces (M, O, D, B, L). Click a tooth to
+mark caries or fillings on its surfaces, whole-tooth conditions (crown, root canal, implant, bridge,
+missing, to extract) and a note, see its treatment plans, or start a new treatment for it. **Save Chart**
+stores it on the patient's `dental_chart` field; charts saved in the first, simpler format still load.
 
 ### The data layer
 

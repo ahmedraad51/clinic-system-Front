@@ -58,14 +58,49 @@ export const DURATIONS = [15, 30, 45, 60, 90, 120] as const;
 /** Currencies offered on the settings page. Any ISO 4217 code works in formatMoney. */
 export const CURRENCIES = ["IQD", "USD", "EUR", "EGP", "SAR", "AED", "JOD", "KWD", "TRY", "GBP"] as const;
 
-/** FDI tooth numbers, the way the dental chart lays them out. */
+/** FDI tooth numbers, the way the dental chart lays them out (patient's right on the left of the screen). */
 export const UPPER_TEETH = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28] as const;
 export const LOWER_TEETH = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38] as const;
+/** Child (primary) teeth, FDI 51–85. */
+export const CHILD_UPPER_TEETH = [55, 54, 53, 52, 51, 61, 62, 63, 64, 65] as const;
+export const CHILD_LOWER_TEETH = [85, 84, 83, 82, 81, 71, 72, 73, 74, 75] as const;
+
+/* ---------------------------------------------------------- dental chart -- */
+
+/** Tooth surfaces: Mesial, Occlusal (incisal on front teeth), Distal, Buccal (labial), Lingual (palatal). */
+export const TOOTH_SURFACES = ["M", "O", "D", "B", "L"] as const;
+export type ToothSurface = (typeof TOOTH_SURFACES)[number];
+
+/** What can be marked on one surface. */
+export const SURFACE_FINDINGS = ["caries", "filling"] as const;
+export type SurfaceFinding = (typeof SURFACE_FINDINGS)[number];
+
+/** What can be marked on the whole tooth. A tooth with nothing marked is healthy. */
+export const TOOTH_CONDITIONS = ["crown", "root_canal", "implant", "bridge", "missing", "extract"] as const;
+export type ToothCondition = (typeof TOOTH_CONDITIONS)[number];
+
+/** The two marks of the first chart version, still read so old charts keep their meaning. */
+export type LegacyToothStatus = "treated" | "pending";
+
+export interface ToothRecord {
+  conditions?: ToothCondition[];
+  surfaces?: Partial<Record<ToothSurface, SurfaceFinding>>;
+  note?: string;
+  /** From a chart saved before version 2 ("Has treatment" / "Pending treatment"). Cleared by marking the tooth healthy. */
+  legacy?: LegacyToothStatus;
+}
+
+/**
+ * Patient.dental_chart, version 2: { "version": 2, "teeth": { "36": { "conditions": ["root_canal", "crown"] } } }.
+ * Only teeth with something marked are stored. Read it with parseDentalChart() in src/lib/dentalChart.ts,
+ * which also understands the old flat shape { "36": "treated", "37": "pending" }.
+ */
+export interface DentalChartData {
+  version: 2;
+  teeth: Record<string, ToothRecord>;
+}
 
 /* ------------------------------------------------------------- doctypes -- */
-
-export type ToothStatus = "normal" | "treated" | "pending";
-export type DentalChartData = Record<string, ToothStatus>;
 
 export interface Patient extends BaseDoc {
   full_name: string;
@@ -81,8 +116,8 @@ export interface Patient extends BaseDoc {
   chronic_diseases?: string;
   medical_history?: string;
   notes?: string;
-  /** JSON field. Frappe may send it as a string, so read it with parseDentalChart(). */
-  dental_chart?: DentalChartData | string | null;
+  /** JSON field. Frappe may send it as a string, and old records use the first shape; read it with parseDentalChart(). */
+  dental_chart?: DentalChartData | Record<string, string> | string | null;
   total_appointments?: number;
   total_treatments?: number;
   total_paid?: number;

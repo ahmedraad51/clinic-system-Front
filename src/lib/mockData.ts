@@ -9,7 +9,7 @@
  */
 
 import type { DocValue } from "./types";
-import { addDays, parseDentalChart, todayISO } from "./format";
+import { addDays, todayISO } from "./format";
 
 export type MockValue = DocValue;
 
@@ -62,7 +62,15 @@ const patients: MockDoc[] = [
     allergies: "Penicillin", current_medications: "None", chronic_diseases: "None",
     medical_history: "Root canal on tooth 36 (June 2026). No prior surgeries.",
     notes: "Prefers morning appointments.",
-    dental_chart: { "36": "treated", "37": "pending" },
+    // The current chart shape (version 2).
+    dental_chart: {
+      version: 2,
+      teeth: {
+        "36": { conditions: ["root_canal", "crown"], note: "Zirconia crown being made." },
+        "37": { surfaces: { O: "caries", D: "caries" } },
+        "26": { surfaces: { O: "filling" } },
+      },
+    },
   },
   {
     name: P.karim, full_name: "Karim Fouad", gender: "Male",
@@ -72,6 +80,7 @@ const patients: MockDoc[] = [
     allergies: "None", current_medications: "Metformin 500mg", chronic_diseases: "Type 2 Diabetes",
     medical_history: "Composite filling on 24 and extraction of 48 (June 2026).",
     notes: "Diabetic - confirm blood sugar before any surgical work.",
+    // The first chart shape, kept on purpose: old records must still load.
     dental_chart: { "24": "treated", "48": "treated" },
   },
   {
@@ -92,7 +101,14 @@ const patients: MockDoc[] = [
     allergies: "None", current_medications: "Amlodipine 5mg", chronic_diseases: "Hypertension",
     medical_history: "Implant placed on tooth 46 (August 2026). Bridge planned for 45.",
     notes: "Check blood pressure before long sessions.",
-    dental_chart: { "46": "treated", "45": "pending" },
+    dental_chart: {
+      version: 2,
+      teeth: {
+        "46": { conditions: ["implant"], note: "Fixture placed 11 Aug 2026." },
+        "45": { conditions: ["bridge"], note: "Three-unit bridge planned once the implant integrates." },
+        "17": { surfaces: { O: "filling", M: "filling" } },
+      },
+    },
   },
   {
     name: P.salma, full_name: "Salma Ibrahim", gender: "Female",
@@ -112,7 +128,7 @@ const patients: MockDoc[] = [
     allergies: "Ibuprofen", current_medications: "None", chronic_diseases: "None",
     medical_history: "Root canal in progress on tooth 27.",
     notes: "Sensitive to cold, use a warm rinse.",
-    dental_chart: { "27": "pending" },
+    dental_chart: { version: 2, teeth: { "27": { conditions: ["root_canal"], note: "Session 2 done; filling the canals next." } } },
   },
   {
     name: P.dina, full_name: "Dina Rashad", gender: "Female",
@@ -132,7 +148,14 @@ const patients: MockDoc[] = [
     allergies: "Aspirin", current_medications: "Warfarin 3mg", chronic_diseases: "Atrial fibrillation",
     medical_history: "Wisdom tooth 38 extracted (July 2026). Crown planned for 37.",
     notes: "On anticoagulants - coordinate with his physician before extractions.",
-    dental_chart: { "38": "treated", "37": "pending" },
+    dental_chart: {
+      version: 2,
+      teeth: {
+        "38": { conditions: ["missing"] },
+        "37": { surfaces: { O: "caries", B: "caries" }, note: "Cracked cusp, crown planned." },
+        "48": { conditions: ["extract"], note: "Coordinate with his physician first (warfarin)." },
+      },
+    },
   },
   {
     name: P.yara, full_name: "Yara Mostafa", gender: "Female",
@@ -557,6 +580,16 @@ function ageFrom(dateOfBirth: MockValue): number {
   return age;
 }
 
+/** A JSON field is stored as sent, like Frappe does: a JSON string is parsed, anything unreadable becomes null. */
+function jsonField(value: MockValue): MockValue {
+  if (typeof value !== "string") return value ?? null;
+  try {
+    return JSON.parse(value) as MockValue;
+  } catch {
+    return null;
+  }
+}
+
 /** Forms send numbers as strings; the real backend stores them as numbers. */
 function normalize(doc: MockDoc): void {
   NUMBER_FIELDS.forEach((field) => {
@@ -631,7 +664,7 @@ export async function mockCreateDoc(
 
   if (doctype === "Patient") {
     doc.age = data.age ? num(data.age) : ageFrom(data.date_of_birth);
-    doc.dental_chart = parseDentalChart(data.dental_chart);
+    doc.dental_chart = jsonField(data.dental_chart);
   }
   if (doctype === "User") {
     doc.full_name = data.full_name || [data.first_name, data.last_name].filter(Boolean).join(" ") || String(data.email || "");
@@ -659,7 +692,7 @@ export async function mockUpdateDoc(
   normalize(next);
   if (doctype === "Patient") {
     if ("date_of_birth" in data && !("age" in data)) next.age = ageFrom(data.date_of_birth);
-    if ("dental_chart" in data) next.dental_chart = parseDentalChart(data.dental_chart);
+    if ("dental_chart" in data) next.dental_chart = jsonField(data.dental_chart);
   }
   if (doctype === "User" && ("first_name" in data || "last_name" in data) && !("full_name" in data)) {
     next.full_name = [next.first_name, next.last_name].filter(Boolean).join(" ");

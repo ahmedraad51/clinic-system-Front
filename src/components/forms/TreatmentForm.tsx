@@ -7,7 +7,9 @@ import LinkSelect from "@/components/ui/LinkSelect";
 import { errorMessage } from "@/lib/frappe";
 import { useDoctors } from "@/lib/hooks";
 import { useSettings } from "@/context/SettingsContext";
-import { LOWER_TEETH, TREATMENT_STATUSES, TREATMENT_TYPES, UPPER_TEETH, type TreatmentPlan } from "@/lib/types";
+import {
+  CHILD_LOWER_TEETH, CHILD_UPPER_TEETH, LOWER_TEETH, TREATMENT_STATUSES, TREATMENT_TYPES, UPPER_TEETH, type TreatmentPlan,
+} from "@/lib/types";
 
 export interface TreatmentFormData {
   patient: string;
@@ -54,8 +56,12 @@ const QUADRANTS = [
   { label: "Upper left", teeth: UPPER_TEETH.slice(8) },
   { label: "Lower left", teeth: LOWER_TEETH.slice(8) },
   { label: "Lower right", teeth: LOWER_TEETH.slice(0, 8) },
+  { label: "Child upper right", teeth: CHILD_UPPER_TEETH.slice(0, 5) },
+  { label: "Child upper left", teeth: CHILD_UPPER_TEETH.slice(5) },
+  { label: "Child lower left", teeth: CHILD_LOWER_TEETH.slice(5) },
+  { label: "Child lower right", teeth: CHILD_LOWER_TEETH.slice(0, 5) },
 ];
-const ALL_TEETH = new Set<string>([...UPPER_TEETH, ...LOWER_TEETH].map(String));
+const ALL_TEETH = new Set<string>(QUADRANTS.flatMap((quadrant) => quadrant.teeth.map(String)));
 
 type InputEvent = ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
 

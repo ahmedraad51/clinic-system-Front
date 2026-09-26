@@ -1,5 +1,3 @@
-import type { DentalChartData, ToothStatus } from "./types";
-
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /** Formats money in the clinic currency, e.g. formatMoney(4500, "USD") → "$4,500". */
@@ -120,27 +118,6 @@ export function display(value: string | number | null | undefined): string {
 export function isBlankMedical(value: string | null | undefined): boolean {
   const text = (value || "").trim().toLowerCase();
   return text === "" || text === "none" || text === "no" || text === "nil" || text === "-" || text === "n/a";
-}
-
-/** Reads the Patient.dental_chart JSON field, which may arrive as an object or as a JSON string. */
-export function parseDentalChart(value: unknown): DentalChartData {
-  let raw: unknown = value;
-  if (typeof raw === "string") {
-    try {
-      raw = JSON.parse(raw);
-    } catch {
-      return {};
-    }
-  }
-  const chart: DentalChartData = {};
-  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
-    Object.entries(raw as Record<string, unknown>).forEach(([tooth, status]) => {
-      if (status === "treated" || status === "pending" || status === "normal") {
-        chart[tooth] = status as ToothStatus;
-      }
-    });
-  }
-  return chart;
 }
 
 /** Joins class names and drops the empty ones. */

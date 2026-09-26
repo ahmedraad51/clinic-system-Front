@@ -1,0 +1,47 @@
+import { expect, test } from "@playwright/test";
+import { openFromMenu, waitForData } from "../helpers";
+
+test("mark a tooth on the dental chart and save it", async ({ page }) => {
+  await page.goto("/dashboard");
+  await openFromMenu(page, "Patients");
+  await page.getByRole("link", { name: "Mona Adel" }).click();
+  await waitForData(page);
+  await page.getByRole("tab", { name: "Dental Chart" }).click();
+  await expect(page.getByText("Nothing marked. All teeth are recorded as healthy.")).toBeVisible();
+
+  // Tooth 46: caries on the occlusal and mesial surfaces, and a root canal.
+  await page.getByRole("button", { name: /^Tooth 46,/ }).click();
+  await expect(page.getByText("Lower right first molar")).toBeVisible();
+  await page.getByRole("button", { name: "Occlusal surface: healthy" }).click();
+  // The surface buttons are clipped shapes on one square, so tap where the surface is drawn:
+  // on 46 (patient's right) mesial is the right-hand side of the 144 px square.
+  await page.getByRole("button", { name: "Mesial surface: healthy" }).click({ position: { x: 130, y: 72 } });
+  await page.getByRole("button", { name: "Root canal", exact: true }).click();
+  await page.getByLabel("Note").fill("Deep caries, sensitive to cold");
+  await page.getByRole("button", { name: "Save Chart" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Dental chart saved." })).toBeVisible();
+
+  // Leave the patient and come back: the chart was stored.
+  await openFromMenu(page, "Patients");
+  await page.getByRole("link", { name: "Mona Adel" }).click();
+  await waitForData(page);
+  await page.getByRole("tab", { name: "Dental Chart" }).click();
+  const finding = page.getByRole("button", { name: /^46\s/ });
+  await expect(finding).toContainText("Root canal · caries M, O");
+  await expect(finding).toContainText("Deep caries, sensitive to cold");
+
+  // From the tooth, start a treatment plan with the tooth filled in.
+  await finding.click();
+  await page.getByRole("link", { name: "New treatment for this tooth" }).click();
+  await expect(page.getByRole("heading", { name: "New Treatment Plan" })).toBeVisible();
+  await expect(page.getByLabel("Tooth")).toHaveValue("46");
+});
+
+test("a chart saved in the old format still loads", async ({ page }) => {
+  await page.goto("/patients/PAT-2026-00002");
+  await waitForData(page);
+  await page.getByRole("tab", { name: "Dental Chart" }).click();
+  await expect(page.getByRole("button", { name: /^24\s/ })).toContainText("Has treatment (old chart)");
+  await page.getByRole("button", { name: /^Tooth 24,/ }).click();
+  await expect(page.getByText(/The old chart marked this tooth/)).toBeVisible();
+});

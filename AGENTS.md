@@ -129,7 +129,7 @@ src/
 │   ├── NotificationBell.tsx  today's Scheduled/Confirmed appointments
 │   ├── AppointmentCalendar.tsx  the day and week time grid on /appointments
 │   ├── Guard.tsx             RequirePermission
-│   ├── DentalChart.tsx       FDI chart of the 32 permanent teeth, saved to Patient.dental_chart
+│   ├── DentalChart.tsx       the odontogram (adult and child teeth, surfaces, conditions), saved to Patient.dental_chart
 │   ├── ToothLogo.tsx         the app logo (inline SVG)
 │   ├── forms/                PatientForm, AppointmentForm, TreatmentForm, PaymentForm (shared by new and edit)
 │   └── ui/
@@ -146,7 +146,8 @@ src/
     ├── mockData.ts           the in-memory dummy back end
     ├── types.ts              doctype interfaces, allowed values, permission keys, role presets
     ├── hooks.ts              usePagedList, useDocument, useDoctors, useDebounced, searchFilters
-    ├── format.ts             money, dates, times, cx(), CSV download, dental chart parsing
+    ├── format.ts             money, dates, times, week helpers, cx(), CSV download
+    ├── dentalChart.ts        parseDentalChart (both shapes), cleanChart, tooth names, surface layout, labels
     ├── theme.ts              the clinic colour: presets, contrast fix, applyThemeColor, the boot script
     └── links.ts              URL builders for records (always use these)
 docs/
@@ -284,8 +285,9 @@ either source.
   its total cost; a plan's total cost cannot go below what was already paid. A doc that other docs link to
   cannot be deleted ("Cannot delete Patient … because it is linked with …").
 - **On create and update:** number fields (`total_cost`, `amount`, `duration_minutes`, `age`, `enabled`,
-  `is_active`) become numbers. A Patient gets `age` from `date_of_birth`, and `dental_chart` is parsed from
-  a JSON string or object. A User gets `full_name`, `enabled: 1`, and its `new_password` is not stored.
+  `is_active`) become numbers. A Patient gets `age` from `date_of_birth`, and `dental_chart` is stored as
+  sent (a JSON string is parsed), like a Frappe JSON field. The seed has both chart shapes on purpose:
+  Nadia, Tarek, Hossam and Amir use version 2; Karim, Salma and Bassel the first shape. A User gets `full_name`, `enabled: 1`, and its `new_password` is not stored.
 - **Queries:** operators `=`, `!=`, `in`, `not in`, `like`, `not like`, `is` (`set`/`not set`), `between`,
   `>`, `<`, `>=`, `<=` (numbers compare as numbers, everything else as strings, which works for ISO dates).
   `orFilters`, multi-field `orderBy` (`"appointment_date desc, appointment_time desc"`), `limit`, `start`.
@@ -510,11 +512,29 @@ The project uses `eslint-config-next` with the React Compiler hook rules. Follow
 
 ### Dental chart (`src/components/DentalChart.tsx`)
 
-FDI numbering: upper jaw `18→11, 21→28`, lower jaw `48→41, 31→38`. Each tooth is `normal`, `treated` or
-`pending` (labelled Normal, Has Treatment, Pending Treatment). Click a tooth, then choose its status in the
-panel under the chart. **Save Chart** calls `onSave`, which the patient page uses to save
-`dental_chart` as a JSON string; only marked teeth are saved. Undo changes brings back the saved chart. The
-old Medical/Cosmetic toggle did nothing and was removed.
+An odontogram. FDI numbering, drawn from the dentist's view (patient's right on the left): adult upper
+`18→11, 21→28`, lower `48→41, 31→38`; child (Adult / Child switch) upper `55→51, 61→65`, lower `85→81, 71→75`.
+Children under 6, or charts with only child teeth marked, open on the child teeth.
+
+- Each tooth is drawn by type (incisor, canine, premolar, molar; `toothKind()`), roots up for the upper jaw,
+  with the five-surface square beside it. On the square the outer edge of each jaw is **B**uccal, the middle
+  of the chart **L**ingual, and **M**esial faces the midline (`surfaceLayout()`).
+- **Surface findings:** caries (red), filling (blue). **Whole-tooth conditions:** crown (gold), root canal
+  (red line in the roots), implant (screw), bridge (violet bar that joins neighbours), missing (dashed
+  outline), to extract (red cross). A tooth with nothing marked is healthy.
+- Click a tooth to open its panel: tap surfaces with the Caries / Filling / Clear tool (the same finding again
+  clears it), toggle conditions, **Healthy** clears everything but the note, a free-text note, the patient's
+  treatment plans whose `tooth_number` names this tooth, and **New treatment for this tooth**
+  (`/treatments/new?patient=…&tooth=…`). A small dot by a tooth number means an open plan.
+- Editing needs `edit_patients`; everyone else can still open a tooth to read it. **Save Chart** and
+  **Undo** appear when something changed. The **Findings** list under the chart sums up every marked tooth.
+- **Data:** `DentalChartData` in `types.ts`, `{ "version": 2, "teeth": { "36": { "conditions": [...],
+  "surfaces": { "O": "caries" }, "note": "..." } } }`; only marked teeth are stored. Read it only with
+  `parseDentalChart()` from `src/lib/dentalChart.ts`, which also reads the first shape
+  (`{ "36": "treated" }`) as `legacy` marks, shown as "Has treatment (old chart)" until the dentist marks
+  the tooth or presses Healthy. Never drop that compatibility.
+- The surface buttons in the panel are `clip-path` shapes stacked on one square. In tests, click them with a
+  `position` (their centres all fall on the occlusal surface).
 
 ---
 

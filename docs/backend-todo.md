@@ -9,7 +9,7 @@ match, and update `src/lib/types.ts`, the mock and `AGENTS.md`.
 
 | Doctype | Field | Type | Notes |
 |---|---|---|---|
-| Patient | `dental_chart` | JSON | The dental chart. The front end sends a JSON string like `{"36": "treated", "37": "pending"}` and reads either a string or an object. Values: `treated`, `pending` (teeth left out are normal). |
+| Patient | `dental_chart` | JSON | The dental chart. The front end sends a JSON string in the shape below and reads either a string or an object. It also reads the first shape, `{"36": "treated", "37": "pending"}`, so records saved before do not need a migration. |
 | Appointment | `patient_name` | Data, read only, `fetch_from: patient.full_name` | Shown in lists instead of the ID. |
 | Appointment | `doctor_name` | Data, read only, `fetch_from: doctor.full_name` | |
 | Treatment Plan | `patient_name`, `doctor_name` | same as above | |
@@ -17,6 +17,27 @@ match, and update `src/lib/types.ts`, the mock and `AGENTS.md`.
 | Payment | `patient_name` | Data, read only, `fetch_from: patient.full_name` | |
 | Payment | `treatment_type` | Data, read only, `fetch_from: treatment_plan.treatment_type` | Used by the payment list and the "revenue by treatment" report. |
 | WhatsApp Log | `patient_name` | Data, read only, `fetch_from: patient.full_name` | |
+
+**`Patient.dental_chart`, version 2.** Only teeth with something marked are stored:
+
+```json
+{
+  "version": 2,
+  "teeth": {
+    "36": { "conditions": ["root_canal", "crown"], "note": "Zirconia crown being made." },
+    "37": { "surfaces": { "O": "caries", "D": "caries" } },
+    "24": { "legacy": "treated" }
+  }
+}
+```
+
+- Keys of `teeth` are FDI numbers as strings: adult `11`–`48`, child `51`–`85`.
+- `conditions`: any of `crown`, `root_canal`, `implant`, `bridge`, `missing`, `extract`.
+- `surfaces`: keys `M`, `O`, `D`, `B`, `L` (mesial, occlusal/incisal, distal, buccal, lingual); values
+  `caries` or `filling`.
+- `note`: free text. `legacy`: `treated` or `pending`, carried over from the first shape.
+- The back end does not need to understand the contents; store and return it as is. A report of teeth by
+  condition would read these keys.
 
 After adding fetch fields, run a patch that fills them for existing records (fetch fields only fill on save).
 

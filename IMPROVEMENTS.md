@@ -5,34 +5,33 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Real dental chart (odontogram): tooth drawings; healthy, caries, filling, crown, root canal, implant,
-  missing, to extract, bridge; the five surfaces (M, O, D, B, L); adult and child teeth; a note per tooth;
-  "New treatment for this tooth". Old charts must still load.
+- Patient page built for the dentist: a header with age, phone (tap to call, WhatsApp), medical alerts,
+  last visit, next appointment and balance; a timeline of visits, treatments and payments.
 
 ## Backlog
 
-1. Patient page built for the dentist: a header with age, phone (tap to call, WhatsApp), medical alerts,
-   last visit, next appointment and balance; a timeline of visits, treatments and payments.
-2. Today board for the front desk: today's patients grouped by doctor, one-tap Confirmed / Completed / No
+1. Today board for the front desk: today's patients grouped by doctor, one-tap Confirmed / Completed / No
    Show, late patients highlighted, quick Add Payment.
-3. Global search in the top bar (also Ctrl+K): find a patient by name, phone or ID from any page, plus
+2. Global search in the top bar (also Ctrl+K): find a patient by name, phone or ID from any page, plus
    quick actions (New Appointment, Add Patient).
-4. Faster booking: "next free time" for the chosen doctor, show that doctor's day while booking, remember
+3. Faster booking: "next free time" for the chosen doctor, show that doctor's day while booking, remember
    the last doctor used.
-5. Doctors page: list, add and edit doctors (name, specialization, phone, email, active). Permission:
+4. Doctors page: list, add and edit doctors (name, specialization, phone, email, active). Permission:
    manage_users.
-6. Price list: a default price per treatment type (in Settings) that fills in the cost automatically, and
+5. Price list: a default price per treatment type (in Settings) that fills in the cost automatically, and
    a printable treatment estimate for the patient.
-7. Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
+6. Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
    payment method.
-8. Phone and tablet polish: tables turn into cards on small screens, sticky Save buttons, larger inputs.
-9. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
+7. Phone and tablet polish: tables turn into cards on small screens, sticky Save buttons, larger inputs.
+8. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
    form with unsaved changes, clear error messages.
-10. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
-11. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
+9. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+10. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
     and warn when booking outside them.
-12. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
+11. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
     check.
+12. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
+    treatment plan page for its tooth.
 
 ## Done
 
@@ -56,7 +55,13 @@ Each finished item says what changed, when, and which commit holds it.
   overlapping bookings side by side, and a red line for "now". A week view shows seven days. Click any
   empty time to book it with the date, time and doctor already filled in (the "doctor is already booked"
   warning still works). The old list is kept as the third view. The dashboard and the bell now open today
-  in the calendar. Commit PENDING.
+  in the calendar. Commit 9676ff0.
+- 2026-09-26 - **Real dental chart.** The chart now draws every tooth by its shape (incisor, canine,
+  premolar, molar), for adults (11-48) and children (51-85). Tap a tooth to mark caries or fillings on
+  each of its five surfaces (M, O, D, B, L) and whole-tooth conditions: crown, root canal, implant,
+  bridge, missing, to extract. Each tooth can have a note, shows its treatment plans, and has a "New
+  treatment for this tooth" button that fills in the tooth number. A Findings list sums up the mouth.
+  Charts saved the old way still open, with the old marks kept and labelled. Commit PENDING.
 
 ## Questions for the owner
 
