@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { MessageCircle, Pencil, Stethoscope, Trash2 } from "lucide-react";
+import { MessageCircle, Pencil, Printer, Stethoscope, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
@@ -103,6 +103,9 @@ function AppointmentDetail() {
         back={{ href: "/appointments", label: "Appointments" }}
         actions={
           <>
+            <LinkButton href={`${appointmentHref(id)}/card`} variant="secondary" icon={Printer}>
+              Print Card
+            </LinkButton>
             {can("add_treatments") && (
               <LinkButton
                 href={`/treatments/new?patient=${encodeURIComponent(appointment.patient)}`}

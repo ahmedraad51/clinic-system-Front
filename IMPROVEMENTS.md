@@ -5,21 +5,19 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
-  payment method.
+- Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
+  form with unsaved changes, clear error messages.
 
 ## Backlog
 
-1. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
-   form with unsaved changes, clear error messages.
-2. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
-3. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
+1. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+2. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
    and warn when booking outside them.
-4. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
+3. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
    check.
-5. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
+4. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
    treatment plan page for its tooth.
-6. Show the medical alerts in the booking and treatment forms as soon as a patient is picked.
+5. Show the medical alerts in the booking and treatment forms as soon as a patient is picked.
 
 ## Done
 
@@ -84,7 +82,12 @@ Each finished item says what changed, when, and which commit holds it.
   (you can still change it; a price you typed is never overwritten). From a patient's Treatment Plans tab,
   "Print estimate" makes a clean printable estimate of all open plans on the clinic letterhead, with
   totals, a 30-day validity note and signature lines. Also: money columns in tables now line up under
-  their headings. Commit PENDING.
+  their headings. Commit fb8f064.
+- 2026-09-26 - **Printouts.** Three new printable pages on the clinic letterhead: a patient statement with
+  every treatment, every payment and the balance ("Print statement" on the patient's Payments tab); an
+  appointment card to hand to the patient ("Print Card" on an appointment); and an end-of-day report with
+  the payments of the day by method, the total and the cash that should be in the drawer, with lines to
+  sign ("End-of-Day Report" on Payments and "Day Report" on Today). Commit PENDING.
 
 ## Questions for the owner
 

@@ -432,6 +432,14 @@ function PatientDetail() {
       )}
 
       {tab === "payments" && (
+        <div className="flex justify-end -mt-2">
+          <LinkButton href={`${patientHref(id)}/statement`} variant="secondary" size="sm" icon={Printer}>
+            Print statement
+          </LinkButton>
+        </div>
+      )}
+
+      {tab === "payments" && (
         <Card flush>
           {!data ? (
             <PageLoading />

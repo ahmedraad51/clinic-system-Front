@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, CheckCheck, Clock, CreditCard, HeartPulse, Plus, RefreshCw, UserX } from "lucide-react";
+import { Check, CheckCheck, Clock, CreditCard, FileText, HeartPulse, Plus, RefreshCw, UserX } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Button, Card, EmptyState, LinkButton, PageContainer, PageHeader, PageLoading, StatusBadge,
@@ -142,6 +142,11 @@ function TodayBoard() {
         subtitle={formatLongDate(today)}
         actions={
           <>
+            {showMoney && (
+              <LinkButton href="/payments/day" variant="secondary" icon={FileText}>
+                Day Report
+              </LinkButton>
+            )}
             <Button variant="secondary" icon={RefreshCw} onClick={() => setVersion((v) => v + 1)}>
               Refresh
             </Button>

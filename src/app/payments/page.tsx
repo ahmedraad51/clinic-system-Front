@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Receipt } from "lucide-react";
+import { FileText, Plus, Receipt } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Card, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination,
@@ -88,11 +88,16 @@ function PaymentsList() {
           )
         }
         actions={
-          can("add_payments") && (
-            <LinkButton href="/payments/new" icon={Plus}>
-              Add Payment
+          <>
+            <LinkButton href="/payments/day" variant="secondary" icon={FileText}>
+              End-of-Day Report
             </LinkButton>
-          )
+            {can("add_payments") && (
+              <LinkButton href="/payments/new" icon={Plus}>
+                Add Payment
+              </LinkButton>
+            )}
+          </>
         }
       />
 

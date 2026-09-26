@@ -145,6 +145,9 @@ what they are not allowed to do.
 | `/patients/new`, `/patients/[id]/edit` | Create or edit — basic details plus medical history, allergies, medications |
 | `/patients/[id]` | Medical alerts (allergies, blood thinners, diabetes, heart problems, pregnancy), tap-to-call and WhatsApp buttons, last visit, next appointment and balance, a timeline of visits, treatment sessions and payments, and tabs for appointments, treatment plans, payments and the dental chart |
 | `/patients/[id]/estimate` | A printable treatment estimate of the patient's open plans, with totals and signature lines |
+| `/patients/[id]/statement` | A printable statement of all treatments, payments and the balance |
+| `/appointments/[id]/card` | A printable appointment card to hand to the patient |
+| `/payments/day` | The end-of-day report: payments by method, the total, and the cash that should be in the drawer |
 | `/appointments` | The appointment book as a **day calendar** (a column per doctor, from opening to closing time, with a "now" line), a **week calendar**, or a **list** with search and filters. Click an empty time in the calendar to book it with the date, time and doctor already filled in |
 | `/appointments/new`, `/appointments/[id]/edit` | Book or edit — shows the doctor's day with one-tap free times, remembers the last doctor used, and warns when the doctor is already booked at that time |
 | `/appointments/[id]` | Detail, one-click status changes, WhatsApp messages sent for it |

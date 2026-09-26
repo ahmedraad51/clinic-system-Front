@@ -193,16 +193,19 @@ on the form, and a click made while the save is still running is overridden by t
 | `/patients/[id]` | `view_patients` | `MedicalAlerts` band; a summary card with tap-to-call (`tel:`) and WhatsApp (`https://wa.me/<digits>`) buttons, last visit, next appointment, balance to pay (with Add payment) and paid so far; tabs: **Overview** (a timeline of appointments, treatment sessions and payments, grouped Upcoming / Today / by month, beside the contact and medical cards), Appointments, Treatment Plans, Payments, Dental Chart. Buttons: New Appointment, New Treatment, Edit, Delete (icon; each by permission) |
 | `/patients/[id]/edit` | `edit_patients` | Shared `PatientForm` |
 | `/patients/[id]/estimate` | `view_patients` and `view_treatments` | Printable treatment estimate on the clinic letterhead: the patient's Planned and In Progress plans with cost, paid and to pay, totals, a 30-day validity note (`VALID_DAYS`) and signature lines. Linked as **Print estimate** above the Treatment Plans tab |
+| `/patients/[id]/statement` | `view_patients` and `view_payments` | Printable statement: every plan that is not Cancelled (cost, paid, left), every payment, total for treatments, total paid and the balance (`total_remaining`). Linked as **Print statement** above the Payments tab |
 | `/appointments` | `view_appointments` | Three views, chosen with `?view=day\|week\|list` (default `day`, or `list` when `?date=` is given). **Day**: one column per active doctor, rows from Clinic Settings opening to closing time (stretched to fit), blocks as long as the appointment and coloured by status, overlapping ones side by side, a red "now" line; `?day=YYYY-MM-DD` and `?doctor=` pick the day and one doctor. **Week**: one column per day (the week starts on `WEEK_STARTS_ON` in `format.ts`, Sunday). Clicking an empty 15-minute slot opens `/appointments/new` with date, time and doctor filled in (needs `add_appointments`). **List**: search, date filter (All/Today/Tomorrow/Upcoming/Past, also `?date=today`), status filter, paging. The grid is `src/components/AppointmentCalendar.tsx` |
 | `/appointments/new` | `add_appointments` | Shared `AppointmentForm`. Reads `?patient=`, `?date=`, `?time=HH:MM` and `?doctor=`; Back returns to that day in the calendar. Once a doctor and date are chosen, the form shows that doctor's bookings for the day and up to 8 free times that fit the chosen length (from opening, or from now for today, to closing; tap one to fill in the time) and says when the typed time overlaps. With no `?doctor=`, it starts with the doctor of the last booking made on this computer (`localStorage.last_doctor`). Warns if the doctor already has an overlapping appointment (always checked for a new booking) |
 | `/appointments/[id]` | `view_appointments` | `MedicalAlerts` for the patient, details, status buttons, Edit/Delete (`edit_appointments`), WhatsApp messages for this appointment |
 | `/appointments/[id]/edit` | `edit_appointments` | Shared `AppointmentForm` with status |
+| `/appointments/[id]/card` | `view_appointments` | Printable appointment card for the patient (date, time, doctor, visit, the clinic phone and address). **Print Card** on the appointment page |
 | `/treatments` | `view_treatments` | Search, type and status filters, paging |
 | `/treatments/new` | `add_treatments` | Shared `TreatmentForm`. Reads `?patient=` and `?tooth=`. New plans are always `Planned`. Choosing a treatment type fills in its price-list price unless a different cost was typed |
 | `/treatments/[id]` | `view_treatments` | `MedicalAlerts` for the patient, cost/paid/remaining with a progress bar, details, status buttons, payments of the plan, **Treatment Sessions** (add, edit, delete in a dialog) |
 | `/treatments/[id]/edit` | `edit_treatments` | Shared `TreatmentForm` with status |
 | `/payments` | `view_payments` | Search, method filter, date range, paging, total of everything that matches |
 | `/payments/new` | `add_payments` | Shared `PaymentForm`. Reads `?patient=&treatment=`. Blocks amounts above what the plan has left |
+| `/payments/day` | `view_payments` | End-of-day report for `?date=` (default today): totals per payment method and overall, every payment of the day, the cash that should be in the drawer, and Counted by / Checked by lines. Linked from Payments and the Today board |
 | `/payments/[id]` | `view_payments` | Printable receipt with clinic details; Edit/Delete (`add_payments`) |
 | `/payments/[id]/edit` | `add_payments` | Shared `PaymentForm` |
 | `/reports` | `view_reports`, and Clinic Settings `enable_financial_reports` | Period picker; revenue, count, average, outstanding; revenue by treatment, method and month; latest payments; outstanding balances; CSV export of both |
@@ -513,7 +516,9 @@ writing new class lists.
 - **Use logical classes** (`ms-`, `me-`, `ps-`, `pe-`, `start-`, `end-`, `text-start`, `text-end`,
   `border-e`) instead of left/right, so a right-to-left (Arabic) layout can be added later. Arrow icons that
   point sideways carry `rtl:rotate-180`.
-- Add `print:hidden` to anything that should not appear on paper.
+- Add `print:hidden` to anything that should not appear on paper. Printouts (receipt, estimate, statement,
+  day report) put `ClinicLetterhead` at the top of a `Card` with `print:shadow-none print:border-0`, and
+  give tinted boxes `print:bg-white print:border` so they survive printers that drop backgrounds.
 - Badge colours: Appointments Scheduled blue, Confirmed green, Completed gray, Cancelled red, No Show
   yellow. Treatments Planned blue, In Progress yellow, Completed green, Cancelled red. Sessions Scheduled
   blue, Completed green, Cancelled red. Methods Cash green, Card blue, Bank Transfer purple. WhatsApp Sent
