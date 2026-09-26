@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { openFromMenu, waitForData } from "../helpers";
+import { openFromMenu, pickLink, waitForData } from "../helpers";
 
 test("add a patient", async ({ page }) => {
   await page.goto("/dashboard");
@@ -50,4 +50,16 @@ test("a healthy patient shows no medical alert", async ({ page }) => {
   await waitForData(page);
   await expect(page.getByRole("heading", { name: "Dina Rashad" })).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: "Medical alerts" })).toHaveCount(0);
+});
+
+test("the booking and treatment forms show the chosen patient's medical alerts", async ({ page }) => {
+  await page.goto("/treatments/new");
+  await waitForData(page);
+  await expect(page.getByRole("alert").filter({ hasText: "Medical alerts" })).toHaveCount(0);
+  await pickLink(page, "Patient", "Amir", "Amir Zaki");
+  await expect(page.getByRole("alert").filter({ hasText: "Blood thinner" })).toBeVisible();
+
+  await page.goto("/appointments/new?patient=PAT-2026-00002");
+  await waitForData(page);
+  await expect(page.getByRole("alert").filter({ hasText: "Diabetes" })).toBeVisible();
 });

@@ -481,7 +481,8 @@ function Things() {
 - **Messages:** `useToast().success/error/info`. Never use `alert()`. Ask before deleting with
   `ConfirmDialog`.
 - **Medical safety:** every screen where treatment is decided or done shows `<MedicalAlerts patient={…} />`
-  near the top (patient, appointment and treatment plan pages today). Load the fields with
+  near the top (patient, appointment and treatment plan pages, and under the Patient field of the booking
+  and treatment forms once a patient is picked). Load the fields with
   `usePatientMedical()` or add `MEDICAL_FIELDS` to your query. Never hide it behind a tab.
 - **Money** always goes through `useSettings().money(amount)`, which uses the clinic currency. Dates and
   times go through `formatDate`, `formatTime`, `formatDateTime`; today is `todayISO()` (local time).

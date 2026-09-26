@@ -3,12 +3,13 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Save } from "lucide-react";
 import { Alert, Button, Card, Field, FormActions, LinkButton, SelectInput, TextArea, TextInput } from "@/components/ui";
+import MedicalAlerts from "@/components/MedicalAlerts";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import LinkSelect from "@/components/ui/LinkSelect";
 import { errorMessage, getList } from "@/lib/frappe";
 import { cx, formatDate, formatTime, fromMinutes, toMinutes, todayISO } from "@/lib/format";
-import { useDoctors } from "@/lib/hooks";
+import { useDoctors, usePatientMedical } from "@/lib/hooks";
 import { useSettings } from "@/context/SettingsContext";
 import { APPOINTMENT_STATUSES, DURATIONS, type Appointment } from "@/lib/types";
 
@@ -107,6 +108,8 @@ export default function AppointmentForm({
     remembered ? { ...initial, doctor: remembered.name } : initial,
   );
   const [form, setForm] = useState<AppointmentFormData>(baseline);
+  // The chosen patient's medical alerts, shown while booking or planning treatment.
+  const medical = usePatientMedical(form.patient || undefined);
   const [saving, setSaving] = useState(false);
   // Set once saved, so the page can move on without the unsaved-changes question.
   const [done, setDone] = useState(false);
@@ -187,6 +190,11 @@ export default function AppointmentForm({
               required
             />
           </Field>
+          {medical && (
+            <div className="sm:col-span-2">
+              <MedicalAlerts patient={medical} />
+            </div>
+          )}
           <Field label="Doctor" required className="sm:col-span-2">
             <SelectInput name="doctor" value={form.doctor} onChange={handleChange} required>
               <option value="">Select Doctor</option>

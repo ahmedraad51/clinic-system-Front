@@ -3,10 +3,11 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Save } from "lucide-react";
 import { Alert, Button, Card, Field, FormActions, LinkButton, SelectInput, TextArea, TextInput } from "@/components/ui";
+import MedicalAlerts from "@/components/MedicalAlerts";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import LinkSelect from "@/components/ui/LinkSelect";
 import { errorMessage } from "@/lib/frappe";
-import { useDoctors } from "@/lib/hooks";
+import { useDoctors, usePatientMedical } from "@/lib/hooks";
 import { useSettings } from "@/context/SettingsContext";
 import {
   CHILD_LOWER_TEETH, CHILD_UPPER_TEETH, LOWER_TEETH, TREATMENT_STATUSES, TREATMENT_TYPES, UPPER_TEETH, type TreatmentPlan,
@@ -86,6 +87,8 @@ export default function TreatmentForm({
   const { currency, prices, money } = useSettings();
   const doctors = useDoctors();
   const [form, setForm] = useState<TreatmentFormData>(initial);
+  // The chosen patient's medical alerts, shown while booking or planning treatment.
+  const medical = usePatientMedical(form.patient || undefined);
   const [saving, setSaving] = useState(false);
   // Set once saved, so the page can move on without the unsaved-changes question.
   const [done, setDone] = useState(false);
@@ -142,6 +145,11 @@ export default function TreatmentForm({
               required
             />
           </Field>
+          {medical && (
+            <div className="sm:col-span-2">
+              <MedicalAlerts patient={medical} />
+            </div>
+          )}
           <Field label="Doctor">
             <SelectInput name="doctor" value={form.doctor} onChange={handleChange}>
               <option value="">Select Doctor</option>

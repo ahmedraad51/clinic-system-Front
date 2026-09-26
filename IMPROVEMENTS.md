@@ -5,17 +5,16 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+- Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days) and
+  warn when booking outside them.
 
 ## Backlog
 
-1. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
-   and warn when booking outside them.
-2. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
+1. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
    check.
-3. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
+2. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
    treatment plan page for its tooth.
-4. Show the medical alerts in the booking and treatment forms as soon as a patient is picked.
+3. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -91,7 +90,10 @@ Each finished item says what changed, when, and which commit holds it.
   darker and easier to read. Keyboard users see a clear ring on the focused link, and the first Tab press
   offers "Skip to content". Lists show grey placeholder rows while they load instead of a bare
   "Loading..." line. Error messages were already short, plain sentences, so they were left as they are.
-  Commit PENDING.
+  Commit 2444278.
+- 2026-09-26 - **Medical alerts while booking and planning.** As soon as a patient is picked in the
+  booking form or the new treatment plan form, their medical alerts (allergies, blood thinners, diabetes,
+  heart problems, pregnancy) appear right under the patient's name. Commit PENDING.
 
 ## Questions for the owner
 
