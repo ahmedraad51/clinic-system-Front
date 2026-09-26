@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Alert, statusTone, type Tone } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
 import { errorMessage, getList, updateDoc } from "@/lib/frappe";
 import { addDays, cx, formatDate, formatTime, fromMinutes, toMinutes, todayISO, weekdayShort, weekStart } from "@/lib/format";
+import { useMediaQuery } from "@/lib/hooks";
 import { appointmentHref } from "@/lib/links";
 import { APPOINTMENT_STATUSES, type Appointment, type Doctor } from "@/lib/types";
 
@@ -183,6 +185,9 @@ export default function AppointmentCalendar({
 
   const [result, setResult] = useState<{ key: string; rows: Appointment[]; error: string } | null>(null);
   const [now, setNow] = useState(() => new Date());
+  // Phones show one doctor at a time in the day view; null = start with the first doctor who has patients.
+  const narrow = useMediaQuery("(max-width: 639px)");
+  const [phoneColumn, setPhoneColumn] = useState<number | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const [moving, setMoving] = useState(false);
@@ -386,7 +391,11 @@ export default function AppointmentCalendar({
   for (let m = dayStart; m < dayEnd; m += SLOT) slots.push(m);
 
   // Narrow enough that a whole week fits beside the menu on a tablet.
-  const minColumn = view === "day" ? "10.5rem" : "5.5rem";
+  const single = view === "day" && narrow && columns.length > 1;
+  const busiest = Math.max(0, columns.findIndex((c) => c.items.length > 0));
+  const shownIndex = Math.min(phoneColumn ?? busiest, columns.length - 1);
+  const shown = single ? [columns[shownIndex]] : columns;
+  const minColumn = view === "day" ? (single ? "12rem" : "10.5rem") : "5.5rem";
   // Hour lines and lighter half-hour lines. (Built with join: joining template literals with + was
   // miscompiled in the production build and lost the "px),".)
   const hourPx = 60 * PX;
@@ -413,15 +422,49 @@ export default function AppointmentCalendar({
             {doctorsLoading ? "Loading..." : "There are no active doctors to show."}
           </p>
         ) : (
+          <>
+          {single && (
+            <div className="flex items-center justify-between gap-2 px-2 py-1.5 border-b border-gray-100 bg-gray-50">
+              <button
+                type="button"
+                onClick={() => setPhoneColumn((shownIndex - 1 + columns.length) % columns.length)}
+                aria-label="Previous doctor"
+                className="w-11 h-11 flex items-center justify-center rounded-lg text-gray-600 hover:bg-white"
+              >
+                <ChevronLeft size={20} className="rtl:rotate-180" />
+              </button>
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-xs text-gray-500">
+                  Doctor {shownIndex + 1} of {columns.length}
+                </p>
+                <div className="flex gap-1.5" aria-hidden="true">
+                  {columns.map((column, index) => (
+                    <span
+                      key={column.key}
+                      className={cx("w-1.5 h-1.5 rounded-full", index === shownIndex ? "bg-primary-600" : "bg-gray-300")}
+                    />
+                  ))}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPhoneColumn((shownIndex + 1) % columns.length)}
+                aria-label="Next doctor"
+                className="w-11 h-11 flex items-center justify-center rounded-lg text-gray-600 hover:bg-white"
+              >
+                <ChevronRight size={20} className="rtl:rotate-180" />
+              </button>
+            </div>
+          )}
           <div ref={scrollRef} className="overflow-auto max-h-[calc(100dvh-15rem)] min-h-[24rem]">
             {/* w-max: as wide as the columns, so the sticky time column can stay put while scrolling sideways. */}
             <div
               className="grid w-max min-w-full"
-              style={{ gridTemplateColumns: `4.25rem repeat(${columns.length}, minmax(${minColumn}, 1fr))` }}
+              style={{ gridTemplateColumns: `4.25rem repeat(${shown.length}, minmax(${minColumn}, 1fr))` }}
             >
               {/* Header row */}
               <div className="sticky top-0 start-0 z-40 bg-white border-b border-e border-gray-100" />
-              {columns.map((column) => (
+              {shown.map((column) => (
                 <div
                   key={column.key}
                   data-today={column.today}
@@ -474,7 +517,7 @@ export default function AppointmentCalendar({
               </div>
 
               {/* One column per doctor or day */}
-              {columns.map((column) => (
+              {shown.map((column) => (
                 <div
                   key={column.key}
                   data-column={column.key}
@@ -602,6 +645,7 @@ export default function AppointmentCalendar({
               ))}
             </div>
           </div>
+          </>
         )}
       </div>
 

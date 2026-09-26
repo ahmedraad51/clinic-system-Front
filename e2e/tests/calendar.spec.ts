@@ -50,3 +50,17 @@ test("week view and list view", async ({ page }) => {
   await waitForData(page);
   await expect(page.getByRole("columnheader", { name: "Reason" })).toBeVisible();
 });
+
+test("on a phone the day calendar shows one doctor at a time", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/appointments?view=day");
+  // It starts with the first doctor who has patients today: Dr. Hana Aziz (Salma Ibrahim at 10:00).
+  await expect(page.getByText("Doctor 1 of 5")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Salma Ibrahim/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /with Dr\. Leila Haddad/ })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Next doctor" }).click();
+  await expect(page.getByText("Doctor 2 of 5")).toBeVisible();
+  await expect(page.getByRole("button", { name: /with Dr\. Leila Haddad/ }).first()).toBeAttached();
+  await expect(page.getByRole("link", { name: /Salma Ibrahim/ })).toHaveCount(0);
+});

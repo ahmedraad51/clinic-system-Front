@@ -1,9 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { getCount, getDoc, getList, errorMessage, isNotFound, type FilterRow } from "./frappe";
 import { MEDICAL_FIELDS, type MedicalFields } from "./medical";
 import type { BaseDoc, Doctor, Patient } from "./types";
+
+/**
+ * True while a CSS media query matches, e.g. useMediaQuery("(max-width: 639px)") for phones.
+ * False during the server render; the browser value follows straight after.
+ */
+export function useMediaQuery(query: string): boolean {
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      const list = window.matchMedia(query);
+      list.addEventListener("change", onChange);
+      return () => list.removeEventListener("change", onChange);
+    },
+    [query],
+  );
+  return useSyncExternalStore(subscribe, () => window.matchMedia(query).matches, () => false);
+}
 
 /** Returns the value once it has stopped changing for `delay` ms. Used for search boxes. */
 export function useDebounced<T>(value: T, delay = 300): T {

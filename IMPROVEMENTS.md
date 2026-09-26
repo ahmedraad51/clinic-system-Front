@@ -5,15 +5,13 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Phone: the day calendar shows one doctor at a time with buttons for the next and previous doctor (five
-  columns are too narrow on a phone).
+- Dental chart on a phone or narrow screen: scroll the chart so the chosen tooth is in view (on the plan
+  page tooth 37 was off-screen).
 
 ## Backlog
 
-1. Dental chart on a phone or narrow screen: scroll the chart so the chosen tooth is in view (on the plan
-   page tooth 37 was off-screen).
-2. Patient list: show a small medical-alert marker and the next appointment in each row.
-3. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+1. Patient list: show a small medical-alert marker and the next appointment in each row.
+2. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -119,7 +117,10 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-26 - **Recall list.** A new "Recall" page shows patients who are due for a check-up: not seen
   for six months (or 3, 9, 12) and nothing booked. Each has one-tap Call, a WhatsApp button with a
   friendly reminder already written, and Book. Two example patients were added to the dummy data so the
-  list is not empty. Commit PENDING.
+  list is not empty. Commit a379754.
+- 2026-09-26 - **Calendar on a phone.** On a phone the day calendar now shows one doctor at a time, full
+  width, with arrows to go to the next or previous doctor. It opens on the first doctor who has patients
+  that day. Commit PENDING.
 
 ## Questions for the owner
 
