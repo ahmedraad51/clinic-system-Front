@@ -2,7 +2,7 @@
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Save } from "lucide-react";
-import { Alert, Button, Card, Field, LinkButton, SelectInput, TextArea, TextInput } from "@/components/ui";
+import { Alert, Button, Card, Field, FormActions, LinkButton, SelectInput, TextArea, TextInput } from "@/components/ui";
 import { errorMessage } from "@/lib/frappe";
 import { GENDERS, type Patient } from "@/lib/types";
 
@@ -142,14 +142,14 @@ export default function PatientForm({
 
       {error && <Alert tone="red">{error}</Alert>}
 
-      <div className="flex flex-wrap gap-3">
+      <FormActions>
         <Button type="submit" icon={Save} loading={saving}>
           {submitLabel}
         </Button>
         <LinkButton href={cancelHref} variant="secondary">
           Cancel
         </LinkButton>
-      </div>
+      </FormActions>
     </form>
   );
 }

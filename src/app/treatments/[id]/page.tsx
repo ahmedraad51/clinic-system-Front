@@ -255,10 +255,10 @@ function TreatmentDetail() {
                             {formatDate(pay.payment_date)}
                           </Link>
                         </Td>
-                        <Td>
+                        <Td label="Method">
                           <StatusBadge kind="method" status={pay.payment_method} />
                         </Td>
-                        <Td className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount)}</Td>
+                        <Td label="Amount" className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount)}</Td>
                       </ClickableRow>
                     ))}
                   </tbody>
@@ -301,12 +301,12 @@ function TreatmentDetail() {
                 {data.sessions.map((session) => (
                   <tr key={session.name} className="hover:bg-gray-50">
                     <Td className="whitespace-nowrap font-medium text-gray-800">{formatDate(session.session_date)}</Td>
-                    <Td className="whitespace-nowrap">{formatTime(session.session_time)}</Td>
-                    <Td>{display(session.doctor_name)}</Td>
-                    <Td>
+                    <Td label="Time" className="whitespace-nowrap">{formatTime(session.session_time)}</Td>
+                    <Td label="Doctor">{display(session.doctor_name)}</Td>
+                    <Td label="Status">
                       <StatusBadge kind="session" status={session.status} />
                     </Td>
-                    <Td className="max-w-[320px]">{display(session.notes)}</Td>
+                    <Td label="Notes" className="max-w-[320px]">{display(session.notes)}</Td>
                     {canEdit && (
                       <Td className="text-end">
                         <Button size="sm" variant="ghost" icon={Pencil} onClick={() => setSessionModal({ open: true, session })}>

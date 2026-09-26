@@ -284,7 +284,7 @@ export function LinkButton({
 /* --------------------------------------------------------------- inputs -- */
 
 export const inputClass =
-  "w-full min-h-11 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm text-gray-800 placeholder:text-gray-400 " +
+  "w-full min-h-11 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm max-sm:text-base text-gray-800 placeholder:text-gray-400 " +
   "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500";
 
 /** A label above one input. The input goes inside as children, so clicking the label focuses it. */
@@ -445,6 +445,18 @@ export function Segmented<K extends string>({
   );
 }
 
+/**
+ * The Save / Cancel row at the end of a form. It sticks to the bottom of the screen while the form is taller
+ * than the screen, so Save is always one tap away on a phone or tablet. Use it inside PageContainer.
+ */
+export function FormActions({ children }: { children: ReactNode }) {
+  return (
+    <div className="sticky bottom-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-slate-50/95 border-t border-gray-200 flex flex-wrap items-center gap-3 print:hidden">
+      {children}
+    </div>
+  );
+}
+
 /** The row of search box and filters above a list. */
 export function Toolbar({ children }: { children: ReactNode }) {
   return <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">{children}</div>;
@@ -452,10 +464,23 @@ export function Toolbar({ children }: { children: ReactNode }) {
 
 /* --------------------------------------------------------------- tables -- */
 
+/**
+ * A data table. On phones (below the sm breakpoint) every row becomes a small card: the header row is
+ * hidden and each cell with a `label` shows it beside its value. Give every Td except the first (the
+ * row's name or date, which leads the card) and action cells a label, the same text as its Th.
+ */
 export function Table({ children }: { children: ReactNode }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">{children}</table>
+      <table
+        className={cx(
+          "w-full text-sm",
+          "max-sm:block max-sm:[&>thead]:hidden max-sm:[&>tbody]:block",
+          "max-sm:[&>tbody>tr]:block max-sm:[&>tbody>tr]:px-4 max-sm:[&>tbody>tr]:py-3 max-sm:[&>tbody>tr]:border-b max-sm:[&>tbody>tr]:border-gray-100",
+        )}
+      >
+        {children}
+      </table>
     </div>
   );
 }
@@ -473,8 +498,25 @@ export function Th({ children, className }: { children?: ReactNode; className?: 
   );
 }
 
-export function Td({ children, className }: { children?: ReactNode; className?: string }) {
-  return <td className={cx("px-5 py-3.5 text-gray-600 border-b border-gray-50 align-middle", className)}>{children}</td>;
+export function Td({ children, className, label }: { children?: ReactNode; className?: string; label?: string }) {
+  return (
+    <td
+      data-label={label}
+      className={cx(
+        "px-5 py-3.5 text-gray-600 border-b border-gray-50 align-middle",
+        // Phone card layout (see Table).
+        "max-sm:flex max-sm:items-center max-sm:gap-4 max-sm:px-0 max-sm:py-1 max-sm:border-0 max-sm:max-w-none",
+        label
+          ? "max-sm:justify-between max-sm:text-end max-sm:before:content-[attr(data-label)] max-sm:before:text-xs max-sm:before:text-gray-500 max-sm:before:text-start max-sm:before:shrink-0"
+          : "max-sm:justify-start max-sm:text-start",
+        // An empty spacer cell is not worth a line on a phone card.
+        (children === undefined || children === null) && "max-sm:hidden",
+        className,
+      )}
+    >
+      {label ? <span className="min-w-0">{children}</span> : children}
+    </td>
+  );
 }
 
 /** A table row that opens a record when clicked. Links and buttons inside it keep working on their own. */
@@ -495,7 +537,7 @@ export function ClickableRow({ href, children, dimmed = false }: { href: string;
 export function TableMessage({ colSpan, children, icon }: { colSpan: number; children: ReactNode; icon?: LucideIcon }) {
   return (
     <tr>
-      <td colSpan={colSpan} className="px-5 py-12 text-center text-sm text-gray-500">
+      <td colSpan={colSpan} className="px-5 py-12 text-center text-sm text-gray-500 max-sm:block">
         {icon ? (
           <div className="flex flex-col items-center">
             <EmptyDrawing icon={icon} />

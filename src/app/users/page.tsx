@@ -88,8 +88,8 @@ function UsersList() {
                       <span className="font-medium text-gray-800">{u.full_name || u.name}</span>
                     </span>
                   </Td>
-                  <Td>{u.email}</Td>
-                  <Td>
+                  <Td label="Email">{u.email}</Td>
+                  <Td label="Status">
                     <StatusBadge kind="user" status={u.enabled ? "Active" : "Disabled"} />
                   </Td>
                   <Td className="text-end">

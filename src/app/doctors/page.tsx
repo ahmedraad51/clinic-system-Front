@@ -95,14 +95,14 @@ function DoctorsList() {
                     </button>
                     {doctor.email && <span className="block text-xs text-gray-500">{doctor.email}</span>}
                   </Td>
-                  <Td>{display(doctor.specialization)}</Td>
-                  <Td className="whitespace-nowrap">{display(doctor.phone_number)}</Td>
-                  <Td className="whitespace-nowrap">
+                  <Td label="Specialization">{display(doctor.specialization)}</Td>
+                  <Td label="Phone" className="whitespace-nowrap">{display(doctor.phone_number)}</Td>
+                  <Td label="Working hours" className="whitespace-nowrap">
                     {doctor.start_time && doctor.end_time
                       ? `${formatTime(doctor.start_time)} – ${formatTime(doctor.end_time)}`
                       : <span className="text-gray-400">Clinic hours</span>}
                   </Td>
-                  <Td>
+                  <Td label="Status">
                     <Badge tone={Number(doctor.is_active) === 1 ? "green" : "gray"}>
                       {Number(doctor.is_active) === 1 ? "Active" : "Not active"}
                     </Badge>

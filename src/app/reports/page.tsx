@@ -229,16 +229,16 @@ function Reports() {
                         {formatDate(row.payment_date)}
                       </Link>
                     </Td>
-                    <Td>
+                    <Td label="Patient">
                       <Link href={patientHref(row.patient)} className="text-gray-700 hover:text-primary-600">
                         {row.patient_name || row.patient}
                       </Link>
                     </Td>
-                    <Td>{row.treatment_type || "—"}</Td>
-                    <Td>
+                    <Td label="Treatment">{row.treatment_type || "—"}</Td>
+                    <Td label="Method">
                       <StatusBadge kind="method" status={row.payment_method} />
                     </Td>
-                    <Td className="text-end font-medium text-green-600 whitespace-nowrap">{money(row.amount)}</Td>
+                    <Td label="Amount" className="text-end font-medium text-green-600 whitespace-nowrap">{money(row.amount)}</Td>
                   </tr>
                 ))
               )}
@@ -284,18 +284,18 @@ function Reports() {
                         {row.patient_name || row.patient}
                       </Link>
                     </Td>
-                    <Td>
+                    <Td label="Treatment">
                       <Link href={treatmentHref(row.name)} className="text-gray-700 hover:text-primary-600">
                         {row.treatment_type}
                         {row.tooth_number ? ` · ${row.tooth_number}` : ""}
                       </Link>
                     </Td>
-                    <Td>
+                    <Td label="Status">
                       <StatusBadge kind="treatment" status={row.status} />
                     </Td>
-                    <Td className="text-end whitespace-nowrap">{money(row.total_cost)}</Td>
-                    <Td className="text-end whitespace-nowrap text-green-600">{money(row.paid_amount)}</Td>
-                    <Td className="text-end whitespace-nowrap font-semibold text-red-600">{money(row.remaining_amount)}</Td>
+                    <Td label="Total Cost" className="text-end whitespace-nowrap">{money(row.total_cost)}</Td>
+                    <Td label="Paid" className="text-end whitespace-nowrap text-green-600">{money(row.paid_amount)}</Td>
+                    <Td label="Remaining" className="text-end whitespace-nowrap font-semibold text-red-600">{money(row.remaining_amount)}</Td>
                   </tr>
                 ))
               )}
@@ -308,7 +308,7 @@ function Reports() {
                   <Td />
                   <Td />
                   <Td />
-                  <Td className="text-end whitespace-nowrap font-bold text-red-600">{money(outstandingTotal)}</Td>
+                  <Td label="Remaining" className="text-end whitespace-nowrap font-bold text-red-600">{money(outstandingTotal)}</Td>
                 </tr>
               </tfoot>
             )}

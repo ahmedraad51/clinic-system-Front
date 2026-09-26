@@ -112,18 +112,18 @@ function TreatmentsList() {
                     </Link>
                     <span className="block text-xs text-gray-400">{plan.name}</span>
                   </Td>
-                  <Td>
+                  <Td label="Patient">
                     <Link href={patientHref(plan.patient)} className="text-gray-700 hover:text-primary-600">
                       {plan.patient_name || plan.patient}
                     </Link>
                   </Td>
-                  <Td>{display(plan.tooth_number)}</Td>
-                  <Td>{display(plan.doctor_name)}</Td>
-                  <Td>
+                  <Td label="Tooth">{display(plan.tooth_number)}</Td>
+                  <Td label="Doctor">{display(plan.doctor_name)}</Td>
+                  <Td label="Status">
                     <StatusBadge kind="treatment" status={plan.status} />
                   </Td>
-                  <Td className="text-end whitespace-nowrap">{money(plan.total_cost)}</Td>
-                  <Td className="text-end whitespace-nowrap">
+                  <Td label="Cost" className="text-end whitespace-nowrap">{money(plan.total_cost)}</Td>
+                  <Td label="Remaining" className="text-end whitespace-nowrap">
                     <span className={Number(plan.remaining_amount) > 0 ? "font-medium text-red-600" : "text-gray-400"}>
                       {money(plan.remaining_amount)}
                     </span>

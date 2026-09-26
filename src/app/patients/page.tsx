@@ -95,11 +95,11 @@ function PatientsList() {
                     </Link>
                     <span className="block text-xs text-gray-400">{patient.name}</span>
                   </Td>
-                  <Td className="whitespace-nowrap">{display(patient.phone_number)}</Td>
-                  <Td>{display(patient.gender)}</Td>
-                  <Td>{patient.age ? patient.age : "—"}</Td>
+                  <Td label="Phone" className="whitespace-nowrap">{display(patient.phone_number)}</Td>
+                  <Td label="Gender">{display(patient.gender)}</Td>
+                  <Td label="Age">{patient.age ? patient.age : "—"}</Td>
                   {showBalance && (
-                    <Td className="text-end whitespace-nowrap">
+                    <Td label="Balance" className="text-end whitespace-nowrap">
                       {Number(patient.total_remaining) > 0 ? (
                         <span className="font-medium text-red-600">{money(patient.total_remaining)}</span>
                       ) : (

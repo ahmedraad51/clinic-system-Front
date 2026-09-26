@@ -249,15 +249,15 @@ function AppointmentsList() {
                       {formatDate(a.appointment_date)}
                     </Link>
                   </Td>
-                  <Td className="whitespace-nowrap">{formatTime(a.appointment_time)}</Td>
-                  <Td>
+                  <Td label="Time" className="whitespace-nowrap">{formatTime(a.appointment_time)}</Td>
+                  <Td label="Patient">
                     <Link href={patientHref(a.patient)} className="text-gray-700 hover:text-primary-600">
                       {a.patient_name || a.patient}
                     </Link>
                   </Td>
-                  <Td>{display(a.doctor_name)}</Td>
-                  <Td className="max-w-[240px] truncate">{display(a.reason_for_visit)}</Td>
-                  <Td>
+                  <Td label="Doctor">{display(a.doctor_name)}</Td>
+                  <Td label="Reason" className="max-w-[240px] truncate">{display(a.reason_for_visit)}</Td>
+                  <Td label="Status">
                     <StatusBadge kind="appointment" status={a.status} />
                   </Td>
                 </ClickableRow>

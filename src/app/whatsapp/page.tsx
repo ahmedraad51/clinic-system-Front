@@ -368,7 +368,7 @@ function MessageLog() {
                       </Link>
                     )}
                   </Td>
-                  <Td>
+                  <Td label="Patient">
                     {log.patient ? (
                       <Link href={patientHref(log.patient)} className="text-gray-800 hover:text-primary-600">
                         {log.patient_name || log.patient}
@@ -378,10 +378,10 @@ function MessageLog() {
                     )}
                     {log.phone_number && <span className="block text-xs text-gray-400">{log.phone_number}</span>}
                   </Td>
-                  <Td>
+                  <Td label="Status">
                     <StatusBadge kind="whatsapp" status={log.status} />
                   </Td>
-                  <Td className="max-w-md">
+                  <Td label="Message" className="max-w-md">
                     <p className="line-clamp-2">{log.message || "—"}</p>
                     {log.error_message && <p className="text-xs text-red-600 mt-1">{log.error_message}</p>}
                   </Td>

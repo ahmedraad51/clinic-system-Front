@@ -5,26 +5,23 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Phone and tablet polish: tables turn into cards on small screens, sticky Save buttons, larger inputs.
-  Seen in the screenshots: on a phone the payments list hides the Amount column and the date filters run
-  off the screen.
+- Price list: a default price per treatment type (in Settings) that fills in the cost automatically, and a
+  printable treatment estimate for the patient.
 
 ## Backlog
 
-1. Price list: a default price per treatment type (in Settings) that fills in the cost automatically, and
-   a printable treatment estimate for the patient.
-2. Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
+1. Printouts: patient statement (plans, payments, balance), appointment card, end-of-day cash report by
    payment method.
-3. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
+2. Quality: keyboard use, visible focus, colour contrast, loading skeletons, a warning before leaving a
    form with unsaved changes, clear error messages.
-4. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
-5. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
+3. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+4. Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days)
    and warn when booking outside them.
-6. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
+5. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
    check.
-7. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
+6. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
    treatment plan page for its tooth.
-8. Show the medical alerts in the booking and treatment forms as soon as a patient is picked.
+7. Show the medical alerts in the booking and treatment forms as soon as a patient is picked.
 
 ## Done
 
@@ -78,7 +75,12 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-26 - **Doctors page.** Managers can now add and edit doctors (name, specialization, phone,
   email, working hours) from a new Doctors page in the menu. A doctor who leaves is switched off instead
   of deleted, so their old appointments keep their name. New doctors appear straight away in the booking
-  form and the calendar. Commit PENDING.
+  form and the calendar. Commit bc25597.
+- 2026-09-26 - **Phone and tablet polish.** On a phone, every list (patients, appointments, treatments,
+  payments, reports and more) now shows each record as a small card with every value labelled, so nothing
+  is cut off, such as the payment Amount before. The Save button of every form stays at the bottom of the
+  screen while you scroll. Text in fields is larger on phones, and the payment date filters now fit the
+  screen. Commit PENDING.
 
 ## Questions for the owner
 

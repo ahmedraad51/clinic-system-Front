@@ -479,9 +479,9 @@ function Things() {
 (`flush` for tables), `StatCard`, `Badge`, `StatusBadge` (kinds: appointment, treatment, session, method,
 whatsapp, trigger, user) and `statusTone(kind, status)` for other views that must match the badge colours,
 `Button` and `LinkButton` (primary, secondary, danger, ghost, success; sm, md; `icon`, `loading`),
-`Segmented` (joined view switch, e.g. Day / Week / List), `Field` (label wrapping one input), `TextInput`,
+`Segmented` (joined view switch, e.g. Day / Week / List), `FormActions` (sticky Save / Cancel bar), `Field` (label wrapping one input), `TextInput`,
 `SelectInput`, `TextArea`, `Toggle`,
-`SearchInput`, `Toolbar`, `Table`, `Th`, `Td`, `ClickableRow`, `TableMessage`, `Pagination`, `DetailList` and
+`SearchInput`, `Toolbar`, `Table`, `Th`, `Td` (with `label` for the phone cards), `ClickableRow`, `TableMessage`, `Pagination`, `DetailList` and
 `DetailRow`, `Tabs`, `Alert`, `Spinner`, `PageLoading`, `EmptyState`, `NoAccess`, `NotFoundCard`; plus
 `Modal` and `ConfirmDialog` in `Modal.tsx`, and `LinkSelect` for searchable Link fields. Use these instead of
 writing new class lists.
@@ -502,6 +502,10 @@ writing new class lists.
 - **Touch targets are at least 44 px.** `Button` md, inputs, tabs and menu links have `min-h-11`; small
   buttons and icon buttons grow to 44 px on touch screens with the `pointer-coarse:` variant. Do the same for
   any new clickable thing.
+- **Phones:** below the `sm` breakpoint every `Table` turns its rows into cards. Give each `Td` except the
+  first (the row's name or date) and action cells `label="…"` with the same text as its `Th`; empty cells
+  are hidden. End every form with `<FormActions>` (a Save / Cancel bar that sticks to the bottom of the
+  screen). Inputs use 16 px text on phones so iPhones do not zoom in.
 - Empty lists: `<TableMessage icon={SomeIcon}>` or `<EmptyState>` show a small drawing; keep the text short.
 - Tailwind utility classes go inline; `globals.css` only holds the import, the tokens and body colours.
 - **Use logical classes** (`ms-`, `me-`, `ps-`, `pe-`, `start-`, `end-`, `text-start`, `text-end`,

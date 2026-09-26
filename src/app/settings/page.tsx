@@ -5,7 +5,7 @@ import ToothLogo from "@/components/ToothLogo";
 import { Save, Trash2, Upload } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Button, Card, Field, PageContainer, PageHeader, PageLoading, SelectInput, TextInput, Toggle,
+  Alert, Button, Card, Field, FormActions, PageContainer, PageHeader, PageLoading, SelectInput, TextInput, Toggle,
 } from "@/components/ui";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
@@ -240,9 +240,11 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
 
       {error && <Alert tone="red">{error}</Alert>}
 
-      <Button type="submit" icon={Save} loading={saving} disabled={uploading}>
-        Save Settings
-      </Button>
+      <FormActions>
+        <Button type="submit" icon={Save} loading={saving} disabled={uploading}>
+          Save Settings
+        </Button>
+      </FormActions>
     </form>
   );
 }

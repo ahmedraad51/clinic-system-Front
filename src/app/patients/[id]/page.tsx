@@ -354,10 +354,10 @@ function PatientDetail() {
                         {formatDate(a.appointment_date)}
                       </Link>
                     </Td>
-                    <Td className="whitespace-nowrap">{formatTime(a.appointment_time)}</Td>
-                    <Td>{display(a.doctor_name)}</Td>
-                    <Td>{display(a.reason_for_visit)}</Td>
-                    <Td>
+                    <Td label="Time" className="whitespace-nowrap">{formatTime(a.appointment_time)}</Td>
+                    <Td label="Doctor">{display(a.doctor_name)}</Td>
+                    <Td label="Reason">{display(a.reason_for_visit)}</Td>
+                    <Td label="Status">
                       <StatusBadge kind="appointment" status={a.status} />
                     </Td>
                   </ClickableRow>
@@ -404,13 +404,13 @@ function PatientDetail() {
                         {plan.treatment_type}
                       </Link>
                     </Td>
-                    <Td>{display(plan.tooth_number)}</Td>
-                    <Td>{display(plan.doctor_name)}</Td>
-                    <Td>
+                    <Td label="Tooth">{display(plan.tooth_number)}</Td>
+                    <Td label="Doctor">{display(plan.doctor_name)}</Td>
+                    <Td label="Status">
                       <StatusBadge kind="treatment" status={plan.status} />
                     </Td>
-                    <Td className="text-end whitespace-nowrap">{money(plan.total_cost)}</Td>
-                    <Td className="text-end whitespace-nowrap">
+                    <Td label="Cost" className="text-end whitespace-nowrap">{money(plan.total_cost)}</Td>
+                    <Td label="Remaining" className="text-end whitespace-nowrap">
                       <span className={Number(plan.remaining_amount) > 0 ? "font-medium text-red-600" : "text-gray-400"}>
                         {money(plan.remaining_amount)}
                       </span>
@@ -457,11 +457,11 @@ function PatientDetail() {
                         {formatDate(pay.payment_date)}
                       </Link>
                     </Td>
-                    <Td>{display(pay.treatment_type)}</Td>
-                    <Td>
+                    <Td label="Treatment">{display(pay.treatment_type)}</Td>
+                    <Td label="Method">
                       <StatusBadge kind="method" status={pay.payment_method} />
                     </Td>
-                    <Td className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount)}</Td>
+                    <Td label="Amount" className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount)}</Td>
                   </ClickableRow>
                 ))}
               </tbody>

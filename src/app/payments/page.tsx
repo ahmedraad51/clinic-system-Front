@@ -106,10 +106,10 @@ function PaymentsList() {
             </option>
           ))}
         </SelectInput>
-        <div className="flex items-center gap-2">
-          <TextInput type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From date" className="sm:w-40" />
+        <div className="flex items-center gap-2 min-w-0">
+          <TextInput type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From date" className="min-w-0 flex-1 sm:flex-none sm:w-40" />
           <span className="text-gray-400 text-sm">to</span>
-          <TextInput type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To date" className="sm:w-40" />
+          <TextInput type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To date" className="min-w-0 flex-1 sm:flex-none sm:w-40" />
         </div>
       </Toolbar>
 
@@ -140,12 +140,12 @@ function PaymentsList() {
                     </Link>
                     <span className="block text-xs text-gray-400">{pay.name}</span>
                   </Td>
-                  <Td>
+                  <Td label="Patient">
                     <Link href={patientHref(pay.patient)} className="text-gray-700 hover:text-primary-600">
                       {pay.patient_name || pay.patient}
                     </Link>
                   </Td>
-                  <Td>
+                  <Td label="Treatment">
                     {pay.treatment_plan ? (
                       <Link href={treatmentHref(pay.treatment_plan)} className="text-gray-700 hover:text-primary-600">
                         {pay.treatment_type || pay.treatment_plan}
@@ -154,10 +154,10 @@ function PaymentsList() {
                       display("")
                     )}
                   </Td>
-                  <Td>
+                  <Td label="Method">
                     <StatusBadge kind="method" status={pay.payment_method} />
                   </Td>
-                  <Td className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount)}</Td>
+                  <Td label="Amount" className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount)}</Td>
                 </ClickableRow>
               ))
             )}
