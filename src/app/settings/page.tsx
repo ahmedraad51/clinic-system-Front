@@ -15,6 +15,7 @@ import { cx } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
 import { DEFAULT_THEME_COLOR, normalizeHex, readableBrand, THEME_PRESETS } from "@/lib/theme";
 import { CURRENCIES, TREATMENT_TYPES, WEEK_DAYS, type ClinicSettings } from "@/lib/types";
+import { cleanCountryCode, DEFAULT_COUNTRY_CODE } from "@/lib/phone";
 
 const SETTINGS = "Clinic Settings";
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
@@ -26,6 +27,7 @@ interface SettingsForm {
   address: string;
   tax_number: string;
   currency: string;
+  phone_country_code: string;
   opening_time: string;
   closing_time: string;
   /** Open days, in WEEK_DAYS order. */
@@ -47,6 +49,7 @@ function toForm(doc: ClinicSettings): SettingsForm {
     address: doc.address ?? "",
     tax_number: doc.tax_number ?? "",
     currency: doc.currency || "USD",
+    phone_country_code: doc.phone_country_code ?? "",
     opening_time: (doc.opening_time ?? "").slice(0, 5),
     closing_time: (doc.closing_time ?? "").slice(0, 5),
     // Nothing saved yet means open every day.
@@ -140,6 +143,8 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
         address: form.address,
         tax_number: form.tax_number,
         currency: form.currency,
+        // Digits only; empty means the default, 964.
+        phone_country_code: cleanCountryCode(form.phone_country_code, ""),
         opening_time: form.opening_time || null,
         closing_time: form.closing_time || null,
         working_days: WEEK_DAYS.filter((d) => form.working_days.includes(d)).join(","),
@@ -154,7 +159,10 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
           .map((type) => ({ treatment_type: type, price: Number(form.prices[type]) })),
       });
       toast.success("Settings saved.");
-      setBaseline(form);
+      // Show the country code as it was saved ("00964" → "964").
+      const saved = { ...form, phone_country_code: cleanCountryCode(form.phone_country_code, "") };
+      setForm(saved);
+      setBaseline(saved);
       refresh();
       onSaved();
     } catch (err) {
@@ -218,6 +226,16 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
                 </option>
               ))}
             </SelectInput>
+          </Field>
+          <Field label="Phone Country Code" hint={`Added to local numbers such as 0770 in WhatsApp links. Empty means ${DEFAULT_COUNTRY_CODE} (Iraq).`}>
+            <TextInput
+              name="phone_country_code"
+              value={form.phone_country_code}
+              onChange={handleChange}
+              inputMode="numeric"
+              maxLength={5}
+              placeholder={DEFAULT_COUNTRY_CODE}
+            />
           </Field>
         </div>
       </Card>

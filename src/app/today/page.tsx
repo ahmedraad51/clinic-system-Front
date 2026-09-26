@@ -53,7 +53,7 @@ function TodayBoard() {
   // A doctor sees their own patients first; "Everyone" shows the whole clinic.
   const [everyone, setEveryone] = useState(false);
   const mine = myDoctor && !everyone ? myDoctor.name : "";
-  const { money, settings, clinicName } = useSettings();
+  const { money, settings, clinicName, countryCode } = useSettings();
   // Reminders opened from this computer, so nobody gets two.
   const [reminded, setReminded] = useState<string[]>(() => readReminded());
   const toast = useToast();
@@ -398,7 +398,7 @@ function TodayBoard() {
         >
           <ul className="divide-y divide-gray-100">
             {tomorrowList.map((a) => {
-              const link = whatsappLink(board?.patients[a.patient]?.phone_number, reminderText(a));
+              const link = whatsappLink(board?.patients[a.patient]?.phone_number, reminderText(a), countryCode);
               const done = reminded.includes(a.name);
               return (
                 <li key={a.name} className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">

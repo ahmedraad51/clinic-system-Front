@@ -186,6 +186,11 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-26 - **Age instead of a birth date.** Many patients do not know their exact date of birth. The
   patient form now has an "Only know the age?" link that swaps the date box for an Age box, so the
   receptionist can type "42" and move on. Commit 39844fc.
+- 2026-09-26 - **WhatsApp works with Iraqi phone numbers** (from the pet store study, item 1). A number
+  typed the local way, like 0770 123 4567, now opens WhatsApp as +964 770 123 4567 instead of a broken
+  link. Searching a patient by phone finds them however the number was typed (0770…, +964…, 00964… or
+  Arabic digits), and the "Already registered?" check does the same. Settings has a new Phone Country Code
+  (964 for Iraq). Commit PENDING.
 
 ## Questions for the owner
 

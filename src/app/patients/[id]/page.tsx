@@ -51,7 +51,7 @@ function PatientDetail() {
   const router = useRouter();
   const toast = useToast();
   const { can } = useSession();
-  const { money } = useSettings();
+  const { money, countryCode } = useSettings();
   const id = routeId(params.id);
   const { doc: patient, loading, notFound, error, reload } = useDocument<Patient>("Patient", id);
   const [tab, setTab] = useState<TabKey>("overview");
@@ -156,7 +156,7 @@ function PatientDetail() {
   ];
 
   const subtitle = [patient.age ? `${patient.age} years` : "", patient.gender, patient.name].filter(Boolean).join(" · ");
-  const whatsapp = whatsappNumber(patient.phone_number);
+  const whatsapp = whatsappNumber(patient.phone_number, countryCode);
   const remaining = Number(patient.total_remaining) || 0;
 
   return (

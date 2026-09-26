@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { getCount, getDoc, getList, errorMessage, isNotFound, type FilterRow } from "./frappe";
 import { MEDICAL_FIELDS, type MedicalFields } from "./medical";
+import { phoneSearchPattern, toLatinDigits } from "./phone";
 import type { BaseDoc, Doctor, Patient } from "./types";
 
 /**
@@ -114,11 +115,19 @@ export function usePagedList<T extends BaseDoc>(doctype: string, query: PagedQue
   };
 }
 
-/** Builds [[field, "like", "%text%"], …] for a search box, or undefined when the box is empty. */
+/**
+ * Builds [[field, "like", "%text%"], …] for a search box, or undefined when the box is empty. Arabic digits
+ * are searched as 0-9. When the text looks like a phone number, fields with "phone" in their name also match
+ * it however it was stored, so "0770 123 4567", "+964 770 123 4567" and "07701234567" find each other.
+ */
 export function searchFilters(text: string, fields: string[]): FilterRow[] | undefined {
-  const needle = text.trim();
+  const needle = toLatinDigits(text).trim();
   if (!needle) return undefined;
-  return fields.map((field) => [field, "like", `%${needle}%`] as FilterRow);
+  const phone = phoneSearchPattern(needle);
+  return fields.flatMap((field) => [
+    [field, "like", `%${needle}%`] as FilterRow,
+    ...(phone && field.includes("phone") ? [[field, "like", phone] as FilterRow] : []),
+  ]);
 }
 
 /**

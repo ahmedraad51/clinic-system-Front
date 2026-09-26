@@ -244,6 +244,8 @@ export interface ClinicSettings extends BaseDoc {
   treatment_prices?: TreatmentPrice[];
   /** The days the clinic is open, e.g. "Saturday,Sunday,Monday". Empty means every day. */
   working_days?: string;
+  /** Country calling code added to local numbers for WhatsApp links, digits only ("964" for Iraq). Empty means 964. */
+  phone_country_code?: string;
 }
 
 export interface WhatsAppTemplate extends BaseDoc {

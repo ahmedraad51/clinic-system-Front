@@ -29,7 +29,7 @@ accurate.
 | `npm run dev` | Works. Dev output goes to `.next/dev`, so `npm run build` can run while it is up. Changing `next.config.ts` restarts it, and the first page after that can take several minutes to compile. | |
 | `npm run build` | **Passes** (checked 2026-09-26): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-26). `npx tsc --noEmit` passes too. | |
-| Tests | **Playwright browser tests pass** (5 tests, checked 2026-09-26): add a patient, book with the double-booking warning, plan plus part payment, payment above the balance is refused, a receptionist cannot open Reports. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (63 tests, checked 2026-09-26): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -165,6 +165,7 @@ src/
     ├── dentalChart.ts        parseDentalChart (both shapes), cleanChart, tooth names, surface layout, labels
     ├── medical.ts            medicalFlags(): allergy, blood thinner, diabetes, heart, pregnancy from the medical text
     ├── whatsapp.ts           PLACEHOLDERS, fillTemplate(), whatsappNumber(), whatsappLink() (wa.me links)
+    ├── phone.ts              toLatinDigits(), dialableNumber() (0770… → 964770…), samePhone(), phoneSearchPattern()
     ├── recall.ts             dueForRecall(), monthsBefore(), the recall periods
     ├── theme.ts              the clinic colour: presets, contrast fix, applyThemeColor, the boot script
     └── links.ts              URL builders for records (always use these)
@@ -200,7 +201,7 @@ on the form, and a click made while the save is still running is overridden by t
 | `/today` | `view_appointments` | The front desk board: counts (still to come, late, completed, no show), today's appointments grouped by doctor with one-tap **Confirm**, **Completed**, **No show** and **Undo** (`edit_appointments`), late patients (still open `LATE_AFTER` = 10 minutes after the start) highlighted, a red chip for high medical alerts, what the patient owes (`view_payments`), **Add Payment** (`add_payments`), **Walk-in** (books now, rounded up to the quarter hour) and Refresh. **Tomorrow's reminders** (when `enable_whatsapp` is on) lists tomorrow's booked patients with **Send reminder**, which opens `wa.me` with the active "24 Hours Before" template (or the first active one) filled in; opened reminders are remembered on that computer (`localStorage.reminders_opened`). **Lab work due** lists plans sent to a lab and not back that are late or due within two days (`view_treatments`). Below, **Earlier, still open** lists up to 50 past appointments still Scheduled or Confirmed, with Completed / No show / Cancelled buttons; resolved ones drop off. The dashboard and the bell link here |
 | `/patients` | `view_patients` | Server-side search (name, phone, second phone, ID), gender filter, paging. Each row: name with ID, age and gender, medical-alert chips (`medicalFlags`), phone, next booked visit (`view_appointments`, loaded for the rows on the page) and balance (`view_payments`). With `view_payments`, a **Balance** filter ("Owes money": `total_remaining > 0`, biggest first; `?balance=owing` opens on it) adds a WhatsApp **Remind** link with the balance written in |
 | `/recall` | `view_patients` and `view_appointments` | Patients due for a check-up: no Completed visit within the chosen period (3, 6, 9 or 12 months; default 6) and nothing Scheduled or Confirmed from today on; never-seen patients last. Tap to call, a WhatsApp link with a ready reminder text (`wa.me/<digits>?text=`), and Book (`add_appointments`). Worked out in the browser from all appointments |
-| `/patients/new` | `add_patients` | Shared `PatientForm`. While typing, patients with the same phone number (last 8 digits of either phone field) or exactly the same name show under **Already registered?** with a link; saving with the same phone number asks first (also on edit when the phone changes; `currentName` excludes the patient itself). The Medical Information card starts with a **Quick checklist** (`CHECKLIST` in `PatientForm.tsx`): tick boxes that add or remove a standard word in `allergies`, `current_medications` or `chronic_diseases` (no new fields); a box already true from other wording (e.g. "Warfarin 3mg") shows ticked and disabled. **Only know the age?** swaps the date of birth for an **Age** box (for patients who do not know their birth date); `age` is sent only when `date_of_birth` is empty. Opens the new record after saving |
+| `/patients/new` | `add_patients` | Shared `PatientForm`. While typing, patients with the same phone number (`samePhone()` from `src/lib/phone.ts`: the last 10 digits of either phone field, so `0770 123 4567` and `+964 770 123 4567` match) or exactly the same name show under **Already registered?** with a link; saving with the same phone number asks first (also on edit when the phone changes; `currentName` excludes the patient itself). The Medical Information card starts with a **Quick checklist** (`CHECKLIST` in `PatientForm.tsx`): tick boxes that add or remove a standard word in `allergies`, `current_medications` or `chronic_diseases` (no new fields); a box already true from other wording (e.g. "Warfarin 3mg") shows ticked and disabled. **Only know the age?** swaps the date of birth for an **Age** box (for patients who do not know their birth date); `age` is sent only when `date_of_birth` is empty. Opens the new record after saving |
 | `/patients/[id]` | `view_patients` | `MedicalAlerts` band; a summary card with tap-to-call (`tel:`) and WhatsApp (`https://wa.me/<digits>`) buttons, last visit, next appointment, balance to pay (with Add payment) and paid so far; tabs: **Overview** (a timeline of appointments, treatment sessions and payments, grouped Upcoming / Today / by month, beside the contact and medical cards), Appointments, Treatment Plans, Payments, Dental Chart, **X-rays & Photos** (`PatientFiles`: private File records attached to the patient; Take Photo opens the camera on tablets, Add Files takes images and PDFs up to 10 MB; a viewer with Open in a new tab and Delete; adding and deleting need `edit_patients`). Buttons: New Appointment, New Treatment, Edit, Delete (icon; each by permission) |
 | `/patients/[id]/edit` | `edit_patients` | Shared `PatientForm` |
 | `/patients/[id]/estimate` | `view_patients` and `view_treatments` | Printable treatment estimate on the clinic letterhead: the patient's Planned and In Progress plans with cost, paid and to pay, totals, a 30-day validity note (`VALID_DAYS`) and signature lines. Linked as **Print estimate** above the Treatment Plans tab |
@@ -225,7 +226,7 @@ on the form, and a click made while the save is still running is overridden by t
 | `/users` | `manage_users` | Staff list (without Administrator and Guest), search, status filter, Add User dialog (can apply the role's usual permissions) |
 | `/users/[id]` | `manage_users` | Clinic role, enable/disable, the 14 permission switches with presets. `[id]` is `encodeURIComponent(btoa(user.name))` |
 | `/whatsapp` | `manage_users` | Templates (add, edit, delete, placeholders, live preview) and the message log |
-| `/settings` | `manage_users` | Clinic Settings: name, logo upload, contact, tax number, currency, working hours, feature switches, theme colour, **Price List** (a usual price per treatment type, saved in `treatment_prices`), and **Open on** day toggles saved as `working_days` (`useSettings().isOpenOn(iso)`; nothing set means open every day). Closed days are shaded "Closed" in the calendar, the day view shows a notice, and booking on one shows a note and asks "Book anyway?" |
+| `/settings` | `manage_users` | Clinic Settings: name, logo upload, contact, tax number, currency, working hours, feature switches, theme colour, **Phone Country Code** (`phone_country_code`, digits only, empty means 964; added to local numbers in WhatsApp links, `useSettings().countryCode`), **Price List** (a usual price per treatment type, saved in `treatment_prices`), and **Open on** day toggles saved as `working_days` (`useSettings().isOpenOn(iso)`; nothing set means open every day). Closed days are shaded "Closed" in the calendar, the day view shows a notice, and booking on one shows a note and asks "Book anyway?" |
 | `/profile` | none | My details, what I can do, change password, and (login off only) Try Another User |
 
 Links use `<Link>` from `next/link`; buttons that navigate after an action use `router.push`. Table rows are
@@ -270,7 +271,16 @@ Rules for data code:
   a real count). Dashboard and report totals load the matching rows with `limit: 0` and add them up in the
   browser; see Known issues.
 - **Filters** use Frappe's formats: `[[field, operator, value], …]` or `{ field: value }`. Search boxes use
-  `orFilters` built by `searchFilters(text, fields)`.
+  `orFilters` built by `searchFilters(text, fields)` (the global search and `LinkSelect` too). It searches
+  Arabic-keyboard digits as 0-9, and when the text looks like a phone number (7 or more digits, no letters)
+  every field with `phone` in its name also gets `phoneSearchPattern()`: the last 9 digits with `%` between
+  them, so `+964 770 123 4567` finds a number stored as `0770 123 4567` or `07701234567`.
+- **Phone numbers** are stored as typed, except that the patient and doctor forms turn Arabic-keyboard digits
+  into 0-9 (`toLatinDigits()`). Build WhatsApp links only with `whatsappLink(phone, text,
+  countryCode)` / `whatsappNumber()` from `src/lib/whatsapp.ts`, passing `useSettings().countryCode`: a
+  local number's leading 0 becomes the country code (`0770 123 4567` → `wa.me/9647701234567`), `+` and `00`
+  numbers keep their own, and 11 digits or more count as already international. Compare two numbers with
+  `samePhone()`, never by hand.
 - **Send `null`, not `""`, for empty Date, Time and Link fields.** The form payload helpers already do this.
 
 ### Hooks: `src/lib/hooks.ts`
@@ -298,7 +308,7 @@ Rules for data code:
 An in-memory store that returns data in the same shape as Frappe's REST API, so pages behave the same with
 either source.
 
-- **Seed data:** 12 patients (two, Rania Fawzy and Sherif Adel, last seen more than six months ago for the recall list), 5 doctors, 24 appointments (December 2025 to September 2026, all five statuses; three of
+- **Seed data:** 12 patients (two, Rania Fawzy and Sherif Adel, last seen more than six months ago for the recall list; Sherif Adel's phone is the Iraqi local `0770 123 4567` and Bassel Ramy's `07801112233`, the rest are `+20` numbers), 5 doctors, 24 appointments (December 2025 to September 2026, all five statuses; three of
   them are dated today and tomorrow when the app loads), 15 treatment plans (all four statuses), 10
   treatment sessions, 15 payments (two dated today), 9 users (including `Administrator`, `Guest` and one
   disabled doctor), 3 `Clinic Permission` records (the manager has every permission; the receptionist and
@@ -321,7 +331,8 @@ either source.
   `is_active`) become numbers. A Patient gets `age` from `date_of_birth` (a typed `age` is kept when there is no date), and `dental_chart` is stored as
   sent (a JSON string is parsed), like a Frappe JSON field. The seed has both chart shapes on purpose:
   Nadia, Tarek, Hossam and Amir use version 2; Karim, Salma and Bassel the first shape. A User gets `full_name`, `enabled: 1`, and its `new_password` is not stored.
-- **Queries:** operators `=`, `!=`, `in`, `not in`, `like`, `not like`, `is` (`set`/`not set`), `between`,
+- **Queries:** operators `=`, `!=`, `in`, `not in`, `like`, `not like` (real SQL LIKE: `%` is any text, `_` one
+  character, not case sensitive, and Arabic digits equal 0-9, as in MariaDB's `utf8mb4_unicode_ci`), `is` (`set`/`not set`), `between`,
   `>`, `<`, `>=`, `<=` (numbers compare as numbers, everything else as strings, which works for ISO dates).
   `orFilters`, multi-field `orderBy` (`"appointment_date desc, appointment_time desc"`), `limit`, `start`.
   An unknown operator matches every doc. Empty `fields` or `"*"` returns whole docs.
@@ -360,7 +371,7 @@ Field names are Frappe fieldnames. Form state keys must match them exactly. Fiel
 | **Payment** | `patient`\*, `treatment_plan`, `payment_date`\*, `amount`\*, `payment_method`\*, `notes` | `patient_name`, `treatment_type` |
 | **User** (Frappe core) | `email`, `first_name`, `enabled`, `new_password` (create only), `send_welcome_email: 0`, `roles: [{ role }]` | `full_name` |
 | **Clinic Permission** | `user` plus 14 flags set to `0` or `1` | |
-| **Clinic Settings** † (single) | `clinic_name`, `logo`, `phone`, `email`, `address`, `tax_number`, `currency`, `opening_time`, `closing_time`, `theme_color`, `enable_whatsapp`, `enable_patient_portal`, `enable_financial_reports`, `treatment_prices` † (child table rows `{ treatment_type, price }`; `useSettings().prices` is the lookup) | |
+| **Clinic Settings** † (single) | `clinic_name`, `logo`, `phone`, `email`, `address`, `tax_number`, `currency`, `opening_time`, `closing_time`, `theme_color`, `enable_whatsapp`, `enable_patient_portal`, `enable_financial_reports`, `treatment_prices` † (child table rows `{ treatment_type, price }`; `useSettings().prices` is the lookup), `phone_country_code` † | |
 | **WhatsApp Template** † | `template_name`, `trigger`, `message`, `is_active` | |
 | **WhatsApp Log** † | none (read: `patient`, `appointment`, `phone_number`, `status`, `sent_at`, `message`, `error_message`) | `patient_name` |
 

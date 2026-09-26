@@ -149,7 +149,7 @@ what they are not allowed to do.
 | `/` | Redirects to `/dashboard` |
 | `/dashboard` | Today's appointments, the next 7 days, patient and plan counts, revenue this month, quick actions |
 | `/today` | The front desk's day: today's patients by doctor, one tap to confirm, complete or mark a no-show, late patients highlighted, medical alerts and balances at a glance, quick payments and walk-ins. Marking a visit Completed (here or on the appointment) asks what was done and saves it on the patient's treatment plan |
-| `/patients` | List with server-side search (name, phone, ID), gender filter and paging |
+| `/patients` | List with server-side search (name, phone, ID; a phone number is found however it was typed: `0770…`, `+964 770…`, `00964…` or Arabic digits), gender filter and paging |
 | `/recall` | Patients due for a check-up (not seen for 6 months and nothing booked), with Call, WhatsApp reminder and Book |
 | `/patients/new`, `/patients/[id]/edit` | Create or edit — basic details (an age instead of the birth date when the patient does not know it) plus medical history, allergies, medications |
 | `/patients/[id]` | Medical alerts (allergies, blood thinners, diabetes, heart problems, pregnancy), tap-to-call and WhatsApp buttons, last visit, next appointment and balance, a timeline of visits, treatment sessions and payments, and tabs for appointments, treatment plans, payments and the dental chart, plus X-rays and photos (take a photo with the tablet camera or add files) |
@@ -171,7 +171,7 @@ what they are not allowed to do.
 | `/doctors` | The clinic's doctors: add and edit name, specialization, phone, email, working hours, and switch a doctor off when they leave |
 | `/users`, `/users/[id]` | Staff accounts, roles, enable/disable, and the 14 permission switches with role presets |
 | `/whatsapp` | Reminder templates with a live preview, and the message log |
-| `/settings` | Clinic name and logo, contact details, currency, working hours, feature switches, and the clinic colour (the whole app follows it), and a price list that fills in treatment costs |
+| `/settings` | Clinic name and logo, contact details, currency, the phone country code (964 for Iraq, added to local numbers such as `0770…` in WhatsApp links), working hours, feature switches, and the clinic colour (the whole app follows it), and a price list that fills in treatment costs |
 | `/profile` | My details and permissions, change password |
 
 ### Project structure
@@ -255,7 +255,7 @@ Frappe app `dent_app` · MIT
 | **Treatment Session** | `SES-{YYYY}-{#####}` | `patient`, `treatment_plan`, `doctor`, `session_date`, `session_time`, `status`, `notes` |
 | **Payment** | `PAY-{YYYY}-{#####}` | `patient`, `treatment_plan`, `payment_date`, `amount`, `payment_method` (Cash / Card / Bank Transfer), `notes` |
 | **Clinic Permission** | one per `user` | 14 checkboxes: view/add/edit/delete patients, view/add/edit appointments, view/add/edit treatments, view/add payments, view reports, manage users |
-| **Clinic Settings** | single | `clinic_name`, `logo`, contact details, `currency`, `tax_number`, working hours, `theme_color`, and feature switches for WhatsApp, the patient portal and financial reports |
+| **Clinic Settings** | single | `clinic_name`, `logo`, contact details, `currency`, `tax_number`, `phone_country_code`, working hours, `theme_color`, and feature switches for WhatsApp, the patient portal and financial reports |
 | **WhatsApp Template** | `WAT-{#####}` | `template_name`, `trigger` (24 Hours Before / 2 Hours Before / Manual), `message`, `is_active` |
 | **WhatsApp Log** | `WAL-{YYYY}-{#####}` | `patient`, `appointment`, `phone_number`, `status` (Sent / Failed / Pending), `sent_at`, `message`, `error_message` |
 

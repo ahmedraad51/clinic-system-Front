@@ -10,6 +10,7 @@
 
 import type { DocValue } from "./types";
 import { addDays, todayISO } from "./format";
+import { toLatinDigits } from "./phone";
 
 export type MockValue = DocValue;
 
@@ -172,7 +173,7 @@ const patients: MockDoc[] = [
   {
     name: P.bassel, full_name: "Bassel Ramy", gender: "Male",
     date_of_birth: "1994-07-19", age: 32,
-    phone_number: "+20 127 445 0091", secondary_phone: "",
+    phone_number: "07801112233", secondary_phone: "",
     email: "bassel.ramy@example.com", address: "3 El Obour Buildings, Salah Salem, Cairo",
     allergies: "None", current_medications: "None", chronic_diseases: "None",
     medical_history: "Composite filling on tooth 14 in progress.",
@@ -192,7 +193,7 @@ const patients: MockDoc[] = [
   {
     name: P.sherif, full_name: "Sherif Adel", gender: "Male",
     date_of_birth: "1990-10-05", age: 35,
-    phone_number: "+20 122 615 7730", secondary_phone: "",
+    phone_number: "0770 123 4567", secondary_phone: "",
     email: "sherif.adel@example.com", address: "15 Mourad St, Giza",
     allergies: "None", current_medications: "None", chronic_diseases: "None",
     medical_history: "Check-up and cleaning in February 2026.",
@@ -334,6 +335,7 @@ const clinicSettings: MockDoc[] = [
     enable_patient_portal: 0,
     enable_financial_reports: 1,
     working_days: "Saturday,Sunday,Monday,Tuesday,Wednesday,Thursday",
+    phone_country_code: "964",
     treatment_prices: [
       { treatment_type: "Filling", price: 900 },
       { treatment_type: "Root Canal", price: 4500 },
@@ -369,7 +371,7 @@ const whatsappLogs: MockDoc[] = [
   { name: "WAL-2026-00004", patient: P.mona, appointment: A(2), phone_number: "+20 106 332 8814", status: "Sent", sent_at: "2026-09-02 12:30:00", message: "Hello Mona Adel, this is a reminder of your appointment at DentClinic on 3 Sep 2026 at 12:30 PM with Dr. Omar Khalil.", error_message: "" },
   { name: "WAL-2026-00005", patient: P.tarek, appointment: A(3), phone_number: "+20 128 771 4520", status: "Failed", sent_at: "2026-09-01 09:00:00", message: "Hello Tarek Hassan, this is a reminder of your appointment at DentClinic on 2 Sep 2026 at 9:00 AM with Dr. Youssef Nabil.", error_message: "Recipient phone number is not a WhatsApp account." },
   { name: "WAL-2026-00006", patient: P.yara, appointment: A(6), phone_number: "+20 114 908 6602", status: "Sent", sent_at: "2026-08-26 15:00:00", message: "Hello Yara Mostafa, this is a reminder of your appointment at DentClinic on 27 Aug 2026 at 3:00 PM with Dr. Omar Khalil.", error_message: "" },
-  { name: "WAL-2026-00007", patient: P.bassel, appointment: A(7), phone_number: "+20 127 445 0091", status: "Failed", sent_at: "2026-08-23 13:00:00", message: "Hello Bassel Ramy, this is a reminder of your appointment at DentClinic on 24 Aug 2026 at 1:00 PM with Dr. Sarah Mansour.", error_message: "Message template was rejected by the WhatsApp provider." },
+  { name: "WAL-2026-00007", patient: P.bassel, appointment: A(7), phone_number: "07801112233", status: "Failed", sent_at: "2026-08-23 13:00:00", message: "Hello Bassel Ramy, this is a reminder of your appointment at DentClinic on 24 Aug 2026 at 1:00 PM with Dr. Sarah Mansour.", error_message: "Message template was rejected by the WhatsApp provider." },
 ];
 
 const store: Store = {
@@ -476,6 +478,18 @@ function recalculate(): void {
   });
 }
 
+/**
+ * SQL LIKE, as MariaDB does it for Frappe (utf8mb4_unicode_ci): % is any text, _ is one character, case does
+ * not matter, and Arabic digits equal 0-9. Compare it with toLatinDigits(value).
+ */
+function likePattern(expected: unknown): RegExp {
+  const source = toLatinDigits(String(expected))
+    .split("")
+    .map((char) => (char === "%" ? "[\\s\\S]*" : char === "_" ? "[\\s\\S]" : char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
+    .join("");
+  return new RegExp(`^${source}$`, "i");
+}
+
 function compare(value: MockValue, operator: string, expected: unknown): boolean {
   const left = value === null || value === undefined ? "" : String(value);
   const numeric = typeof value === "number" && expected !== "" && Number.isFinite(Number(expected));
@@ -492,14 +506,10 @@ function compare(value: MockValue, operator: string, expected: unknown): boolean
       return Array.isArray(expected) && expected.map(String).includes(left);
     case "not in":
       return Array.isArray(expected) && !expected.map(String).includes(left);
-    case "like": {
-      const needle = String(expected).replace(/%/g, "").toLowerCase();
-      return left.toLowerCase().includes(needle);
-    }
-    case "not like": {
-      const needle = String(expected).replace(/%/g, "").toLowerCase();
-      return !left.toLowerCase().includes(needle);
-    }
+    case "like":
+      return likePattern(expected).test(toLatinDigits(left));
+    case "not like":
+      return !likePattern(expected).test(toLatinDigits(left));
     case "is":
       return expected === "set" ? left !== "" : left === "";
     case "between":

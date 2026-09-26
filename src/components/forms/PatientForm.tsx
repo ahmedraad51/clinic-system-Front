@@ -10,6 +10,7 @@ import { errorMessage, getList, type FilterRow } from "@/lib/frappe";
 import { cx, isBlankMedical } from "@/lib/format";
 import { useDebounced } from "@/lib/hooks";
 import { patientHref } from "@/lib/links";
+import { phoneDigits, phoneSearchPattern, samePhone, toLatinDigits } from "@/lib/phone";
 import { GENDERS, type Patient } from "@/lib/types";
 
 /** The editable Patient fields. Keys are Frappe fieldnames. */
@@ -58,7 +59,14 @@ export function patientToForm(patient: Patient): PatientFormData {
 export function patientPayload(form: PatientFormData) {
   const { age, ...rest } = form;
   // With a date of birth the server works the age out; without one, the typed age is saved.
-  return { ...rest, date_of_birth: form.date_of_birth || null, ...(form.date_of_birth ? {} : { age: Number(age) || null }) };
+  return {
+    ...rest,
+    // Arabic-keyboard digits are saved as 0-9, so search, WhatsApp and phone links work the same for everyone.
+    phone_number: toLatinDigits(form.phone_number),
+    secondary_phone: toLatinDigits(form.secondary_phone),
+    date_of_birth: form.date_of_birth || null,
+    ...(form.date_of_birth ? {} : { age: Number(age) || null }),
+  };
 }
 
 type InputEvent = ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
@@ -95,21 +103,13 @@ function removeTerm(text: string, term: string): string {
     .join(", ");
 }
 
-const digitsOf = (phone?: string) => (phone || "").replace(/\D/g, "");
-/** Two phone numbers are the same when their last 8 digits match, so "+20 100 234 5678" = "0100 234 5678". */
-const samePhone = (a?: string, b?: string) => {
-  const x = digitsOf(a);
-  const y = digitsOf(b);
-  return x.length >= 7 && y.length >= 7 && x.slice(-8) === y.slice(-8);
-};
-
 /**
  * Patients who may already be this person: the same phone number (either phone field), or exactly the same
  * name. Looked up while typing, so the receptionist sees them before saving a second record.
  */
 function usePossibleDuplicates(fullName: string, phone: string, currentName?: string) {
   const name = useDebounced(fullName.trim(), 400);
-  const number = useDebounced(digitsOf(phone), 400);
+  const number = useDebounced(phoneDigits(phone), 400);
   const key = JSON.stringify([name, number, currentName ?? ""]);
   const [result, setResult] = useState<{ key: string; byPhone: Patient[]; byName: Patient[] } | null>(null);
 
@@ -120,9 +120,9 @@ function usePossibleDuplicates(fullName: string, phone: string, currentName?: st
     const load = async () => {
       const orFilters: FilterRow[] = [];
       if (d.length >= 7) {
-        // Stored numbers may have spaces, so search on the last four digits and compare properly below.
-        const tail = `%${d.slice(-4)}%`;
-        orFilters.push(["phone_number", "like", tail], ["secondary_phone", "like", tail]);
+        // Stored numbers may have spaces, a leading 0 or a country code: search loosely, compare properly below.
+        const pattern = phoneSearchPattern(d) ?? `%${d.slice(-4)}%`;
+        orFilters.push(["phone_number", "like", pattern], ["secondary_phone", "like", pattern]);
       }
       if (n.length >= 5) orFilters.push(["full_name", "like", `%${n}%`]);
       try {

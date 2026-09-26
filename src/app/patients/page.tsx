@@ -32,7 +32,7 @@ export default function PatientsPage() {
 
 function PatientsList() {
   const { can } = useSession();
-  const { money, settings, clinicName } = useSettings();
+  const { money, settings, clinicName, countryCode } = useSettings();
   const [search, setSearch] = useState("");
   const [gender, setGender] = useState("");
   // Collections: only patients with money left to pay, biggest balance first.
@@ -91,6 +91,7 @@ function PatientsList() {
     whatsappLink(
       patient.phone_number,
       `Hello ${patient.full_name}, this is a friendly reminder from ${clinicName} that ${money(patient.total_remaining)} is still to be paid for your treatment. You can pay at your next visit or call us to arrange it. Thank you!`,
+      countryCode,
     );
 
   return (

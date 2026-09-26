@@ -31,7 +31,7 @@ function PaymentDetail() {
   const router = useRouter();
   const toast = useToast();
   const { can } = useSession();
-  const { money, settings, clinicName } = useSettings();
+  const { money, settings, clinicName, countryCode } = useSettings();
   const id = routeId(params.id);
   const { doc: payment, loading, notFound, error } = useDocument<Payment>("Payment", id);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -76,6 +76,7 @@ function PaymentDetail() {
             `Receipt: ${id} (${payment.payment_method}).`,
             left > 0 ? `Still to pay: ${money(left)}.` : "Nothing is left to pay. Thank you!",
           ].join(" "),
+          countryCode,
         )
       : "";
 

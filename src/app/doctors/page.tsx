@@ -12,6 +12,7 @@ import { useToast } from "@/context/ToastContext";
 import { createDoc, errorMessage, updateDoc, type FilterRow } from "@/lib/frappe";
 import { display, formatTime } from "@/lib/format";
 import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
+import { toLatinDigits } from "@/lib/phone";
 import { DOCTOR_SPECIALIZATIONS, type Doctor } from "@/lib/types";
 
 export default function DoctorsPage() {
@@ -181,6 +182,7 @@ function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doctor | null; onC
     const payload = {
       ...form,
       full_name: form.full_name.trim(),
+      phone_number: toLatinDigits(form.phone_number),
       start_time: form.start_time || null,
       end_time: form.end_time || null,
       is_active: form.is_active ? 1 : 0,

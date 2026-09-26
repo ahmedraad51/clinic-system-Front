@@ -24,7 +24,7 @@ export default function SendWhatsAppDialog({
   phone: string;
   onClose: () => void;
 }) {
-  const { clinicName } = useSettings();
+  const { clinicName, countryCode } = useSettings();
   const [templates, setTemplates] = useState<WhatsAppTemplate[] | null>(null);
   const [chosen, setChosen] = useState("");
   const [text, setText] = useState("");
@@ -65,7 +65,7 @@ export default function SendWhatsAppDialog({
     };
   }, [valuesKey]);
 
-  const link = whatsappLink(phone, text.trim());
+  const link = whatsappLink(phone, text.trim(), countryCode);
 
   return (
     <Modal open title="Send on WhatsApp" onClose={onClose}>

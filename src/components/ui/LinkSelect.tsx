@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { ChevronDown, X } from "lucide-react";
 import { getList, type FilterRow } from "@/lib/frappe";
-import { useDebounced } from "@/lib/hooks";
+import { searchFilters, useDebounced } from "@/lib/hooks";
 import { cx } from "@/lib/format";
 import type { Doc } from "@/lib/types";
 import { inputClass } from "./index";
@@ -68,14 +68,7 @@ export default function LinkSelect({
     if (!open) return;
     let cancelled = false;
     const load = async () => {
-      const needle = debounced.trim();
-      const orFilters: FilterRow[] | undefined = needle
-        ? [
-            [labelField, "like", `%${needle}%`],
-            ["name", "like", `%${needle}%`],
-            ...(detailField ? [[detailField, "like", `%${needle}%`] as FilterRow] : []),
-          ]
-        : undefined;
+      const orFilters = searchFilters(debounced, [labelField, "name", ...(detailField ? [detailField] : [])]);
       try {
         const rows = await getList<Doc>(doctype, ["name", labelField, ...(detailField ? [detailField] : [])], {
           filters: JSON.parse(filtersKey) as FilterRow[],

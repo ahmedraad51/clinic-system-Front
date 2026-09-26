@@ -31,7 +31,7 @@ export default function RecallPage() {
  */
 function Recall() {
   const { can } = useSession();
-  const { clinicName } = useSettings();
+  const { clinicName, countryCode } = useSettings();
   const [months, setMonths] = useState<number>(DEFAULT_RECALL_MONTHS);
   const [data, setData] = useState<{ patients: Patient[]; appointments: Appointment[] } | null>(null);
   const [error, setError] = useState("");
@@ -63,6 +63,7 @@ function Recall() {
     whatsappLink(
       p.phone_number,
       `Hello ${p.full_name}, it is time for your dental check-up at ${clinicName}. Reply to this message and we will find a time that suits you.`,
+      countryCode,
     );
 
   return (

@@ -6,6 +6,7 @@ import { getDoc } from "@/lib/frappe";
 import { applyThemeColor } from "@/lib/theme";
 import { WEEK_DAYS, type ClinicSettings } from "@/lib/types";
 import { formatMoney, weekdayIndex } from "@/lib/format";
+import { cleanCountryCode } from "@/lib/phone";
 
 /** Used until the real settings arrive, and for any field the backend leaves empty. */
 const DEFAULTS: ClinicSettings = {
@@ -20,6 +21,8 @@ interface SettingsContextType {
   settings: ClinicSettings;
   clinicName: string;
   currency: string;
+  /** Country calling code as digits (Clinic Settings → phone_country_code, default "964"), for WhatsApp links. */
+  countryCode: string;
   /** The price list: treatment type → usual price. Types without a price are missing. */
   prices: Record<string, number>;
   /** False on a day the clinic is closed (Clinic Settings → working_days). Every day is open when none are set. */
@@ -59,6 +62,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(() => setVersion((v) => v + 1), []);
   const currency = settings.currency || "USD";
   const clinicName = settings.clinic_name || "DentClinic";
+  const countryCode = cleanCountryCode(settings.phone_country_code);
   const prices = useMemo(() => {
     const list: Record<string, number> = {};
     (settings.treatment_prices ?? []).forEach((row) => {
@@ -80,8 +84,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const money = useCallback((amount: number | string | null | undefined) => formatMoney(amount, currency), [currency]);
 
   const value = useMemo(
-    () => ({ settings, clinicName, currency, prices, isOpenOn, money, refresh }),
-    [settings, clinicName, currency, prices, isOpenOn, money, refresh],
+    () => ({ settings, clinicName, currency, countryCode, prices, isOpenOn, money, refresh }),
+    [settings, clinicName, currency, countryCode, prices, isOpenOn, money, refresh],
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

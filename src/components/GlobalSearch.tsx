@@ -7,9 +7,9 @@ import {
 } from "lucide-react";
 import { Spinner } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
-import { getList, type FilterRow } from "@/lib/frappe";
+import { getList } from "@/lib/frappe";
 import { cx } from "@/lib/format";
-import { useDebounced } from "@/lib/hooks";
+import { searchFilters, useDebounced } from "@/lib/hooks";
 import { patientHref } from "@/lib/links";
 import type { Patient, PermissionKey } from "@/lib/types";
 
@@ -100,13 +100,7 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
     if (!debounced || !canSearch) return;
     let cancelled = false;
     const load = async () => {
-      const like = `%${debounced}%`;
-      const orFilters: FilterRow[] = [
-        ["full_name", "like", like],
-        ["phone_number", "like", like],
-        ["secondary_phone", "like", like],
-        ["name", "like", like],
-      ];
+      const orFilters = searchFilters(debounced, ["full_name", "phone_number", "secondary_phone", "name"]);
       try {
         const patients = await getList<Patient>("Patient", ["name", "full_name", "phone_number", "age"], {
           orFilters,

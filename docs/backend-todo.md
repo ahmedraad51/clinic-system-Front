@@ -17,6 +17,7 @@ match, and update `src/lib/types.ts`, the mock and `AGENTS.md`.
 | Payment | `patient_name` | Data, read only, `fetch_from: patient.full_name` | |
 | Payment | `treatment_type` | Data, read only, `fetch_from: treatment_plan.treatment_type` | Used by the payment list and the "revenue by treatment" report. |
 | Clinic Settings | `treatment_prices` | Table (child doctype, e.g. **Clinic Treatment Price**, `istable`) | The price list. Child fields: `treatment_type` (Select, the Treatment Plan types) and `price` (Currency). The front end sends and reads `[{ "treatment_type": "Crown", "price": 6000 }]` and only uses it to pre-fill `Treatment Plan.total_cost`. |
+| Clinic Settings | `phone_country_code` | Data | The country calling code as digits, e.g. `964`. The front end adds it to local numbers (`0770 123 4567` → `9647701234567`) when it opens WhatsApp; empty means 964. The reminder job should build numbers the same way (see section 2, **Phone numbers**). |
 | Treatment Plan | `lab_name` | Data | The dental lab doing the work (crowns, bridges, implant crowns). |
 | Treatment Plan | `lab_sent_date`, `lab_due_date`, `lab_received_date` | Date | When the work went to the lab, is due back, and came back. The Today board lists plans with `lab_sent_date` set and `lab_received_date` not set. |
 | WhatsApp Log | `patient_name` | Data, read only, `fetch_from: patient.full_name` | |
@@ -48,6 +49,18 @@ After adding fetch fields, run a patch that fills them for existing records (fet
 
 These come from the README, not from the doctype JSON files. Check each one in the back-end repo.
 
+- **Phone numbers** (`Patient.phone_number`, `secondary_phone`, `Doctor.phone_number`) are stored as typed
+  (`0770 123 4567`, `07701234567`, `+964 770 123 4567`); the forms only turn Arabic digits into 0-9 before
+  saving. Do not reformat them on save. Records saved before may still hold Arabic digits; Frappe's usual
+  `utf8mb4_unicode_ci` collation treats them as equal to 0-9 in searches, and a one-off patch can convert them.
+  For WhatsApp the front end turns a number into international digits like this: invisible direction marks
+  are removed and Arabic digits become 0-9; a number starting with `+` keeps its digits; `00` is dropped; a
+  leading `0` is replaced by `Clinic Settings.phone_country_code` (default `964`); a number that already starts
+  with that code, or has 11 digits or more, is kept; anything else gets the code in front. A `0` left right
+  after the clinic's code (`+964 0770…`) is removed. The reminder job (`schedule_reminders`) must do the same,
+  or messages to `07…` numbers fail.
+  Phone searches send `like` patterns with `%` between the digits (e.g. `%7%0%1%2%3%4%5%6%7%`), which
+  MariaDB handles as normal; a stored digits-only copy of each phone would make them exact and faster later.
 - **Patient:** `age` (Int). The form sends `age` **only when `date_of_birth` is empty** (some patients do not
   know their birth date). Keep the typed value in that case, and work `age` out from `date_of_birth` only
   when a date is set. `age` must therefore not be read only.

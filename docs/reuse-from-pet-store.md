@@ -1,7 +1,10 @@
 # What DentClinic can reuse from the pet store app
 
 Written 2026-09-26. This is a study of `alkhokh_pet_store_front` (the owner's other front end) to find code
-and ideas worth bringing into DentClinic. Nothing has been copied yet.
+and ideas worth bringing into DentClinic.
+
+**Status:** the owner chose items **1, 2, 3, 4, 6, 11 and 22** on 2026-09-26. Each of them is marked
+**Brought in** below once it is in DentClinic; the other items are only ideas.
 
 **How to answer:** reply **"go"** to bring in everything on the list in section 5, or **"go with 1, 3, 5"**
 to bring in only those numbers. Items are numbered from most useful to least useful for a dental clinic.
@@ -94,6 +97,8 @@ Sizes are for DentClinic: **small** is under a day, **medium** is a few days, **
 Paths are inside `D:\Projects\alkhokh_pet_store_front`.
 
 ### 1. WhatsApp links and search that work with Iraqi phone numbers
+- **Brought in** (2026-09-26): `src/lib/phone.ts`, the Clinic Settings field `phone_country_code`, and
+  `e2e/tests/phone.spec.ts`. See IMPROVEMENTS.md for the commit.
 - **What:** port `toDialablePhone` and `toLatinDigits`. WhatsApp buttons (reminders, recall, receipts,
   balance reminders) then open `wa.me/9647701234567` for a number typed as `0770 123 4567` or
   `٠٧٧٠١٢٣٤٥٦٧`. The duplicate-patient warning and the patient search also match `0770…`, `+964 770…`
