@@ -39,3 +39,12 @@ test("the booking form shows the doctor's day, offers free times and remembers t
   await page.getByRole("link", { name: "New Appointment" }).first().click();
   await expect(page.getByLabel("Doctor")).toHaveValue("DOC-00001");
 });
+
+test("the calendar and the booking form know each doctor's working hours", async ({ page }) => {
+  await page.goto("/appointments?view=day");
+  // Dr. Omar Khalil works 12:00 to 18:00 in the dummy data.
+  await expect(page.getByText("12:00 PM–6:00 PM")).toBeVisible();
+  await page.getByRole("button", { name: "Book at 10:00 AM with Dr. Omar Khalil (outside working hours)" }).click();
+  await expect(page.getByRole("heading", { name: "New Appointment" })).toBeVisible();
+  await expect(page.getByText(/10:00 AM is outside Dr\. Omar Khalil's working hours/)).toBeVisible();
+});

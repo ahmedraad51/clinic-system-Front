@@ -166,6 +166,7 @@ export default function AppointmentForm({
     await save();
   };
 
+  const chosenDoctor = doctors.find((d) => d.name === form.doctor);
   const doctorMissing = form.doctor && !doctors.some((doctor) => doctor.name === form.doctor);
   const hours =
     settings.opening_time && settings.closing_time
@@ -233,8 +234,10 @@ export default function AppointmentForm({
               time={form.appointment_time}
               duration={Number(form.duration_minutes) || 30}
               currentName={currentName}
-              openingTime={settings.opening_time}
-              closingTime={settings.closing_time}
+              // The doctor's own working hours when set, otherwise the clinic's.
+              openingTime={chosenDoctor?.start_time && chosenDoctor.end_time ? chosenDoctor.start_time : settings.opening_time}
+              closingTime={chosenDoctor?.start_time && chosenDoctor.end_time ? chosenDoctor.end_time : settings.closing_time}
+              ownHours={Boolean(chosenDoctor?.start_time && chosenDoctor.end_time)}
               onPick={(appointment_time) => setForm({ ...form, appointment_time })}
             />
           )}
@@ -338,6 +341,7 @@ function DoctorDay({
   currentName,
   openingTime,
   closingTime,
+  ownHours = false,
   onPick,
 }: {
   doctor: string;
@@ -348,6 +352,8 @@ function DoctorDay({
   currentName?: string;
   openingTime?: string;
   closingTime?: string;
+  /** True when the hours are the doctor's own, not the clinic's. */
+  ownHours?: boolean;
   onPick: (time: string) => void;
 }) {
   const key = `${doctor}|${date}`;
@@ -407,6 +413,7 @@ function DoctorDay({
   }
   const chosen = time ? toMinutes(time) : null;
   const clash = chosen !== null ? overlaps(chosen, chosen + duration) : undefined;
+  const outside = chosen !== null && (chosen < open || chosen + duration > close);
 
   return (
     <div className="sm:col-span-2 rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-3" aria-live="polite">
@@ -470,6 +477,12 @@ function DoctorDay({
                 </div>
               )}
             </div>
+          )}
+          {outside && (
+            <p className="text-sm font-medium text-amber-700">
+              {formatTime(time)} is outside {ownHours ? `${doctorName || "the doctor"}'s working hours` : "clinic hours"} (
+              {formatTime(fromMinutes(open))}–{formatTime(fromMinutes(close))}).
+            </p>
           )}
           {clash && (
             <p className="text-sm font-medium text-amber-700">

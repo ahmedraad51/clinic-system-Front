@@ -156,7 +156,7 @@ export function useDoctorList() {
     let cancelled = false;
     const load = async () => {
       try {
-        const rows = await getList<Doctor>("Doctor", ["name", "full_name", "specialization"], {
+        const rows = await getList<Doctor>("Doctor", ["name", "full_name", "specialization", "start_time", "end_time"], {
           filters: [["is_active", "=", 1]],
           orderBy: "full_name asc",
           limit: 0,

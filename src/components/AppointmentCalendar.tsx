@@ -62,7 +62,22 @@ interface Column {
   subtitle?: string;
   today?: boolean;
   items: Appointment[];
+  /** The doctor's working hours in minutes, when known. Time outside them is shaded. */
+  hours?: { start: number; end: number };
 }
+
+/** A doctor's working hours in minutes, or undefined when not set (then the clinic hours apply). */
+function doctorHours(doctor?: Doctor): { start: number; end: number } | undefined {
+  if (!doctor?.start_time || !doctor.end_time) return undefined;
+  const start = toMinutes(doctor.start_time);
+  const end = toMinutes(doctor.end_time);
+  return end > start ? { start, end } : undefined;
+}
+
+/** Diagonal stripes for time the doctor does not work. */
+const OFF_HOURS = {
+  backgroundImage: "repeating-linear-gradient(135deg, var(--color-gray-100) 0 6px, var(--color-gray-50) 6px 12px)",
+};
 
 interface Placed {
   appointment: Appointment;
@@ -212,6 +227,7 @@ export default function AppointmentCalendar({
         subtitle: booked === 0 ? "Free all day" : booked === 1 ? "1 appointment" : `${booked} appointments`,
         today: date === today,
         items,
+        hours: doctorHours(doctor),
       };
     });
   } else {
@@ -225,6 +241,7 @@ export default function AppointmentCalendar({
         subtitle: String(Number(day.slice(8, 10))),
         today: day === today,
         items: rows.filter((a) => a.appointment_date === day),
+        hours: doctorFilter ? doctorHours(doctors.find((d) => d.name === doctorFilter)) : undefined,
       };
     });
   }
@@ -305,6 +322,11 @@ export default function AppointmentCalendar({
                         {column.title}
                       </p>
                       <p className="text-xs text-gray-500">{column.subtitle}</p>
+                      {column.hours && (
+                        <p className="text-xs text-gray-500">
+                          {formatTime(fromMinutes(column.hours.start))}–{formatTime(fromMinutes(column.hours.end))}
+                        </p>
+                      )}
                     </>
                   ) : (
                     <>
@@ -347,6 +369,20 @@ export default function AppointmentCalendar({
                   className={cx("relative border-e border-gray-100 last:border-e-0", column.today && view === "week" && "bg-primary-50/40")}
                   style={{ height, ...gridLines }}
                 >
+                  {column.hours && column.hours.start > dayStart && (
+                    <div
+                      className="absolute inset-x-0 top-0 pointer-events-none"
+                      style={{ height: (column.hours.start - dayStart) * PX, ...OFF_HOURS }}
+                      aria-hidden="true"
+                    />
+                  )}
+                  {column.hours && column.hours.end < dayEnd && (
+                    <div
+                      className="absolute inset-x-0 bottom-0 pointer-events-none"
+                      style={{ height: (dayEnd - column.hours.end) * PX, ...OFF_HOURS }}
+                      aria-hidden="true"
+                    />
+                  )}
                   {canBook &&
                     slots.map((m) => (
                       <button
@@ -354,7 +390,9 @@ export default function AppointmentCalendar({
                         type="button"
                         tabIndex={-1}
                         onClick={() => book(column, m)}
-                        aria-label={`Book at ${formatTime(fromMinutes(m))}${view === "day" ? ` with ${column.title}` : ""}`}
+                        aria-label={`Book at ${formatTime(fromMinutes(m))}${view === "day" ? ` with ${column.title}` : ""}${
+                          column.hours && (m < column.hours.start || m >= column.hours.end) ? " (outside working hours)" : ""
+                        }`}
                         className="group absolute inset-x-0 flex items-center px-2 hover:bg-primary-50 focus:outline-none"
                         style={{ top: (m - dayStart) * PX, height: SLOT * PX }}
                       >
@@ -435,6 +473,10 @@ export default function AppointmentCalendar({
         <span className="inline-flex items-center gap-1.5">
           <span className="w-4 border-t-2 border-red-500" />
           Now
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-4 h-3 rounded-sm border border-gray-200" style={OFF_HOURS} />
+          Doctor not working
         </span>
         {canBook && <span className="text-gray-500">Click an empty time to book it.</span>}
       </div>

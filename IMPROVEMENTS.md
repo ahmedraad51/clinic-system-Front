@@ -5,16 +5,14 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Calendar: grey out the hours when a doctor does not work (Doctor start_time, end_time, working_days) and
-  warn when booking outside them.
+- Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
+  check.
 
 ## Backlog
 
-1. Calendar: move an appointment to another time or doctor by dragging it, with the same double-booking
-   check.
-2. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
+1. Dental chart: print the chart and findings for the patient file, and show the chart (read only) on the
    treatment plan page for its tooth.
-3. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+2. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -93,7 +91,11 @@ Each finished item says what changed, when, and which commit holds it.
   Commit 2444278.
 - 2026-09-26 - **Medical alerts while booking and planning.** As soon as a patient is picked in the
   booking form or the new treatment plan form, their medical alerts (allergies, blood thinners, diabetes,
-  heart problems, pregnancy) appear right under the patient's name. Commit PENDING.
+  heart problems, pregnancy) appear right under the patient's name. Commit ca146ed.
+- 2026-09-26 - **Doctors' working hours in the calendar.** Each doctor's hours (set on the Doctors page)
+  show under their name in the day calendar, and the time they do not work is shaded with stripes. The
+  booking form now offers free times only within that doctor's hours and warns when a chosen time is
+  outside them. Commit PENDING.
 
 ## Questions for the owner
 

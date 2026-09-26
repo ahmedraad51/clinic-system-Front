@@ -49,7 +49,8 @@ These come from the README, not from the doctype JSON files. Check each one in t
 - **Doctor:** `full_name`, `specialization` (Select: General Dentist, Orthodontist, Endodontist, Periodontist,
   Oral Surgeon, Pediatric Dentist, Prosthodontist), `phone_number`, `email`, `start_time` and `end_time`
   (Time, the doctor's working hours; both may be empty), `is_active` (Check). Dropdowns and the calendar only
-  show doctors with `is_active = 1`. The `/doctors` page creates and edits these; it never deletes.
+  show doctors with `is_active = 1`. `working_days` (in the README) is not used by the front end yet; tell us its
+  format if the calendar should shade days off. The `/doctors` page creates and edits these; it never deletes.
 - **Clinic Settings** (single doctype): `clinic_name`, `logo` (Attach Image), `phone`, `email`, `address`,
   `currency`, `tax_number`, `opening_time` (Time), `closing_time` (Time), `theme_color` (Color or Data, a hex
   colour such as `#0e7c86`; the whole front end is coloured from it), `enable_whatsapp`,
