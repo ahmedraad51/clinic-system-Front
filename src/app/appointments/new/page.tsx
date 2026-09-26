@@ -33,6 +33,8 @@ function NewAppointment() {
     appointment_date: searchParams.get("date") || "",
     // From a click on the calendar, e.g. ?time=10:30.
     appointment_time: /^\d{2}:\d{2}$/.test(searchParams.get("time") || "") ? (searchParams.get("time") as string) : "",
+    // From a treatment plan's Book Visit, e.g. "Crown · tooth 36".
+    reason_for_visit: searchParams.get("reason") || "",
   };
   // Back to the calendar day the booking came from.
   const backHref = initial.appointment_date ? `/appointments?view=day&day=${initial.appointment_date}` : "/appointments";

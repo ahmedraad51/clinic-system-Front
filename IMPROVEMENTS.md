@@ -5,15 +5,13 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Book the next session from a treatment plan: one button that opens the booking form with the patient,
-  the plan's doctor and the reason ("Crown · tooth 36") filled in.
+- Lab work: on a crown, bridge or implant plan, record when the work was sent to the lab and when it is
+  due back; the Today board lists lab work due and late, so the patient is not booked before it arrives.
 
 ## Backlog
 
-1. Lab work: on a crown, bridge or implant plan, record when the work was sent to the lab and when it is
-   due back; the Today board lists lab work due and late, so the patient is not booked before it arrives.
-2. Patient form: let the receptionist type an age when the date of birth is not known.
-3. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
+1. Patient form: let the receptionist type an age when the date of birth is not known.
+2. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
 
 ## Done
 
@@ -181,6 +179,9 @@ Each finished item says what changed, when, and which commit holds it.
   past appointments still to close, tomorrow's reminders to send, patients due for a check-up, and
   patients who owe money. Each line opens the right page. Lines with nothing to do are hidden. Commit
   PENDING.
+- 2026-09-26 - **Book the next visit from a treatment plan.** A treatment plan now has a "Book Visit"
+  button. It opens the booking form with the patient, the plan's doctor and the reason (for example "Crown
+  · tooth 36") already filled in. Commit PENDING.
 
 ## Questions for the owner
 

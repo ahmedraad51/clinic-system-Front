@@ -3,7 +3,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ClipboardList, CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
+import { CalendarPlus, ClipboardList, CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import DentalChart from "@/components/DentalChart";
 import MedicalAlerts from "@/components/MedicalAlerts";
@@ -130,6 +130,12 @@ function TreatmentDetail() {
   };
 
   const title = plan.tooth_number ? `${plan.treatment_type} · Tooth ${plan.tooth_number}` : plan.treatment_type;
+  // The next visit for this plan: patient, the plan's doctor and what it is for.
+  const bookVisitHref = `/appointments/new?${new URLSearchParams({
+    patient: plan.patient,
+    ...(plan.doctor ? { doctor: plan.doctor } : {}),
+    reason: title.replace(" · Tooth ", " · tooth "),
+  }).toString()}`;
   const paymentHrefForPlan = `/payments/new?treatment=${encodeURIComponent(id)}&patient=${encodeURIComponent(plan.patient)}`;
 
   return (
@@ -293,11 +299,18 @@ function TreatmentDetail() {
         title="Sessions"
         flush
         actions={
-          canEdit && (
-            <Button size="sm" variant="secondary" icon={Plus} onClick={() => setSessionModal({ open: true, session: null })}>
-              Add Session
-            </Button>
-          )
+          <>
+            {can("add_appointments") && (plan.status === "Planned" || plan.status === "In Progress") && (
+              <LinkButton href={bookVisitHref} size="sm" variant="secondary" icon={CalendarPlus}>
+                Book Visit
+              </LinkButton>
+            )}
+            {canEdit && (
+              <Button size="sm" variant="secondary" icon={Plus} onClick={() => setSessionModal({ open: true, session: null })}>
+                Add Session
+              </Button>
+            )}
+          </>
         }
       >
         {!data ? (

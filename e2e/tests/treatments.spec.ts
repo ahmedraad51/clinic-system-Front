@@ -50,3 +50,13 @@ test("a payment cannot be more than what is left on the plan", async ({ page }) 
   await page.getByRole("button", { name: "Save Payment" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "only has $500 left" })).toBeVisible();
 });
+
+test("book the next visit from a treatment plan", async ({ page }) => {
+  await page.goto("/treatments/TRT-2026-00002");
+  await waitForData(page);
+  await page.getByRole("link", { name: "Book Visit" }).click();
+  await expect(page.getByRole("heading", { name: "New Appointment" })).toBeVisible();
+  await expect(page.getByText("Nadia Samir").first()).toBeVisible();
+  await expect(page.getByLabel("Doctor")).toHaveValue("DOC-00001");
+  await expect(page.getByLabel("Reason for Visit")).toHaveValue("Crown · tooth 36");
+});
