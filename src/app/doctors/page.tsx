@@ -4,25 +4,8 @@ import { useState, type ChangeEvent, type FormEvent } from "react";
 import { BriefcaseMedical, Pencil, Plus } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Field,
-  PageContainer,
-  PageHeader,
-  Pagination,
-  PhoneInput,
-  SearchInput,
-  SelectInput,
-  Table,
-  TableLoading,
-  TableMessage,
-  Td,
-  TextInput,
-  Th,
-  Toggle,
-  Toolbar,
+  Alert, Badge, Button, Card, ClearFiltersButton, Field, PageContainer, PageHeader, Pagination, PhoneInput,
+  SearchInput, SelectInput, Table, TableError, TableLoading, TableMessage, Td, TextInput, Th, Toggle, Toolbar,
 } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
@@ -50,6 +33,10 @@ function DoctorsList() {
   // null = closed, "new" = adding, a Doctor = editing that one.
   const [editing, setEditing] = useState<Doctor | "new" | null>(null);
   const debounced = useDebounced(search);
+  const clearFilters = () => {
+    setSearch("");
+    setStatus("");
+  };
 
   const list = usePagedList<Doctor>("Doctor", {
     fields: ["name", "full_name", "specialization", "phone_number", "email", "start_time", "end_time", "is_active"],
@@ -79,8 +66,6 @@ function DoctorsList() {
         </SelectInput>
       </Toolbar>
 
-      {list.error && <Alert tone="red">{list.error}</Alert>}
-
       <Card flush>
         <Table>
           <thead>
@@ -94,11 +79,20 @@ function DoctorsList() {
             </tr>
           </thead>
           <tbody>
-            {list.initialLoading ? (
+            {list.error ? (
+              <TableError colSpan={6} message={list.error} onRetry={list.reload} />
+            ) : list.initialLoading ? (
               <TableLoading colSpan={6} />
             ) : list.rows.length === 0 ? (
               <TableMessage icon={BriefcaseMedical} colSpan={6}>
-                {debounced || status ? "No doctors match." : "No doctors yet. Add the first one."}
+                {debounced || status ? (
+                  <>
+                    No doctors match.
+                    <ClearFiltersButton onClick={clearFilters} />
+                  </>
+                ) : (
+                  "No doctors yet. Add the first one."
+                )}
               </TableMessage>
             ) : (
               list.rows.map((doctor) => (
@@ -135,7 +129,7 @@ function DoctorsList() {
             )}
           </tbody>
         </Table>
-        <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />
+        {!list.error && <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />}
       </Card>
 
       {editing && (

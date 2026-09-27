@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import { Shield, UserPlus, UserSearch } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Button, Card, ClickableRow, Field, PageContainer, PageHeader, Pagination, SearchInput,
-  SelectInput, StatusBadge, Table, TableLoading, TableMessage, Td, TextInput, Th, Toggle, Toolbar,
+  Alert, Button, Card, ClearFiltersButton, ClickableRow, Field, PageContainer, PageHeader, Pagination,
+  SearchInput, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, TextInput, Th,
+  Toggle, Toolbar,
 } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
@@ -31,6 +32,10 @@ function UsersList() {
   const [status, setStatus] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const debounced = useDebounced(search);
+  const clearFilters = () => {
+    setSearch("");
+    setStatus("");
+  };
 
   const list = usePagedList<User>("User", {
     fields: ["name", "full_name", "email", "enabled"],
@@ -60,8 +65,6 @@ function UsersList() {
         </SelectInput>
       </Toolbar>
 
-      {list.error && <Alert tone="red">{list.error}</Alert>}
-
       <Card flush>
         <Table>
           <thead>
@@ -73,10 +76,21 @@ function UsersList() {
             </tr>
           </thead>
           <tbody>
-            {list.initialLoading ? (
+            {list.error ? (
+              <TableError colSpan={4} message={list.error} onRetry={list.reload} />
+            ) : list.initialLoading ? (
               <TableLoading colSpan={4} />
             ) : list.rows.length === 0 ? (
-              <TableMessage icon={UserSearch} colSpan={4}>No users found.</TableMessage>
+              <TableMessage icon={UserSearch} colSpan={4}>
+                {debounced.trim() || status ? (
+                  <>
+                    No users match.
+                    <ClearFiltersButton onClick={clearFilters} />
+                  </>
+                ) : (
+                  "No users yet."
+                )}
+              </TableMessage>
             ) : (
               list.rows.map((u) => (
                 <ClickableRow key={u.name} href={userHref(u.name)} dimmed={list.loading}>
@@ -102,7 +116,7 @@ function UsersList() {
             )}
           </tbody>
         </Table>
-        <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />
+        {!list.error && <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />}
       </Card>
 
       {showAdd && <AddUserModal onClose={() => setShowAdd(false)} />}

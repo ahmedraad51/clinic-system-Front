@@ -6,8 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { HeartPulse, MessageCircle, UserPlus, UserSearch } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Card, ClickableRow, LinkButton, PageContainer, PageHeader, PageLoading, Pagination,
-  SearchInput, SelectInput, Table, TableLoading, TableMessage, Td, Th, Toolbar,
+  Card, ClearFiltersButton, ClickableRow, LinkButton, PageContainer, PageHeader, PageLoading, Pagination,
+  SearchInput, SelectInput, Table, TableError, TableLoading, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -87,6 +87,11 @@ function PatientsList() {
   }, [pageKey, showNext]);
   const nextFor = (patient: string) => (next.key === pageKey ? next.byPatient[patient] : undefined);
   const filtered = Boolean(debounced.trim() || gender || owing);
+  const clearFilters = () => {
+    setSearch("");
+    setGender("");
+    setOwing(false);
+  };
   const reminder = (patient: Patient) =>
     whatsappLink(
       patient.phone_number,
@@ -131,8 +136,6 @@ function PatientsList() {
         </SelectInput>
       </Toolbar>
 
-      {list.error && <Alert tone="red">{list.error}</Alert>}
-
       <Card flush>
         <Table>
           <thead>
@@ -144,11 +147,20 @@ function PatientsList() {
             </tr>
           </thead>
           <tbody>
-            {list.initialLoading ? (
+            {list.error ? (
+              <TableError colSpan={columns} message={list.error} onRetry={list.reload} />
+            ) : list.initialLoading ? (
               <TableLoading colSpan={columns} />
             ) : list.rows.length === 0 ? (
               <TableMessage icon={UserSearch} colSpan={columns}>
-                {filtered ? "No patients match your search." : "No patients yet."}
+                {filtered ? (
+                  <>
+                    No patients match your search.
+                    <ClearFiltersButton onClick={clearFilters} />
+                  </>
+                ) : (
+                  "No patients yet."
+                )}
               </TableMessage>
             ) : (
               list.rows.map((patient) => (
@@ -202,7 +214,7 @@ function PatientsList() {
             )}
           </tbody>
         </Table>
-        <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />
+        {!list.error && <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />}
       </Card>
     </PageContainer>
   );

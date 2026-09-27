@@ -5,8 +5,8 @@ import Link from "next/link";
 import { ClipboardList, Plus } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Card, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination,
-  SearchInput, SelectInput, StatusBadge, Table, TableLoading, TableMessage, Td, Th, Toolbar,
+  Card, ClearFiltersButton, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination, SearchInput,
+  SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -46,6 +46,11 @@ function TreatmentsList() {
     orderBy: "name desc",
   });
   const filtered = Boolean(debounced.trim() || status || type);
+  const clearFilters = () => {
+    setSearch("");
+    setStatus("");
+    setType("");
+  };
 
   return (
     <PageContainer>
@@ -81,8 +86,6 @@ function TreatmentsList() {
         </SelectInput>
       </Toolbar>
 
-      {list.error && <Alert tone="red">{list.error}</Alert>}
-
       <Card flush>
         <Table>
           <thead>
@@ -97,11 +100,20 @@ function TreatmentsList() {
             </tr>
           </thead>
           <tbody>
-            {list.initialLoading ? (
+            {list.error ? (
+              <TableError colSpan={7} message={list.error} onRetry={list.reload} />
+            ) : list.initialLoading ? (
               <TableLoading colSpan={7} />
             ) : list.rows.length === 0 ? (
               <TableMessage icon={ClipboardList} colSpan={7}>
-                {filtered ? "No treatment plans match these filters." : "No treatment plans yet."}
+                {filtered ? (
+                  <>
+                    No treatment plans match these filters.
+                    <ClearFiltersButton onClick={clearFilters} />
+                  </>
+                ) : (
+                  "No treatment plans yet."
+                )}
               </TableMessage>
             ) : (
               list.rows.map((plan) => (
@@ -133,7 +145,7 @@ function TreatmentsList() {
             )}
           </tbody>
         </Table>
-        <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />
+        {!list.error && <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />}
       </Card>
     </PageContainer>
   );

@@ -364,7 +364,9 @@ logged in on this computer" on shared computers: closing the browser then logs y
 expires, a "Log in again" dialog opens over the page, so nothing typed is lost; logging out from there goes
 to the login page and afterwards back to the page you were on. Every request gives up after 15 seconds (file
 uploads after 2 minutes, full lists for totals after 1 minute) with a clear message, and a list that got no
-answer, or found the server down, is asked for again. See section 5 of
+answer, or found the server down, is asked for again. A list, the dashboard, the Today board, the recall
+list or the bell that still could not load says so with a **Try Again** button, instead of showing zeros or
+"No patients yet". See section 5 of
 [`docs/backend-todo.md`](docs/backend-todo.md) about the CSRF token.
 
 ---

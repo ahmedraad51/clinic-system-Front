@@ -207,7 +207,11 @@ Each finished item says what changed, when, and which commit holds it.
   payment receipt there is now a "Print Slip" button that prints a narrow receipt for a 58 or 80 mm
   receipt printer: the clinic, the receipt number, the patient, what was paid, how, what was left on that
   treatment right after the payment, and who printed it. "Slip Settings" sets this computer's paper width, margin and text size, with a test
-  print. The A4 receipt is unchanged. Commit PENDING.
+  print. The A4 receipt is unchanged. Commit fffc53a.
+- 2026-09-26 - **A failed load never looks like "nothing there"** (from the pet store study, item 6). When
+  a list, the dashboard, the Today board, the recall list or the bell cannot load (for example when the
+  internet is down), it now says so with a "Try Again" button, instead of showing "No patients yet",
+  "Nobody is due" or zeros. A search that finds nothing has a "Clear Filters" button. Commit PENDING.
 
 ## Questions for the owner
 

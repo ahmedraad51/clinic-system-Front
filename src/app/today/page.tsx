@@ -7,7 +7,7 @@ import FinishVisitDialog from "@/components/FinishVisitDialog";
 import { LAB_BADGES, labState } from "@/components/LabWorkCard";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Badge, Button, Card, EmptyState, LinkButton, PageContainer, PageHeader, PageLoading, Segmented, StatusBadge,
+  Badge, Button, Card, EmptyState, LinkButton, LoadError, PageContainer, PageHeader, PageLoading, Segmented, StatusBadge,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -250,262 +250,267 @@ function TodayBoard() {
         }
       />
 
-      {error && <Alert tone="red">{error}</Alert>}
+      {error && <LoadError message={error} onRetry={() => setVersion((v) => v + 1)} />}
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Count label="Still to come" value={counts.toCome} tone="text-primary-700" />
-        <Count label="Late" value={counts.late} tone={counts.late ? "text-amber-600" : "text-gray-500"} />
-        <Count label="Completed" value={counts.done} tone="text-green-700" />
-        <Count label="No show" value={counts.missed} tone={counts.missed ? "text-red-600" : "text-gray-500"} />
-      </div>
+      {/* Nothing loaded yet: no zeros and no "No appointments today", only the error above. */}
+      {board && (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Count label="Still to come" value={counts.toCome} tone="text-primary-700" />
+            <Count label="Late" value={counts.late} tone={counts.late ? "text-amber-600" : "text-gray-500"} />
+            <Count label="Completed" value={counts.done} tone="text-green-700" />
+            <Count label="No show" value={counts.missed} tone={counts.missed ? "text-red-600" : "text-gray-500"} />
+          </div>
 
-      {groups.length === 0 ? (
-        <Card>
-          <EmptyState
-            icon={Clock}
-            title={mine ? "You have no patients today" : "No appointments today"}
-            text="Walk-ins can be booked with the button above."
-            action={
-              <LinkButton href="/appointments?view=week" variant="secondary">
-                Open the week
-              </LinkButton>
-            }
-          />
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-          {groups.map((group) => (
+          {groups.length === 0 ? (
+            <Card>
+              <EmptyState
+                icon={Clock}
+                title={mine ? "You have no patients today" : "No appointments today"}
+                text="Walk-ins can be booked with the button above."
+                action={
+                  <LinkButton href="/appointments?view=week" variant="secondary">
+                    Open the week
+                  </LinkButton>
+                }
+              />
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+              {groups.map((group) => (
+                <Card
+                  key={group.doctor}
+                  title={group.name}
+                  flush
+                  actions={
+                    <span className="text-xs text-gray-500">
+                      {group.items.filter(open).length} to come · {group.items.length} today
+                    </span>
+                  }
+                >
+                  <ul className="divide-y divide-gray-100">
+                    {group.items.map((a) => {
+                      const patient = board?.patients[a.patient];
+                      const flags = medicalFlags(patient);
+                      const urgent = flags.filter((f) => f.severity === "high");
+                      const owes = Number(patient?.total_remaining) || 0;
+                      const late = isLate(a);
+                      const busy = saving === a.name;
+                      return (
+                        <li
+                          key={a.name}
+                          className={cx(
+                            "px-5 py-4 space-y-3",
+                            late && "bg-amber-50/70",
+                            (a.status === "Cancelled" || a.status === "No Show") && "opacity-60",
+                          )}
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="w-[5.5rem] shrink-0">
+                              <p className="text-base font-bold text-gray-800 whitespace-nowrap">{formatTime(a.appointment_time)}</p>
+                              {late && (
+                                <p className="text-xs font-semibold text-amber-700">{minutesLate(a)} min late</p>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Link
+                                  href={patientHref(a.patient)}
+                                  className="text-base font-semibold text-gray-800 hover:text-primary-600"
+                                >
+                                  {a.patient_name || a.patient}
+                                </Link>
+                                <StatusBadge kind="appointment" status={a.status} />
+                                {urgent.length > 0 && (
+                                  <span
+                                    className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 px-2 py-0.5 text-xs font-medium"
+                                    title={urgent.map((f) => `${f.label}: ${f.detail}`).join(" · ")}
+                                  >
+                                    <HeartPulse size={13} />
+                                    {urgent.map((f) => f.label).join(", ")}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-500 mt-0.5">
+                                <Link href={appointmentHref(a.name)} className="hover:text-primary-600">
+                                  {a.reason_for_visit || "Appointment"}
+                                </Link>
+                                {" · "}
+                                {Number(a.duration_minutes) || 30} min
+                                {showMoney && owes > 0 && (
+                                  <span className="text-red-600 font-medium"> · owes {money(owes)}</span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+
+                          {(canEdit || (showMoney && can("add_payments"))) && (
+                            <div className="flex flex-wrap gap-2 sm:ps-[6.5rem]">
+                              {canEdit && a.status === "Scheduled" && (
+                                <Button size="sm" variant="secondary" icon={Check} loading={busy} onClick={() => setStatus(a, "Confirmed")}>
+                                  Confirm
+                                </Button>
+                              )}
+                              {canEdit && open(a) && (
+                                <Button size="sm" variant="success" icon={CheckCheck} disabled={busy} onClick={() => setStatus(a, "Completed")}>
+                                  Completed
+                                </Button>
+                              )}
+                              {canEdit && open(a) && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  icon={UserX}
+                                  disabled={busy}
+                                  onClick={() => setStatus(a, "No Show")}
+                                  className="text-red-600 hover:bg-red-50"
+                                >
+                                  No show
+                                </Button>
+                              )}
+                              {canEdit && (a.status === "Completed" || a.status === "No Show") && (
+                                <Button size="sm" variant="ghost" disabled={busy} onClick={() => setStatus(a, "Confirmed")}>
+                                  Undo
+                                </Button>
+                              )}
+                              {can("add_payments") && (
+                                <LinkButton
+                                  href={`/payments/new?patient=${encodeURIComponent(a.patient)}`}
+                                  size="sm"
+                                  variant="secondary"
+                                  icon={CreditCard}
+                                >
+                                  Add Payment
+                                </LinkButton>
+                              )}
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </Card>
+              ))}
+            </div>
+          )}
+          {settings.enable_whatsapp !== 0 && tomorrowList.length > 0 && (
             <Card
-              key={group.doctor}
-              title={group.name}
+              title={`Tomorrow's reminders (${tomorrowList.filter((a) => !reminded.includes(a.name)).length} to send)`}
               flush
-              actions={
-                <span className="text-xs text-gray-500">
-                  {group.items.filter(open).length} to come · {group.items.length} today
-                </span>
-              }
+              actions={<span className="text-xs text-gray-500">{board?.template ? board.template.template_name : "Default message"}</span>}
             >
               <ul className="divide-y divide-gray-100">
-                {group.items.map((a) => {
-                  const patient = board?.patients[a.patient];
-                  const flags = medicalFlags(patient);
-                  const urgent = flags.filter((f) => f.severity === "high");
-                  const owes = Number(patient?.total_remaining) || 0;
-                  const late = isLate(a);
-                  const busy = saving === a.name;
+                {tomorrowList.map((a) => {
+                  const link = whatsappLink(board?.patients[a.patient]?.phone_number, reminderText(a), countryCode);
+                  const done = reminded.includes(a.name);
                   return (
-                    <li
-                      key={a.name}
-                      className={cx(
-                        "px-5 py-4 space-y-3",
-                        late && "bg-amber-50/70",
-                        (a.status === "Cancelled" || a.status === "No Show") && "opacity-60",
-                      )}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="w-[5.5rem] shrink-0">
-                          <p className="text-base font-bold text-gray-800 whitespace-nowrap">{formatTime(a.appointment_time)}</p>
-                          {late && (
-                            <p className="text-xs font-semibold text-amber-700">{minutesLate(a)} min late</p>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Link
-                              href={patientHref(a.patient)}
-                              className="text-base font-semibold text-gray-800 hover:text-primary-600"
-                            >
-                              {a.patient_name || a.patient}
-                            </Link>
-                            <StatusBadge kind="appointment" status={a.status} />
-                            {urgent.length > 0 && (
-                              <span
-                                className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 px-2 py-0.5 text-xs font-medium"
-                                title={urgent.map((f) => `${f.label}: ${f.detail}`).join(" · ")}
-                              >
-                                <HeartPulse size={13} />
-                                {urgent.map((f) => f.label).join(", ")}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-500 mt-0.5">
-                            <Link href={appointmentHref(a.name)} className="hover:text-primary-600">
-                              {a.reason_for_visit || "Appointment"}
-                            </Link>
-                            {" · "}
-                            {Number(a.duration_minutes) || 30} min
-                            {showMoney && owes > 0 && (
-                              <span className="text-red-600 font-medium"> · owes {money(owes)}</span>
-                            )}
-                          </p>
-                        </div>
+                    <li key={a.name} className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                      <span className="w-[5.5rem] shrink-0 font-semibold text-gray-800 whitespace-nowrap">{formatTime(a.appointment_time)}</span>
+                      <div className="min-w-0 flex-1">
+                        <Link href={appointmentHref(a.name)} className="font-medium text-gray-800 hover:text-primary-600">
+                          {a.patient_name || a.patient}
+                        </Link>
+                        <p className="text-sm text-gray-500">{a.doctor_name}</p>
                       </div>
-
-                      {(canEdit || (showMoney && can("add_payments"))) && (
-                        <div className="flex flex-wrap gap-2 sm:ps-[6.5rem]">
-                          {canEdit && a.status === "Scheduled" && (
-                            <Button size="sm" variant="secondary" icon={Check} loading={busy} onClick={() => setStatus(a, "Confirmed")}>
-                              Confirm
-                            </Button>
-                          )}
-                          {canEdit && open(a) && (
-                            <Button size="sm" variant="success" icon={CheckCheck} disabled={busy} onClick={() => setStatus(a, "Completed")}>
-                              Completed
-                            </Button>
-                          )}
-                          {canEdit && open(a) && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              icon={UserX}
-                              disabled={busy}
-                              onClick={() => setStatus(a, "No Show")}
-                              className="text-red-600 hover:bg-red-50"
-                            >
-                              No show
-                            </Button>
-                          )}
-                          {canEdit && (a.status === "Completed" || a.status === "No Show") && (
-                            <Button size="sm" variant="ghost" disabled={busy} onClick={() => setStatus(a, "Confirmed")}>
-                              Undo
-                            </Button>
-                          )}
-                          {can("add_payments") && (
-                            <LinkButton
-                              href={`/payments/new?patient=${encodeURIComponent(a.patient)}`}
-                              size="sm"
-                              variant="secondary"
-                              icon={CreditCard}
-                            >
-                              Add Payment
-                            </LinkButton>
-                          )}
-                        </div>
+                      {done ? (
+                        <span className="inline-flex items-center gap-1.5 text-sm text-green-700">
+                          <Check size={15} />
+                          Reminder opened
+                        </span>
+                      ) : link ? (
+                        <a
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => markReminded(a.name)}
+                          className="inline-flex items-center gap-1.5 min-h-9 pointer-coarse:min-h-11 px-3 rounded-xl bg-green-50 border border-green-200 text-sm font-medium text-green-800 hover:bg-green-100"
+                        >
+                          <MessageCircle size={15} />
+                          Send reminder
+                        </a>
+                      ) : (
+                        <span className="text-sm text-gray-500">No phone number</span>
                       )}
                     </li>
                   );
                 })}
               </ul>
             </Card>
-          ))}
-        </div>
-      )}
-      {settings.enable_whatsapp !== 0 && tomorrowList.length > 0 && (
-        <Card
-          title={`Tomorrow's reminders (${tomorrowList.filter((a) => !reminded.includes(a.name)).length} to send)`}
-          flush
-          actions={<span className="text-xs text-gray-500">{board?.template ? board.template.template_name : "Default message"}</span>}
-        >
-          <ul className="divide-y divide-gray-100">
-            {tomorrowList.map((a) => {
-              const link = whatsappLink(board?.patients[a.patient]?.phone_number, reminderText(a), countryCode);
-              const done = reminded.includes(a.name);
-              return (
-                <li key={a.name} className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <span className="w-[5.5rem] shrink-0 font-semibold text-gray-800 whitespace-nowrap">{formatTime(a.appointment_time)}</span>
-                  <div className="min-w-0 flex-1">
-                    <Link href={appointmentHref(a.name)} className="font-medium text-gray-800 hover:text-primary-600">
-                      {a.patient_name || a.patient}
-                    </Link>
-                    <p className="text-sm text-gray-500">{a.doctor_name}</p>
-                  </div>
-                  {done ? (
-                    <span className="inline-flex items-center gap-1.5 text-sm text-green-700">
-                      <Check size={15} />
-                      Reminder opened
-                    </span>
-                  ) : link ? (
-                    <a
-                      href={link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => markReminded(a.name)}
-                      className="inline-flex items-center gap-1.5 min-h-9 pointer-coarse:min-h-11 px-3 rounded-xl bg-green-50 border border-green-200 text-sm font-medium text-green-800 hover:bg-green-100"
-                    >
-                      <MessageCircle size={15} />
-                      Send reminder
-                    </a>
-                  ) : (
-                    <span className="text-sm text-gray-500">No phone number</span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </Card>
-      )}
+          )}
 
-      {can("view_treatments") && labDue.length > 0 && (
-        <Card title={`Lab work due (${labDue.length})`} flush actions={<span className="text-xs text-gray-500">Check it is back before the patient comes</span>}>
-          <ul className="divide-y divide-gray-100">
-            {labDue.map((p) => {
-              const state = labState(p, today);
-              return (
-                <li key={p.name}>
-                  <Link href={treatmentHref(p.name)} className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-1 hover:bg-gray-50">
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-medium text-gray-800">{p.patient_name || p.patient}</span>
-                      <span className="block text-sm text-gray-500">
-                        {p.treatment_type}
-                        {p.tooth_number ? ` · tooth ${p.tooth_number}` : ""}
-                        {p.lab_name ? ` · ${p.lab_name}` : ""}
-                      </span>
-                    </span>
-                    <span className="text-sm text-gray-600 whitespace-nowrap">
-                      {p.lab_due_date ? `Due ${formatDate(p.lab_due_date)}` : "No due date"}
-                    </span>
-                    <Badge tone={LAB_BADGES[state].tone}>{LAB_BADGES[state].label}</Badge>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </Card>
-      )}
+          {can("view_treatments") && labDue.length > 0 && (
+            <Card title={`Lab work due (${labDue.length})`} flush actions={<span className="text-xs text-gray-500">Check it is back before the patient comes</span>}>
+              <ul className="divide-y divide-gray-100">
+                {labDue.map((p) => {
+                  const state = labState(p, today);
+                  return (
+                    <li key={p.name}>
+                      <Link href={treatmentHref(p.name)} className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-1 hover:bg-gray-50">
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-medium text-gray-800">{p.patient_name || p.patient}</span>
+                          <span className="block text-sm text-gray-500">
+                            {p.treatment_type}
+                            {p.tooth_number ? ` · tooth ${p.tooth_number}` : ""}
+                            {p.lab_name ? ` · ${p.lab_name}` : ""}
+                          </span>
+                        </span>
+                        <span className="text-sm text-gray-600 whitespace-nowrap">
+                          {p.lab_due_date ? `Due ${formatDate(p.lab_due_date)}` : "No due date"}
+                        </span>
+                        <Badge tone={LAB_BADGES[state].tone}>{LAB_BADGES[state].label}</Badge>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          )}
 
-      {earlierOpen.length > 0 && (
-        <Card
-          title={`Earlier, still open (${earlierOpen.length})`}
-          flush
-          actions={<span className="text-xs text-gray-500">Mark what happened, so the records stay right</span>}
-        >
-          <ul className="divide-y divide-gray-100">
-            {earlierOpen.map((a) => (
-              <li key={a.name} className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                <div className="min-w-0 flex-1">
-                  <Link href={appointmentHref(a.name)} className="font-medium text-gray-800 hover:text-primary-600">
-                    {a.patient_name || a.patient}
-                  </Link>
-                  <p className="text-sm text-gray-500">
-                    {formatDate(a.appointment_date)}, {formatTime(a.appointment_time)}
-                    {a.doctor_name ? ` · ${a.doctor_name}` : ""}
-                    {a.reason_for_visit ? ` · ${a.reason_for_visit}` : ""}
-                  </p>
-                </div>
-                {canEdit && (
-                  <div className="flex flex-wrap gap-2">
-                    <Button size="sm" variant="secondary" icon={CheckCheck} disabled={saving === a.name} onClick={() => setStatus(a, "Completed")}>
-                      Completed
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      icon={UserX}
-                      disabled={saving === a.name}
-                      onClick={() => setStatus(a, "No Show")}
-                      className="text-red-600 hover:bg-red-50"
-                    >
-                      No show
-                    </Button>
-                    <Button size="sm" variant="ghost" disabled={saving === a.name} onClick={() => setStatus(a, "Cancelled")}>
-                      Cancelled
-                    </Button>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        </Card>
+          {earlierOpen.length > 0 && (
+            <Card
+              title={`Earlier, still open (${earlierOpen.length})`}
+              flush
+              actions={<span className="text-xs text-gray-500">Mark what happened, so the records stay right</span>}
+            >
+              <ul className="divide-y divide-gray-100">
+                {earlierOpen.map((a) => (
+                  <li key={a.name} className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <div className="min-w-0 flex-1">
+                      <Link href={appointmentHref(a.name)} className="font-medium text-gray-800 hover:text-primary-600">
+                        {a.patient_name || a.patient}
+                      </Link>
+                      <p className="text-sm text-gray-500">
+                        {formatDate(a.appointment_date)}, {formatTime(a.appointment_time)}
+                        {a.doctor_name ? ` · ${a.doctor_name}` : ""}
+                        {a.reason_for_visit ? ` · ${a.reason_for_visit}` : ""}
+                      </p>
+                    </div>
+                    {canEdit && (
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" variant="secondary" icon={CheckCheck} disabled={saving === a.name} onClick={() => setStatus(a, "Completed")}>
+                          Completed
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={UserX}
+                          disabled={saving === a.name}
+                          onClick={() => setStatus(a, "No Show")}
+                          className="text-red-600 hover:bg-red-50"
+                        >
+                          No show
+                        </Button>
+                        <Button size="sm" variant="ghost" disabled={saving === a.name} onClick={() => setStatus(a, "Cancelled")}>
+                          Cancelled
+                        </Button>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+        </>
       )}
 
       {finishing && <FinishVisitDialog appointment={finishing} onClose={() => setFinishing(null)} />}

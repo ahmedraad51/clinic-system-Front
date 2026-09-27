@@ -5,7 +5,7 @@ import Link from "next/link";
 import { BellRing, CalendarPlus, MessageCircle, Phone } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Card, LinkButton, PageContainer, PageHeader, SelectInput, Table, TableLoading, TableMessage, Td, Th,
+  Card, LinkButton, PageContainer, PageHeader, SelectInput, Table, TableError, TableLoading, TableMessage, Td, Th,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -35,6 +35,7 @@ function Recall() {
   const [months, setMonths] = useState<number>(DEFAULT_RECALL_MONTHS);
   const [data, setData] = useState<{ patients: Patient[]; appointments: Appointment[] } | null>(null);
   const [error, setError] = useState("");
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,7 +45,10 @@ function Recall() {
           getList<Patient>("Patient", ["name", "full_name", "phone_number", "age"], { orderBy: "full_name asc", limit: 0 }),
           getList<Appointment>("Appointment", RECALL_APPOINTMENT_FIELDS, { limit: 0 }),
         ]);
-        if (!cancelled) setData({ patients, appointments });
+        if (!cancelled) {
+          setData({ patients, appointments });
+          setError("");
+        }
       } catch (err) {
         console.error(err);
         if (!cancelled) setError(errorMessage(err, "Could not load the recall list."));
@@ -54,7 +58,7 @@ function Recall() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [version]);
 
   const today = todayISO();
   const due = data ? dueForRecall(data.patients, data.appointments, today, months) : [];
@@ -85,8 +89,6 @@ function Recall() {
         }
       />
 
-      {error && <Alert tone="red">{error}</Alert>}
-
       <Card flush>
         <Table>
           <thead>
@@ -98,7 +100,17 @@ function Recall() {
             </tr>
           </thead>
           <tbody>
-            {!data && !error ? (
+            {error ? (
+              // Never "Nobody is due" when the list could not load.
+              <TableError
+                colSpan={4}
+                message={error}
+                onRetry={() => {
+                  setError("");
+                  setVersion((v) => v + 1);
+                }}
+              />
+            ) : !data ? (
               <TableLoading colSpan={4} />
             ) : due.length === 0 ? (
               <TableMessage icon={BellRing} colSpan={4}>

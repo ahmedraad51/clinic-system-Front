@@ -7,10 +7,10 @@ import {
   Users, Wallet,
 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
-import { Card, EmptyState, LinkButton, PageContainer, PageHeader, Segmented, StatCard, StatusBadge } from "@/components/ui";
+import { Card, EmptyState, LinkButton, LoadError, PageContainer, PageHeader, Segmented, StatCard, StatusBadge } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
-import { getCount, getList, type FilterRow } from "@/lib/frappe";
+import { errorMessage, getCount, getList, type FilterRow } from "@/lib/frappe";
 import { addDays, formatDate, formatLongDate, formatTime, monthStart, todayISO } from "@/lib/format";
 import { appointmentHref } from "@/lib/links";
 import { DEFAULT_RECALL_MONTHS, RECALL_APPOINTMENT_FIELDS, dueForRecall } from "@/lib/recall";
@@ -56,6 +56,9 @@ function Dashboard() {
   const mine = myDoctor && !everyone ? myDoctor.name : "";
   const { money, settings } = useSettings();
   const [data, setData] = useState<DashboardData | null>(null);
+  // A failed load says so (with Try Again) instead of leaving the numbers loading or at zero.
+  const [failed, setFailed] = useState("");
+  const [version, setVersion] = useState(0);
   const today = todayISO();
 
   const seePatients = can("view_patients");
@@ -125,6 +128,7 @@ function Dashboard() {
         ]);
         const reminded = readRemindersOpened();
         if (cancelled) return;
+        setFailed("");
         setData({
           attention: {
             openPast,
@@ -141,13 +145,14 @@ function Dashboard() {
         });
       } catch (err) {
         console.error(err);
+        if (!cancelled) setFailed(errorMessage(err, "Could not load the dashboard."));
       }
     };
     load();
     return () => {
       cancelled = true;
     };
-  }, [today, seePatients, seeAppointments, seeTreatments, seeMoney, mine, settings.enable_whatsapp]);
+  }, [today, seePatients, seeAppointments, seeTreatments, seeMoney, mine, settings.enable_whatsapp, version]);
 
   const stillToCome = data?.today.filter((a) => a.status === "Scheduled" || a.status === "Confirmed").length ?? 0;
   const loadingValue = "…";
@@ -179,72 +184,87 @@ function Dashboard() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {seeAppointments && (
-          <StatCard
-            title={mine ? "My appointments today" : "Appointments today"}
-            value={data ? data.today.length : loadingValue}
-            hint={data ? `${stillToCome} still to come` : undefined}
-            icon={Calendar}
-            tone="primary"
-            href="/today"
-          />
-        )}
-        {seePatients && (
-          <StatCard title="Patients" value={data ? data.patients : loadingValue} icon={Users} tone="green" href="/patients" />
-        )}
-        {seeTreatments && (
-          <StatCard
-            title="Active treatment plans"
-            value={data ? data.activePlans : loadingValue}
-            icon={Stethoscope}
-            tone="yellow"
-            href="/treatments"
-          />
-        )}
-        {seeMoney && (
-          <StatCard
-            title="Revenue this month"
-            value={data ? money(data.monthRevenue) : loadingValue}
-            hint={data ? `${money(data.outstanding)} still owed` : undefined}
-            icon={TrendingUp}
-            tone="purple"
-            href="/payments"
-          />
-        )}
-      </div>
+      {failed && (
+        <LoadError
+          message={failed}
+          onRetry={() => {
+            setFailed("");
+            setVersion((v) => v + 1);
+          }}
+        />
+      )}
 
-      {data && <NeedsAttention attention={data.attention} />}
+      {/* Numbers that never loaded are not shown as zeros. */}
+      {(data || !failed) && (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {seeAppointments && (
+              <StatCard
+                title={mine ? "My appointments today" : "Appointments today"}
+                value={data ? data.today.length : loadingValue}
+                hint={data ? `${stillToCome} still to come` : undefined}
+                icon={Calendar}
+                tone="primary"
+                href="/today"
+              />
+            )}
+            {seePatients && (
+              <StatCard title="Patients" value={data ? data.patients : loadingValue} icon={Users} tone="green" href="/patients" />
+            )}
+            {seeTreatments && (
+              <StatCard
+                title="Active treatment plans"
+                value={data ? data.activePlans : loadingValue}
+                icon={Stethoscope}
+                tone="yellow"
+                href="/treatments"
+              />
+            )}
+            {seeMoney && (
+              <StatCard
+                title="Revenue this month"
+                value={data ? money(data.monthRevenue) : loadingValue}
+                hint={data ? `${money(data.outstanding)} still owed` : undefined}
+                icon={TrendingUp}
+                tone="purple"
+                href="/payments"
+              />
+            )}
+          </div>
 
-      {seeAppointments && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card
-            title={mine ? "My patients today" : "Today"}
-            flush
-            actions={
-              <Link href="/today" className="text-sm text-primary-600 hover:underline">
-                View all
-              </Link>
-            }
-          >
-            <AppointmentList
-              rows={data?.today}
-              empty="No appointments today."
-              showDate={false}
-            />
-          </Card>
-          <Card
-            title={mine ? "My next 7 days" : "Next 7 days"}
-            flush
-            actions={
-              <Link href="/appointments?date=upcoming" className="text-sm text-primary-600 hover:underline">
-                View all
-              </Link>
-            }
-          >
-            <AppointmentList rows={data?.upcoming} empty="Nothing booked for the next 7 days." showDate />
-          </Card>
-        </div>
+          {data && <NeedsAttention attention={data.attention} />}
+
+          {seeAppointments && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card
+                title={mine ? "My patients today" : "Today"}
+                flush
+                actions={
+                  <Link href="/today" className="text-sm text-primary-600 hover:underline">
+                    View all
+                  </Link>
+                }
+              >
+                <AppointmentList
+                  rows={data?.today}
+                  empty="No appointments today."
+                  showDate={false}
+                />
+              </Card>
+              <Card
+                title={mine ? "My next 7 days" : "Next 7 days"}
+                flush
+                actions={
+                  <Link href="/appointments?date=upcoming" className="text-sm text-primary-600 hover:underline">
+                    View all
+                  </Link>
+                }
+              >
+                <AppointmentList rows={data?.upcoming} empty="Nothing booked for the next 7 days." showDate />
+              </Card>
+            </div>
+          )}
+        </>
       )}
 
       {quickActions.length > 0 && (

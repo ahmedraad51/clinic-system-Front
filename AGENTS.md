@@ -29,7 +29,7 @@ accurate.
 | `npm run dev` | Works. Dev output goes to `.next/dev`, so `npm run build` can run while it is up. Changing `next.config.ts` restarts it, and the first page after that can take several minutes to compile. | |
 | `npm run build` | **Passes** (checked 2026-09-26): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-26). `npx tsc --noEmit` passes too. | |
-| Tests | **Playwright tests pass** (82 tests, checked 2026-09-26): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (87 tests, checked 2026-09-26): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -349,6 +349,9 @@ either source.
 - **Errors:** `getDoc`, `updateDoc` and `deleteDoc` throw `"<Doctype> <name> not found"` for a missing doc.
   An unknown doctype is not an error: it quietly gets an empty collection.
 - **Latency:** every call waits 150 ms so loading states show up.
+- **Failing on purpose (tests):** `window.__mockFail = ["Patient"]` makes every read of those doctypes
+  (`getList`, `getCount`, `getDoc`) fail with "Cannot reach the server…", so error states can be tested
+  (`e2e/tests/load-errors.spec.ts`). Nothing in the app sets it.
 - **Persistence:** module memory in the browser. Writes survive client-side navigation and are lost on a full
   reload.
 
@@ -534,6 +537,13 @@ function Things() {
   tab and before following any in-app link; navigation in code (`router.push` after a save) is not stopped.
 - **Loading:** lists show `<TableLoading colSpan={…} />` (skeleton rows with a hidden "Loading..." that
   screen readers and `waitForData()` use); single records show `PageLoading`.
+- **A failed load never looks like "nothing there".** In a list, check `list.error` first and show
+  `<TableError colSpan={…} message={list.error} onRetry={list.reload} />` instead of the rows or the empty
+  message, and hide `Pagination` (`{!list.error && <Pagination … />}`). A page or card that loads its own
+  numbers keeps an error state and shows `<LoadError message={…} onRetry={…} />` (Try Again bumps a
+  `version` in the effect's dependencies), and shows no zeros for numbers it never got (dashboard, Today
+  board, recall list, the bell). An empty message caused by a search or filter has a `<ClearFiltersButton>`
+  that resets them; "No patients yet." is only for a list that really is empty.
 - **Contrast:** readable text is `text-gray-500` or darker (4.8:1 on white). `text-gray-300`/`400` only for
   decoration and disabled things. Links and other focusable things get a primary focus ring from
   `globals.css`; `MainLayout` has a "Skip to content" link to `#main`.
@@ -564,7 +574,7 @@ whatsapp, trigger, user) and `statusTone(kind, status)` for other views that mus
 `Segmented` (joined view switch, e.g. Day / Week / List), `FormActions` (sticky Save / Cancel bar), `Field` (label wrapping one input), `TextInput`,
 `NumberInput` (every amount, price or age box; `decimals={false}` for whole numbers), `PhoneInput` (every phone box),
 `SelectInput`, `TextArea`, `Toggle`,
-`SearchInput`, `Toolbar`, `Table`, `Th`, `Td` (with `label` for the phone cards), `ClickableRow`, `TableLoading`, `TableMessage`, `Pagination`, `DetailList` and
+`SearchInput`, `Toolbar`, `Table`, `Th`, `Td` (with `label` for the phone cards), `ClickableRow`, `TableLoading`, `TableMessage`, `TableError` (a failed list load with Try Again), `ClearFiltersButton`, `LoadError` (a failed page load with Try Again), `Pagination`, `DetailList` and
 `DetailRow`, `Tabs`, `Alert`, `Spinner`, `PageLoading`, `EmptyState`, `NoAccess`, `NotFoundCard`; plus
 `Modal` (moves focus in, traps Tab, restores focus on close, Escape closes, locks page scroll; with two open, only
 the newest reacts to Escape and Tab; `priority` puts it above other dialogs) and `ConfirmDialog` (focus starts on Cancel) in `Modal.tsx`, and `LinkSelect` for searchable Link fields. Use these instead of

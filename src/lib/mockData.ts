@@ -670,6 +670,15 @@ function checkPlan(plan: MockDoc): void {
   }
 }
 
+/**
+ * For tests only: `window.__mockFail = ["Patient"]` makes every read of those doctypes fail, like a lost
+ * connection, so error states can be checked. Nothing in the app sets it.
+ */
+function failIfAsked(doctype: string) {
+  const failing = typeof window === "undefined" ? undefined : (window as unknown as { __mockFail?: string[] }).__mockFail;
+  if (failing?.includes(doctype)) throw new Error("Cannot reach the server. Check the internet connection and try again.");
+}
+
 /** A short pause so loading states behave like they will against the real backend. */
 const latency = () => new Promise((resolve) => setTimeout(resolve, 150));
 
@@ -682,6 +691,7 @@ export async function mockGetList(
   fields?: string[],
   options: MockListOptions = {},
 ): Promise<MockDoc[]> {
+  failIfAsked(doctype);
   await latency();
   const { filters, orFilters, orderBy, limit, start = 0 } = options;
   const rows = sortDocs(query(doctype, filters, orFilters), orderBy);
@@ -690,11 +700,13 @@ export async function mockGetList(
 }
 
 export async function mockGetCount(doctype: string, filters?: unknown, orFilters?: unknown): Promise<number> {
+  failIfAsked(doctype);
   await latency();
   return query(doctype, filters, orFilters).length;
 }
 
 export async function mockGetDoc(doctype: string, name: string): Promise<MockDoc> {
+  failIfAsked(doctype);
   await latency();
   const doc = find(doctype, name);
   if (!doc) throw new Error(doctype + " " + name + " not found");

@@ -7,8 +7,9 @@ import { CalendarDays, CalendarRange, CalendarX, ChevronLeft, ChevronRight, List
 import RequirePermission from "@/components/Guard";
 import AppointmentCalendar, { type CalendarView } from "@/components/AppointmentCalendar";
 import {
-  Alert, Button, Card, ClickableRow, LinkButton, PageContainer, PageHeader, PageLoading, Pagination,
-  SearchInput, Segmented, SelectInput, StatusBadge, Table, TableLoading, TableMessage, Td, TextInput, Th, Toolbar,
+  Button, Card, ClearFiltersButton, ClickableRow, LinkButton, PageContainer, PageHeader, PageLoading,
+  Pagination, SearchInput, Segmented, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage,
+  Td, TextInput, Th, Toolbar,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -202,6 +203,11 @@ function AppointmentsList() {
     orderBy: `appointment_date ${direction}, appointment_time ${direction}`,
   });
   const filtered = Boolean(debounced.trim() || status || when !== "all");
+  const clearFilters = () => {
+    setSearch("");
+    setStatus("");
+    setWhen("all");
+  };
 
   return (
     <>
@@ -224,8 +230,6 @@ function AppointmentsList() {
         </SelectInput>
       </Toolbar>
 
-      {list.error && <Alert tone="red">{list.error}</Alert>}
-
       <Card flush>
         <Table>
           <thead>
@@ -239,11 +243,20 @@ function AppointmentsList() {
             </tr>
           </thead>
           <tbody>
-            {list.initialLoading ? (
+            {list.error ? (
+              <TableError colSpan={6} message={list.error} onRetry={list.reload} />
+            ) : list.initialLoading ? (
               <TableLoading colSpan={6} />
             ) : list.rows.length === 0 ? (
               <TableMessage icon={CalendarX} colSpan={6}>
-                {filtered ? "No appointments match these filters." : "No appointments yet."}
+                {filtered ? (
+                  <>
+                    No appointments match these filters.
+                    <ClearFiltersButton onClick={clearFilters} />
+                  </>
+                ) : (
+                  "No appointments yet."
+                )}
               </TableMessage>
             ) : (
               list.rows.map((a) => (
@@ -269,7 +282,7 @@ function AppointmentsList() {
             )}
           </tbody>
         </Table>
-        <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />
+        {!list.error && <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />}
       </Card>
     </>
   );

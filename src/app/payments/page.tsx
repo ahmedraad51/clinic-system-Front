@@ -5,8 +5,8 @@ import Link from "next/link";
 import { FileText, Plus, Receipt } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Card, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination,
-  SearchInput, SelectInput, StatusBadge, Table, TableLoading, TableMessage, Td, TextInput, Th, Toolbar,
+  Card, ClearFiltersButton, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination, SearchInput,
+  SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, TextInput, Th, Toolbar,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -72,6 +72,12 @@ function PaymentsList() {
   }, [sumKey]);
 
   const filtered = Boolean(debounced.trim() || method || from || to);
+  const clearFilters = () => {
+    setSearch("");
+    setMethod("");
+    setFrom("");
+    setTo("");
+  };
 
   return (
     <PageContainer>
@@ -118,8 +124,6 @@ function PaymentsList() {
         </div>
       </Toolbar>
 
-      {list.error && <Alert tone="red">{list.error}</Alert>}
-
       <Card flush>
         <Table>
           <thead>
@@ -132,10 +136,21 @@ function PaymentsList() {
             </tr>
           </thead>
           <tbody>
-            {list.initialLoading ? (
+            {list.error ? (
+              <TableError colSpan={5} message={list.error} onRetry={list.reload} />
+            ) : list.initialLoading ? (
               <TableLoading colSpan={5} />
             ) : list.rows.length === 0 ? (
-              <TableMessage icon={Receipt} colSpan={5}>{filtered ? "No payments match these filters." : "No payments yet."}</TableMessage>
+              <TableMessage icon={Receipt} colSpan={5}>
+                {filtered ? (
+                  <>
+                    No payments match these filters.
+                    <ClearFiltersButton onClick={clearFilters} />
+                  </>
+                ) : (
+                  "No payments yet."
+                )}
+              </TableMessage>
             ) : (
               list.rows.map((pay) => (
                 <ClickableRow key={pay.name} href={paymentHref(pay.name)} dimmed={list.loading}>
@@ -168,7 +183,7 @@ function PaymentsList() {
             )}
           </tbody>
         </Table>
-        <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />
+        {!list.error && <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />}
       </Card>
     </PageContainer>
   );

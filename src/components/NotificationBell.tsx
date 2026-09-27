@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bell } from "lucide-react";
+import { Bell, RotateCcw } from "lucide-react";
 import { useSession } from "@/context/SessionContext";
 import { getList, type FilterRow } from "@/lib/frappe";
 import { formatTime, todayISO } from "@/lib/format";
 import { appointmentHref } from "@/lib/links";
-import { StatusBadge } from "@/components/ui";
+import { Button, StatusBadge } from "@/components/ui";
 import type { Appointment } from "@/lib/types";
 
 /**
@@ -20,6 +20,8 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Appointment[]>([]);
   const [tick, setTick] = useState(0);
+  // A failed load says so, instead of "Nothing left for today".
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setTick((t) => t + 1), 5 * 60 * 1000);
@@ -43,9 +45,13 @@ export default function NotificationBell() {
             limit: 20,
           },
         );
-        if (!cancelled) setItems(rows);
+        if (!cancelled) {
+          setItems(rows);
+          setFailed(false);
+        }
       } catch (err) {
         console.error(err);
+        if (!cancelled) setFailed(true);
       }
     };
     load();
@@ -65,7 +71,7 @@ export default function NotificationBell() {
         type="button"
         onClick={toggle}
         aria-expanded={open}
-        aria-label={`Today's appointments: ${items.length}`}
+        aria-label={failed ? "Today's appointments could not be loaded" : `Today's appointments: ${items.length}`}
         className="relative w-11 h-11 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition"
       >
         <Bell size={18} />
@@ -84,7 +90,14 @@ export default function NotificationBell() {
               <p className="text-sm font-semibold text-gray-800">Today</p>
               <p className="text-xs text-gray-500">{mine ? "Your patients still to come" : "Appointments still to come"}</p>
             </div>
-            {items.length === 0 ? (
+            {failed ? (
+              <div role="alert" className="px-4 py-5 flex flex-col items-center gap-3 text-sm text-center text-red-700">
+                <p>Could not load today&apos;s appointments.</p>
+                <Button variant="secondary" size="sm" icon={RotateCcw} onClick={() => setTick((t) => t + 1)}>
+                  Try Again
+                </Button>
+              </div>
+            ) : items.length === 0 ? (
               <p className="px-4 py-6 text-sm text-center text-gray-500">Nothing left for today.</p>
             ) : (
               <ul className="max-h-80 overflow-y-auto py-1">

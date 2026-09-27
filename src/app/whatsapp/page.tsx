@@ -5,8 +5,9 @@ import Link from "next/link";
 import { MessageCircle, Pencil, Plus, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Badge, Button, Card, EmptyState, Field, PageContainer, PageHeader, PageLoading, Pagination,
-  SearchInput, SelectInput, StatusBadge, Table, TableLoading, TableMessage, Tabs, Td, TextArea, TextInput, Th, Toggle, Toolbar,
+  Alert, Badge, Button, Card, ClearFiltersButton, EmptyState, Field, PageContainer, PageHeader, PageLoading,
+  Pagination, SearchInput, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Tabs, Td,
+  TextArea, TextInput, Th, Toggle, Toolbar,
 } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { useSettings } from "@/context/SettingsContext";
@@ -318,6 +319,10 @@ function MessageLog() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const debounced = useDebounced(search);
+  const clearFilters = () => {
+    setSearch("");
+    setStatus("");
+  };
 
   const list = usePagedList<WhatsAppLog>("WhatsApp Log", {
     fields: ["name", "patient", "patient_name", "appointment", "phone_number", "status", "sent_at", "message", "error_message"],
@@ -340,8 +345,6 @@ function MessageLog() {
         </SelectInput>
       </Toolbar>
 
-      {list.error && <Alert tone="red">{list.error}</Alert>}
-
       <Card flush>
         <Table>
           <thead>
@@ -353,10 +356,21 @@ function MessageLog() {
             </tr>
           </thead>
           <tbody>
-            {list.initialLoading ? (
+            {list.error ? (
+              <TableError colSpan={4} message={list.error} onRetry={list.reload} />
+            ) : list.initialLoading ? (
               <TableLoading colSpan={4} />
             ) : list.rows.length === 0 ? (
-              <TableMessage icon={MessageCircle} colSpan={4}>No messages found.</TableMessage>
+              <TableMessage icon={MessageCircle} colSpan={4}>
+                {debounced.trim() || status ? (
+                  <>
+                    No messages match.
+                    <ClearFiltersButton onClick={clearFilters} />
+                  </>
+                ) : (
+                  "No messages yet."
+                )}
+              </TableMessage>
             ) : (
               list.rows.map((log) => (
                 <tr key={log.name} className={list.loading ? "opacity-60" : "hover:bg-gray-50"}>
@@ -390,7 +404,7 @@ function MessageLog() {
             )}
           </tbody>
         </Table>
-        <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />
+        {!list.error && <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />}
       </Card>
     </>
   );

@@ -18,7 +18,7 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from "react";
-import { AlertCircle, ArrowLeft, ChevronLeft, ChevronRight, Info, Lock, Search, X, type LucideIcon } from "lucide-react";
+import { AlertCircle, ArrowLeft, ChevronLeft, ChevronRight, Info, Lock, RotateCcw, Search, X, type LucideIcon } from "lucide-react";
 import { cleanNumberText, cx } from "@/lib/format";
 import { toLatinDigits } from "@/lib/phone";
 
@@ -618,6 +618,35 @@ export function TableLoading({ colSpan, rows = 5 }: { colSpan: number; rows?: nu
   );
 }
 
+/**
+ * A failed load inside a table, with its reason and a Try Again button. Show it instead of the rows and
+ * instead of the empty message: a list that could not load must never read as "No patients yet".
+ */
+export function TableError({ colSpan, message, onRetry }: { colSpan: number; message: string; onRetry: () => void }) {
+  return (
+    <tr>
+      <td colSpan={colSpan} className="px-5 py-10 text-center text-sm max-sm:block">
+        <div role="alert" className="flex flex-col items-center gap-3 text-red-700">
+          <AlertCircle size={22} aria-hidden="true" />
+          <p>{message}</p>
+          <Button variant="secondary" size="sm" icon={RotateCcw} onClick={onRetry}>
+            Try Again
+          </Button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+/** Under a "no match" message: empties the search box and the filters. */
+export function ClearFiltersButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button variant="secondary" size="sm" icon={X} onClick={onClick} className="mt-3">
+      Clear Filters
+    </Button>
+  );
+}
+
 /** A message across the whole table, e.g. "Loading...". With an icon it is a friendly empty state. */
 export function TableMessage({ colSpan, children, icon }: { colSpan: number; children: ReactNode; icon?: LucideIcon }) {
   return (
@@ -756,6 +785,20 @@ export function Alert({
         <div>{children}</div>
       </div>
     </div>
+  );
+}
+
+/** A part of a page that could not load: the reason and a Try Again button, instead of zeros or blanks. */
+export function LoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <Alert tone="red">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <span>{message}</span>
+        <Button variant="secondary" size="sm" icon={RotateCcw} onClick={onRetry}>
+          Try Again
+        </Button>
+      </div>
+    </Alert>
   );
 }
 

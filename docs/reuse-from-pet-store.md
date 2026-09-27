@@ -194,6 +194,10 @@ Paths are inside `D:\Projects\alkhokh_pet_store_front`.
   `Recall` doctype can come later.
 
 ### 6. A failed load must never look like "nothing there"
+- **Brought in** (2026-09-26): `TableError`, `LoadError` and `ClearFiltersButton` in the UI kit, used by the
+  seven lists (patients, appointments, payments, treatments, doctors, users, WhatsApp log), the dashboard,
+  the Today board, the recall list and the bell; a test switch in the dummy data (`window.__mockFail`) and
+  `e2e/tests/load-errors.spec.ts`.
 - **What:**
   - DentClinic lists already show a red message when loading fails. Add a **Retry** button, and do not also
     show "No patients found" under it.
