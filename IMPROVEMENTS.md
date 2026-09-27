@@ -221,7 +221,7 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-28 - **Small helpers** (from the pet store study, item 22). Report exports to Excel are now
   safe: a name starting with "=" can no longer run as a formula. The Profile page has "Screen Size on This
   Computer" (80 to 120 %), for a reception screen read from a distance. The WhatsApp message log hides the
-  middle of phone numbers. The patient's Address box suggests the governorates of Iraq. Commit PENDING.
+  middle of phone numbers. The patient's Address box suggests the governorates of Iraq. Commit 043d899.
 
 ## Questions for the owner
 
