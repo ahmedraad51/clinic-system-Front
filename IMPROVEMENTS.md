@@ -211,7 +211,7 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-26 - **A failed load never looks like "nothing there"** (from the pet store study, item 6). When
   a list, the dashboard, the Today board, the recall list or the bell cannot load (for example when the
   internet is down), it now says so with a "Try Again" button, instead of showing "No patients yet",
-  "Nobody is due" or zeros. A search that finds nothing has a "Clear Filters" button. Commit PENDING.
+  "Nobody is due" or zeros. A search that finds nothing has a "Clear Filters" button. Commit 2d2ec51.
 
 ## Questions for the owner
 
