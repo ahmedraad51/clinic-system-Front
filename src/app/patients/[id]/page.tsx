@@ -12,7 +12,7 @@ import DentalChart from "@/components/DentalChart";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import PatientFiles from "@/components/PatientFiles";
 import {
-  Button, Card, ClickableRow, DetailList, DetailRow, EmptyState, LinkButton, NotFoundCard,
+  Button, Card, ClickableRow, DetailList, DetailRow, EmptyState, LinkButton, LoadError, NotFoundCard,
   PageContainer, PageHeader, PageLoading, StatusBadge, Table, Tabs, Td, Th,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
@@ -56,6 +56,9 @@ function PatientDetail() {
   const { doc: patient, loading, notFound, error, reload } = useDocument<Patient>("Patient", id);
   const [tab, setTab] = useState<TabKey>("overview");
   const [related, setRelated] = useState<Related | null>(null);
+  // The appointments, plans, sessions and payments could not load: say so in each tab, with Try Again.
+  const [relatedError, setRelatedError] = useState("");
+  const [relatedVersion, setRelatedVersion] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -98,21 +101,38 @@ function PatientDetail() {
               )
             : Promise.resolve([]),
         ]);
-        if (!cancelled) setRelated({ id, appointments, plans, sessions, payments });
+        if (!cancelled) {
+          setRelated({ id, appointments, plans, sessions, payments });
+          setRelatedError("");
+        }
       } catch (err) {
         console.error(err);
+        if (!cancelled) setRelatedError(errorMessage(err, "Could not load this patient's visits and payments."));
       }
     };
     load();
     return () => {
       cancelled = true;
     };
-  }, [id, showAppointments, showTreatments, showPayments]);
+  }, [id, showAppointments, showTreatments, showPayments, relatedVersion]);
 
   if (loading) return <PageLoading />;
   if (notFound || !patient) return <NotFoundCard error={error} what="Patient" backHref="/patients" backLabel="Back to Patients" />;
 
   const data = related && related.id === id ? related : null;
+  const relatedWaiting = relatedError ? (
+    <div className="p-5">
+      <LoadError
+        message={relatedError}
+        onRetry={() => {
+          setRelatedError("");
+          setRelatedVersion((v) => v + 1);
+        }}
+      />
+    </div>
+  ) : (
+    <PageLoading />
+  );
   const today = todayISO();
 
   const handleDelete = async () => {
@@ -288,7 +308,7 @@ function PatientDetail() {
       {tab === "overview" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <Card title="Timeline" className="lg:col-span-2">
-            {!data ? <PageLoading /> : <Timeline data={data} today={today} money={money} />}
+            {!data ? relatedWaiting : <Timeline data={data} today={today} money={money} />}
           </Card>
           <div className="space-y-6">
             <Card title="Contact and Basic Information">
@@ -319,7 +339,7 @@ function PatientDetail() {
       {tab === "appointments" && (
         <Card flush>
           {!data ? (
-            <PageLoading />
+            relatedWaiting
           ) : data.appointments.length === 0 ? (
             <EmptyState
               icon={Calendar}
@@ -376,7 +396,7 @@ function PatientDetail() {
       {tab === "treatments" && (
         <Card flush>
           {!data ? (
-            <PageLoading />
+            relatedWaiting
           ) : data.plans.length === 0 ? (
             <EmptyState
               icon={Stethoscope}
@@ -439,7 +459,7 @@ function PatientDetail() {
       {tab === "payments" && (
         <Card flush>
           {!data ? (
-            <PageLoading />
+            relatedWaiting
           ) : data.payments.length === 0 ? (
             <EmptyState
               icon={CreditCard}

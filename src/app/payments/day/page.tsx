@@ -7,7 +7,7 @@ import { Printer, Receipt } from "lucide-react";
 import ClinicLetterhead from "@/components/ClinicLetterhead";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Button, Card, EmptyState, Field, PageContainer, PageHeader, PageLoading, StatusBadge, Table, Td, TextInput, Th,
+  Button, Card, EmptyState, Field, LoadError, PageContainer, PageHeader, PageLoading, StatusBadge, Table, Td, TextInput, Th,
 } from "@/components/ui";
 import { useSettings } from "@/context/SettingsContext";
 import { errorMessage, getList } from "@/lib/frappe";
@@ -35,7 +35,8 @@ function DayReport() {
   const { money } = useSettings();
   const param = searchParams.get("date") || "";
   const date = /^\d{4}-\d{2}-\d{2}$/.test(param) ? param : todayISO();
-  const [result, setResult] = useState<{ date: string; rows: Payment[]; error: string } | null>(null);
+  const [result, setResult] = useState<{ date: string; version: number; rows: Payment[]; error: string } | null>(null);
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,19 +47,19 @@ function DayReport() {
           ["name", "patient", "patient_name", "treatment_type", "amount", "payment_method", "notes"],
           { filters: [["payment_date", "=", date]], orderBy: "name asc", limit: 0 },
         );
-        if (!cancelled) setResult({ date, rows, error: "" });
+        if (!cancelled) setResult({ date, version, rows, error: "" });
       } catch (err) {
         console.error(err);
-        if (!cancelled) setResult({ date, rows: [], error: errorMessage(err, "Could not load the payments.") });
+        if (!cancelled) setResult({ date, version, rows: [], error: errorMessage(err, "Could not load the payments.") });
       }
     };
     load();
     return () => {
       cancelled = true;
     };
-  }, [date]);
+  }, [date, version]);
 
-  const ready = result?.date === date ? result : null;
+  const ready = result?.date === date && result.version === version ? result : null;
   const rows = ready?.rows ?? [];
   const total = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
   const byMethod = PAYMENT_METHODS.map((method) => {
@@ -73,7 +74,7 @@ function DayReport() {
         subtitle={formatLongDate(date)}
         back={{ href: "/payments", label: "Payments" }}
         actions={
-          <Button icon={Printer} onClick={() => window.print()} disabled={!ready}>
+          <Button icon={Printer} onClick={() => window.print()} disabled={!ready || Boolean(ready.error)}>
             Print
           </Button>
         }
@@ -92,13 +93,17 @@ function DayReport() {
         </Field>
       </div>
 
-      {ready?.error && <Alert tone="red">{ready.error}</Alert>}
 
       <Card className="print:shadow-none print:border-0">
         <ClinicLetterhead kind="End-of-day report" reference={formatDate(date)} />
 
         {!ready ? (
           <PageLoading />
+        ) : ready.error ? (
+          // No totals and no "No payments on this day" for a day that could not load.
+          <div className="pt-5">
+            <LoadError message={ready.error} onRetry={() => setVersion((v) => v + 1)} />
+          </div>
         ) : (
           <div className="space-y-6 pt-5">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

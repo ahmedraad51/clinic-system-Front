@@ -250,7 +250,15 @@ function TodayBoard() {
         }
       />
 
-      {error && <LoadError message={error} onRetry={() => setVersion((v) => v + 1)} />}
+      {error && (
+        <LoadError
+          message={error}
+          onRetry={() => {
+            setError("");
+            setVersion((v) => v + 1);
+          }}
+        />
+      )}
 
       {/* Nothing loaded yet: no zeros and no "No appointments today", only the error above. */}
       {board && (

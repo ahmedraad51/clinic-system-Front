@@ -9,7 +9,7 @@ import DentalChart from "@/components/DentalChart";
 import LabWorkCard from "@/components/LabWorkCard";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
-  Alert, Button, Card, DetailList, DetailRow, EmptyState, Field, LinkButton, NotFoundCard,
+  Alert, Button, Card, DetailList, DetailRow, EmptyState, Field, LinkButton, LoadError, NotFoundCard,
   PageContainer, PageHeader, PageLoading, SelectInput, StatusBadge, Table, Td, TextArea, TextInput, Th,
 } from "@/components/ui";
 import { ConfirmDialog, Modal } from "@/components/ui/Modal";
@@ -51,6 +51,8 @@ function TreatmentDetail() {
   const patientChart = usePatientChart(plan?.patient);
   const [related, setRelated] = useState<Related | null>(null);
   const [relatedVersion, setRelatedVersion] = useState(0);
+  // The sessions and payments could not load: say so, with Try Again.
+  const [relatedError, setRelatedError] = useState("");
   const [updating, setUpdating] = useState<TreatmentStatus | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -80,9 +82,13 @@ function TreatmentDetail() {
               })
             : Promise.resolve([]),
         ]);
-        if (!cancelled) setRelated({ key: `${id}|${relatedVersion}`, sessions, payments });
+        if (!cancelled) {
+          setRelated({ key: `${id}|${relatedVersion}`, sessions, payments });
+          setRelatedError("");
+        }
       } catch (err) {
         console.error(err);
+        if (!cancelled) setRelatedError(errorMessage(err, "Could not load the sessions and payments of this plan."));
       }
     };
     load();
@@ -99,6 +105,19 @@ function TreatmentDetail() {
   const canEdit = can("edit_treatments");
   const data = related && related.key.split("|")[0] === id ? related : null;
   const refreshing = related?.key !== relatedKey;
+  const relatedWaiting = relatedError ? (
+    <div className="px-6 pb-6">
+      <LoadError
+        message={relatedError}
+        onRetry={() => {
+          setRelatedError("");
+          setRelatedVersion((v) => v + 1);
+        }}
+      />
+    </div>
+  ) : (
+    <PageLoading />
+  );
   const total = Number(plan.total_cost) || 0;
   const paid = Number(plan.paid_amount) || 0;
   const remaining = Number(plan.remaining_amount) || 0;
@@ -256,7 +275,7 @@ function TreatmentDetail() {
               }
             >
               {!data ? (
-                <PageLoading />
+                relatedWaiting
               ) : data.payments.length === 0 ? (
                 <p className="px-6 pb-6 text-sm text-gray-500">No payments for this plan yet.</p>
               ) : (
@@ -319,7 +338,7 @@ function TreatmentDetail() {
         }
       >
         {!data ? (
-          <PageLoading />
+          relatedWaiting
         ) : data.sessions.length === 0 ? (
           <EmptyState icon={ClipboardList} title="No sessions yet" text="Add a session for each visit where this treatment is worked on." />
         ) : (

@@ -29,7 +29,7 @@ accurate.
 | `npm run dev` | Works. Dev output goes to `.next/dev`, so `npm run build` can run while it is up. Changing `next.config.ts` restarts it, and the first page after that can take several minutes to compile. | |
 | `npm run build` | **Passes** (checked 2026-09-26): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-26). `npx tsc --noEmit` passes too. | |
-| Tests | **Playwright tests pass** (87 tests, checked 2026-09-26): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (88 tests, checked 2026-09-28): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -541,8 +541,10 @@ function Things() {
   `<TableError colSpan={…} message={list.error} onRetry={list.reload} />` instead of the rows or the empty
   message, and hide `Pagination` (`{!list.error && <Pagination … />}`). A page or card that loads its own
   numbers keeps an error state and shows `<LoadError message={…} onRetry={…} />` (Try Again bumps a
-  `version` in the effect's dependencies), and shows no zeros for numbers it never got (dashboard, Today
-  board, recall list, the bell). An empty message caused by a search or filter has a `<ClearFiltersButton>`
+  `version` in the effect's dependencies, and clears the error so the loading state shows while it retries),
+  and shows no zeros for numbers it never got (dashboard, Today board, recall list, the bell, the day report,
+  Reports, and the related lists on the patient and treatment plan pages). `usePagedList` hides `error` and
+  sets `initialLoading` while it loads again after an error, so Try Again shows the loading rows. An empty message caused by a search or filter has a `<ClearFiltersButton>`
   that resets them; "No patients yet." is only for a list that really is empty.
 - **Contrast:** readable text is `text-gray-500` or darker (4.8:1 on white). `text-gray-300`/`400` only for
   decoration and disabled things. Links and other focusable things get a primary focus ring from

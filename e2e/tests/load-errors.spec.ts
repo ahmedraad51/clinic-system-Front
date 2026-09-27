@@ -89,3 +89,25 @@ test("the bell says when today's appointments could not load", async ({ page }) 
   // The bell entry starts with the time (the patient list has a plain "Karim Fouad" link too).
   await expect(page.getByRole("link", { name: /PM\s*Karim Fouad/ })).toBeVisible();
 });
+
+test("the patient page, the day report and reports say when they could not load", async ({ page }) => {
+  await page.goto("/dashboard");
+  await waitForData(page);
+  await failReads(page, ["Payment"]);
+
+  // The patient's details load; the timeline of visits and payments says it could not.
+  await navigate(page, "/patients/PAT-2026-00001");
+  await expect(page.getByRole("heading", { name: "Nadia Samir" })).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: LOST })).toBeVisible();
+
+  await navigate(page, "/payments/day");
+  await expect(page.getByRole("alert").filter({ hasText: LOST })).toBeVisible();
+  await expect(page.getByText("No payments on this day")).toHaveCount(0);
+
+  await navigate(page, "/reports");
+  await expect(page.getByRole("alert").filter({ hasText: LOST })).toBeVisible();
+
+  await failReads(page, []);
+  await page.getByRole("button", { name: "Try Again" }).click();
+  await expect(page.getByText("Revenue by Treatment")).toBeVisible();
+});

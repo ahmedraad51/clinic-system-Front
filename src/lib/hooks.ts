@@ -107,11 +107,12 @@ export function usePagedList<T extends BaseDoc>(doctype: string, query: PagedQue
     pageSize,
     setPage,
     reload,
-    /** True on the very first load, when there is nothing to show yet. */
-    initialLoading: result === null,
+    /** True on the very first load, and while loading again after an error: there is nothing to show yet. */
+    initialLoading: result === null || (result.error !== "" && result.requestKey !== requestKey),
     /** True while any request is running, including page changes. */
     loading: result?.requestKey !== requestKey,
-    error: result?.error ?? "",
+    /** Why the last load failed; empty while a new load is running (Try Again then shows the loading rows). */
+    error: result && result.requestKey === requestKey ? result.error : "",
   };
 }
 

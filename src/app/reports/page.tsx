@@ -5,11 +5,11 @@ import Link from "next/link";
 import { AlertCircle, CreditCard, Download, Receipt, TrendingUp } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
-  Button, Card, EmptyState, PageContainer, PageHeader, PageLoading, SelectInput, StatCard,
+  Button, Card, EmptyState, LoadError, PageContainer, PageHeader, PageLoading, SelectInput, StatCard,
   StatusBadge, Table, TableMessage, Td, TextInput, Th, Toolbar,
 } from "@/components/ui";
 import { useSettings } from "@/context/SettingsContext";
-import { getList, type FilterRow } from "@/lib/frappe";
+import { errorMessage, getList, type FilterRow } from "@/lib/frappe";
 import { addDays, downloadCsv, formatDate, formatMonth, monthStart, todayISO } from "@/lib/format";
 import { patientHref, paymentHref, treatmentHref } from "@/lib/links";
 import type { Appointment, Payment, TreatmentPlan } from "@/lib/types";
@@ -73,6 +73,8 @@ function Reports() {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [data, setData] = useState<ReportData | null>(null);
+  const [failed, setFailed] = useState("");
+  const [version, setVersion] = useState(0);
 
   const [from, to] = rangeDates(range, customFrom, customTo);
   const key = `${from}|${to}`;
@@ -108,16 +110,20 @@ function Reports() {
           }),
         ]);
         const planDoctors = Object.fromEntries(plans.map((plan) => [plan.name, plan.doctor_name || ""]));
-        if (!cancelled) setData({ key, payments, outstanding, planDoctors, appointments });
+        if (!cancelled) {
+          setData({ key, payments, outstanding, planDoctors, appointments });
+          setFailed("");
+        }
       } catch (err) {
         console.error(err);
+        if (!cancelled) setFailed(errorMessage(err, "Could not load the reports."));
       }
     };
     load();
     return () => {
       cancelled = true;
     };
-  }, [key]);
+  }, [key, version]);
 
   if (settings.enable_financial_reports === 0) {
     return (
@@ -133,7 +139,20 @@ function Reports() {
     );
   }
 
-  if (!data) return <PageLoading />;
+  const retry = () => {
+    setFailed("");
+    setVersion((v) => v + 1);
+  };
+  // Never report zeros for a period that could not load.
+  if (!data)
+    return failed ? (
+      <PageContainer>
+        <PageHeader title="Reports" />
+        <LoadError message={failed} onRetry={retry} />
+      </PageContainer>
+    ) : (
+      <PageLoading />
+    );
 
   const stale = data.key !== key;
   const payments = data.payments;
