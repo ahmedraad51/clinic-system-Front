@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Printer, Receipt } from "lucide-react";
+import { CashCountCard, RecentCashCounts } from "@/components/CashCountCard";
 import ClinicLetterhead from "@/components/ClinicLetterhead";
 import RequirePermission from "@/components/Guard";
 import {
@@ -37,6 +38,8 @@ function DayReport() {
   const date = /^\d{4}-\d{2}-\d{2}$/.test(param) ? param : todayISO();
   const [result, setResult] = useState<{ date: string; version: number; rows: Payment[]; error: string } | null>(null);
   const [version, setVersion] = useState(0);
+  // Bumped when a count is saved, so the list of recent counts shows it.
+  const [countsSaved, setCountsSaved] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -162,10 +165,11 @@ function DayReport() {
               </div>
             )}
 
-            <div className="rounded-xl border border-gray-200 px-4 py-3 text-sm flex flex-wrap justify-between gap-2">
-              <span className="text-gray-600">Cash that should be in the drawer (without the opening float)</span>
-              <span className="font-bold text-gray-800">{money(byMethod.find((m) => m.method === "Cash")?.total ?? 0)}</span>
-            </div>
+            <CashCountCard
+              date={date}
+              cashPayments={byMethod.find((m) => m.method === "Cash")?.total ?? 0}
+              onSaved={() => setCountsSaved((n) => n + 1)}
+            />
 
             <div className="pt-8 grid grid-cols-2 gap-10 text-xs text-gray-500">
               <div className="border-t border-gray-300 pt-2">Counted by</div>
@@ -173,6 +177,10 @@ function DayReport() {
             </div>
           </div>
         )}
+      </Card>
+
+      <Card title="Recent cash counts" flush className="print:hidden">
+        <RecentCashCounts refresh={countsSaved} />
       </Card>
     </PageContainer>
   );

@@ -374,6 +374,13 @@ const whatsappLogs: MockDoc[] = [
   { name: "WAL-2026-00007", patient: P.bassel, appointment: A(7), phone_number: "07801112233", status: "Failed", sent_at: "2026-08-23 13:00:00", message: "Hello Bassel Ramy, this is a reminder of your appointment at DentClinic on 24 Aug 2026 at 1:00 PM with Dr. Sarah Mansour.", error_message: "Message template was rejected by the WhatsApp provider." },
 ];
 
+/* Past cash counts, so the manager has days to look back on. Floats of 200 plus the day's Cash payments. */
+const cashCounts: MockDoc[] = [
+  { name: "CC-2026-00003", count_date: "2026-08-18", opening_float: 200, cash_payments: 500, expected_cash: 700, cash_counted: 720, difference: 20, note: "A patient left 20 extra; it goes against the next visit.", counted_by: "mariam.saeed@dentclinic.test", counted_at: "2026-08-18 18:05:00" },
+  { name: "CC-2026-00002", count_date: "2026-07-30", opening_float: 200, cash_payments: 600, expected_cash: 800, cash_counted: 750, difference: -50, note: "Change was given twice to one patient.", counted_by: "mariam.saeed@dentclinic.test", counted_at: "2026-07-30 18:10:00" },
+  { name: "CC-2026-00001", count_date: "2026-07-22", opening_float: 200, cash_payments: 1500, expected_cash: 1700, cash_counted: 1700, difference: 0, note: "", counted_by: "mariam.saeed@dentclinic.test", counted_at: "2026-07-22 18:02:00" },
+];
+
 const store: Store = {
   Patient: patients,
   Doctor: doctors,
@@ -386,6 +393,7 @@ const store: Store = {
   "Clinic Settings": clinicSettings,
   "WhatsApp Template": whatsappTemplates,
   "WhatsApp Log": whatsappLogs,
+  "Cash Count": cashCounts,
   File: [],
 };
 
@@ -408,6 +416,7 @@ const NAME_SERIES: Record<string, { prefix: string; year: boolean }> = {
   "WhatsApp Template": { prefix: "WAT", year: false },
   "WhatsApp Log": { prefix: "WAL", year: true },
   File: { prefix: "FILE", year: false },
+  "Cash Count": { prefix: "CC", year: true },
 };
 
 /** Which doctypes link to which, so a delete can be refused the way Frappe refuses it. */
@@ -421,7 +430,10 @@ const LINKED_FROM: Record<string, Array<[doctype: string, field: string]>> = {
   Appointment: [["WhatsApp Log", "appointment"]],
 };
 
-const NUMBER_FIELDS = ["total_cost", "amount", "duration_minutes", "age", "enabled", "is_active"];
+const NUMBER_FIELDS = [
+  "total_cost", "amount", "duration_minutes", "age", "enabled", "is_active",
+  "opening_float", "cash_payments", "expected_cash", "cash_counted", "difference",
+];
 
 const num = (value: MockValue): number => {
   const parsed = Number(value);
@@ -453,6 +465,10 @@ function recalculate(): void {
         doc.doctor_name = doc.doctor ? doctorsById.get(String(doc.doctor))?.full_name ?? "" : "";
       }
     });
+  });
+  store["Cash Count"].forEach((count) => {
+    const user = store.User.find((row) => row.name === count.counted_by);
+    count.counted_by_name = user ? String(user.full_name || user.name) : String(count.counted_by ?? "");
   });
   store.Payment.forEach((pay) => {
     pay.treatment_type = pay.treatment_plan ? plansById.get(String(pay.treatment_plan))?.treatment_type ?? "" : "";
@@ -661,6 +677,32 @@ function checkPayment(payment: MockDoc): void {
   }
 }
 
+/**
+ * Mirrors what Cash Count.validate() should do: one count per day, the day's Cash payments and the difference
+ * worked out by the server, a note when the cash is short or over, and who counted it.
+ */
+function checkCashCount(count: MockDoc): void {
+  if (!count.count_date) throw new Error("Choose the day of the count.");
+  if (count.cash_counted === undefined || count.cash_counted === null || count.cash_counted === "") throw new Error("Enter the cash counted.");
+  const sameDay = store["Cash Count"].find((other) => other.count_date === count.count_date && other.name !== count.name);
+  if (sameDay) throw new Error(`The cash for ${count.count_date} was already counted (${sameDay.name}).`);
+  const cash = store.Payment
+    .filter((pay) => pay.payment_date === count.count_date && pay.payment_method === "Cash")
+    .reduce((sum, pay) => sum + num(pay.amount), 0);
+  count.opening_float = num(count.opening_float);
+  count.cash_payments = cash;
+  count.expected_cash = num(count.opening_float) + cash;
+  count.difference = Math.round((num(count.cash_counted) - num(count.expected_cash)) * 100) / 100;
+  if (Math.abs(num(count.difference)) >= 0.005 && !String(count.note ?? "").trim()) {
+    throw new Error("Write a note saying why the cash is short or over.");
+  }
+  const user = store.User.find((row) => row.name === count.counted_by);
+  count.counted_by_name = user ? String(user.full_name || user.name) : String(count.counted_by ?? "");
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  count.counted_at = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+
 function checkPlan(plan: MockDoc): void {
   const paid = store.Payment
     .filter((pay) => pay.treatment_plan === plan.name)
@@ -732,6 +774,7 @@ export async function mockCreateDoc(
     delete doc.send_welcome_email;
   }
   if (doctype === "Payment") checkPayment(doc);
+  if (doctype === "Cash Count") checkCashCount(doc);
 
   collection(doctype).unshift(doc);
   recalculate();
@@ -758,6 +801,7 @@ export async function mockUpdateDoc(
   }
   if (doctype === "Payment") checkPayment(next);
   if (doctype === "Treatment Plan") checkPlan(next);
+  if (doctype === "Cash Count") checkCashCount(next);
 
   Object.keys(doc).forEach((key) => delete doc[key]);
   Object.assign(doc, next);

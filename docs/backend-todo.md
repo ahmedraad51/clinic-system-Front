@@ -45,6 +45,27 @@ match, and update `src/lib/types.ts`, the mock and `AGENTS.md`.
 
 After adding fetch fields, run a patch that fills them for existing records (fetch fields only fill on save).
 
+### New doctype: Cash Count
+
+The end-of-day report (`/payments/day`) saves one cash count per day. Name series `CC-.YYYY.-.#####`.
+
+| Field | Type | Notes |
+|---|---|---|
+| `count_date` | Date, required, **unique** | The day that was counted. |
+| `opening_float` | Currency | Money put in the drawer in the morning, for change. |
+| `cash_payments` | Currency, read only | The day's Payments with `payment_method = "Cash"`, worked out in `validate()` when saved (the front end sends its own figure, which should be replaced). |
+| `expected_cash` | Currency, read only | `opening_float + cash_payments`. |
+| `cash_counted` | Currency, required | All the cash counted in the drawer. |
+| `difference` | Currency, read only | `cash_counted - expected_cash`: below 0 short, above 0 over. |
+| `note` | Small Text | Required in `validate()` when `difference` is not 0 ("Write a note saying why the cash is short or over."). |
+| `counted_by` | Link to User | The user who saved it (set it from `frappe.session.user`). |
+| `counted_by_name` | Data, read only, `fetch_from: counted_by.full_name` | |
+| `counted_at` | Datetime, read only | Set to now on every save. |
+
+Permissions: users with `add_payments` create and update; users with `view_payments` read. Do not allow delete
+for the front desk (a manager can correct a count by updating it). The front end reads it with
+`GET /api/resource/Cash Count` filtered on `count_date` and sorted `count_date desc`.
+
 ## 2. Field names to confirm
 
 These come from the README, not from the doctype JSON files. Check each one in the back-end repo.

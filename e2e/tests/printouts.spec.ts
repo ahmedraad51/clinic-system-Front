@@ -10,7 +10,9 @@ test("end-of-day report adds up today's payments by method", async ({ page }) =>
   // The dummy data has two payments today: 800 cash and 3,000 by card.
   await expect(page.getByText("Total", { exact: true }).locator("..")).toContainText("$3,800");
   await expect(page.getByText("Cash", { exact: true }).first().locator("..")).toContainText("$800");
-  await expect(page.getByText(/Cash that should be in the drawer/).locator("..")).toContainText("$800");
+  await expect(page.getByText("Cash payments", { exact: true }).locator("..")).toContainText("$800");
+  // With no opening float typed, the drawer should hold the day's cash.
+  await expect(page.getByText("Should be in the drawer", { exact: true }).locator("..")).toContainText("$800");
 });
 
 test("patient statement and appointment card", async ({ page }) => {

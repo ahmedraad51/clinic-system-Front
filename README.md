@@ -157,7 +157,7 @@ what they are not allowed to do.
 | `/patients/[id]/statement` | A printable statement of all treatments, payments and the balance |
 | `/patients/[id]/chart` | The dental chart and its findings, ready to print for the patient file or a referral |
 | `/appointments/[id]/card` | A printable appointment card to hand to the patient |
-| `/payments/day` | The end-of-day report: payments by method, the total, and the cash that should be in the drawer |
+| `/payments/day` | The end-of-day report: payments by method, the total, and the cash drawer count (opening float, cash counted, matched / short / over with a note), saved each day with who counted it, plus the recent counts for the manager |
 | `/appointments` | The appointment book as a **day calendar** (a column per doctor, from opening to closing time, with a "now" line), a **week calendar**, or a **list** with search and filters. Click an empty time in the calendar to book it with the date, time and doctor already filled in, or drag an appointment to move it to another time or doctor |
 | `/appointments/new`, `/appointments/[id]/edit` | Book or edit — shows the doctor's day with one-tap free times, remembers the last doctor used, and warns when the doctor is already booked at that time |
 | `/appointments/[id]` | Detail, one-click status changes, WhatsApp messages sent for it |
@@ -257,6 +257,7 @@ Frappe app `dent_app` · MIT
 | **Clinic Permission** | one per `user` | 14 checkboxes: view/add/edit/delete patients, view/add/edit appointments, view/add/edit treatments, view/add payments, view reports, manage users |
 | **Clinic Settings** | single | `clinic_name`, `logo`, contact details, `currency`, `tax_number`, `phone_country_code`, working hours, `theme_color`, and feature switches for WhatsApp, the patient portal and financial reports |
 | **WhatsApp Template** | `WAT-{#####}` | `template_name`, `trigger` (24 Hours Before / 2 Hours Before / Manual), `message`, `is_active` |
+| **Cash Count** | `CC-{YYYY}-{#####}` | `count_date` (one per day), `opening_float`, `cash_payments`, `expected_cash`, `cash_counted`, `difference`, `note`, `counted_by`, `counted_at` (new, see `docs/backend-todo.md`) |
 | **WhatsApp Log** | `WAL-{YYYY}-{#####}` | `patient`, `appointment`, `phone_number`, `status` (Sent / Failed / Pending), `sent_at`, `message`, `error_message` |
 
 Balances are kept correct server-side: `Treatment Plan.validate()` recomputes `remaining_amount` and

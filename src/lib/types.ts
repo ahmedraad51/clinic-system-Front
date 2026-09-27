@@ -255,6 +255,25 @@ export interface WhatsAppTemplate extends BaseDoc {
   is_active?: number;
 }
 
+/** One day's cash count at the front desk (the end-of-day report). One per day. */
+export interface CashCount extends BaseDoc {
+  count_date: string;
+  /** Money put in the drawer at the start of the day, for change. */
+  opening_float?: number;
+  /** The day's Cash payments when the count was saved (worked out by the server). */
+  cash_payments?: number;
+  /** opening_float + cash_payments. */
+  expected_cash?: number;
+  cash_counted: number;
+  /** cash_counted - expected_cash: below 0 is short, above 0 is over. */
+  difference?: number;
+  /** Why the cash was short or over (required then). */
+  note?: string;
+  counted_by?: string;
+  counted_by_name?: string;
+  counted_at?: string;
+}
+
 export interface WhatsAppLog extends BaseDoc {
   patient?: string;
   patient_name?: string;

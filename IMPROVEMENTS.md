@@ -212,6 +212,12 @@ Each finished item says what changed, when, and which commit holds it.
   a list, the dashboard, the Today board, the recall list or the bell cannot load (for example when the
   internet is down), it now says so with a "Try Again" button, instead of showing "No patients yet",
   "Nobody is due" or zeros. A search that finds nothing has a "Clear Filters" button. Commit 2d2ec51.
+- 2026-09-28 - **Cash count at the end of the day** (from the pet store study, item 11). The end-of-day
+  report now has a "Cash in the drawer" box: type the opening float and the cash counted, and it shows
+  Matched, Short by or Over by. When the cash is short or over a note is required. "Save Count" keeps the
+  count for that day with who counted it and when, and "Recent cash counts" lets the manager look back at
+  earlier days. Saved in a new Cash Count record (dummy data for now; the back end must add it, see
+  docs/backend-todo.md). Commit PENDING.
 
 ## Questions for the owner
 

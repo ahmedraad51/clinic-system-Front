@@ -272,6 +272,9 @@ Paths are inside `D:\Projects\alkhokh_pet_store_front`.
 - **Back end:** an `appointment` link and a `Missed` status (with `missed_reason`) on Treatment Session.
 
 ### 11. Cash count at the end of the day
+- **Brought in** (2026-09-28), saved as the owner asked: the Cash Count doctype (dummy data for now; see
+  `docs/backend-todo.md`), `src/components/CashCountCard.tsx` (the drawer box and the recent counts on
+  `/payments/day`), `src/lib/cashCount.ts` and `e2e/tests/cash-count.spec.ts`.
 - **What:** on the end-of-day report, type the cash actually counted. The page shows **Matched**,
   **Short by X** or **Over by X**, and "Unknown" instead of 0 when data is missing.
 - **Where:** `src/components/accounting/CashierSettlementDrawer.vue`,
