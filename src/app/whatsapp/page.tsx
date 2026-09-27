@@ -16,6 +16,7 @@ import { createDoc, deleteDoc, errorMessage, getList, updateDoc, type FilterRow 
 import { addDays, formatDate, formatDateTime, todayISO } from "@/lib/format";
 import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
 import { appointmentHref, patientHref } from "@/lib/links";
+import { maskPhone } from "@/lib/phone";
 import { PLACEHOLDERS, fillTemplate } from "@/lib/whatsapp";
 import {
   WHATSAPP_STATUSES, WHATSAPP_TRIGGERS, type WhatsAppLog, type WhatsAppTemplate, type WhatsAppTrigger,
@@ -390,7 +391,8 @@ function MessageLog() {
                     ) : (
                       "—"
                     )}
-                    {log.phone_number && <span className="block text-xs text-gray-500">{log.phone_number}</span>}
+                    {/* The log lists many patients' numbers; the full number is on the patient's page. */}
+                    {log.phone_number && <span className="block text-xs text-gray-500" dir="ltr">{maskPhone(log.phone_number)}</span>}
                   </Td>
                   <Td label="Status">
                     <StatusBadge kind="whatsapp" status={log.status} />

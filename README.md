@@ -170,9 +170,9 @@ what they are not allowed to do.
 | `/reports` | Revenue by treatment, method and month for a chosen period, outstanding balances, CSV export |
 | `/doctors` | The clinic's doctors: add and edit name, specialization, phone, email, working hours, and switch a doctor off when they leave |
 | `/users`, `/users/[id]` | Staff accounts, roles, enable/disable, and the 14 permission switches with role presets |
-| `/whatsapp` | Reminder templates with a live preview, and the message log |
+| `/whatsapp` | Reminder templates with a live preview, and the message log, with phone numbers partly hidden |
 | `/settings` | Clinic name and logo, contact details, currency (Iraqi dinars are shown without decimals), the phone country code (964 for Iraq, added to local numbers such as `0770…` in WhatsApp links), working hours, feature switches, and the clinic colour (the whole app follows it), and a price list that fills in treatment costs |
-| `/profile` | My details and permissions, change password |
+| `/profile` | Your details and permissions, change password, and the screen size on this computer (bigger text for a reception monitor) |
 
 ### Project structure
 

@@ -166,15 +166,25 @@ export function isBlankMedical(value: string | null | undefined): boolean {
   return text === "" || text === "none" || text === "no" || text === "nil" || text === "-" || text === "n/a";
 }
 
+/** A CSV cell that a spreadsheet cannot run as a formula: "=HYPERLINK(…)" → "'=HYPERLINK(…)". */
+export function csvSafe(cell: string | number | null | undefined): string {
+  if (typeof cell === "number") return String(cell);
+  const text = String(cell ?? "");
+  return /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+}
+
 /** Joins class names and drops the empty ones. */
 export function cx(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(" ");
 }
 
-/** Turns rows into a CSV file and downloads it. */
+/**
+ * Turns rows into a CSV file and downloads it. A text cell that starts with = + - @ (or a tab or line break)
+ * gets a leading ' so a spreadsheet shows it as text instead of running it as a formula; numbers stay numbers.
+ */
 export function downloadCsv(filename: string, header: string[], rows: Array<Array<string | number>>): void {
   const escape = (cell: string | number) => {
-    const text = String(cell ?? "");
+    const text = csvSafe(cell);
     return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
   };
   const csv = [header, ...rows].map((row) => row.map(escape).join(",")).join("\n");

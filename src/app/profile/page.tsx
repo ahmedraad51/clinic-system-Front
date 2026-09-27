@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Check, KeyRound, Users, X } from "lucide-react";
 import RequirePermission from "@/components/Guard";
+import ScreenSizeCard from "@/components/ScreenSizeCard";
 import {
   Alert, Badge, Button, Card, DetailList, DetailRow, Field, PageContainer, PageHeader, SelectInput, TextInput,
 } from "@/components/ui";
@@ -59,6 +60,8 @@ function Profile() {
           </DetailList>
         </div>
       </Card>
+
+      <ScreenSizeCard />
 
       <Card title="What I Can Do">
         {isSuperUser && (

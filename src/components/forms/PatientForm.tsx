@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ui/Modal";
 import { errorMessage, getList, type FilterRow } from "@/lib/frappe";
 import { cx, isBlankMedical } from "@/lib/format";
 import { useDebounced } from "@/lib/hooks";
+import { IRAQ_GOVERNORATES } from "@/lib/iraq";
 import { patientHref } from "@/lib/links";
 import { phoneDigits, phoneSearchPattern, samePhone, toLatinDigits } from "@/lib/phone";
 import { GENDERS, type Patient } from "@/lib/types";
@@ -296,7 +297,15 @@ export default function PatientForm({
             <TextInput type="email" name="email" value={form.email} onChange={handleChange} />
           </Field>
           <Field label="Address">
-            <TextInput name="address" value={form.address} onChange={handleChange} />
+            <TextInput name="address" value={form.address} onChange={handleChange} list="iraq-governorates" autoComplete="off" />
+            {/* Suggestions while typing: the governorates of Iraq. */}
+            <datalist id="iraq-governorates">
+              {IRAQ_GOVERNORATES.map((place) => (
+                <option key={place.name} value={place.name}>
+                  {place.arabic}
+                </option>
+              ))}
+            </datalist>
           </Field>
         </div>
       </Card>

@@ -424,6 +424,10 @@ Paths are inside `D:\Projects\alkhokh_pet_store_front`.
 - **Back end:** optional `language` on User, and `preferred_language` on Patient for messages.
 
 ### 22. Small helpers (each small)
+- **Brought in** (2026-09-28): `csvSafe()` in every CSV export, the screen size on `/profile`
+  (`src/lib/display.ts`), `maskPhone()` in the WhatsApp message log, the governorates as suggestions in the
+  patient address box (`src/lib/iraq.ts`, with Halabja), and `e2e/tests/small-helpers.spec.ts`. The clinic
+  time zone for "today" was left out: DentClinic already uses the computer's own date.
 - **Safe CSV exports:** a cell that starts with `=`, `+`, `-` or `@` gets a leading `'`, so a patient name
   cannot run as a formula in Excel. The pet store lacks this too; DentClinic's report export needs it.
 - **Screen zoom for reception computers:** 70–120 %, remembered per computer (`src/composables/usePageZoom.ts`).

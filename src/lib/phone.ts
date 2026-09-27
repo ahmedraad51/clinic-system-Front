@@ -91,3 +91,20 @@ export function phoneSearchPattern(text: string | null | undefined): string | nu
   if (key.length < 7) return null;
   return `%${key.slice(-9).split("").join("%")}%`;
 }
+
+/**
+ * A phone number with its middle hidden, for lists that do not need the whole number:
+ * "+964 770 123 4567" → "+964 7•• ••• 4567". Only digits are hidden, so the spacing stays; short numbers
+ * are left as they are.
+ */
+export function maskPhone(phone: string | null | undefined): string {
+  const text = toLatinDigits(phone).trim();
+  const total = text.replace(/\D/g, "").length;
+  if (total < 8) return text;
+  // Keep the first 4 digits (the country code or the 07.. start) and the last 4.
+  let seen = 0;
+  return text.replace(/\d/g, (digit) => {
+    seen += 1;
+    return seen <= 4 || seen > total - 4 ? digit : "•";
+  });
+}

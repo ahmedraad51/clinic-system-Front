@@ -217,7 +217,11 @@ Each finished item says what changed, when, and which commit holds it.
   Matched, Short by or Over by. When the cash is short or over a note is required. "Save Count" keeps the
   count for that day with who counted it and when, and "Recent cash counts" lets the manager look back at
   earlier days. Saved in a new Cash Count record (dummy data for now; the back end must add it, see
-  docs/backend-todo.md). Commit PENDING.
+  docs/backend-todo.md). Commit 001915f.
+- 2026-09-28 - **Small helpers** (from the pet store study, item 22). Report exports to Excel are now
+  safe: a name starting with "=" can no longer run as a formula. The Profile page has "Screen Size on This
+  Computer" (80 to 120 %), for a reception screen read from a distance. The WhatsApp message log hides the
+  middle of phone numbers. The patient's Address box suggests the governorates of Iraq. Commit PENDING.
 
 ## Questions for the owner
 
