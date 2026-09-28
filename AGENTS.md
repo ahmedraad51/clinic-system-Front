@@ -29,7 +29,7 @@ accurate.
 | `npm run dev` | Works. Dev output goes to `.next/dev`, so `npm run build` can run while it is up. Changing `next.config.ts` restarts it, and the first page after that can take several minutes to compile. | |
 | `npm run build` | **Passes** (checked 2026-09-26): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-26). `npx tsc --noEmit` passes too. | |
-| Tests | **Playwright tests pass** (103 tests, checked 2026-09-28): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (104 tests, checked 2026-09-28): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -613,6 +613,12 @@ writing new class lists.
 - **Text sizes:** `--text-xs` is 13 px and `--text-sm` is 15 px (a little larger than Tailwind's default, for
   reading at a distance). Page titles `text-2xl font-bold`, card titles `text-base font-semibold`, body
   `text-sm`, hints and table headers `text-xs`. Do not add other sizes for ordinary text.
+- **Motion is short and calm, and only `motion-safe:`.** A new page fades in while lifting 6 px
+  (`animate-page-in`, 0.22 s, on a wrapper keyed by the path in `MainLayout`), buttons shrink to 98 % while
+  pressed, and clickable cards (`StatCard` with `href`, `ActionTile`) lift 1 px on hover. The page animation
+  uses fill mode `backwards` so no transform stays on the page afterwards: a transform on an ancestor makes the
+  page's `position: fixed` dialogs cover only that ancestor (`e2e/tests/motion.spec.ts` checks it). Do not add
+  longer or bigger animations.
 - **Touch targets are at least 44 px.** `Button` md, inputs, tabs and menu links have `min-h-11`; small
   buttons and icon buttons grow to 44 px on touch screens with the `pointer-coarse:` variant. Do the same for
   any new clickable thing.

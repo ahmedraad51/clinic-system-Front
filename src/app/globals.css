@@ -27,6 +27,18 @@
   --text-xs--line-height: 1.15rem;
   --text-sm: 0.9375rem;
   --text-sm--line-height: 1.4rem;
+
+  /*
+   * A new page fades in while lifting 6px. "backwards", not "both": once it ends the page has no transform
+   * left, which would make position: fixed dialogs inside the page cover only the page.
+   */
+  --animate-page-in: page-in 0.22s ease-out backwards;
+  @keyframes page-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
 }
 
 /* A clear focus ring for keyboard users on links and other focusable things without their own ring. */

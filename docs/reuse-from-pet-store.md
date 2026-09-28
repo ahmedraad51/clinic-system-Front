@@ -560,6 +560,9 @@ Most useful first. Items marked **Done** are in DentClinic.
   clear that something is on its way.
 
 ### D5. Calm motion
+- **Done** (2026-09-28): `animate-page-in` in `globals.css` on a wrapper in `MainLayout`, the press in
+  `Button`/`LinkButton`, the hover lift in `StatCard` and `ActionTile`; all `motion-safe:`. Pictures:
+  `docs/design-changes/d5-hover-*.png`.
 - **What:** a new page fades in while lifting 6 px (0.22 s). Buttons shrink very slightly while pressed.
   Clickable cards lift 1 px with a deeper shadow on hover. All of it is switched off for people who ask their
   computer for reduced motion.

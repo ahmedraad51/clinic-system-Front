@@ -246,7 +246,11 @@ Each finished item says what changed, when, and which commit holds it.
   appointment, treatment plan or payment opens, a grey outline of the page (title, summary, two cards) gently
   pulses, instead of a spinner on an empty page. The page no longer jumps when the record arrives. The pulse
   stops for people who switch off animations on their computer. Pictures: docs/design-changes/d4-*.png.
-  Commit PENDING.
+  Commit 43087ca.
+- 2026-09-28 - **Design: calm motion** (design idea D5). A new page fades in with a tiny lift, buttons give a
+  little while pressed, and the dashboard's clickable cards lift slightly under the mouse. It is short (about a
+  fifth of a second) so it never slows anyone down, and it is switched off for people who ask their computer
+  for less motion. Pictures: docs/design-changes/d5-hover-*.png (the hovered Patients card). Commit PENDING.
 
 ## Questions for the owner
 

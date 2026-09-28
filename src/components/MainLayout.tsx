@@ -45,7 +45,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <main id="main" tabIndex={-1} className="flex-1 pt-16 print:pt-0 focus:outline-none">
           {/* The login ended while this page was open: ask for the password again without leaving it. */}
           {sessionEnded && <SessionEndedNotice />}
-          {children}
+          {/* Keyed by the path, so each new page fades in (only for people who have not asked for less motion). */}
+          <div key={pathname} className="motion-safe:animate-page-in print:animate-none">
+            {children}
+          </div>
         </main>
       </div>
     </div>

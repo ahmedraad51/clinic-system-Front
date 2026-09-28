@@ -211,7 +211,7 @@ export function StatCard({
   );
   const className = "block bg-white rounded-2xl border border-gray-100 shadow-sm p-5";
   return href ? (
-    <Link href={href} className={cx(className, "hover:shadow-md hover:border-primary-100 transition")}>
+    <Link href={href} className={cx(className, "hover:shadow-md hover:border-primary-100 motion-safe:hover:-translate-y-px transition")}>
       {body}
     </Link>
   ) : (
@@ -229,7 +229,7 @@ export function ActionTile({ href, label, hint, icon: Icon }: { href: string; la
       href={href}
       className={cx(
         "group flex items-center gap-3 min-h-[4.5rem] rounded-2xl border border-primary-100 bg-primary-50/70 p-3 sm:p-4",
-        "hover:bg-primary-50 hover:border-primary-200 hover:shadow-sm transition",
+        "hover:bg-primary-50 hover:border-primary-200 hover:shadow-sm motion-safe:hover:-translate-y-px transition",
       )}
     >
       <span className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-xl bg-white shadow-sm flex items-center justify-center text-primary-600 group-hover:text-primary-700">
@@ -266,6 +266,8 @@ const SIZES: Record<Size, string> = {
 const buttonClass = (variant: Variant, size: Size, className?: string) =>
   cx(
     "inline-flex items-center justify-center rounded-xl font-medium transition whitespace-nowrap",
+    // Felt at once on a touch screen: the button gives a little while pressed.
+    "motion-safe:active:scale-[0.98] disabled:active:scale-100",
     "disabled:opacity-50 disabled:cursor-not-allowed",
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1",
     VARIANTS[variant],
