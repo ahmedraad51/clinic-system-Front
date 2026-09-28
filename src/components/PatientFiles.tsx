@@ -107,6 +107,7 @@ export default function PatientFiles({ patient, canEdit }: { patient: string; ca
   return (
     <Card
       title="X-rays and Photos"
+      icon={ImageIcon}
       actions={
         canEdit && (
           <>

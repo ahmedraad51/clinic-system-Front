@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type {
   ButtonHTMLAttributes,
+  ComponentType,
   InputHTMLAttributes,
   MouseEvent,
   ReactNode,
@@ -126,14 +127,29 @@ export function PageHeader({
   );
 }
 
+/** A lucide icon, or one of ours drawn the same way (the tooth). */
+type CardIconType = ComponentType<{ size?: number; className?: string }>;
+
+/** The small tinted square that holds a card's icon, before its title. */
+export function CardIcon({ icon: Icon }: { icon: CardIconType }) {
+  return (
+    <span aria-hidden="true" className="w-8 h-8 shrink-0 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center print:hidden">
+      <Icon size={17} />
+    </span>
+  );
+}
+
 export function Card({
   title,
+  icon,
   actions,
   children,
   className,
   flush = false,
 }: {
   title?: ReactNode;
+  /** Shown in a small tinted square before the title, so a long page is easy to scan. */
+  icon?: CardIconType;
   actions?: ReactNode;
   children: ReactNode;
   className?: string;
@@ -145,7 +161,14 @@ export function Card({
     <section className={cx("bg-white rounded-2xl border border-gray-100 shadow-sm", className)}>
       {hasHeader && (
         <div className={cx("flex items-center justify-between gap-3 px-5 sm:px-6 pt-5", flush && "pb-4")}>
-          {title ? <h2 className="text-base font-semibold text-gray-800">{title}</h2> : <span />}
+          {title ? (
+            <div className="flex items-center gap-2.5 min-w-0">
+              {icon && <CardIcon icon={icon} />}
+              <h2 className="text-base font-semibold text-gray-800">{title}</h2>
+            </div>
+          ) : (
+            <span />
+          )}
           {actions && <div className="flex items-center gap-2 print:hidden">{actions}</div>}
         </div>
       )}

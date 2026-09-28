@@ -3,7 +3,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { CalendarPlus, ClipboardList, CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
+import { CalendarCheck, CalendarPlus, ClipboardList, CreditCard, ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import DentalChart from "@/components/DentalChart";
 import LabWorkCard from "@/components/LabWorkCard";
@@ -219,7 +219,7 @@ function TreatmentDetail() {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card title="Details">
+        <Card title="Details" icon={ClipboardList}>
           <DetailList>
             <DetailRow label="Patient">
               <Link href={patientHref(plan.patient)} className="text-primary-600 hover:underline">
@@ -236,7 +236,7 @@ function TreatmentDetail() {
 
         <div className="space-y-6">
           {canEdit && (
-            <Card title="Update Status">
+            <Card title="Update Status" icon={ListChecks}>
               <div className="flex flex-wrap gap-2">
                 {TREATMENT_STATUSES.map((status) => {
                   const current = plan.status === status;
@@ -262,6 +262,7 @@ function TreatmentDetail() {
           {showPayments && (
             <Card
               title="Payments"
+              icon={CreditCard}
               flush
               actions={
                 can("add_payments") &&
@@ -319,6 +320,7 @@ function TreatmentDetail() {
 
       <Card
         title="Sessions"
+        icon={CalendarCheck}
         flush
         actions={
           <>

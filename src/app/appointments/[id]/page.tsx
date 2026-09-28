@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { MessageCircle, Pencil, Printer, Stethoscope, Trash2 } from "lucide-react";
+import { ClipboardList, ListChecks, MessageCircle, Pencil, Printer, Stethoscope, Trash2 } from "lucide-react";
 import FinishVisitDialog from "@/components/FinishVisitDialog";
 import SendWhatsAppDialog from "@/components/SendWhatsAppDialog";
 import { useSettings } from "@/context/SettingsContext";
@@ -144,6 +144,7 @@ function AppointmentDetail() {
 
       <Card
         title="Details"
+        icon={ClipboardList}
         actions={
           <LinkButton href={`${appointmentHref(id)}/card`} variant="secondary" size="sm" icon={Printer}>
             Print Card
@@ -168,7 +169,7 @@ function AppointmentDetail() {
       </Card>
 
       {canEdit && (
-        <Card title="Update Status">
+        <Card title="Update Status" icon={ListChecks}>
           <div className="flex flex-wrap gap-2">
             {APPOINTMENT_STATUSES.map((status) => {
               const current = appointment.status === status;
@@ -194,6 +195,7 @@ function AppointmentDetail() {
       {(messages.length > 0 || canMessage) && (
         <Card
           title="WhatsApp Messages"
+          icon={MessageCircle}
           actions={
             canMessage && (
               <Button variant="secondary" size="sm" icon={MessageCircle} onClick={() => setMessaging(true)}>

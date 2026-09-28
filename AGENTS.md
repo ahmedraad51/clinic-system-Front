@@ -584,7 +584,8 @@ function Things() {
 ### The UI kit (`src/components/ui`)
 
 `PageContainer` (`narrow` for forms), `PageHeader` (title, subtitle, back link, actions, badge), `Card`
-(`flush` for tables), `StatCard`, `ActionTile` (a large tinted tile for an everyday job, with a hint), `Badge`, `StatusBadge` (kinds: appointment, treatment, session, method,
+(`flush` for tables; `icon` draws a lucide icon, or `ToothLogo`, in a small tinted square before the title, via
+`CardIcon`: give every titled card on a record page one), `StatCard`, `ActionTile` (a large tinted tile for an everyday job, with a hint), `Badge`, `StatusBadge` (kinds: appointment, treatment, session, method,
 whatsapp, trigger, user) and `statusTone(kind, status)` for other views that must match the badge colours,
 `Button` and `LinkButton` (primary, secondary, danger, ghost, success; sm, md; `icon`, `loading`),
 `Segmented` (joined view switch, e.g. Day / Week / List), `FormActions` (sticky Save / Cancel bar), `Field` (label wrapping one input), `TextInput`,

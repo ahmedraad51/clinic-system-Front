@@ -51,9 +51,9 @@ export default function LabWorkCard({ plan, canEdit, onSaved }: { plan: Treatmen
 
   return (
     <Card
+      icon={FlaskConical}
       title={
         <span className="flex items-center gap-2">
-          <FlaskConical size={18} className="text-primary-600" />
           Lab Work
           <Badge tone={badge.tone}>{badge.label}</Badge>
         </span>

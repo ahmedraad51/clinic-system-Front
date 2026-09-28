@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, Plus, Printer, RotateCcw, Save, Sparkles, X } from "lucide-react";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
-import { Alert, Button, LinkButton, Segmented, StatusBadge, TextArea } from "@/components/ui";
+import ToothLogo from "@/components/ToothLogo";
+import { Alert, Button, CardIcon, LinkButton, Segmented, StatusBadge, TextArea } from "@/components/ui";
 import {
   CONDITION_LABELS, FINDING_LABELS, LEGACY_LABELS, SURFACE_LABELS, cleanChart, describeTooth, isChildTooth,
   isUpper, parseDentalChart, surfaceLayout, toothKind, toothName, type ToothKind,
@@ -277,14 +278,17 @@ export default function DentalChart({
     <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 w-full space-y-5 [print-color-adjust:exact] print:shadow-none print:border-0 print:p-0">
       <UnsavedChangesGuard when={dirty && canEdit && Boolean(onSave)} />
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold text-gray-800">Dental Chart</h2>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {findings.length === 0 ? "No findings" : findings.length === 1 ? "1 tooth with findings" : `${findings.length} teeth with findings`}
-            <span className="print:hidden">
-              {" · "}click a tooth to {canEdit ? "mark it" : "see it"}
-            </span>
-          </p>
+        <div className="flex items-start gap-2.5">
+          <CardIcon icon={ToothLogo} />
+          <div>
+            <h2 className="text-base font-semibold text-gray-800">Dental Chart</h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {findings.length === 0 ? "No findings" : findings.length === 1 ? "1 tooth with findings" : `${findings.length} teeth with findings`}
+              <span className="print:hidden">
+                {" · "}click a tooth to {canEdit ? "mark it" : "see it"}
+              </span>
+            </p>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 print:hidden">
           {printHref && !dirty && (

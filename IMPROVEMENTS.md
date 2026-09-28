@@ -236,7 +236,12 @@ Each finished item says what changed, when, and which commit holds it.
   New Appointment, Add Patient, New Treatment and Record Payment are now large tiles right under the
   greeting, each with a short hint, instead of small tiles at the bottom of the page. On phones, a long amount
   in a number card (such as "IQD 250,000") now moves to a second line instead of being cut off. Pictures before
-  and after: docs/design-changes/d1-dashboard-*.png. Commit PENDING.
+  and after: docs/design-changes/d1-dashboard-*.png. Commit e07387e.
+- 2026-09-28 - **Design: an icon in each card title on record pages** (design idea D3). On the patient,
+  appointment and treatment plan pages, every card (Timeline, Contact, Medical Information, Details, Payments,
+  Lab Work, Dental Chart, Sessions, X-rays and Photos and so on) now has a small icon before its title, so the
+  right card is easy to find on a long page. The Dental Chart uses the DentClinic tooth. Pictures:
+  docs/design-changes/d3-*.png. Commit PENDING.
 
 ## Questions for the owner
 

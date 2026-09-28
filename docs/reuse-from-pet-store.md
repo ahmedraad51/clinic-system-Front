@@ -539,6 +539,9 @@ Most useful first. Items marked **Done** are in DentClinic.
   is not mistaken for a missing patient.
 
 ### D3. An icon in each card's title on record pages
+- **Done** (2026-09-28): `Card` takes `icon` and draws it with `CardIcon`, used on the patient, appointment and
+  treatment plan pages, the Lab Work card, X-rays and Photos, and the Dental Chart (with DentClinic's own tooth
+  mark, since lucide has none). Hidden on paper. Pictures: `docs/design-changes/d3-*.png`.
 - **What:** `Card` takes an `icon`. It is drawn in a small tinted square before the title (Contact, Medical
   Information, Payments, Treatment Sessions, Lab Work and so on). Cards without one look as they did.
 - **Where in the pet store:** `src/components/shared/AppSectionCard.vue` (the 36 px icon square in the card

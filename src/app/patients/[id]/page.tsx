@@ -4,8 +4,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
-  Calendar, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, CreditCard, History, MessageCircle,
-  Pencil, Phone, Plus, Printer, Stethoscope, Trash2, Wallet, type LucideIcon,
+  Calendar, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, CreditCard, HeartPulse, History, IdCard,
+  MessageCircle, Pencil, Phone, Plus, Printer, Stethoscope, Trash2, Wallet, type LucideIcon,
 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import DentalChart from "@/components/DentalChart";
@@ -307,11 +307,11 @@ function PatientDetail() {
 
       {tab === "overview" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <Card title="Timeline" className="lg:col-span-2">
+          <Card title="Timeline" icon={History} className="lg:col-span-2">
             {!data ? relatedWaiting : <Timeline data={data} today={today} money={money} />}
           </Card>
           <div className="space-y-6">
-            <Card title="Contact and Basic Information">
+            <Card title="Contact and Basic Information" icon={IdCard}>
               <DetailList>
                 <DetailRow label="Patient ID">{patient.name}</DetailRow>
                 <DetailRow label="Gender">{patient.gender}</DetailRow>
@@ -323,7 +323,7 @@ function PatientDetail() {
                 <DetailRow label="Address">{patient.address}</DetailRow>
               </DetailList>
             </Card>
-            <Card title="Medical Information">
+            <Card title="Medical Information" icon={HeartPulse}>
               <DetailList>
                 <DetailRow label="Allergies">{patient.allergies}</DetailRow>
                 <DetailRow label="Current Medications">{patient.current_medications}</DetailRow>
