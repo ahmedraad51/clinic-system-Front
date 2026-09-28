@@ -53,23 +53,23 @@ test("a phone search matches the stored number however it was typed", () => {
   expect(phoneSearchPattern("07701234567")).toBe("%7%0%1%2%3%4%5%6%7%");
   expect(phoneSearchPattern("\u200e٠٧٧٠١٢٣٤٥٦٧")).toBe("%7%0%1%2%3%4%5%6%7%");
   // Not a phone number: letters, or too few digits.
-  expect(phoneSearchPattern("Sherif")).toBeNull();
+  expect(phoneSearchPattern("Muhannad")).toBeNull();
   expect(phoneSearchPattern("PAT-2026-00001")).toBeNull();
   expect(phoneSearchPattern("0770 12")).toBeNull();
 });
 
 test("WhatsApp buttons use the international number for a locally typed phone", async ({ page }) => {
-  // Sherif Adel's number is stored as "0770 123 4567".
+  // Muhannad Taha's number is stored as "0770 123 4567".
   await page.goto("/patients/PAT-2025-00002");
   await waitForData(page);
-  await expect(page.getByRole("heading", { name: "Sherif Adel" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Muhannad Taha" })).toBeVisible();
   await expect(page.getByRole("main").getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", "https://wa.me/9647701234567");
 
   // The recall list's reminder too.
   await navigate(page, "/recall");
-  await expect(page.getByRole("row", { name: /Sherif Adel/ }).getByRole("link", { name: "WhatsApp" })).toHaveAttribute(
+  await expect(page.getByRole("row", { name: /Muhannad Taha/ }).getByRole("link", { name: "WhatsApp" })).toHaveAttribute(
     "href",
-    /^https:\/\/wa\.me\/9647701234567\?text=Hello%20Sherif%20Adel/,
+    /^https:\/\/wa\.me\/9647701234567\?text=Hello%20Muhannad%20Taha/,
   );
 });
 
@@ -95,31 +95,31 @@ test("patients are found by phone however the number is typed", async ({ page })
 
   // Stored as "0770 123 4567".
   await search.fill("+964 770 123 4567");
-  await expect(page.getByRole("link", { name: "Sherif Adel" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Muhannad Taha" })).toBeVisible();
   await expect(page.getByText("1 record", { exact: true })).toBeVisible();
 
   // Stored as "07801112233", searched with spaces and 00964.
   await search.fill("00964 780 111 2233");
-  await expect(page.getByRole("link", { name: "Bassel Ramy" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Sherif Adel" })).toHaveCount(0);
-  // Arabic-keyboard digits find Sherif Adel again.
+  await expect(page.getByRole("link", { name: "Yousif Sattar" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Muhannad Taha" })).toHaveCount(0);
+  // Arabic-keyboard digits find Muhannad Taha again.
   await search.fill("٠٧٧٠١٢٣٤٥٦٧");
-  await expect(page.getByRole("link", { name: "Sherif Adel" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Bassel Ramy" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Muhannad Taha" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Yousif Sattar" })).toHaveCount(0);
 
   // The search box in the top bar (Ctrl+K) too.
   await page.keyboard.press("Control+k");
   const dialog = page.getByRole("dialog", { name: "Search" });
   await dialog.getByRole("combobox").fill("+9647701234567");
-  await expect(dialog.getByRole("option", { name: /Sherif Adel/ })).toBeVisible();
+  await expect(dialog.getByRole("option", { name: /Muhannad Taha/ })).toBeVisible();
 });
 
 test("a new patient with a known number in another format is flagged", async ({ page }) => {
   await page.goto("/patients/new");
-  await page.getByLabel("Full Name").fill("S. Adel");
+  await page.getByLabel("Full Name").fill("M. Taha");
   await page.getByLabel("Phone Number").fill("+964 770 123 4567");
   const warning = page.getByText("Already registered?").locator("..");
-  await expect(warning).toContainText("Sherif Adel");
+  await expect(warning).toContainText("Muhannad Taha");
   await expect(warning).toContainText("same phone number");
 });
 

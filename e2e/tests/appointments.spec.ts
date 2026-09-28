@@ -7,9 +7,9 @@ test("book an appointment, with the double-booking warning", async ({ page }) =>
   await page.getByRole("link", { name: "New Appointment" }).first().click();
   await expect(page.getByRole("heading", { name: "New Appointment" })).toBeVisible();
 
-  // The dummy data has Karim Fouad with Dr. Sarah Mansour today at 12:30, so 12:45 overlaps it.
-  await pickLink(page, "Patient", "Mona", "Mona Adel");
-  await page.getByLabel("Doctor").selectOption({ label: "Dr. Sarah Mansour · General Dentist" });
+  // The dummy data has Mustafa Jabbar with Dr. Zainab Al-Hashimi today at 12:30, so 12:45 overlaps it.
+  await pickLink(page, "Patient", "Hiba", "Hiba Kadhim");
+  await page.getByLabel("Doctor").selectOption({ label: "Dr. Zainab Al-Hashimi · General Dentist" });
   await page.getByLabel("Date").fill(today());
   await page.getByLabel("Time").fill("12:45");
   await page.getByLabel("Reason for Visit").fill("Test booking");
@@ -17,7 +17,7 @@ test("book an appointment, with the double-booking warning", async ({ page }) =>
 
   const warning = page.getByRole("dialog", { name: "This doctor is already booked" });
   await expect(warning).toBeVisible();
-  await expect(warning).toContainText("Karim Fouad");
+  await expect(warning).toContainText("Mustafa Jabbar");
 
   // Going back lets the receptionist pick another time.
   await warning.getByRole("button", { name: "Cancel" }).click();
@@ -27,7 +27,7 @@ test("book an appointment, with the double-booking warning", async ({ page }) =>
 
   // The appointment page opens.
   await expect(page).toHaveURL(/\/appointments\/APT-/);
-  await expect(page.getByRole("heading", { name: "Mona Adel" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Hiba Kadhim" })).toBeVisible();
   await expect(page.getByText("Test booking").first()).toBeVisible();
   await expect(page.getByText("3:00 PM").first()).toBeVisible();
 });

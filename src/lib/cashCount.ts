@@ -15,7 +15,7 @@ export function compareCash(expected: number, counted: number): { state: CashSta
   return { state: difference < 0 ? "short" : "over", difference };
 }
 
-/** "Matched", "Short by $50", "Over by $20", with the money already formatted by the caller. */
+/** "Matched", "Short by IQD 10,000", "Over by IQD 5,000", with the money already formatted by the caller. */
 export function cashStateLabel(state: CashState, amount: string): string {
   if (state === "matched") return "Matched";
   return state === "short" ? `Short by ${amount}` : `Over by ${amount}`;

@@ -216,7 +216,7 @@ function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doctor | null; onC
   return (
     <Modal open title={doctor ? "Edit Doctor" : "Add Doctor"} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Field label="Full Name" required hint='Shown everywhere, for example "Dr. Sarah Mansour".'>
+        <Field label="Full Name" required hint='Shown everywhere, for example "Dr. Zainab Al-Hashimi".'>
           <TextInput name="full_name" value={form.full_name} onChange={handleChange} required autoComplete="off" />
         </Field>
         <Field label="Specialization">

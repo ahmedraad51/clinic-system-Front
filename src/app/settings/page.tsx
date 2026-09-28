@@ -61,7 +61,7 @@ function toForm(doc: ClinicSettings): SettingsForm {
     email: doc.email ?? "",
     address: doc.address ?? "",
     tax_number: doc.tax_number ?? "",
-    currency: doc.currency || "USD",
+    currency: doc.currency || "IQD",
     phone_country_code: doc.phone_country_code ?? "",
     opening_time: (doc.opening_time ?? "").slice(0, 5),
     closing_time: (doc.closing_time ?? "").slice(0, 5),

@@ -15,8 +15,8 @@ test("drag an appointment to another doctor and time", async ({ page }) => {
   await page.goto(`/appointments?view=day&day=${tomorrow()}`);
   await waitForData(page);
 
-  // Tomorrow Dina Rashad sees Dr. Sarah Mansour at 11:00. Move her to Dr. Leila Haddad at 9:30.
-  const block = page.getByRole("link", { name: /11:00 AM, Dina Rashad, Dr\. Sarah Mansour/ });
+  // Tomorrow Shahad Qasim sees Dr. Zainab Al-Hashimi at 11:00. Move her to Dr. Noor Al-Saadi at 9:30.
+  const block = page.getByRole("link", { name: /11:00 AM, Shahad Qasim, Dr\. Zainab Al-Hashimi/ });
   const box = await block.boundingBox();
   const column = await page.locator('[data-column="DOC-00003"]').boundingBox();
   if (!box || !column) throw new Error("calendar not drawn");
@@ -29,13 +29,13 @@ test("drag an appointment to another doctor and time", async ({ page }) => {
 
   const dialog = page.getByRole("dialog", { name: "Move this appointment?" });
   await expect(dialog).toContainText("9:30 AM");
-  await expect(dialog).toContainText("with Dr. Leila Haddad");
+  await expect(dialog).toContainText("with Dr. Noor Al-Saadi");
   await dialog.getByRole("button", { name: "Move", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Dina Rashad moved to 9:30 AM." })).toBeVisible();
-  await expect(page.getByRole("link", { name: /9:30 AM, Dina Rashad, Dr\. Leila Haddad/ })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Shahad Qasim moved to 9:30 AM." })).toBeVisible();
+  await expect(page.getByRole("link", { name: /9:30 AM, Shahad Qasim, Dr\. Noor Al-Saadi/ })).toBeVisible();
 
   // A plain click still opens the appointment.
-  await page.getByRole("link", { name: /9:30 AM, Dina Rashad/ }).click();
-  await expect(page.getByRole("heading", { name: "Dina Rashad" })).toBeVisible();
-  await expect(page.getByText("Dr. Leila Haddad").first()).toBeVisible();
+  await page.getByRole("link", { name: /9:30 AM, Shahad Qasim/ }).click();
+  await expect(page.getByRole("heading", { name: "Shahad Qasim" })).toBeVisible();
+  await expect(page.getByText("Dr. Noor Al-Saadi").first()).toBeVisible();
 });

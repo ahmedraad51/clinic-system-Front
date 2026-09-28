@@ -12,7 +12,7 @@ import { cleanCountryCode } from "@/lib/phone";
 const DEFAULTS: ClinicSettings = {
   name: "Clinic Settings",
   clinic_name: "DentClinic",
-  currency: "USD",
+  currency: "IQD",
   enable_whatsapp: 1,
   enable_financial_reports: 1,
 };
@@ -61,7 +61,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [user, version, loginCount]);
 
   const refresh = useCallback(() => setVersion((v) => v + 1), []);
-  const currency = settings.currency || "USD";
+  const currency = settings.currency || "IQD";
   const clinicName = settings.clinic_name || "DentClinic";
   const countryCode = cleanCountryCode(settings.phone_country_code);
   const prices = useMemo(() => {

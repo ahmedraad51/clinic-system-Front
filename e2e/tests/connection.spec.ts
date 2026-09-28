@@ -95,7 +95,7 @@ test("when requests work again after an ended login, the app is told once", asyn
   await startWithWorkingSession();
   let loggedIn = false;
   const restore = startFakeServer((config) => {
-    if (config.url?.includes("frappe.auth.get_logged_user")) return loggedIn ? { status: 200, data: { message: "nadia@dentclinic.test" } } : forbidden;
+    if (config.url?.includes("frappe.auth.get_logged_user")) return loggedIn ? { status: 200, data: { message: "zahraa@dentclinic.test" } } : forbidden;
     return loggedIn ? { status: 200, data: { data: [] } } : forbidden;
   });
   let ended = 0;
@@ -120,7 +120,7 @@ test("when requests work again after an ended login, the app is told once", asyn
 test("a logged-in user without permission still sees the permission message", async () => {
   await startWithWorkingSession();
   const restore = startFakeServer((config) =>
-    config.url?.includes("frappe.auth.get_logged_user") ? { status: 200, data: { message: "mariam@dentclinic.test" } } : forbidden,
+    config.url?.includes("frappe.auth.get_logged_user") ? { status: 200, data: { message: "dalia@dentclinic.test" } } : forbidden,
   );
   let ended = 0;
   const stop = onSessionEnded(() => ended++);
@@ -144,10 +144,10 @@ test("login checks that the browser kept the session", async () => {
   });
   try {
     // The cookie was not kept: Frappe still sees a guest.
-    await expect(login("mariam", "secret")).rejects.toThrow(LOGIN_NOT_KEPT_MESSAGE);
+    await expect(login("dalia", "secret")).rejects.toThrow(LOGIN_NOT_KEPT_MESSAGE);
     // It was kept: the user ID comes from Frappe, not from what was typed.
-    loggedIn = "mariam@dentclinic.test";
-    await expect(login("mariam", "secret")).resolves.toBe("mariam@dentclinic.test");
+    loggedIn = "dalia@dentclinic.test";
+    await expect(login("dalia", "secret")).resolves.toBe("dalia@dentclinic.test");
   } finally {
     restore();
   }
@@ -170,12 +170,12 @@ test("a login check that fails for another reason is explained as it is", async 
     return { status: 500, data: "Internal Server Error" };
   });
   try {
-    const error = await login("mariam", "secret").catch((err: unknown) => err);
+    const error = await login("dalia", "secret").catch((err: unknown) => err);
     expect(errorMessage(error)).toBe("The clinic server is not answering. Please try again in a moment.");
     answer = "twoFactor";
-    await expect(login("mariam", "secret")).rejects.toThrow(TWO_FACTOR_MESSAGE);
+    await expect(login("dalia", "secret")).rejects.toThrow(TWO_FACTOR_MESSAGE);
     answer = "passwordReset";
-    await expect(login("mariam", "secret")).rejects.toThrow(PASSWORD_RESET_MESSAGE);
+    await expect(login("dalia", "secret")).rejects.toThrow(PASSWORD_RESET_MESSAGE);
   } finally {
     restore();
   }

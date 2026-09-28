@@ -290,7 +290,9 @@ npm install
 npm run dev
 ```
 
-Open <http://localhost:3000> — it redirects straight to the dashboard, already populated.
+Open <http://localhost:3000> — it redirects straight to the dashboard, already populated with an Iraqi
+example clinic: Iraqi patients and doctors, addresses in Baghdad and other governorates, `07xx` mobile numbers
+and prices in Iraqi dinars (IQD).
 Node **20.9+** is required (developed on Node 22).
 
 ### Checks and tests

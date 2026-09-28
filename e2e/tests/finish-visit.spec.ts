@@ -2,7 +2,7 @@ import { expect, test } from "../fixtures";
 import { waitForData } from "../helpers";
 
 test("finishing a visit saves what was done on the treatment plan", async ({ page }) => {
-  // Nadia Samir's crown fitting with Dr. Sarah Mansour; her crown plan is In Progress.
+  // Zahraa Hussein's crown fitting with Dr. Zainab Al-Hashimi; her crown plan is In Progress.
   await page.goto("/appointments/APT-2026-00001");
   await waitForData(page);
   await page.getByRole("button", { name: "Completed", exact: true }).click();
@@ -16,7 +16,7 @@ test("finishing a visit saves what was done on the treatment plan", async ({ pag
   await expect(dialog).toBeHidden();
 
   // The plan now has the session and is Completed.
-  await page.getByRole("link", { name: "Nadia Samir" }).first().click();
+  await page.getByRole("link", { name: "Zahraa Hussein" }).first().click();
   await page.getByRole("tab", { name: /Treatment Plans/ }).click();
   await page.getByRole("link", { name: "Crown", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Crown · Tooth 36" })).toBeVisible();

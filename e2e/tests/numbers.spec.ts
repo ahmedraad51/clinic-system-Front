@@ -39,12 +39,12 @@ test("an amount typed with Arabic digits is saved and shown in dinars", async ({
   await page.getByRole("button", { name: "Save Settings" }).click();
   await expect(page.getByText("Settings saved.")).toBeVisible();
 
-  // Nadia Samir still owes 3,000 on her crown.
+  // Zahraa Hussein still owes 100,000 on her crown.
   await navigate(page, "/patients/PAT-2026-00001");
-  await expect(page.getByText(/^IQD\s3,000$/).first()).toBeVisible();
+  await expect(page.getByText(/^IQD\s100,000$/).first()).toBeVisible();
 
   await navigate(page, "/payments/new");
-  await pickLink(page, "Patient", "Nadia", "Nadia Samir");
+  await pickLink(page, "Patient", "Zahraa", "Zahraa Hussein");
   await expect(page.getByLabel("Treatment Plan")).toHaveValue("TRT-2026-00002");
   const amount = page.getByLabel(/Amount/);
   await amount.fill("١٬٥٠٠");

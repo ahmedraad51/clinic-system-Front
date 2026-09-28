@@ -9,12 +9,12 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 const WHOLE_UNIT_CURRENCIES = new Set(["IQD"]);
 
 /**
- * Formats money in the clinic currency, e.g. formatMoney(4500, "USD") → "$4,500" and
- * formatMoney(1250000, "IQD") → "IQD 1,250,000". Digits are always 0-9.
+ * Formats money in the clinic currency (IQD when none is given), e.g. formatMoney(1250000, "IQD") →
+ * "IQD 1,250,000" and formatMoney(4500, "USD") → "$4,500". Digits are always 0-9.
  */
 export function formatMoney(amount: number | string | null | undefined, currency?: string | null): string {
   const value = Number(amount) || 0;
-  const code = (currency || "USD").toUpperCase();
+  const code = (currency || "IQD").toUpperCase();
   const decimals = WHOLE_UNIT_CURRENCIES.has(code) ? 0 : 2;
   try {
     return new Intl.NumberFormat("en-US", {
@@ -31,7 +31,7 @@ export function formatMoney(amount: number | string | null | undefined, currency
 
 /** How many decimals amounts in this currency have on screen and in number boxes: 0 for IQD, 2 otherwise. */
 export function currencyDecimals(currency?: string | null): number {
-  return WHOLE_UNIT_CURRENCIES.has((currency || "USD").toUpperCase()) ? 0 : 2;
+  return WHOLE_UNIT_CURRENCIES.has((currency || "IQD").toUpperCase()) ? 0 : 2;
 }
 
 /**

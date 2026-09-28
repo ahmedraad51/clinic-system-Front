@@ -26,8 +26,8 @@ test("readme screenshots", async ({ page }) => {
   await shot(page, "/treatments", "treatments");
   await shot(page, "/payments", "payments");
   await shot(page, "/reports", "reports");
-  await shot(page, `/users/${userId("ahmed.ezzat@dentclinic.test")}`, "permissions");
-  await shot(page, `/users/${userId("mariam.saeed@dentclinic.test")}`, "permissions-partial");
+  await shot(page, `/users/${userId("laith.hamid@dentclinic.test")}`, "permissions");
+  await shot(page, `/users/${userId("dalia.jawad@dentclinic.test")}`, "permissions-partial");
   await shot(page, "/users", "users");
 
   // The outstanding balances further down the reports page.

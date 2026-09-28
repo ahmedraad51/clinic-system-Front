@@ -323,12 +323,17 @@ the timeouts in `src/lib/frappe.ts`.
 An in-memory store that returns data in the same shape as Frappe's REST API, so pages behave the same with
 either source.
 
-- **Seed data:** 12 patients (two, Rania Fawzy and Sherif Adel, last seen more than six months ago for the recall list; Sherif Adel's phone is the Iraqi local `0770 123 4567` and Bassel Ramy's `07801112233`, the rest are `+20` numbers), 5 doctors, 24 appointments (December 2025 to September 2026, all five statuses; three of
+- **Seed data** is Iraqi: Iraqi names, addresses in Baghdad (Mahalla / Zuqaq / House) and other governorates (Basra,
+  Erbil, Najaf, Babylon), mobile numbers typed the usual ways (`0770 123 4567`, `07801112233`, `+964 772 771 4520`),
+  and prices in Iraqi dinars (`currency` IQD; filling 40,000, root canal 150,000, crown 200,000, bridge 600,000,
+  extraction 30,000, implant 1,000,000, cleaning 35,000, whitening 250,000 in the price list). 12 patients (two,
+  Suha Majeed and Muhannad Taha, last seen more than six months ago for the recall list; Muhannad Taha's phone is
+  `0770 123 4567` and Yousif Sattar's `07801112233`, which the phone tests rely on), 5 doctors, 24 appointments (December 2025 to September 2026, all five statuses; three of
   them are dated today and tomorrow when the app loads), 15 treatment plans (all four statuses), 10
   treatment sessions, 15 payments (two dated today), 9 users (including `Administrator`, `Guest` and one
   disabled doctor), 3 `Clinic Permission` records (the manager has every permission; the receptionist and
-  one doctor have some), the `Clinic Settings` single (currency `USD`), 3 WhatsApp templates, 7 WhatsApp
-  log entries and 3 Cash Counts (22 Jul matched, 30 Jul short by 50, 18 Aug over by 20, counted by Mariam Saeed).
+  one doctor have some), the `Clinic Settings` single (currency `IQD`, country code 964), 3 WhatsApp templates, 7 WhatsApp
+  log entries and 3 Cash Counts (22 Jul matched, 30 Jul short by 10,000, 18 Aug over by 5,000, counted by Dalia Jawad).
 - **Cash Count** (`CC-2026-00001`) is checked on save like its `validate()` should: one per day, `cash_payments` = the
   day's Cash payments, `expected_cash` = float + that, `difference` = counted - expected, a note required when it
   is not 0, `counted_by_name` from the User, `counted_at` = now.
@@ -348,7 +353,7 @@ either source.
 - **On create and update:** number fields (`total_cost`, `amount`, `duration_minutes`, `age`, `enabled`,
   `is_active`) become numbers. A Patient gets `age` from `date_of_birth` (a typed `age` is kept when there is no date), and `dental_chart` is stored as
   sent (a JSON string is parsed), like a Frappe JSON field. The seed has both chart shapes on purpose:
-  Nadia, Tarek, Hossam and Amir use version 2; Karim, Salma and Bassel the first shape. A User gets `full_name`, `enabled: 1`, and its `new_password` is not stored.
+  Zahraa, Abbas, Hassan and Saad use version 2; Mustafa, Fatima and Yousif the first shape. A User gets `full_name`, `enabled: 1`, and its `new_password` is not stored.
 - **Queries:** operators `=`, `!=`, `in`, `not in`, `like`, `not like` (real SQL LIKE: `%` is any text, `_` one
   character, not case sensitive, and Arabic digits equal 0-9, as in MariaDB's `utf8mb4_unicode_ci`), `is` (`set`/`not set`), `between`,
   `>`, `<`, `>=`, `<=` (numbers compare as numbers, everything else as strings, which works for ISO dates).

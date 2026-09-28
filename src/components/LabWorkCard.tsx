@@ -132,7 +132,7 @@ function LabDialog({ plan, onClose, onSaved }: { plan: TreatmentPlan; onClose: (
     <Modal open title="Lab Work" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Field label="Lab">
-          <TextInput value={form.lab_name} onChange={(e) => setForm({ ...form, lab_name: e.target.value })} placeholder="e.g. Nile Dental Lab" />
+          <TextInput value={form.lab_name} onChange={(e) => setForm({ ...form, lab_name: e.target.value })} placeholder="e.g. Al-Mansour Dental Lab" />
         </Field>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Sent" required>

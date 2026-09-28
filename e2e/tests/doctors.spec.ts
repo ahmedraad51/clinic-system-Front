@@ -4,13 +4,13 @@ import { openFromMenu } from "../helpers";
 test("add a doctor, who can then be booked in the calendar", async ({ page }) => {
   await page.goto("/dashboard");
   await openFromMenu(page, "Doctors");
-  await expect(page.getByRole("button", { name: "Dr. Sarah Mansour" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Dr. Zainab Al-Hashimi" })).toBeVisible();
 
   await page.getByRole("button", { name: "Add Doctor" }).click();
   const dialog = page.getByRole("dialog", { name: "Add Doctor" });
   await dialog.getByLabel("Full Name").fill("Dr. Rana Fathy");
   await dialog.getByLabel("Specialization").selectOption("Periodontist");
-  await dialog.getByLabel("Phone").fill("+20 100 555 0101");
+  await dialog.getByLabel("Phone").fill("0790 555 0101");
   await dialog.getByRole("button", { name: "Add Doctor" }).click();
   await expect(dialog).toBeHidden();
   await expect(page.getByRole("button", { name: "Dr. Rana Fathy" })).toBeVisible();

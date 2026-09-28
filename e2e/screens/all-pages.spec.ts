@@ -12,7 +12,7 @@ const SIZES = [
   { name: "phone", width: 390, height: 844 },
 ];
 
-const MANAGER_ID = encodeURIComponent(Buffer.from("ahmed.ezzat@dentclinic.test").toString("base64"));
+const MANAGER_ID = encodeURIComponent(Buffer.from("laith.hamid@dentclinic.test").toString("base64"));
 
 const PAGES: Array<[string, string]> = [
   ["dashboard", "/dashboard"],

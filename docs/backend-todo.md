@@ -94,7 +94,7 @@ These come from the README, not from the doctype JSON files. Check each one in t
   doctors. Keep them equal, or add a `user` Link field to Doctor and tell us to switch to it. Every clinic
   role must be able to read `Doctor.email`.
 - **Clinic Settings** (single doctype): `clinic_name`, `logo` (Attach Image), `phone`, `email`, `address`,
-  `currency`, `tax_number`, `opening_time` (Time), `closing_time` (Time), `theme_color` (Color or Data, a hex
+  `currency` (default `IQD`; the front end also shows IQD when it is empty), `tax_number`, `opening_time` (Time), `closing_time` (Time), `theme_color` (Color or Data, a hex
   colour such as `#0e7c86`; the whole front end is coloured from it), `enable_whatsapp`,
   `enable_patient_portal`, `enable_financial_reports` (Checks), and `working_days` (Data: the English day names the
   clinic is open, comma-separated, e.g. `Saturday,Sunday,Monday,Tuesday,Wednesday,Thursday`; empty = every day).

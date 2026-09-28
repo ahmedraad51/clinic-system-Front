@@ -8,14 +8,14 @@ import { dialableNumber } from "./phone";
 export const PLACEHOLDERS = ["patient_name", "appointment_date", "appointment_time", "doctor_name", "clinic_name"] as const;
 export type Placeholder = (typeof PLACEHOLDERS)[number];
 
-/** "Hello {{ patient_name }}" → "Hello Nadia Samir". Unknown placeholders are left as they are. */
+/** "Hello {{ patient_name }}" → "Hello Zahraa Hussein". Unknown placeholders are left as they are. */
 export function fillTemplate(message: string, values: Partial<Record<Placeholder, string>>): string {
   return message.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key: string) => values[key as Placeholder] ?? match);
 }
 
 /**
- * Digits for wa.me, with the country code: "0770 123 4567" → "9647701234567", "+20 100 234 5678" →
- * "201002345678". Pass the clinic's code from useSettings().countryCode. Empty when it does not look like a
+ * Digits for wa.me, with the country code: "0770 123 4567" → "9647701234567", "+971 50 123 4567" →
+ * "971501234567". Pass the clinic's code from useSettings().countryCode. Empty when it does not look like a
  * phone number.
  */
 export function whatsappNumber(phone?: string | null, countryCode?: string): string {

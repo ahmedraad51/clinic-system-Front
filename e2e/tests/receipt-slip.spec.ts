@@ -8,12 +8,12 @@ const sample: SlipData = {
   receiptNo: "PAY-2026-00001",
   date: "20 Aug 2026",
   printedAt: "26 Sep 2026, 10:42 AM",
-  patient: "Nadia <b>Samir</b>",
+  patient: "Zahraa <b>Hussein</b>",
   forWhat: "Crown",
   method: "Cash",
   amount: "IQD 3,000",
   balance: { label: "Left on this treatment", amount: "IQD 3,000" },
-  printedBy: "Mariam Saeed",
+  printedBy: "Dalia Jawad",
 };
 
 test("the slip is sized for the paper roll and escapes what it prints", () => {
@@ -21,10 +21,10 @@ test("the slip is sized for the paper roll and escapes what it prints", () => {
   // The page size is set when printing, from the slip's measured length.
   expect(html).toContain("@page { margin: 0; }");
   expect(html).toContain("body { width: 80mm;");
-  expect(html).toContain("Nadia &lt;b&gt;Samir&lt;/b&gt;");
-  expect(html).not.toContain("<b>Samir</b>");
+  expect(html).toContain("Zahraa &lt;b&gt;Hussein&lt;/b&gt;");
+  expect(html).not.toContain("<b>Hussein</b>");
   expect(html).toContain("Left on this treatment");
-  expect(html).toContain("Printed 26 Sep 2026, 10:42 AM by Mariam Saeed");
+  expect(html).toContain("Printed 26 Sep 2026, 10:42 AM by Dalia Jawad");
 
   const narrow = buildReceiptSlip({ ...sample, balance: undefined }, { widthMm: 58, marginMm: 2, textSize: "large" });
   expect(narrow).toContain("body { width: 58mm;");
@@ -63,14 +63,14 @@ test("print a receipt slip and set this computer's paper width", async ({ page }
   await expect.poll(async () => (await printed()).length).toBe(1);
   const first = (await printed())[0];
   expect(first).toContain("PAY-2026-00001");
-  expect(first).toContain("Nadia Samir");
+  expect(first).toContain("Zahraa Hussein");
   expect(first).toContain("Bank Transfer");
   expect(first).toContain("width: 80mm");
   // Sized to the slip when printed: 80 mm wide and as long as the content.
   expect(first).toMatch(/@page \{ size: 80mm \d+mm; margin: 0; \}/);
-  // Nadia's crown costs $6,000 and this was the first $3,000.
+  // Zahraa's crown costs IQD 200,000 and this was the first 100,000.
   expect(first).toContain("Left on this treatment");
-  expect(first).toMatch(/Left on this treatment<\/span><span class="value">\$3,000/);
+  expect(first).toMatch(/Left on this treatment<\/span><span class="value">IQD(?:\s|&nbsp;)100,000/);
   expect(first).toMatch(/Printed .* by Administrator/);
 
   // A 58 mm printer on this computer.
@@ -103,13 +103,13 @@ test("a reprinted slip shows what was left right after that payment", async ({ p
         window.dispatchEvent(new Event("afterprint"));
       };
   });
-  // Tarek's implant costs $18,000. This $5,000 down payment (2 Jul) left $13,000, even though he has paid more since.
+  // Abbas's implant costs IQD 1,000,000. This 300,000 down payment (2 Jul) left 700,000, even though he has paid more since.
   await page.goto("/payments/PAY-2026-00009");
   await waitForData(page);
   await page.getByRole("button", { name: "Print Slip" }).click();
   await expect.poll(() => page.evaluate(() => (window as unknown as { __printed: string[] }).__printed.length)).toBe(1);
   const html = await page.evaluate(() => (window as unknown as { __printed: string[] }).__printed[0]);
-  expect(html).toMatch(/Left on this treatment<\/span><span class="value">\$13,000/);
+  expect(html).toMatch(/Left on this treatment<\/span><span class="value">IQD(?:\s|&nbsp;)700,000/);
 });
 
 test("slip settings refuse a width a receipt printer cannot have", async ({ page }) => {

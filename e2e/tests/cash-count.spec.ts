@@ -11,13 +11,13 @@ test("the drawer is matched, short or over", () => {
 });
 
 test("count today's cash, with a note when it is short, and update it", async ({ page }) => {
-  // Today (26 Sep) has one Cash payment of $800.
+  // Today (26 Sep) has one Cash payment of IQD 50,000.
   await page.goto("/payments/day");
   await waitForData(page);
   await expect(page.getByText("Not counted yet.")).toBeVisible();
-  await page.getByLabel("Opening float").fill("200");
-  await page.getByLabel("Cash counted").fill("950");
-  await expect(page.getByText("Short by $50").first()).toBeVisible();
+  await page.getByLabel("Opening float").fill("100000");
+  await page.getByLabel("Cash counted").fill("140000");
+  await expect(page.getByText("Short by IQD 10,000").first()).toBeVisible();
 
   // Short or over needs a note.
   await page.getByRole("button", { name: "Save Count" }).click();
@@ -29,11 +29,11 @@ test("count today's cash, with a note when it is short, and update it", async ({
 
   // It is in the list of recent counts, with the note.
   const recent = page.getByRole("row", { name: /26 Sep 2026/ });
-  await expect(recent).toContainText("Short by $50");
+  await expect(recent).toContainText("Short by IQD 10,000");
   await expect(recent).toContainText("Gave change twice.");
 
   // Counted again: now it matches.
-  await page.getByLabel("Cash counted").fill("1000");
+  await page.getByLabel("Cash counted").fill("150000");
   await expect(page.getByText("Matched").first()).toBeVisible();
   await page.getByRole("button", { name: "Update Count" }).click();
   await expect(page.getByRole("row", { name: /26 Sep 2026/ })).toContainText("Matched");
@@ -42,13 +42,13 @@ test("count today's cash, with a note when it is short, and update it", async ({
 test("a manager looks back at past counts", async ({ page }) => {
   await page.goto("/payments/day");
   await waitForData(page);
-  await expect(page.getByRole("row", { name: /30 Jul 2026/ })).toContainText("Short by $50");
+  await expect(page.getByRole("row", { name: /30 Jul 2026/ })).toContainText("Short by IQD 10,000");
   await expect(page.getByRole("row", { name: /30 Jul 2026/ })).toContainText("Change was given twice to one patient.");
 
   await page.getByRole("link", { name: "18 Aug 2026" }).click();
   await expect(page).toHaveURL(/date=2026-08-18/);
   await waitForData(page);
-  await expect(page.getByLabel("Cash counted")).toHaveValue("720");
-  await expect(page.getByText("Over by $20").first()).toBeVisible();
-  await expect(page.getByText(/^Counted by Mariam Saeed/)).toBeVisible();
+  await expect(page.getByLabel("Cash counted")).toHaveValue("130000");
+  await expect(page.getByText("Over by IQD 5,000").first()).toBeVisible();
+  await expect(page.getByText(/^Counted by Dalia Jawad/)).toBeVisible();
 });

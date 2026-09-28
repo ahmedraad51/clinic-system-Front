@@ -173,10 +173,10 @@ function TemplateModal({
   const [error, setError] = useState("");
 
   const sample: Record<string, string> = {
-    patient_name: "Nadia Samir",
+    patient_name: "Zahraa Hussein",
     appointment_date: formatDate(addDays(todayISO(), 1)),
     appointment_time: "10:00 AM",
-    doctor_name: "Dr. Sarah Mansour",
+    doctor_name: "Dr. Zainab Al-Hashimi",
     clinic_name: clinicName,
   };
   const preview = fillTemplate(form.message, sample);
