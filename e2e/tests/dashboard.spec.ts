@@ -1,5 +1,5 @@
 import { expect, test } from "../fixtures";
-import { waitForData } from "../helpers";
+import { navigate, waitForData } from "../helpers";
 
 test("the dashboard lists what needs attention today", async ({ page }) => {
   await page.goto("/dashboard");
@@ -13,4 +13,30 @@ test("the dashboard lists what needs attention today", async ({ page }) => {
   await card.getByRole("link", { name: /patients owe money/ }).click();
   await expect(page.getByLabel("Balance")).toHaveValue("owing");
   await expect(page.getByText("6 records")).toBeVisible();
+});
+
+test("the everyday jobs are large tiles at the top of the dashboard", async ({ page }) => {
+  await page.goto("/profile");
+  await waitForData(page);
+  await navigate(page, "/dashboard");
+  const tiles = page.getByRole("region", { name: "Quick Actions" });
+  await expect(tiles.getByRole("link")).toHaveText([
+    /New Appointment\s*Book a visit/,
+    /Add Patient\s*Register someone new/,
+    /New Treatment\s*Start a treatment plan/,
+    /Record Payment\s*Take a payment/,
+  ]);
+  // Above the day's numbers and lists.
+  const tilesTop = (await tiles.boundingBox())?.y ?? Infinity;
+  const attentionTop = (await page.getByRole("heading", { name: "Needs attention" }).boundingBox())?.y ?? 0;
+  expect(tilesTop).toBeLessThan(attentionTop);
+
+  // A receptionist cannot start treatment plans, so that tile is not there.
+  await navigate(page, "/profile");
+  await page.getByLabel("View the app as").selectOption({ label: "Dalia Jawad" });
+  await expect(page.getByText("Clinic Receptionist").first()).toBeVisible();
+  await navigate(page, "/dashboard");
+  await expect(tiles.getByRole("link", { name: /New Treatment/ })).toHaveCount(0);
+  await tiles.getByRole("link", { name: /Add Patient/ }).click();
+  await expect(page).toHaveURL(/\/patients\/new$/);
 });

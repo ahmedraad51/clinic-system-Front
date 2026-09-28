@@ -177,7 +177,11 @@ export function StatCard({
       <div className={cx("w-10 h-10 rounded-xl flex items-center justify-center mb-3", ICON_TONES[tone])}>
         <Icon size={20} />
       </div>
-      <div className="text-2xl font-bold text-gray-800 truncate">{value}</div>
+      {/* Wraps instead of cutting off: "IQD 1,250,000" does not fit a phone's half-width card on one line. The
+          currency format joins "IQD" and the number with a no-break space; a plain one lets it wrap there. */}
+      <div className="text-xl sm:text-2xl font-bold text-gray-800 leading-tight break-words">
+        {typeof value === "string" ? value.replace(/ /g, " ") : value}
+      </div>
       <div className="text-sm text-gray-500 mt-1">{title}</div>
       {hint && <div className="text-xs text-gray-500 mt-1">{hint}</div>}
     </>
@@ -189,6 +193,31 @@ export function StatCard({
     </Link>
   ) : (
     <div className={className}>{body}</div>
+  );
+}
+
+/**
+ * A large tile for an everyday job ("New Appointment · Book a visit"): a tinted box with the icon in a white
+ * square. Put a few of them in a grid near the top of a page, so the job is one tap away.
+ */
+export function ActionTile({ href, label, hint, icon: Icon }: { href: string; label: string; hint?: string; icon: LucideIcon }) {
+  return (
+    <Link
+      href={href}
+      className={cx(
+        "group flex items-center gap-3 min-h-[4.5rem] rounded-2xl border border-primary-100 bg-primary-50/70 p-3 sm:p-4",
+        "hover:bg-primary-50 hover:border-primary-200 hover:shadow-sm transition",
+      )}
+    >
+      <span className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-xl bg-white shadow-sm flex items-center justify-center text-primary-600 group-hover:text-primary-700">
+        <Icon size={20} aria-hidden="true" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold text-gray-800 leading-snug">{label}</span>
+        {/* Two tiles share a phone's width: the hint would squeeze the label, so it shows from sm up. */}
+        {hint && <span className="block text-xs text-gray-600 leading-snug max-sm:hidden">{hint}</span>}
+      </span>
+    </Link>
   );
 }
 

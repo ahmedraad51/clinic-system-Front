@@ -513,6 +513,8 @@ exactly, so the app was not run.
 Most useful first. Items marked **Done** are in DentClinic.
 
 ### D1. Quick actions as large tiles at the top of the dashboard
+- **Done** (2026-09-28): `ActionTile` in the UI kit, used on the dashboard right under the greeting. Pictures:
+  `docs/design-changes/d1-dashboard-*.png`.
 - **What:** a row of large tiles for the everyday jobs. Each tile has a tinted background, a white icon box and
   a one-line hint ("New Appointment · Book a visit"). The tiles sit right under the greeting, and on a phone
   they show two per row. DentClinic had small tiles at the bottom of the dashboard, under the lists.
@@ -523,6 +525,10 @@ Most useful first. Items marked **Done** are in DentClinic.
   without scrolling past the day's lists.
 
 ### D2. Empty states that offer the next step
+- **Already in DentClinic** (checked 2026-09-28): the empty lists already offer their next step (for example
+  "No treatment plans yet" with **New Treatment**), and a search that finds nothing already has its own
+  message with **Clear Filters** (`ClearFiltersButton`). Nothing was changed; the before pictures
+  `docs/design-changes/d2-*-before.png` show it.
 - **What:** an empty list says what to do next with a button ("No appointments yet" → **Book Appointment**). A
   search or filter that finds nothing shows a different picture (a crossed-out magnifying glass) with **Clear
   Filters**, so "nothing found" never looks like "nothing there". Empty boxes inside a card get a light dashed

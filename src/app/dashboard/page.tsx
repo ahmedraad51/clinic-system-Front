@@ -7,7 +7,7 @@ import {
   Users, Wallet,
 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
-import { Card, EmptyState, LinkButton, LoadError, PageContainer, PageHeader, Segmented, StatCard, StatusBadge } from "@/components/ui";
+import { ActionTile, Card, EmptyState, LinkButton, LoadError, PageContainer, PageHeader, Segmented, StatCard, StatusBadge } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { errorMessage, getCount, getList, type FilterRow } from "@/lib/frappe";
@@ -158,10 +158,10 @@ function Dashboard() {
   const loadingValue = "…";
 
   const quickActions = [
-    can("add_appointments") && { href: "/appointments/new", label: "New Appointment", icon: CalendarDays },
-    can("add_patients") && { href: "/patients/new", label: "Add Patient", icon: UserPlus },
-    can("add_treatments") && { href: "/treatments/new", label: "New Treatment", icon: Stethoscope },
-    can("add_payments") && { href: "/payments/new", label: "Record Payment", icon: CreditCard },
+    can("add_appointments") && { href: "/appointments/new", label: "New Appointment", hint: "Book a visit", icon: CalendarDays },
+    can("add_patients") && { href: "/patients/new", label: "Add Patient", hint: "Register someone new", icon: UserPlus },
+    can("add_treatments") && { href: "/treatments/new", label: "New Treatment", hint: "Start a treatment plan", icon: Stethoscope },
+    can("add_payments") && { href: "/payments/new", label: "Record Payment", hint: "Take a payment", icon: CreditCard },
   ].filter((action) => action !== false);
 
   return (
@@ -183,6 +183,20 @@ function Dashboard() {
           ) : undefined
         }
       />
+
+      {/* The everyday jobs first, one tap away as soon as the app opens. */}
+      {quickActions.length > 0 && (
+        <section aria-labelledby="quick-actions">
+          <h2 id="quick-actions" className="sr-only">
+            Quick Actions
+          </h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {quickActions.map((action) => (
+              <ActionTile key={action.href} href={action.href} label={action.label} hint={action.hint} icon={action.icon} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {failed && (
         <LoadError
@@ -265,28 +279,6 @@ function Dashboard() {
             </div>
           )}
         </>
-      )}
-
-      {quickActions.length > 0 && (
-        <Card title="Quick Actions">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <Link
-                  key={action.href}
-                  href={action.href}
-                  className="rounded-xl border border-gray-100 p-4 flex flex-col items-center gap-2 text-center hover:bg-primary-50/40 hover:border-primary-100 transition group"
-                >
-                  <span className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600 group-hover:bg-primary-100 transition">
-                    <Icon size={18} />
-                  </span>
-                  <span className="text-sm font-medium text-gray-700">{action.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </Card>
       )}
 
       {!seeAppointments && !seePatients && !seeTreatments && !seeMoney && (

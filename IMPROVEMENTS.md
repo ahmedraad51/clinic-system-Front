@@ -232,6 +232,11 @@ Each finished item says what changed, when, and which commit holds it.
   and Hilla, mobile numbers such as 0770 123 4567, and prices in Iraqi dinars (a filling 40,000, a root
   canal 150,000, a crown 200,000, an implant 1,000,000). The clinic currency is IQD, and the app shows IQD
   when no currency is set. The tests and the README pictures were updated to match. Commit 5a16064.
+- 2026-09-28 - **Design: quick actions at the top of the dashboard** (design idea D1 from the pet store).
+  New Appointment, Add Patient, New Treatment and Record Payment are now large tiles right under the
+  greeting, each with a short hint, instead of small tiles at the bottom of the page. On phones, a long amount
+  in a number card (such as "IQD 250,000") now moves to a second line instead of being cut off. Pictures before
+  and after: docs/design-changes/d1-dashboard-*.png. Commit PENDING.
 
 ## Questions for the owner
 
