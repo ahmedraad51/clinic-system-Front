@@ -255,7 +255,7 @@ Each finished item says what changed, when, and which commit holds it.
   age above 120, a payment of zero or more than the plan has left, a cost that is not a number), the box turns
   red, the reason appears right under it, and the page moves to it with the cursor inside. Before, the message
   was at the bottom of the form and was easy to miss on a phone. A field's label also takes the clinic colour
-  while you type in it. Pictures: docs/design-changes/d6-*.png. Commit PENDING.
+  while you type in it. Pictures: docs/design-changes/d6-*.png. Commit 38a18b8.
 
 ## Questions for the owner
 
