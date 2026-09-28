@@ -2,7 +2,7 @@
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Save } from "lucide-react";
-import { Alert, Button, Card, Field, FormActions, LinkButton, NumberInput, SelectInput, TextArea } from "@/components/ui";
+import { Alert, Button, Card, Field, FormActions, LinkButton, NumberInput, focusField, SelectInput, TextArea } from "@/components/ui";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import LinkSelect from "@/components/ui/LinkSelect";
@@ -94,9 +94,11 @@ export default function TreatmentForm({
   // Set once saved, so the page can move on without the unsaved-changes question.
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [costError, setCostError] = useState("");
 
   const handleChange = (event: InputEvent) => {
     const { name, value } = event.target;
+    if (name === "total_cost" || name === "treatment_type") setCostError("");
     if (name === "treatment_type") {
       // Fill in the usual price, unless someone already typed a different cost.
       const previous = prices[form.treatment_type];
@@ -113,7 +115,8 @@ export default function TreatmentForm({
     event.preventDefault();
     const cost = Number(form.total_cost);
     if (form.total_cost === "" || !Number.isFinite(cost) || cost < 0) {
-      setError("Enter the total cost as a number.");
+      setCostError("Enter the total cost as a number.");
+      focusField(event.currentTarget, "total_cost");
       return;
     }
     setSaving(true);
@@ -195,9 +198,17 @@ export default function TreatmentForm({
           <Field
             label={`Total Cost (${currency})`}
             required
+            error={costError}
             hint={listPrice ? `Usual price for ${form.treatment_type.toLowerCase()}: ${money(listPrice)}` : undefined}
           >
-            <NumberInput name="total_cost" decimals={currencyDecimals(currency) > 0} value={form.total_cost} onChange={handleChange} required />
+            <NumberInput
+              name="total_cost"
+              decimals={currencyDecimals(currency) > 0}
+              value={form.total_cost}
+              onChange={handleChange}
+              required
+              aria-invalid={costError ? true : undefined}
+            />
           </Field>
           {showStatus && (
             <Field label="Status">

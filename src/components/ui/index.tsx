@@ -340,32 +340,62 @@ export function LinkButton({
 
 export const inputClass =
   "w-full min-h-11 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm max-sm:text-base text-gray-800 placeholder:text-gray-500 " +
-  "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500";
+  "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 " +
+  // A field that failed its check (the form sets aria-invalid, and passes the message to Field's `error`).
+  "aria-invalid:border-red-400 aria-invalid:focus:ring-red-400";
 
-/** A label above one input. The input goes inside as children, so clicking the label focuses it. */
+/**
+ * A label above one input. The input goes inside as children, so clicking the label focuses it. The label takes
+ * the clinic colour while its input has focus. `error` shows the reason a check failed right under the field;
+ * give the input `aria-invalid` too, and move to it with `focusField()`.
+ */
 export function Field({
   label,
   required = false,
   hint,
+  error,
   children,
   className,
 }: {
   label: string;
   required?: boolean;
   hint?: ReactNode;
+  error?: string;
   children: ReactNode;
   className?: string;
 }) {
   return (
-    <label className={cx("block", className)}>
-      <span className="block text-sm font-medium text-gray-700 mb-1.5">
+    <label className={cx("block group/field", className)}>
+      <span
+        className={cx(
+          "block text-sm font-medium mb-1.5 transition-colors",
+          error ? "text-red-700" : "text-gray-700 group-focus-within/field:text-primary-700",
+        )}
+      >
         {label}
         {required && <span className="text-red-500 ms-0.5">*</span>}
       </span>
       {children}
+      {error && (
+        <span role="alert" className="flex items-start gap-1.5 text-xs font-medium text-red-700 mt-1.5">
+          <AlertCircle size={14} className="shrink-0 mt-0.5" aria-hidden="true" />
+          {error}
+        </span>
+      )}
       {hint && <span className="block text-xs text-gray-500 mt-1">{hint}</span>}
     </label>
   );
+}
+
+/**
+ * Moves to a form field that failed its check: focuses it and scrolls it to the middle of the screen, clear of
+ * the sticky Save bar at the bottom.
+ */
+export function focusField(form: HTMLFormElement, name: string) {
+  const field = form.elements.namedItem(name);
+  if (!(field instanceof HTMLElement)) return;
+  field.focus({ preventScroll: true });
+  field.scrollIntoView({ block: "center", behavior: "smooth" });
 }
 
 export function TextInput({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {

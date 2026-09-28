@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Save } from "lucide-react";
-import { Alert, Button, Card, Field, FormActions, LinkButton, NumberInput, SelectInput, TextArea, TextInput } from "@/components/ui";
+import { Alert, Button, Card, Field, FormActions, LinkButton, NumberInput, focusField, SelectInput, TextArea, TextInput } from "@/components/ui";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import LinkSelect from "@/components/ui/LinkSelect";
 import { errorMessage, getList } from "@/lib/frappe";
@@ -67,6 +67,7 @@ export default function PaymentForm({
   // Set once saved, so the page can move on without the unsaved-changes question.
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [amountError, setAmountError] = useState("");
 
   // Load the chosen patient's treatment plans.
   useEffect(() => {
@@ -107,18 +108,22 @@ export default function PaymentForm({
   );
 
   const handleChange = (event: InputEvent) => {
+    // Choosing another plan changes how much is allowed, so that clears the message too.
+    if (event.target.name === "amount" || event.target.name === "treatment_plan") setAmountError("");
     setForm({ ...form, [event.target.name]: event.target.value });
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const amount = Number(form.amount);
-    if (!(amount > 0)) {
-      setError("Enter an amount greater than zero.");
-      return;
-    }
-    if (maxAmount !== undefined && amount > maxAmount) {
-      setError(`This plan only has ${money(maxAmount)} left to pay.`);
+    const amountProblem = !(amount > 0)
+      ? "Enter an amount greater than zero."
+      : maxAmount !== undefined && amount > maxAmount
+        ? `This plan only has ${money(maxAmount)} left to pay.`
+        : "";
+    if (amountProblem) {
+      setAmountError(amountProblem);
+      focusField(event.currentTarget, "amount");
       return;
     }
     setSaving(true);
@@ -177,6 +182,7 @@ export default function PaymentForm({
           <Field
             label={`Amount (${currency})`}
             required
+            error={amountError}
             hint={
               maxAmount !== undefined && maxAmount > 0 ? (
                 <span className="flex flex-wrap items-center gap-2">
@@ -184,7 +190,10 @@ export default function PaymentForm({
                   {Number(form.amount) !== maxAmount && (
                     <button
                       type="button"
-                      onClick={() => setForm({ ...form, amount: String(maxAmount) })}
+                      onClick={() => {
+                        setAmountError("");
+                        setForm({ ...form, amount: String(maxAmount) });
+                      }}
                       className="rounded-lg border border-primary-200 bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700 hover:bg-primary-100"
                     >
                       Pay full balance
@@ -194,7 +203,14 @@ export default function PaymentForm({
               ) : undefined
             }
           >
-            <NumberInput name="amount" decimals={currencyDecimals(currency) > 0} value={form.amount} onChange={handleChange} required />
+            <NumberInput
+              name="amount"
+              decimals={currencyDecimals(currency) > 0}
+              value={form.amount}
+              onChange={handleChange}
+              required
+              aria-invalid={amountError ? true : undefined}
+            />
           </Field>
           <Field label="Payment Method" required>
             <SelectInput name="payment_method" value={form.payment_method} onChange={handleChange} required>

@@ -250,7 +250,12 @@ Each finished item says what changed, when, and which commit holds it.
 - 2026-09-28 - **Design: calm motion** (design idea D5). A new page fades in with a tiny lift, buttons give a
   little while pressed, and the dashboard's clickable cards lift slightly under the mouse. It is short (about a
   fifth of a second) so it never slows anyone down, and it is switched off for people who ask their computer
-  for less motion. Pictures: docs/design-changes/d5-hover-*.png (the hovered Patients card). Commit PENDING.
+  for less motion. Pictures: docs/design-changes/d5-hover-*.png (the hovered Patients card). Commit 721505e.
+- 2026-09-28 - **Design: form mistakes shown at the field** (design idea D6). When a form refuses a value (an
+  age above 120, a payment of zero or more than the plan has left, a cost that is not a number), the box turns
+  red, the reason appears right under it, and the page moves to it with the cursor inside. Before, the message
+  was at the bottom of the form and was easy to miss on a phone. A field's label also takes the clinic colour
+  while you type in it. Pictures: docs/design-changes/d6-*.png. Commit PENDING.
 
 ## Questions for the owner
 

@@ -546,7 +546,10 @@ function Things() {
 - To refetch after a change, bump a `version` state that the effect lists in its deps (or call `reload()`).
 - **Forms** live in `src/components/forms/`, one per doctype, shared by the new and edit pages. Each exports
   `EMPTY_…` (or `empty…()`), `…ToForm(doc)` and `…Payload(form)`. The page passes `onSubmit`, which saves,
-  shows a toast and navigates; the form shows `errorMessage(err)` if it throws.
+  shows a toast and navigates; the form shows `errorMessage(err)` if it throws. A check of one field (age,
+  amount, cost) shows its message under that field instead: `<Field error={…}>`, `aria-invalid` on the input
+  (it turns red through `inputClass`), `focusField(form, name)` to move to it, and the message cleared when
+  the field changes.
 - **Unsaved changes:** every form renders `<UnsavedChangesGuard when={dirty} />` (`src/components/`), where
   `dirty` compares the form with its starting values and turns false once saved. It asks before closing the
   tab and before following any in-app link; navigation in code (`router.push` after a save) is not stopped.
@@ -591,7 +594,7 @@ function Things() {
 `CardIcon`: give every titled card on a record page one), `StatCard`, `ActionTile` (a large tinted tile for an everyday job, with a hint), `Badge`, `StatusBadge` (kinds: appointment, treatment, session, method,
 whatsapp, trigger, user) and `statusTone(kind, status)` for other views that must match the badge colours,
 `Button` and `LinkButton` (primary, secondary, danger, ghost, success; sm, md; `icon`, `loading`),
-`Segmented` (joined view switch, e.g. Day / Week / List), `FormActions` (sticky Save / Cancel bar), `Field` (label wrapping one input), `TextInput`,
+`Segmented` (joined view switch, e.g. Day / Week / List), `FormActions` (sticky Save / Cancel bar), `Field` (label wrapping one input; `error` for a failed check; the label takes the clinic colour while focused) and `focusField()`, `TextInput`,
 `NumberInput` (every amount, price or age box; `decimals={false}` for whole numbers), `PhoneInput` (every phone box),
 `SelectInput`, `TextArea`, `Toggle`,
 `SearchInput`, `Toolbar`, `Table`, `Th`, `Td` (with `label` for the phone cards), `ClickableRow`, `TableLoading`, `TableMessage`, `TableError` (a failed list load with Try Again), `ClearFiltersButton`, `LoadError` (a failed page load with Try Again), `Pagination`, `DetailList` and

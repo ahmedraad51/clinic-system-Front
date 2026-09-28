@@ -87,4 +87,11 @@ test("an age above 120 is refused", async ({ page }) => {
   await page.getByRole("button", { name: "Save Patient" }).click();
   await expect(page.getByText("Enter an age between 0 and 120.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "New Patient" })).toBeVisible();
+  // The message is under the field, which is marked and focused so it can be fixed at once.
+  const age = page.getByRole("textbox", { name: /^Age/ });
+  await expect(age).toBeFocused();
+  await expect(age).toHaveAttribute("aria-invalid", "true");
+  await age.fill("42");
+  await expect(page.getByText("Enter an age between 0 and 120.")).toHaveCount(0);
+  await expect(age).not.toHaveAttribute("aria-invalid", "true");
 });

@@ -572,14 +572,15 @@ Most useful first. Items marked **Done** are in DentClinic.
 - **Why for clinic staff:** a press and a page change are felt at once, which matters on a touch screen at
   the front desk. The motion is short and small, so it never slows anyone down.
 
-### D6. Form errors next to the field (proposed, not done yet)
+### D6. Form errors next to the field
+- **Done** (2026-09-28): `Field` takes `error`, `inputClass` turns red with `aria-invalid`, and `focusField()`
+  moves to the field. Used by the age (patient), amount (payment) and total cost (treatment plan) checks; the
+  other required fields are checked by the browser. Pictures: `docs/design-changes/d6-*.png`.
 - **What:** a field that is missing or wrong gets a red border and its own message under it, and the page
   scrolls to the first one. The label turns the clinic colour while the field has focus.
 - **Where in the pet store:** `src/@core/components/app-form-elements/AppTextField.vue` and
   `src/@core/scss/template/libs/vuetify/components/_field.scss`.
 - **Why for clinic staff:** in a long form, the problem is shown where it is.
-- **Why not now:** each form's checks would have to be rewritten to report per field (today they return one
-  message shown at the top). It is worth its own item later.
 
 ### Looked at and left out (they would make screens busier, or do not fit)
 - **Counts on menu items** (for example "Today 5"): the bell and the Today board already show them; more

@@ -3,7 +3,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { Check, Save, Users } from "lucide-react";
-import { Alert, Button, Card, Field, FormActions, LinkButton, NumberInput, PhoneInput, SelectInput, TextArea, TextInput } from "@/components/ui";
+import { Alert, Button, Card, Field, FormActions, LinkButton, NumberInput, focusField, PhoneInput, SelectInput, TextArea, TextInput } from "@/components/ui";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { errorMessage, getList, type FilterRow } from "@/lib/frappe";
@@ -174,19 +174,22 @@ export default function PatientForm({
   // Set once saved, so the page can move on without the unsaved-changes question.
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [ageError, setAgeError] = useState("");
   const [askDuplicate, setAskDuplicate] = useState(false);
   // Patients who only told their age: show an Age box instead of the date of birth.
   const [ageOnly, setAgeOnly] = useState(() => !initial.date_of_birth && Boolean(initial.age));
   const duplicates = usePossibleDuplicates(form.full_name, form.phone_number, currentName);
 
   const handleChange = (event: InputEvent) => {
+    if (event.target.name === "age") setAgeError("");
     setForm({ ...form, [event.target.name]: event.target.value });
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (ageOnly && form.age !== "" && Number(form.age) > 120) {
-      setError("Enter an age between 0 and 120.");
+      setAgeError("Enter an age between 0 and 120.");
+      focusField(event.currentTarget, "age");
       return;
     }
     // The same phone number usually means the same person: ask before making a second record.
@@ -256,13 +259,21 @@ export default function PatientForm({
           {/* The switch sits outside the label, so the field's name stays just "Age" or "Date of Birth". */}
           {ageOnly ? (
             <div>
-              <Field label="Age">
-                <NumberInput name="age" decimals={false} maxLength={3} value={form.age} onChange={handleChange} />
+              <Field label="Age" error={ageError}>
+                <NumberInput
+                  name="age"
+                  decimals={false}
+                  maxLength={3}
+                  value={form.age}
+                  onChange={handleChange}
+                  aria-invalid={ageError ? true : undefined}
+                />
               </Field>
               <button
                 type="button"
                 onClick={() => {
                   setAgeOnly(false);
+                  setAgeError("");
                   setForm({ ...form, age: "" });
                 }}
                 className="mt-1 text-xs text-primary-700 underline"
