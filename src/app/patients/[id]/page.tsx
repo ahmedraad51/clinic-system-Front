@@ -4,13 +4,14 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
-  Calendar, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, CreditCard, HeartPulse, History, IdCard,
+  BellRing, Calendar, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, CreditCard, HeartPulse, History, IdCard,
   MessageCircle, Pencil, Phone, Plus, Printer, Stethoscope, Trash2, Wallet, type LucideIcon,
 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import DentalChart from "@/components/DentalChart";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import PatientFiles from "@/components/PatientFiles";
+import RecallDialog from "@/components/RecallDialog";
 import {
   Button, Card, ClickableRow, DetailList, DetailRow, EmptyState, LinkButton, LoadError, NotFoundCard,
   PageContainer, PageHeader, PageLoading, RecordLoading, StatusBadge, Table, Tabs, Td, Th,
@@ -20,8 +21,9 @@ import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { deleteDoc, errorMessage, getList, updateDoc, type FilterRow } from "@/lib/frappe";
-import { cx, display, formatDate, formatMonth, formatTime, todayISO } from "@/lib/format";
+import { addMonths, cx, display, formatDate, formatMonth, formatTime, todayISO } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
+import { DEFAULT_RECALL_MONTHS } from "@/lib/recall";
 import { whatsappNumber } from "@/lib/whatsapp";
 import { appointmentHref, patientHref, paymentHref, routeId, treatmentHref } from "@/lib/links";
 import type { Appointment, DentalChartData, Patient, Payment, TreatmentPlan, TreatmentSession } from "@/lib/types";
@@ -61,6 +63,7 @@ function PatientDetail() {
   const [relatedVersion, setRelatedVersion] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editingRecall, setEditingRecall] = useState(false);
 
   const showAppointments = can("view_appointments");
   const showTreatments = can("view_treatments");
@@ -252,7 +255,7 @@ function PatientDetail() {
           )}
         </div>
 
-        <dl className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 mt-5 pt-5 border-t border-gray-100">
+        <dl className="grid grid-cols-2 lg:grid-cols-5 gap-x-6 gap-y-4 mt-5 pt-5 border-t border-gray-100">
           {showAppointments && (
             <Fact icon={History} label="Last visit">
               {lastVisit ? (
@@ -282,6 +285,40 @@ function PatientDetail() {
               )}
             </Fact>
           )}
+          <Fact icon={BellRing} label="Next check-up">
+            {Number(patient.no_recall) === 1 ? (
+              <span className="text-gray-500">No recall</span>
+            ) : patient.next_recall_date ? (
+              <>
+                <span className={patient.next_recall_date <= today ? "text-red-600" : undefined}>
+                  {formatDate(patient.next_recall_date)}
+                  {patient.next_recall_date <= today && " (due)"}
+                </span>
+                {Number(patient.recall_interval_months) > 0 && (
+                  <span className="block text-xs font-normal text-gray-500">Every {patient.recall_interval_months} months</span>
+                )}
+              </>
+            ) : (
+              <>
+                <span className="text-gray-500">Usual rule</span>
+                {lastVisit && (
+                  <span className="block text-xs font-normal text-gray-500">
+                    About {formatDate(addMonths(lastVisit.appointment_date, DEFAULT_RECALL_MONTHS))}
+                  </span>
+                )}
+              </>
+            )}
+            {can("edit_patients") && (
+              <button
+                type="button"
+                onClick={() => setEditingRecall(true)}
+                className="block text-xs font-medium text-primary-700 hover:underline pointer-coarse:min-h-11"
+              >
+                Change
+                <span className="sr-only"> the next check-up</span>
+              </button>
+            )}
+          </Fact>
           {showPayments && (
             <Fact icon={Wallet} label="Balance to pay">
               <span className={remaining > 0 ? "text-red-600" : "text-gray-500"}>{money(remaining)}</span>
@@ -521,6 +558,15 @@ function PatientDetail() {
       )}
 
       {tab === "files" && <PatientFiles patient={patient.name} canEdit={can("edit_patients")} />}
+
+      {editingRecall && (
+        <RecallDialog
+          patient={patient}
+          from={lastVisit?.appointment_date ?? today}
+          onClose={() => setEditingRecall(false)}
+          onSaved={reload}
+        />
+      )}
 
       <ConfirmDialog
         open={confirmDelete}

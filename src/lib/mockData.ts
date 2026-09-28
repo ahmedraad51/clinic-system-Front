@@ -9,7 +9,7 @@
  */
 
 import type { DocValue } from "./types";
-import { addDays, todayISO } from "./format";
+import { addDays, addMonths, todayISO } from "./format";
 import { toLatinDigits } from "./phone";
 
 export type MockValue = DocValue;
@@ -95,6 +95,8 @@ const patients: MockDoc[] = [
     medical_history: "Routine cleanings only.",
     notes: "Interested in whitening, waiting on a quote.",
     dental_chart: {},
+    // The dentist wants her back every 3 months for gum care, and that date has come.
+    recall_interval_months: 3, next_recall_date: addDays(todayISO(), -3), no_recall: 0,
   },
   {
     name: P.abbas, full_name: "Abbas Mahdi", gender: "Male",
@@ -142,6 +144,7 @@ const patients: MockDoc[] = [
     medical_history: "Scaling and polishing (July 2026).",
     notes: "Six-month recall due January 2027.",
     dental_chart: {},
+    recall_interval_months: 6, next_recall_date: "2027-01-30", no_recall: 0,
   },
   {
     name: P.saad, full_name: "Saad Nouri", gender: "Male",
@@ -435,6 +438,7 @@ const LINKED_FROM: Record<string, Array<[doctype: string, field: string]>> = {
 const NUMBER_FIELDS = [
   "total_cost", "amount", "duration_minutes", "age", "enabled", "is_active",
   "opening_float", "cash_payments", "expected_cash", "cash_counted", "difference",
+  "recall_interval_months", "no_recall",
 ];
 
 const num = (value: MockValue): number => {
@@ -705,6 +709,19 @@ function checkCashCount(count: MockDoc): void {
   count.counted_at = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 }
 
+/**
+ * Mirrors what Appointment.on_update should do: a completed visit moves the patient's next check-up to the
+ * visit date plus the dentist's interval, never earlier than the date already set.
+ */
+function rollRecall(appointment: MockDoc, before?: MockDoc): void {
+  if (appointment.status !== "Completed" || before?.status === "Completed" || !appointment.appointment_date) return;
+  const patient = find("Patient", appointment.patient);
+  const months = num(patient?.recall_interval_months ?? 0);
+  if (!patient || months <= 0 || num(patient.no_recall ?? 0) === 1) return;
+  const next = addMonths(String(appointment.appointment_date), months);
+  if (!patient.next_recall_date || next > String(patient.next_recall_date)) patient.next_recall_date = next;
+}
+
 function checkPlan(plan: MockDoc): void {
   const paid = store.Payment
     .filter((pay) => pay.treatment_plan === plan.name)
@@ -783,6 +800,7 @@ export async function mockCreateDoc(
   }
   if (doctype === "Payment") checkPayment(doc);
   if (doctype === "Cash Count") checkCashCount(doc);
+  if (doctype === "Appointment") rollRecall(doc);
 
   collection(doctype).unshift(doc);
   recalculate();
@@ -810,6 +828,7 @@ export async function mockUpdateDoc(
   if (doctype === "Payment") checkPayment(next);
   if (doctype === "Treatment Plan") checkPlan(next);
   if (doctype === "Cash Count") checkCashCount(next);
+  if (doctype === "Appointment") rollRecall(next, doc);
 
   Object.keys(doc).forEach((key) => delete doc[key]);
   Object.assign(doc, next);

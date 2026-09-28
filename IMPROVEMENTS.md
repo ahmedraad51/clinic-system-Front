@@ -256,6 +256,13 @@ Each finished item says what changed, when, and which commit holds it.
   red, the reason appears right under it, and the page moves to it with the cursor inside. Before, the message
   was at the bottom of the form and was easy to miss on a phone. A field's label also takes the clinic colour
   while you type in it. Pictures: docs/design-changes/d6-*.png. Commit 38a18b8.
+- 2026-09-28 - **The dentist chooses the next check-up** (pet store item 5). On the patient page, "Next
+  check-up" shows the date and how often (for example every 3 months for gum care), with a Change button: every
+  3, 6, 9 or 12 months, no recall, or the usual rule. The "What was done in this visit?" window asks the same
+  question, counted from that visit, even when there is no treatment plan. The Recall list and the dashboard
+  use the dentist's date first, and a new "Check-up due" column says when and why. Each completed visit moves
+  the date on by the same interval. Works with the dummy data now; the back end needs three new Patient fields
+  and one rule (docs/backend-todo.md). Commit PENDING.
 
 ## Questions for the owner
 

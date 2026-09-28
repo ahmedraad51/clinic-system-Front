@@ -179,6 +179,11 @@ Paths are inside `D:\Projects\alkhokh_pet_store_front`.
 - **Back end:** none.
 
 ### 5. A recall date chosen by the dentist
+- **Brought in** (2026-09-28), front end with the dummy data: the Patient fields `next_recall_date`,
+  `recall_interval_months` and `no_recall` (see `docs/backend-todo.md`), `src/lib/recall.ts`, `RecallDialog` on
+  the patient page, the Next check-up choice in `FinishVisitDialog`, the Recall page and the dashboard, and
+  `e2e/tests/recall.spec.ts`. A completed visit moves the date on by the interval (a back-end rule, done by the
+  dummy data for now). The reminder window of 30 days before was left out: a patient is due on the date.
 - **What:** the pet store gives each vaccine a "next due date" picked by the vet. When a dose is given, the
   next one is created automatically, and reminders go out from 30 days before to 90 days after. For
   DentClinic:

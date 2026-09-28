@@ -126,6 +126,12 @@ export interface Patient extends BaseDoc {
   notes?: string;
   /** JSON field. Frappe may send it as a string, and old records use the first shape; read it with parseDentalChart(). */
   dental_chart?: DentalChartData | Record<string, string> | string | null;
+  /** The next check-up the dentist chose; empty means the usual rule (see src/lib/recall.ts). */
+  next_recall_date?: string | null;
+  /** How often the dentist wants to see the patient, in months; 0 when not chosen. */
+  recall_interval_months?: number;
+  /** 1 when the dentist said the patient needs no recall (moved away, treated elsewhere). */
+  no_recall?: number;
   total_appointments?: number;
   total_treatments?: number;
   total_paid?: number;

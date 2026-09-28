@@ -13,7 +13,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { errorMessage, getCount, getList, type FilterRow } from "@/lib/frappe";
 import { addDays, formatDate, formatLongDate, formatTime, monthStart, todayISO } from "@/lib/format";
 import { appointmentHref } from "@/lib/links";
-import { DEFAULT_RECALL_MONTHS, RECALL_APPOINTMENT_FIELDS, dueForRecall } from "@/lib/recall";
+import { DEFAULT_RECALL_MONTHS, RECALL_APPOINTMENT_FIELDS, RECALL_PATIENT_FIELDS, dueForRecall } from "@/lib/recall";
 import type { Appointment, Patient, Payment, TreatmentPlan } from "@/lib/types";
 
 interface DashboardData {
@@ -121,7 +121,7 @@ function Dashboard() {
           seeMoney ? getCount("Patient", [["total_remaining", ">", 0]]) : Promise.resolve(null),
           seePatients && seeAppointments
             ? Promise.all([
-                getList<Patient>("Patient", ["name"], { limit: 0 }),
+                getList<Patient>("Patient", RECALL_PATIENT_FIELDS, { limit: 0 }),
                 getList<Appointment>("Appointment", RECALL_APPOINTMENT_FIELDS, { limit: 0 }),
               ])
             : Promise.resolve(null),
@@ -358,7 +358,7 @@ function NeedsAttention({ attention }: { attention: DashboardData["attention"] }
       ? { href: "/today", icon: MessageCircle, tone: "text-green-700 bg-green-50", text: `${attention.toRemind} ${plural(attention.toRemind, "reminder", "reminders")} to send for tomorrow`, hint: "WhatsApp, one tap each" }
       : null,
     attention.recallDue
-      ? { href: "/recall", icon: BellRing, tone: "text-primary-700 bg-primary-50", text: `${attention.recallDue} ${plural(attention.recallDue, "patient", "patients")} due for a check-up`, hint: "Not seen for 6 months, nothing booked" }
+      ? { href: "/recall", icon: BellRing, tone: "text-primary-700 bg-primary-50", text: `${attention.recallDue} ${plural(attention.recallDue, "patient", "patients")} due for a check-up`, hint: "Check-up date reached or not seen for 6 months, nothing booked" }
       : null,
     attention.owing
       ? { href: "/patients?balance=owing", icon: Wallet, tone: "text-red-700 bg-red-50", text: `${attention.owing} ${plural(attention.owing, "patient owes", "patients owe")} money`, hint: "See balances and send reminders" }

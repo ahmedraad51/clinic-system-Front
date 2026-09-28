@@ -7,7 +7,7 @@ test("the dashboard lists what needs attention today", async ({ page }) => {
   const card = page.locator("section").filter({ has: page.getByRole("heading", { name: "Needs attention" }) });
   await expect(card).toContainText("5 past appointments to close");
   await expect(card).toContainText("1 reminder to send for tomorrow");
-  await expect(card).toContainText("3 patients due for a check-up");
+  await expect(card).toContainText("4 patients due for a check-up");
   await expect(card).toContainText("6 patients owe money");
 
   await card.getByRole("link", { name: /patients owe money/ }).click();

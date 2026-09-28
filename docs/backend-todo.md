@@ -21,6 +21,18 @@ match, and update `src/lib/types.ts`, the mock and `AGENTS.md`.
 | Treatment Plan | `lab_name` | Data | The dental lab doing the work (crowns, bridges, implant crowns). |
 | Treatment Plan | `lab_sent_date`, `lab_due_date`, `lab_received_date` | Date | When the work went to the lab, is due back, and came back. The Today board lists plans with `lab_sent_date` set and `lab_received_date` not set. |
 | WhatsApp Log | `patient_name` | Data, read only, `fetch_from: patient.full_name` | |
+| Patient | `next_recall_date` | Date | The next check-up the dentist chose. Empty means the usual rule (no visit for 6 months). |
+| Patient | `recall_interval_months` | Int | How often the dentist wants the patient back: 3, 6, 9 or 12; 0 when not chosen. |
+| Patient | `no_recall` | Check | 1 when the dentist said the patient needs no recall (moved away, treated elsewhere). The front end then sends `recall_interval_months = 0` and `next_recall_date = null`. |
+
+**Recall rule for `Appointment.on_update`.** When an appointment becomes Completed and its patient has
+`recall_interval_months > 0` and `no_recall = 0`, set `Patient.next_recall_date` to the appointment date plus that
+many months (the last day of the month when the day does not exist: 31 Aug + 6 months is 28 Feb), unless the date
+already set is later. The front end only reads the result; it sends the fields itself only when the dentist
+changes them (patient page, or the "What was done in this visit?" dialog, which counts from the visit). The
+dummy data does the same (`rollRecall()` in `src/lib/mockData.ts`). Users who can edit patients (the Clinic
+Doctor preset included) need write access to these three fields. A daily WhatsApp reminder for due recalls can
+use the same fields later.
 
 **`Patient.dental_chart`, version 2.** Only teeth with something marked are stored:
 

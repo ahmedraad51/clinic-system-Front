@@ -12,7 +12,9 @@ import { useSettings } from "@/context/SettingsContext";
 import { errorMessage, getList } from "@/lib/frappe";
 import { formatDate, todayISO } from "@/lib/format";
 import { patientHref } from "@/lib/links";
-import { DEFAULT_RECALL_MONTHS, RECALL_APPOINTMENT_FIELDS, RECALL_PERIODS, dueForRecall } from "@/lib/recall";
+import {
+  DEFAULT_RECALL_MONTHS, RECALL_APPOINTMENT_FIELDS, RECALL_PATIENT_FIELDS, RECALL_PERIODS, dueForRecall,
+} from "@/lib/recall";
 import { whatsappLink } from "@/lib/whatsapp";
 import type { Appointment, Patient } from "@/lib/types";
 
@@ -25,7 +27,8 @@ export default function RecallPage() {
 }
 
 /**
- * Patients due for a check-up: their last kept visit is older than the chosen period and nothing is booked.
+ * Patients due for a check-up: the date the dentist chose has come, or (without one) their last kept visit is
+ * older than the chosen period; and nothing is booked.
  * One tap to call, send a WhatsApp reminder, or book. Worked out in the browser from all appointments;
  * see docs/backend-todo.md for a faster server version later.
  */
@@ -42,7 +45,10 @@ function Recall() {
     const load = async () => {
       try {
         const [patients, appointments] = await Promise.all([
-          getList<Patient>("Patient", ["name", "full_name", "phone_number", "age"], { orderBy: "full_name asc", limit: 0 }),
+          getList<Patient>("Patient", [...RECALL_PATIENT_FIELDS, "full_name", "phone_number", "age"], {
+            orderBy: "full_name asc",
+            limit: 0,
+          }),
           getList<Appointment>("Appointment", RECALL_APPOINTMENT_FIELDS, { limit: 0 }),
         ]);
         if (!cancelled) {
@@ -74,7 +80,7 @@ function Recall() {
     <PageContainer>
       <PageHeader
         title="Recall"
-        subtitle="Patients due for a check-up: no visit for a while and nothing booked."
+        subtitle="Patients due for a check-up and not booked: the date the dentist chose has come, or no visit for a while."
         actions={
           <label className="flex items-center gap-2 text-sm text-gray-600 whitespace-nowrap">
             Not seen for
@@ -94,6 +100,7 @@ function Recall() {
           <thead>
             <tr>
               <Th>Patient</Th>
+              <Th>Check-up due</Th>
               <Th>Last visit</Th>
               <Th>Phone</Th>
               <Th />
@@ -103,7 +110,7 @@ function Recall() {
             {error ? (
               // Never "Nobody is due" when the list could not load.
               <TableError
-                colSpan={4}
+                colSpan={5}
                 message={error}
                 onRetry={() => {
                   setError("");
@@ -111,13 +118,14 @@ function Recall() {
                 }}
               />
             ) : !data ? (
-              <TableLoading colSpan={4} />
+              <TableLoading colSpan={5} />
             ) : due.length === 0 ? (
-              <TableMessage icon={BellRing} colSpan={4}>
-                Nobody is due. Every patient was seen in the last {months} months or has a visit booked.
+              <TableMessage icon={BellRing} colSpan={5}>
+                Nobody is due. Every patient was seen in the last {months} months, is not due yet by the dentist&apos;s
+                date, or has a visit booked.
               </TableMessage>
             ) : (
-              due.map(({ patient, lastVisit }) => {
+              due.map(({ patient, lastVisit, dueDate, byDentist }) => {
                 const wa = whatsapp(patient);
                 return (
                   <tr key={patient.name}>
@@ -126,6 +134,16 @@ function Recall() {
                         {patient.full_name}
                       </Link>
                       {patient.age ? <span className="block text-xs text-gray-500">{patient.age} years</span> : null}
+                    </Td>
+                    <Td label="Check-up due" className="whitespace-nowrap">
+                      {dueDate ? formatDate(dueDate) : <span className="text-gray-500">Now</span>}
+                      <span className="block text-xs text-gray-500">
+                        {byDentist
+                          ? `Dentist${Number(patient.recall_interval_months) > 0 ? `: every ${patient.recall_interval_months} months` : ""}`
+                          : lastVisit
+                            ? `${months} months after the last visit`
+                            : "Never seen"}
+                      </span>
                     </Td>
                     <Td label="Last visit" className="whitespace-nowrap">
                       {lastVisit ? formatDate(lastVisit) : <span className="text-gray-500">No visit yet</span>}

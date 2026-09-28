@@ -107,6 +107,16 @@ export function addDays(iso: string, days: number): string {
   return toISODate(new Date(year, month - 1, day + days));
 }
 
+/**
+ * The same day `months` months later (earlier when negative). A day the target month does not have becomes its
+ * last day: 31 Aug + 6 months is 28 Feb, not 3 Mar.
+ */
+export function addMonths(iso: string, months: number): string {
+  const [year, month, day] = iso.split("-").map(Number);
+  const lastDay = new Date(year, month - 1 + months + 1, 0).getDate();
+  return toISODate(new Date(year, month - 1 + months, Math.min(day, lastDay)));
+}
+
 const localDate = (iso: string) => {
   const [year, month, day] = iso.split("-").map(Number);
   return new Date(year, month - 1, day);
