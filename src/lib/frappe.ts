@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { type AxiosRequestConfig } from "axios";
 import type { BaseDoc, Doc, DocValue } from "./types";
 import {
   mockGetList,
@@ -39,7 +39,8 @@ type DocData = Record<string, DocValue>;
 
 /** How long a request may take before it counts as failed. Uploads and whole-table reads get longer. */
 export const REQUEST_TIMEOUT_MS = 15_000;
-const UPLOAD_TIMEOUT_MS = 120_000;
+/** A big X-ray or a phone photo on a slow clinic connection can take minutes, so uploads get 10 minutes. */
+export const UPLOAD_TIMEOUT_MS = 10 * 60_000;
 const FULL_LIST_TIMEOUT_MS = 60_000;
 
 const api = axios.create({
@@ -321,19 +322,34 @@ export async function changePassword(oldPassword: string, newPassword: string): 
   });
 }
 
+export interface UploadOptions {
+  /** Called while the file goes out, with how much of it has been sent (0 to 1). */
+  onProgress?: (fraction: number) => void;
+}
+
+/** The request settings every upload shares: multipart, the long time limit and progress reports. */
+export function uploadRequestConfig({ onProgress }: UploadOptions = {}): AxiosRequestConfig {
+  return {
+    // The instance default is JSON; multipart lets the browser set the boundary.
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: UPLOAD_TIMEOUT_MS,
+    onUploadProgress: onProgress
+      ? (event) => {
+          if (event.total) onProgress(Math.min(1, event.loaded / event.total));
+        }
+      : undefined,
+  };
+}
+
 /** Uploads a file (e.g. the clinic logo) and returns its URL. */
-export async function uploadFile(file: File): Promise<string> {
-  if (MOCK_DATA) return mockUpload(file);
+export async function uploadFile(file: File, options: UploadOptions = {}): Promise<string> {
+  if (MOCK_DATA) return mockUpload(file, options.onProgress);
   initAuth();
   const form = new FormData();
   form.append("file", file, file.name);
   form.append("is_private", "0");
   form.append("folder", "Home");
-  // The instance default is JSON; multipart lets the browser set the boundary.
-  const res = await api.post("/frappe/api/method/upload_file", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-    timeout: UPLOAD_TIMEOUT_MS,
-  });
+  const res = await api.post("/frappe/api/method/upload_file", form, uploadRequestConfig(options));
   return res.data.message.file_url;
 }
 
@@ -352,8 +368,8 @@ export interface FileDoc {
  * Uploads a file attached to a record (e.g. an X-ray on a Patient). Medical files are private, so only
  * logged-in staff can open them. Returns the new File record.
  */
-export async function attachFile(file: File, doctype: string, name: string): Promise<FileDoc> {
-  if (MOCK_DATA) return (await mockAttach(file, doctype, name)) as unknown as FileDoc;
+export async function attachFile(file: File, doctype: string, name: string, options: UploadOptions = {}): Promise<FileDoc> {
+  if (MOCK_DATA) return (await mockAttach(file, doctype, name, options.onProgress)) as unknown as FileDoc;
   initAuth();
   const form = new FormData();
   form.append("file", file, file.name);
@@ -361,10 +377,7 @@ export async function attachFile(file: File, doctype: string, name: string): Pro
   form.append("doctype", doctype);
   form.append("docname", name);
   form.append("folder", "Home/Attachments");
-  const res = await api.post("/frappe/api/method/upload_file", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-    timeout: UPLOAD_TIMEOUT_MS,
-  });
+  const res = await api.post("/frappe/api/method/upload_file", form, uploadRequestConfig(options));
   return res.data.message as FileDoc;
 }
 
@@ -422,6 +435,9 @@ export function errorMessage(err: unknown, fallback = "Something went wrong. Ple
       return (err.config?.method ?? "get").toLowerCase() === "get"
         ? "The clinic server is not answering. Please try again in a moment."
         : "The clinic server did not answer. It may still have been saved, so check before trying again.";
+    }
+    if ((err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") && err.config?.url?.includes("upload_file")) {
+      return `The upload took more than ${UPLOAD_TIMEOUT_MS / 60_000} minutes and was stopped. Check the internet connection, or try a smaller file.`;
     }
     if (err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") {
       // A save that timed out may still have gone through on the server.

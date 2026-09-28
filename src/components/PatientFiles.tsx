@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Camera, ExternalLink, FileText, ImageIcon, Trash2, Upload } from "lucide-react";
-import { Button, Card, EmptyState, PageLoading } from "@/components/ui";
+import { Button, Card, EmptyState, PageLoading, ProgressBar } from "@/components/ui";
 import { ConfirmDialog, Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
 import { attachFile, deleteDoc, errorMessage, fileHref, getList, type FileDoc } from "@/lib/frappe";
@@ -25,6 +25,8 @@ export default function PatientFiles({ patient, canEdit }: { patient: string; ca
   const [files, setFiles] = useState<{ patient: string; rows: FileDoc[] } | null>(null);
   const [version, setVersion] = useState(0);
   const [uploading, setUploading] = useState(false);
+  // The file being sent now, and how far the whole batch is (by size, 0 to 100).
+  const [progress, setProgress] = useState<{ name: string; index: number; count: number; percent: number } | null>(null);
   const [open, setOpen] = useState<FileDoc | null>(null);
   const [removing, setRemoving] = useState<FileDoc | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -58,15 +60,29 @@ export default function PatientFiles({ patient, canEdit }: { patient: string; ca
     if (tooBig.length) toast.error(`${tooBig.map((f) => f.name).join(", ")}: larger than 10 MB, not added.`);
     const ok = chosen.filter((file) => file.size <= MAX_BYTES);
     if (ok.length === 0) return;
+    const totalBytes = ok.reduce((sum, file) => sum + file.size, 0) || 1;
+    let sentBytes = 0;
+    let added = 0;
     setUploading(true);
     try {
-      for (const file of ok) await attachFile(file, "Patient", patient);
+      for (const [index, file] of ok.entries()) {
+        const before = sentBytes;
+        const show = (fraction: number) =>
+          setProgress({ name: file.name, index: index + 1, count: ok.length, percent: ((before + fraction * file.size) / totalBytes) * 100 });
+        show(0);
+        await attachFile(file, "Patient", patient, { onProgress: show });
+        sentBytes += file.size;
+        added += 1;
+      }
       toast.success(ok.length === 1 ? "File added." : `${ok.length} files added.`);
-      setVersion((v) => v + 1);
     } catch (err) {
-      toast.error(errorMessage(err, "Could not add the file."));
+      const reason = errorMessage(err, "Could not add the file.");
+      // Files sent before the failure are saved; say which one was not.
+      toast.error(ok.length === 1 ? reason : `${added} of ${ok.length} files added. ${ok[added].name} was not added: ${reason}`);
     } finally {
       setUploading(false);
+      setProgress(null);
+      if (added > 0) setVersion((v) => v + 1);
     }
   };
 
@@ -106,6 +122,14 @@ export default function PatientFiles({ patient, canEdit }: { patient: string; ca
         )
       }
     >
+      {progress && (
+        <div className="mb-4">
+          <ProgressBar
+            value={progress.percent}
+            label={progress.count > 1 ? `Uploading ${progress.index} of ${progress.count}: ${progress.name}` : `Uploading ${progress.name}`}
+          />
+        </div>
+      )}
       {!rows ? (
         <PageLoading />
       ) : rows.length === 0 ? (

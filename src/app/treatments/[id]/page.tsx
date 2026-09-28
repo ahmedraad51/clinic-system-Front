@@ -10,7 +10,7 @@ import LabWorkCard from "@/components/LabWorkCard";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
   Alert, Button, Card, DetailList, DetailRow, EmptyState, Field, LinkButton, LoadError, NotFoundCard,
-  PageContainer, PageHeader, PageLoading, SelectInput, StatusBadge, Table, Td, TextArea, TextInput, Th,
+  PageContainer, PageHeader, PageLoading, ProgressBar, SelectInput, StatusBadge, Table, Td, TextArea, TextInput, Th,
 } from "@/components/ui";
 import { ConfirmDialog, Modal } from "@/components/ui/Modal";
 import { useSession } from "@/context/SessionContext";
@@ -211,9 +211,7 @@ function TreatmentDetail() {
           </div>
         </div>
         <div className="mt-5">
-          <div className="w-full bg-gray-100 rounded-full h-2" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
-            <div className="bg-green-500 h-2 rounded-full transition-all" style={{ width: `${percent}%` }} />
-          </div>
+          <ProgressBar value={percent} label="Paid" showLabel={false} tone="green" />
           <p className="text-xs text-gray-500 mt-2">
             {plan.status === "Cancelled" ? "Cancelled plans have nothing left to pay." : `${percent}% paid`}
           </p>

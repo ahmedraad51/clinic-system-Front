@@ -802,6 +802,45 @@ export function LoadError({ message, onRetry }: { message: string; onRetry: () =
   );
 }
 
+/** A thin bar that fills up, for an upload or how much of a plan is paid. `value` is 0 to 100. */
+export function ProgressBar({
+  value,
+  label,
+  showLabel = true,
+  tone = "primary",
+}: {
+  value: number;
+  /** Read by screen readers, and shown above the bar with the percentage unless showLabel is false. */
+  label: string;
+  showLabel?: boolean;
+  tone?: "primary" | "green";
+}) {
+  const percent = Math.max(0, Math.min(100, Math.round(value)));
+  return (
+    <div>
+      {showLabel && (
+        <div className="flex items-baseline justify-between gap-3 mb-1.5 text-xs text-gray-600">
+          <span className="truncate">{label}</span>
+          <span className="shrink-0 tabular-nums font-medium">{percent}%</span>
+        </div>
+      )}
+      <div
+        className="w-full h-2 rounded-full bg-gray-100 overflow-hidden"
+        role="progressbar"
+        aria-label={label}
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div
+          className={cx("h-full rounded-full transition-[width] duration-200", tone === "green" ? "bg-green-500" : "bg-primary-600")}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function PageLoading({ label = "Loading..." }: { label?: string }) {
   return (
     <div className="flex items-center justify-center gap-3 py-24 text-gray-500" role="status">

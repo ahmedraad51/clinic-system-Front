@@ -16,6 +16,7 @@ import {
   PageHeader,
   PageLoading,
   PhoneInput,
+  ProgressBar,
   SelectInput,
   TextInput,
   Toggle,
@@ -113,6 +114,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
   const [baseline, setBaseline] = useState<SettingsForm>(form);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [logoProgress, setLogoProgress] = useState(0);
   const [error, setError] = useState("");
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -132,8 +134,9 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
       return;
     }
     setUploading(true);
+    setLogoProgress(0);
     try {
-      const url = await uploadFile(file);
+      const url = await uploadFile(file, { onProgress: (fraction) => setLogoProgress(fraction * 100) });
       setForm((prev) => ({ ...prev, logo: url }));
       toast.info("Logo uploaded. Press Save Settings to keep it.");
     } catch (err) {
@@ -211,6 +214,11 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
               <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setForm({ ...form, logo: "" })}>
                 Remove
               </Button>
+            )}
+            {uploading && (
+              <div className="basis-full max-w-60">
+                <ProgressBar value={logoProgress} label="Uploading logo" />
+              </div>
             )}
           </div>
         </div>

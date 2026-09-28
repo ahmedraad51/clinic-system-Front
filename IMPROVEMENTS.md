@@ -222,6 +222,11 @@ Each finished item says what changed, when, and which commit holds it.
   safe: a name starting with "=" can no longer run as a formula. The Profile page has "Screen Size on This
   Computer" (80 to 120 %), for a reception screen read from a distance. The WhatsApp message log hides the
   middle of phone numbers. The patient's Address box suggests the governorates of Iraq. Commit 043d899.
+- 2026-09-28 - **Big uploads are not cut off.** X-rays, photos and the clinic logo now have 10 minutes to
+  upload instead of 2, so a big scan on a slow connection gets through. A progress bar shows how far the
+  upload is ("Uploading 2 of 3: panoramic.png, 45%"). If one of several files fails, the ones before it
+  are kept and the message says which file was not added. **Please restart your `npm run dev`**:
+  `next.config.ts` changed (the link to the server now waits up to 10 minutes). Commit PENDING.
 
 ## Questions for the owner
 

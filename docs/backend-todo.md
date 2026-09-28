@@ -147,15 +147,17 @@ change `src/context/SessionContext.tsx` to call it with `callMethod`.
   and whenever a call is refused with 401 or 403, to tell an **expired session** (answer `Guest`, or 403) from
   a real "no permission". Keep this standard method available to every logged-in user. Frappe answers an
   expired session with 403 PermissionError; if you ever change that to 401, the front end handles it the same.
-- Every request gives up after 15 seconds (uploads after 120, full-table reads with `limit_page_length=0` after
+- Every request gives up after 15 seconds (uploads after 10 minutes, full-table reads with `limit_page_length=0` after
   60). A read with no answer at all, or a 502/503/504 or plain-text 500 from the proxy when Frappe is down, is
   sent again up to twice; saves are never sent twice by the front end.
 - Two-factor login is not supported yet: a login answer with `verification` / `tmp_id` shows a message
   instead. Keep it off for clinic users, or tell us to add the OTP step.
 - A user whose password must be changed first (`message: "Password Reset"`) is told to ask an administrator;
   the app has no "set a new password" page.
-- The Next.js rewrite waits up to 130 seconds for Frappe (`experimental.proxyTimeout` in `next.config.ts`). If
-  another proxy (Nginx) sits in front of Frappe, give it at least the same time for `/api/method/upload_file`.
+- The Next.js rewrite waits up to 610 seconds for Frappe (`experimental.proxyTimeout` in `next.config.ts`). If
+  another proxy (Nginx) sits in front of Frappe, give it at least the same time for `/api/method/upload_file`
+  (`proxy_read_timeout`, `proxy_send_timeout`, `client_body_timeout`), and let it take files of at least 10 MB
+  (`client_max_body_size 12m`). Frappe's own `max_file_size` must allow 10 MB too.
 
 ## 5. Login and CSRF
 

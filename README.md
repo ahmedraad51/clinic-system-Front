@@ -152,7 +152,7 @@ what they are not allowed to do.
 | `/patients` | List with server-side search (name, phone, ID; a phone number is found however it was typed: `0770…`, `+964 770…`, `00964…` or Arabic digits), gender filter and paging |
 | `/recall` | Patients due for a check-up (not seen for 6 months and nothing booked), with Call, WhatsApp reminder and Book |
 | `/patients/new`, `/patients/[id]/edit` | Create or edit — basic details (an age instead of the birth date when the patient does not know it) plus medical history, allergies, medications. Every number and phone box in the app accepts digits typed on an Arabic keyboard and saves them as 0-9 |
-| `/patients/[id]` | Medical alerts (allergies, blood thinners, diabetes, heart problems, pregnancy), tap-to-call and WhatsApp buttons, last visit, next appointment and balance, a timeline of visits, treatment sessions and payments, and tabs for appointments, treatment plans, payments and the dental chart, plus X-rays and photos (take a photo with the tablet camera or add files) |
+| `/patients/[id]` | Medical alerts (allergies, blood thinners, diabetes, heart problems, pregnancy), tap-to-call and WhatsApp buttons, last visit, next appointment and balance, a timeline of visits, treatment sessions and payments, and tabs for appointments, treatment plans, payments and the dental chart, plus X-rays and photos (take a photo with the tablet camera or add files, with a progress bar while they upload) |
 | `/patients/[id]/estimate` | A printable treatment estimate of the patient's open plans, with totals and signature lines |
 | `/patients/[id]/statement` | A printable statement of all treatments, payments and the balance |
 | `/patients/[id]/chart` | The dental chart and its findings, ready to print for the patient file or a referral |
@@ -217,7 +217,7 @@ getDoc(doctype, name)                                                     // GET
 createDoc(doctype, data)                                                  // POST /api/resource/<Doctype>
 updateDoc(doctype, name, data)                                            // PUT  /api/resource/<Doctype>/<n>
 deleteDoc(doctype, name)                                                  // DELETE
-callMethod(method, args) · uploadFile(file) · changePassword(old, new)
+callMethod(method, args) · uploadFile(file, { onProgress }) · changePassword(old, new)
 ```
 
 Each call sends the CSRF token as `x-frappe-csrf-token`, with `withCredentials: true` so the Frappe
@@ -364,7 +364,7 @@ then asks Frappe who is logged in, so a cookie the browser did not keep shows up
 logged in on this computer" on shared computers: closing the browser then logs you out. When the session
 expires, a "Log in again" dialog opens over the page, so nothing typed is lost; logging out from there goes
 to the login page and afterwards back to the page you were on. Every request gives up after 15 seconds (file
-uploads after 2 minutes, full lists for totals after 1 minute) with a clear message, and a list that got no
+uploads after 10 minutes, with a progress bar, full lists for totals after 1 minute) with a clear message, and a list that got no
 answer, or found the server down, is asked for again. A list, the dashboard, the Today board, the recall
 list or the bell that still could not load says so with a **Try Again** button, instead of showing zeros or
 "No patients yet". See section 5 of

@@ -847,13 +847,29 @@ function readAsDataUrl(file: File): Promise<string> {
   });
 }
 
-export async function mockUpload(file: File): Promise<string> {
-  await latency();
+/** Pretends to send the file at about 4 MB a second, reporting progress the way a real upload does. */
+async function sendSlowly(file: File, onProgress?: (fraction: number) => void) {
+  const steps = 10;
+  const total = Math.min(4000, Math.max(150, file.size / 4000));
+  for (let step = 1; step <= steps; step++) {
+    await new Promise((resolve) => setTimeout(resolve, total / steps));
+    onProgress?.(step / steps);
+  }
+}
+
+export async function mockUpload(file: File, onProgress?: (fraction: number) => void): Promise<string> {
+  await sendSlowly(file, onProgress);
   return readAsDataUrl(file);
 }
 
 /** Like Frappe's upload_file with doctype and docname: a private File record attached to the doc. */
-export async function mockAttach(file: File, doctype: string, name: string): Promise<MockDoc> {
+export async function mockAttach(
+  file: File,
+  doctype: string,
+  name: string,
+  onProgress?: (fraction: number) => void,
+): Promise<MockDoc> {
+  await sendSlowly(file, onProgress);
   const url = await readAsDataUrl(file);
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
