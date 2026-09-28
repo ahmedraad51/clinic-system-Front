@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, ReactNode } from "react";
-import { login as frappeLogin, logout as frappeLogout, onSessionEnded, onSessionRestored } from "@/lib/frappe";
+import { login as frappeLogin, logout as frappeLogout, onSessionEnded, onSessionRestored, setSessionUser } from "@/lib/frappe";
 
 /**
  * TEMPORARY: the login page is switched off while the rest of the app is built.
@@ -84,6 +84,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const user = AUTH_DISABLED ? demoUser : savedUser;
   const isLoading = AUTH_DISABLED ? false : !hydrated;
+
+  // The dummy data records who made each change (see setSessionUser).
+  useEffect(() => {
+    setSessionUser(user);
+  }, [user]);
 
   useEffect(() => {
     if (AUTH_DISABLED) return undefined;

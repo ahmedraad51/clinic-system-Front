@@ -262,7 +262,14 @@ Each finished item says what changed, when, and which commit holds it.
   question, counted from that visit, even when there is no treatment plan. The Recall list and the dashboard
   use the dentist's date first, and a new "Check-up due" column says when and why. Each completed visit moves
   the date on by the same interval. Works with the dummy data now; the back end needs three new Patient fields
-  and one rule (docs/backend-todo.md). Commit PENDING.
+  and one rule (docs/backend-todo.md). Commit f324604.
+- 2026-09-28 - **Who changed what, and when** (pet store item 8). Payments, treatment plans and appointments
+  have a History card at the bottom (press Show History), and patients have a History tab. It says who added
+  the record and when, and each change after that: who, when, and what changed, for example "Amount: IQD
+  150,000 → IQD 100,000". It reads Frappe's own change log, which the back end already keeps for these four
+  record types; the back end only has to stop logging its own total updates as changes (docs/backend-todo.md).
+  With the dummy data it records the changes you make in the app, as the user you are viewing it as. Commit
+  PENDING.
 
 ## Questions for the owner
 

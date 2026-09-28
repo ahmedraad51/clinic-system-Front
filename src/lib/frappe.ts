@@ -1,6 +1,8 @@
 import axios, { type AxiosRequestConfig } from "axios";
 import type { BaseDoc, Doc, DocValue } from "./types";
+import { parseDocHistory, type DocHistory, type RawDocInfo } from "./history";
 import {
+  mockGetDocInfo,
   mockGetList,
   mockGetCount,
   mockGetDoc,
@@ -10,6 +12,7 @@ import {
   mockCall,
   mockUpload,
   mockAttach,
+  setMockUser,
 } from "./mockData";
 
 /**
@@ -285,6 +288,37 @@ export async function getDoc<T extends BaseDoc = Doc>(doctype: string, name: str
   initAuth();
   const res = await withReadRetry(() => api.get(resource(doctype, name)));
   return res.data.data;
+}
+
+/**
+ * Who created a record and who changed what, and when (the last 10 changes). Frappe's getdoc returns the document
+ * with its Version records and the names of the users involved; the doctype needs Track Changes turned on.
+ */
+export async function getDocHistory(doctype: string, name: string): Promise<DocHistory> {
+  let doc: { owner?: string; creation?: string } | undefined;
+  let docinfo: RawDocInfo | undefined;
+  if (MOCK_DATA) {
+    const raw = await mockGetDocInfo(doctype, name);
+    doc = raw.docs[0] as { owner?: string; creation?: string };
+    docinfo = raw.docinfo as unknown as RawDocInfo;
+  } else {
+    initAuth();
+    const res = await withReadRetry(() =>
+      api.get("/frappe/api/method/frappe.desk.form.load.getdoc", { params: { doctype, name } }),
+    );
+    const data = res.data as { docs?: Array<{ owner?: string; creation?: string }>; docinfo?: RawDocInfo };
+    doc = data.docs?.[0];
+    docinfo = data.docinfo;
+  }
+  return parseDocHistory(doc, docinfo);
+}
+
+/**
+ * Tells the data layer who is logged in. Only the dummy data uses it (to record who made each change); the real
+ * server knows from the session.
+ */
+export function setSessionUser(user: string | null): void {
+  if (MOCK_DATA) setMockUser(user);
 }
 
 export async function createDoc<T extends BaseDoc = Doc>(doctype: string, data: object): Promise<T> {

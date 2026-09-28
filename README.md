@@ -152,7 +152,7 @@ what they are not allowed to do.
 | `/patients` | List with server-side search (name, phone, ID; a phone number is found however it was typed: `0770…`, `+964 770…`, `00964…` or Arabic digits), gender filter and paging |
 | `/recall` | Patients due for a check-up and not booked: the date the dentist chose has come (every 3, 6, 9 or 12 months, set on the patient page or when a visit is finished), or no visit for 6 months. With Call, WhatsApp reminder and Book |
 | `/patients/new`, `/patients/[id]/edit` | Create or edit — basic details (an age instead of the birth date when the patient does not know it) plus medical history, allergies, medications. Every number and phone box in the app accepts digits typed on an Arabic keyboard and saves them as 0-9 |
-| `/patients/[id]` | Medical alerts (allergies, blood thinners, diabetes, heart problems, pregnancy), tap-to-call and WhatsApp buttons, last visit, next appointment and balance, a timeline of visits, treatment sessions and payments, and tabs for appointments, treatment plans, payments and the dental chart, plus X-rays and photos (take a photo with the tablet camera or add files, with a progress bar while they upload) |
+| `/patients/[id]` | Medical alerts (allergies, blood thinners, diabetes, heart problems, pregnancy), tap-to-call and WhatsApp buttons, last visit, next appointment, the next check-up the dentist chose, and balance, a timeline of visits, treatment sessions and payments, and tabs for appointments, treatment plans, payments and the dental chart, plus X-rays and photos (take a photo with the tablet camera or add files, with a progress bar while they upload), and a History tab (who added and changed the record) |
 | `/patients/[id]/estimate` | A printable treatment estimate of the patient's open plans, with totals and signature lines |
 | `/patients/[id]/statement` | A printable statement of all treatments, payments and the balance |
 | `/patients/[id]/chart` | The dental chart and its findings, ready to print for the patient file or a referral |
@@ -160,13 +160,13 @@ what they are not allowed to do.
 | `/payments/day` | The end-of-day report: payments by method, the total, and the cash drawer count (opening float, cash counted, matched / short / over with a note), saved each day with who counted it, plus the recent counts for the manager |
 | `/appointments` | The appointment book as a **day calendar** (a column per doctor, from opening to closing time, with a "now" line), a **week calendar**, or a **list** with search and filters. Click an empty time in the calendar to book it with the date, time and doctor already filled in, or drag an appointment to move it to another time or doctor |
 | `/appointments/new`, `/appointments/[id]/edit` | Book or edit — shows the doctor's day with one-tap free times, remembers the last doctor used, and warns when the doctor is already booked at that time |
-| `/appointments/[id]` | Detail, one-click status changes, WhatsApp messages sent for it |
+| `/appointments/[id]` | Detail, one-click status changes, WhatsApp messages sent for it, and its history (who changed what, and when) |
 | `/treatments` | Plans with cost and remaining balance, type and status filters |
 | `/treatments/new`, `/treatments/[id]/edit` | Create or edit — type, FDI tooth number, diagnosis, cost |
-| `/treatments/[id]` | Money summary with progress, status changes, its payments, and its treatment sessions, and the patient's dental chart opened at the plan's tooth |
+| `/treatments/[id]` | Money summary with progress, status changes, its payments, and its treatment sessions, and the patient's dental chart opened at the plan's tooth, and its history |
 | `/payments` | Ledger with search, method and date filters, and the total |
 | `/payments/new`, `/payments/[id]/edit` | Record or edit a payment (pre-fills from a treatment plan; cannot go above what is left) |
-| `/payments/[id]` | Printable receipt, and a receipt slip for 58 or 80 mm thermal receipt printers (paper size set per computer) |
+| `/payments/[id]` | Printable receipt, a receipt slip for 58 or 80 mm thermal receipt printers (paper size set per computer), and the payment's history |
 | `/reports` | Revenue by treatment, method and month for a chosen period, outstanding balances, CSV export |
 | `/doctors` | The clinic's doctors: add and edit name, specialization, phone, email, working hours, and switch a doctor off when they leave |
 | `/users`, `/users/[id]` | Staff accounts, roles, enable/disable, and the 14 permission switches with role presets |

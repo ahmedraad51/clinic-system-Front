@@ -238,6 +238,11 @@ Paths are inside `D:\Projects\alkhokh_pet_store_front`.
   HEIC photos would only work on iPhones and Macs.
 
 ### 8. Record history: who changed what, and when
+- **Brought in** (2026-09-28), front end with the dummy data: `getDocHistory()` in `src/lib/frappe.ts` (reads
+  `frappe.desk.form.load.getdoc`), `src/lib/history.ts`, `src/components/RecordHistory.tsx` (a History card on
+  the appointment, treatment plan and payment pages, closed until asked, and a History tab on the patient page),
+  Version records in the dummy data, and `e2e/tests/history.spec.ts`. Track Changes is already on in the back
+  end; it only has to save its worked-out totals without a Version (see `docs/backend-todo.md`).
 - **What:** a "History" section on the payment, treatment plan, appointment and patient pages: created by,
   and each change with the fields changed, the user and the time. It uses Frappe's own version records
   through `frappe.desk.form.load.getdoc`.

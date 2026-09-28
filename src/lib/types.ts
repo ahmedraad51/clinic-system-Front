@@ -16,6 +16,10 @@ export type DocValue =
 
 export interface BaseDoc {
   name: string;
+  /** Set by Frappe on every doc: who added it and when, and when it was last saved. */
+  owner?: string;
+  creation?: string;
+  modified?: string;
 }
 
 /** Any doc, when the exact doctype does not matter. */

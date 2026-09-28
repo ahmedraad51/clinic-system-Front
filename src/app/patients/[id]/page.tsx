@@ -12,6 +12,7 @@ import DentalChart from "@/components/DentalChart";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import PatientFiles from "@/components/PatientFiles";
 import RecallDialog from "@/components/RecallDialog";
+import RecordHistory from "@/components/RecordHistory";
 import {
   Button, Card, ClickableRow, DetailList, DetailRow, EmptyState, LinkButton, LoadError, NotFoundCard,
   PageContainer, PageHeader, PageLoading, RecordLoading, StatusBadge, Table, Tabs, Td, Th,
@@ -28,7 +29,7 @@ import { whatsappNumber } from "@/lib/whatsapp";
 import { appointmentHref, patientHref, paymentHref, routeId, treatmentHref } from "@/lib/links";
 import type { Appointment, DentalChartData, Patient, Payment, TreatmentPlan, TreatmentSession } from "@/lib/types";
 
-type TabKey = "overview" | "appointments" | "treatments" | "payments" | "chart" | "files";
+type TabKey = "overview" | "appointments" | "treatments" | "payments" | "chart" | "files" | "history";
 
 interface Related {
   id: string;
@@ -176,6 +177,7 @@ function PatientDetail() {
     ...(showPayments ? [{ key: "payments" as const, label: "Payments", count: data?.payments.length }] : []),
     { key: "chart", label: "Dental Chart" },
     { key: "files", label: "X-rays & Photos" },
+    { key: "history", label: "History" },
   ];
 
   const subtitle = [patient.age ? `${patient.age} years` : "", patient.gender, patient.name].filter(Boolean).join(" · ");
@@ -558,6 +560,8 @@ function PatientDetail() {
       )}
 
       {tab === "files" && <PatientFiles patient={patient.name} canEdit={can("edit_patients")} />}
+
+      {tab === "history" && <RecordHistory doctype="Patient" name={patient.name} changedAt={patient.modified} startOpen />}
 
       {editingRecall && (
         <RecallDialog

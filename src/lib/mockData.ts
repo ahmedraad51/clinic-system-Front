@@ -10,6 +10,7 @@
 
 import type { DocValue } from "./types";
 import { addDays, addMonths, todayISO } from "./format";
+import { HISTORY_LIMIT, TRACKED_DOCTYPES } from "./history";
 import { toLatinDigits } from "./phone";
 
 export type MockValue = DocValue;
@@ -386,6 +387,28 @@ const cashCounts: MockDoc[] = [
   { name: "CC-2026-00001", count_date: "2026-07-22", opening_float: 100000, cash_payments: 75000, expected_cash: 175000, cash_counted: 175000, difference: 0, note: "", counted_by: "dalia.jawad@dentclinic.test", counted_at: "2026-07-22 18:02:00" },
 ];
 
+/**
+ * Earlier changes, like the Version records Frappe keeps for doctypes with Track Changes on, so the History card
+ * has something to show. `data.changed` rows are [field, old value, new value].
+ */
+const versions: MockDoc[] = [
+  {
+    name: "VER-00003", ref_doctype: "Payment", docname: "PAY-2026-00001", owner: "laith.hamid@dentclinic.test",
+    creation: "2026-08-21 09:12:40",
+    data: JSON.stringify({ changed: [["amount", 150000, 100000], ["notes", "", "Deposit for the zirconia crown."]] }),
+  },
+  {
+    name: "VER-00002", ref_doctype: "Payment", docname: "PAY-2026-00001", owner: "dalia.jawad@dentclinic.test",
+    creation: "2026-08-20 11:04:05",
+    data: JSON.stringify({ changed: [["payment_method", "Cash", "Bank Transfer"]] }),
+  },
+  {
+    name: "VER-00001", ref_doctype: "Treatment Plan", docname: T(2), owner: "zainab.alhashimi@dentclinic.test",
+    creation: "2026-08-20 11:40:00",
+    data: JSON.stringify({ changed: [["total_cost", 180000, 200000], ["treatment_notes", "", "Zirconia crown, impression taken 20 Aug 2026."]] }),
+  },
+];
+
 const store: Store = {
   Patient: patients,
   Doctor: doctors,
@@ -399,6 +422,7 @@ const store: Store = {
   "WhatsApp Template": whatsappTemplates,
   "WhatsApp Log": whatsappLogs,
   "Cash Count": cashCounts,
+  Version: versions,
   File: [],
 };
 
@@ -421,6 +445,7 @@ const NAME_SERIES: Record<string, { prefix: string; year: boolean }> = {
   "WhatsApp Template": { prefix: "WAT", year: false },
   "WhatsApp Log": { prefix: "WAL", year: true },
   File: { prefix: "FILE", year: false },
+  Version: { prefix: "VER", year: false },
   "Cash Count": { prefix: "CC", year: true },
 };
 
@@ -447,6 +472,81 @@ const num = (value: MockValue): number => {
 };
 
 const clone = <T>(value: T): T => structuredClone(value);
+
+/** Counts saves, so two in the same second still get different times (Frappe keeps microseconds). */
+let saves = 0;
+
+/** Now, the way Frappe writes it: "2026-09-26 08:30:00.000001", different on every call. */
+function stamp(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  saves += 1;
+  const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  return `${todayISO()} ${time}.${String(saves % 1_000_000).padStart(6, "0")}`;
+}
+
+/** The logged-in user, who owns new records and makes the changes (see setSessionUser in frappe.ts). */
+let actingUser = "Administrator";
+
+export function setMockUser(user: string | null): void {
+  actingUser = user || "Guest";
+}
+
+/** Like Frappe, every record has every field: 0 for numbers and checks, null for the rest, unless set. */
+const DEFAULTS: Record<string, Record<string, MockValue>> = {
+  Patient: { next_recall_date: null, recall_interval_months: 0, no_recall: 0 },
+};
+
+function applyDefaults(doctype: string, doc: MockDoc): void {
+  Object.entries(DEFAULTS[doctype] ?? {}).forEach(([field, value]) => {
+    if (doc[field] === undefined) doc[field] = value;
+  });
+}
+
+/** When and by whom the seed records were made: the front desk books and takes payments, the manager the rest. */
+function stampSeeds(): void {
+  const made: Record<string, (doc: MockDoc) => [string, string]> = {
+    Patient: () => ["2025-11-02 09:15:00", "dalia.jawad@dentclinic.test"],
+    Appointment: (doc) => [`${addDays(String(doc.appointment_date), -7)} 10:00:00`, "dalia.jawad@dentclinic.test"],
+    "Treatment Plan": () => ["2026-06-01 12:00:00", "laith.hamid@dentclinic.test"],
+    Payment: (doc) => [`${doc.payment_date} 10:30:00`, "dalia.jawad@dentclinic.test"],
+  };
+  Object.keys(DEFAULTS).forEach((doctype) => store[doctype].forEach((doc) => applyDefaults(doctype, doc)));
+  Object.entries(made).forEach(([doctype, when]) => {
+    store[doctype].forEach((doc) => {
+      if (doc.creation) return;
+      const [creation, owner] = when(doc);
+      Object.assign(doc, { creation, owner, modified: creation, modified_by: owner });
+    });
+  });
+}
+
+/** Two stored values count as the same when they print the same (null, undefined and "" are all empty). */
+const sameValue = (a: MockValue, b: MockValue) => JSON.stringify(a ?? "") === JSON.stringify(b ?? "");
+
+/** Names copied from a Link when it changes; Frappe's diff lists them too. */
+const COPIED_LABELS = ["patient_name", "doctor_name", "treatment_type"];
+
+/**
+ * Records a save of a tracked doctype the way Frappe's Version does: the fields that were sent and changed, and
+ * the names copied from a changed Link. Call it after recalculate(), with a copy of the doc from before the save.
+ */
+function trackChanges(doctype: string, before: MockDoc, after: MockDoc, sent: Record<string, MockValue>): void {
+  if (!(TRACKED_DOCTYPES as readonly string[]).includes(doctype)) return;
+  const fields = [...new Set([...Object.keys(sent), ...COPIED_LABELS.filter((field) => field in before || field in after)])];
+  const changed = fields
+    .filter((field) => field !== "name" && !sameValue(before[field], after[field]))
+    .map((field) => [field, clone(before[field] ?? null), clone(after[field] ?? null)]);
+  if (changed.length === 0) return;
+  collection("Version").unshift({
+    name: nextName("Version", {}),
+    ref_doctype: doctype,
+    docname: before.name,
+    owner: actingUser,
+    creation: stamp(),
+    data: JSON.stringify({ changed }),
+  });
+}
 
 function collection(doctype: string): MockDoc[] {
   if (!store[doctype]) store[doctype] = [];
@@ -719,7 +819,13 @@ function rollRecall(appointment: MockDoc, before?: MockDoc): void {
   const months = num(patient?.recall_interval_months ?? 0);
   if (!patient || months <= 0 || num(patient.no_recall ?? 0) === 1) return;
   const next = addMonths(String(appointment.appointment_date), months);
-  if (!patient.next_recall_date || next > String(patient.next_recall_date)) patient.next_recall_date = next;
+  if (patient.next_recall_date && next <= String(patient.next_recall_date)) return;
+  // A real change to the patient, saved and recorded like any other (the totals are not; see recalculate).
+  const wasPatient = clone(patient);
+  patient.next_recall_date = next;
+  patient.modified = stamp();
+  patient.modified_by = actingUser;
+  trackChanges("Patient", wasPatient, patient, { next_recall_date: next });
 }
 
 function checkPlan(plan: MockDoc): void {
@@ -749,6 +855,7 @@ const latency = () => {
   return new Promise((resolve) => setTimeout(resolve, typeof slow === "number" ? slow : 150));
 };
 
+stampSeeds();
 recalculate();
 
 /* ------------------------------------------------------------------ api --- */
@@ -787,6 +894,9 @@ export async function mockCreateDoc(
   await latency();
   const doc: MockDoc = { ...clone(data), name: nextName(doctype, data) };
   normalize(doc);
+  const now = stamp();
+  Object.assign(doc, { owner: actingUser, creation: now, modified: now, modified_by: actingUser });
+  applyDefaults(doctype, doc);
 
   if (doctype === "Patient") {
     doc.age = data.age ? num(data.age) : ageFrom(data.date_of_birth);
@@ -818,6 +928,8 @@ export async function mockUpdateDoc(
 
   const next: MockDoc = { ...doc, ...clone(data), name: doc.name };
   normalize(next);
+  next.modified = stamp();
+  next.modified_by = actingUser;
   if (doctype === "Patient") {
     if ("date_of_birth" in data && !("age" in data)) next.age = ageFrom(data.date_of_birth);
     if ("dental_chart" in data) next.dental_chart = jsonField(data.dental_chart);
@@ -830,9 +942,11 @@ export async function mockUpdateDoc(
   if (doctype === "Cash Count") checkCashCount(next);
   if (doctype === "Appointment") rollRecall(next, doc);
 
+  const before = clone(doc);
   Object.keys(doc).forEach((key) => delete doc[key]);
   Object.assign(doc, next);
   recalculate();
+  trackChanges(doctype, before, doc, data);
   return clone(doc);
 }
 
@@ -851,7 +965,32 @@ export async function mockDeleteDoc(doctype: string, name: string): Promise<void
     }
   }
   docs.splice(index, 1);
+  // Its history goes with it (Frappe never gives the name to another record; the dummy data might).
+  store.Version = store.Version.filter((version) => !(version.ref_doctype === doctype && version.docname === name));
   recalculate();
+}
+
+/**
+ * Like frappe.desk.form.load.getdoc: the document, its latest Version records (newest first) and the names of the
+ * users involved (the owner, the last editor and the users in the versions).
+ */
+export async function mockGetDocInfo(
+  doctype: string,
+  name: string,
+): Promise<{ docs: MockDoc[]; docinfo: { versions: MockDoc[]; user_info: Record<string, { fullname: string }> } }> {
+  failIfAsked(doctype);
+  await latency();
+  const doc = find(doctype, name);
+  if (!doc) throw new Error(doctype + " " + name + " not found");
+  const found = sortDocs(query("Version", [["ref_doctype", "=", doctype], ["docname", "=", name]]), "creation desc")
+    .slice(0, HISTORY_LIMIT)
+    .map((version) => project(version, ["owner", "creation", "data"]));
+  const user_info: Record<string, { fullname: string }> = {};
+  [doc.owner, doc.modified_by, ...found.map((version) => version.owner)].map(String).filter(Boolean).forEach((user) => {
+    const row = store.User.find((candidate) => candidate.name === user);
+    user_info[user] = { fullname: row ? String(row.full_name || user) : user };
+  });
+  return { docs: [clone(doc)], docinfo: { versions: found, user_info } };
 }
 
 /** The few whitelisted methods the front end calls. */

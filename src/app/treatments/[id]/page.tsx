@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { CalendarCheck, CalendarPlus, ClipboardList, CreditCard, ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import DentalChart from "@/components/DentalChart";
+import RecordHistory from "@/components/RecordHistory";
 import LabWorkCard from "@/components/LabWorkCard";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
@@ -378,6 +379,8 @@ function TreatmentDetail() {
           </div>
         )}
       </Card>
+
+      <RecordHistory doctype="Treatment Plan" name={plan.name} changedAt={plan.modified} />
 
       {sessionModal.open && (
         <SessionModal

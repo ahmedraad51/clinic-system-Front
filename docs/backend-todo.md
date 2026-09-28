@@ -153,6 +153,22 @@ change `src/context/SessionContext.tsx` to call it with `callMethod`.
   `GET /api/resource/File` filtered on `attached_to_doctype` and `attached_to_name`, deletes them with
   `DELETE /api/resource/File/<name>`, and shows them at `/frappe<file_url>` through the rewrite (the session
   cookie opens private files). Every role that can see patients must be able to read these File records.
+- `GET /api/method/frappe.desk.form.load.getdoc` with `doctype`, `name` for the **History** card (patient,
+  appointment, treatment plan and payment pages). The front end reads `docs[0].owner` and `creation`,
+  `docinfo.versions` (`owner`, `creation`, `data` with `changed: [[field, old, new]]`; Frappe writes the values
+  as formatted text, such as `150,000.00` or `20-08-2026`, and the front end reads them that way) and
+  `docinfo.user_info` (`fullname` for the owner, the last editor and the users in the versions, which Frappe
+  fills in itself). Track Changes (`track_changes: 1`) is already on for Patient, Appointment, Treatment Plan and
+  Payment; keep it on, or there is nothing to show but who added the record. getdoc checks read permission on
+  the doc, so every role that can open these pages can use it. Frappe returns the last 10 versions; the card
+  says so. One thing to change:
+  - **Save worked-out totals without a Version.** `Appointment.on_update` and `TreatmentPlan.on_update` call
+    `patient_doc.save()`, and Payment calls `plan.save()`, only to update totals (`total_*`, `paid_amount`,
+    `remaining_amount`). Each of those saves is a Version that the card hides, and getdoc's 10 fill up with them,
+    pushing the real edits out. Use `frappe.db.set_value(..., update_modified=False)` (or `doc.db_set`) for the
+    totals, or set `doc.flags.ignore_version = True` before those saves. The recall rule (section 1) is
+    different: when it moves `Patient.next_recall_date`, save that as a normal change with a Version, so the
+    patient's History shows "Next check-up: … → …" (the dummy data does).
 - `POST /api/method/frappe.core.doctype.user.user.update_password` with `old_password`, `new_password`.
 - `POST /api/method/login`, `GET /api/method/logout`.
 - `GET /api/method/frappe.auth.get_logged_user`: right after login (to check the session cookie was kept),

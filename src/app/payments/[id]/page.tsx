@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import ClinicLetterhead from "@/components/ClinicLetterhead";
 import ReceiptSlipControls from "@/components/ReceiptSlip";
+import RecordHistory from "@/components/RecordHistory";
 import { MessageCircle, Pencil, Printer, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import { Button, Card, LinkButton, NotFoundCard, PageContainer, PageHeader, RecordLoading } from "@/components/ui";
@@ -235,6 +236,8 @@ function PaymentDetail() {
 
         <ReceiptSlipControls data={slip} />
       </Card>
+
+      <RecordHistory doctype="Payment" name={payment.name} changedAt={payment.modified} />
 
       <ConfirmDialog
         open={confirmDelete}

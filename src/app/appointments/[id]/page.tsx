@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ClipboardList, ListChecks, MessageCircle, Pencil, Printer, Stethoscope, Trash2 } from "lucide-react";
 import FinishVisitDialog from "@/components/FinishVisitDialog";
+import RecordHistory from "@/components/RecordHistory";
 import SendWhatsAppDialog from "@/components/SendWhatsAppDialog";
 import { useSettings } from "@/context/SettingsContext";
 import RequirePermission from "@/components/Guard";
@@ -224,6 +225,8 @@ function AppointmentDetail() {
           </ul>
         </Card>
       )}
+
+      <RecordHistory doctype="Appointment" name={appointment.name} changedAt={appointment.modified} />
 
       <ConfirmDialog
         open={confirmDelete}
