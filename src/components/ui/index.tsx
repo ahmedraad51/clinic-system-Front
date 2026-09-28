@@ -902,6 +902,60 @@ export function PageLoading({ label = "Loading..." }: { label?: string }) {
   );
 }
 
+/** A grey card of the skeleton below: a title with its icon square, then a few lines. */
+function SkeletonCard({ lines }: { lines: number }) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 space-y-4">
+      <div className="flex items-center gap-2.5">
+        <div className="w-8 h-8 rounded-lg bg-gray-100" />
+        <div className="h-4 w-32 rounded bg-gray-200/70" />
+      </div>
+      {Array.from({ length: lines }, (_, line) => (
+        <div key={line} className="flex gap-6">
+          <div className="h-3.5 w-1/4 rounded bg-gray-100" />
+          <div className={cx("h-3.5 rounded bg-gray-100", line % 2 ? "w-2/5" : "w-1/2")} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The loading state of a record page (a patient, appointment, treatment plan or payment): a grey outline of the
+ * page (title, summary card, two cards) that gently pulses, so the page keeps its shape and does not jump when
+ * the record arrives. Screen readers and `waitForData()` read its hidden "Loading...".
+ */
+export function RecordLoading() {
+  return (
+    <PageContainer>
+      <div role="status" className="space-y-6">
+        <span className="sr-only">Loading...</span>
+        <div aria-hidden="true" className="space-y-6 animate-pulse motion-reduce:animate-none">
+          <div className="space-y-3">
+            <div className="h-3.5 w-24 rounded bg-gray-100" />
+            <div className="h-7 w-64 max-w-full rounded-lg bg-gray-200/70" />
+            <div className="h-3.5 w-44 rounded bg-gray-100" />
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 grid grid-cols-2 sm:grid-cols-4 gap-5">
+            {Array.from({ length: 4 }, (_, box) => (
+              <div key={box} className={cx("space-y-2", box > 1 && "max-sm:hidden")}>
+                <div className="h-3 w-16 rounded bg-gray-100" />
+                <div className="h-5 w-28 max-w-full rounded bg-gray-200/70" />
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SkeletonCard lines={5} />
+            <div className="max-lg:hidden">
+              <SkeletonCard lines={3} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </PageContainer>
+  );
+}
+
 /** A small, calm drawing for empty lists: a soft disc with sparkles and the icon on a card. */
 function EmptyDrawing({ icon: Icon }: { icon: LucideIcon }) {
   return (

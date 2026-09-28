@@ -10,7 +10,7 @@ import LabWorkCard from "@/components/LabWorkCard";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
   Alert, Button, Card, DetailList, DetailRow, EmptyState, Field, LinkButton, LoadError, NotFoundCard,
-  PageContainer, PageHeader, PageLoading, ProgressBar, SelectInput, StatusBadge, Table, Td, TextArea, TextInput, Th,
+  PageContainer, PageHeader, PageLoading, RecordLoading, ProgressBar, SelectInput, StatusBadge, Table, Td, TextArea, TextInput, Th,
 } from "@/components/ui";
 import { ConfirmDialog, Modal } from "@/components/ui/Modal";
 import { useSession } from "@/context/SessionContext";
@@ -97,7 +97,7 @@ function TreatmentDetail() {
     };
   }, [id, relatedVersion, showPayments]);
 
-  if (loading) return <PageLoading />;
+  if (loading) return <RecordLoading />;
   if (notFound || !plan) {
     return <NotFoundCard error={error} what="Treatment plan" backHref="/treatments" backLabel="Back to Treatment Plans" />;
   }

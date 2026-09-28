@@ -241,7 +241,12 @@ Each finished item says what changed, when, and which commit holds it.
   appointment and treatment plan pages, every card (Timeline, Contact, Medical Information, Details, Payments,
   Lab Work, Dental Chart, Sessions, X-rays and Photos and so on) now has a small icon before its title, so the
   right card is easy to find on a long page. The Dental Chart uses the DentClinic tooth. Pictures:
-  docs/design-changes/d3-*.png. Commit PENDING.
+  docs/design-changes/d3-*.png. Commit 3f5e2d1.
+- 2026-09-28 - **Design: record pages keep their shape while they load** (design idea D4). While a patient,
+  appointment, treatment plan or payment opens, a grey outline of the page (title, summary, two cards) gently
+  pulses, instead of a spinner on an empty page. The page no longer jumps when the record arrives. The pulse
+  stops for people who switch off animations on their computer. Pictures: docs/design-changes/d4-*.png.
+  Commit PENDING.
 
 ## Questions for the owner
 

@@ -7,7 +7,7 @@ import ClinicLetterhead from "@/components/ClinicLetterhead";
 import ReceiptSlipControls from "@/components/ReceiptSlip";
 import { MessageCircle, Pencil, Printer, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
-import { Button, Card, LinkButton, NotFoundCard, PageContainer, PageHeader, PageLoading } from "@/components/ui";
+import { Button, Card, LinkButton, NotFoundCard, PageContainer, PageHeader, RecordLoading } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -96,7 +96,7 @@ function PaymentDetail() {
     };
   }, [id, planId, paidOn]);
 
-  if (loading) return <PageLoading />;
+  if (loading) return <RecordLoading />;
   if (notFound || !payment) return <NotFoundCard error={error} what="Payment" backHref="/payments" backLabel="Back to Payments" />;
 
   const canChange = can("add_payments");

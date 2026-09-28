@@ -10,7 +10,7 @@ import { useSettings } from "@/context/SettingsContext";
 import RequirePermission from "@/components/Guard";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
-  Button, Card, DetailList, DetailRow, LinkButton, NotFoundCard, PageContainer, PageHeader, PageLoading, StatusBadge,
+  Button, Card, DetailList, DetailRow, LinkButton, NotFoundCard, PageContainer, PageHeader, RecordLoading, StatusBadge,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useSession } from "@/context/SessionContext";
@@ -67,7 +67,7 @@ function AppointmentDetail() {
     };
   }, [id]);
 
-  if (loading) return <PageLoading />;
+  if (loading) return <RecordLoading />;
   if (notFound || !appointment) {
     return <NotFoundCard error={error} what="Appointment" backHref="/appointments" backLabel="Back to Appointments" />;
   }

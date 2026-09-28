@@ -550,6 +550,8 @@ Most useful first. Items marked **Done** are in DentClinic.
   before reading the title.
 
 ### D4. Record pages keep their shape while they load
+- **Done** (2026-09-28): `RecordLoading` in the UI kit, used by the patient, appointment, treatment plan and
+  payment pages. Pictures: `docs/design-changes/d4-*.png`.
 - **What:** while a patient, appointment, treatment plan or payment loads, a grey outline of the page (title,
   summary card, two cards) gently pulses, instead of a spinner in an empty page.
 - **Where in the pet store:** `src/components/shared/PageEntryLoader.vue` (the skeleton grid under the page

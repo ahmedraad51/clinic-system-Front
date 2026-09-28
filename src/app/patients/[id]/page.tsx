@@ -13,7 +13,7 @@ import MedicalAlerts from "@/components/MedicalAlerts";
 import PatientFiles from "@/components/PatientFiles";
 import {
   Button, Card, ClickableRow, DetailList, DetailRow, EmptyState, LinkButton, LoadError, NotFoundCard,
-  PageContainer, PageHeader, PageLoading, StatusBadge, Table, Tabs, Td, Th,
+  PageContainer, PageHeader, PageLoading, RecordLoading, StatusBadge, Table, Tabs, Td, Th,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useSession } from "@/context/SessionContext";
@@ -116,7 +116,7 @@ function PatientDetail() {
     };
   }, [id, showAppointments, showTreatments, showPayments, relatedVersion]);
 
-  if (loading) return <PageLoading />;
+  if (loading) return <RecordLoading />;
   if (notFound || !patient) return <NotFoundCard error={error} what="Patient" backHref="/patients" backLabel="Back to Patients" />;
 
   const data = related && related.id === id ? related : null;

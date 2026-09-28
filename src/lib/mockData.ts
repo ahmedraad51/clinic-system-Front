@@ -723,8 +723,14 @@ function failIfAsked(doctype: string) {
   if (failing?.includes(doctype)) throw new Error("Cannot reach the server. Check the internet connection and try again.");
 }
 
-/** A short pause so loading states behave like they will against the real backend. */
-const latency = () => new Promise((resolve) => setTimeout(resolve, 150));
+/**
+ * A short pause so loading states behave like they will against the real backend. For tests and screenshots,
+ * `window.__mockLatency = 5000` makes every call slower, so a loading state stays on screen.
+ */
+const latency = () => {
+  const slow = typeof window === "undefined" ? undefined : (window as unknown as { __mockLatency?: number }).__mockLatency;
+  return new Promise((resolve) => setTimeout(resolve, typeof slow === "number" ? slow : 150));
+};
 
 recalculate();
 
