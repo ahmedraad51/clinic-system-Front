@@ -13,6 +13,9 @@ Rules for bringing things in (from the owner): only the logic and ideas are take
 keeps its own colours, logo, fonts, layout and UI kit. Nothing about pets, the store or its brand is kept.
 No secrets, addresses or `.env` values are copied.
 
+**Update 2026-09-28:** the owner now also allows **design ideas** (not files) from the pet store, rebuilt in
+DentClinic's own UI kit. They are listed and tracked in section 9.
+
 ---
 
 ## 1. Where the app is, and how it was read
@@ -441,7 +444,7 @@ Paths are inside `D:\Projects\alkhokh_pet_store_front`.
 
 - **The look:** the Vuetify admin template (`src/@core`, `src/@layouts`, `themeConfig.ts`), SCSS, colours,
   icons, images, fonts, logos, the cat and dog loading animations and sounds. DentClinic keeps its own
-  design.
+  design. Design *ideas* rebuilt in DentClinic's UI kit are allowed since 2026-09-28 (section 9).
 - **The libraries themselves:** Vue, Vuetify, Pinia, vue-i18n, CASL, FullCalendar. The ideas are rewritten
   in React; DentClinic already has a calendar.
 - **The WhatsApp Cloud API system** (message queue, Meta templates, rule designer, live inbox, webhooks). It
@@ -493,3 +496,86 @@ Only two items need a package; everything else is plain TypeScript and React.
 |---|---|---|
 | 7 | `heic-to` | Converts iPhone HEIC photos in browsers other than Safari. Loaded only when needed. |
 | 19 | `html2pdf.js` | Makes PDF files in the browser. Loaded only when needed. Can be skipped by using "Save as PDF". |
+
+## 9. Design ideas
+
+Added 2026-09-28. The owner now allows **design ideas** from the pet store (layouts, navigation, cards, spacing,
+typography, forms, tables, empty and loading states, small animations) when they make DentClinic clearer or
+easier for clinic staff. Each one is rebuilt in DentClinic's own React, Tailwind and UI kit
+(`src/components/ui`), with its teal clinic colour and tooth logo. No Vuetify or other UI library, and nothing
+from the pet store's template files, images, logos, names or texts is copied. The UI kit changes first, so every
+screen changes together. Before-and-after pictures of each change are in `docs/design-changes/`.
+
+**How it was studied:** by reading the code only (`D:\Projects\alkhokh_pet_store_front`, read-only). Its screens
+are built on a paid admin template (`src/@core`, `src/@layouts`). The code gave the sizes, spacing and timings
+exactly, so the app was not run.
+
+Most useful first. Items marked **Done** are in DentClinic.
+
+### D1. Quick actions as large tiles at the top of the dashboard
+- **What:** a row of large tiles for the everyday jobs. Each tile has a tinted background, a white icon box and
+  a one-line hint ("New Appointment · Book a visit"). The tiles sit right under the greeting, and on a phone
+  they show two per row. DentClinic had small tiles at the bottom of the dashboard, under the lists.
+- **Where in the pet store:** the coordinator quick-action tiles
+  (`src/components/healthcare/HealthcareCoordinatorWorkspace.vue`, the tile styles near line 5971;
+  `docs/README.coordinator-quick-actions-design.md`).
+- **Why for clinic staff:** the receptionist's most common jobs are one tap away as soon as the app opens,
+  without scrolling past the day's lists.
+
+### D2. Empty states that offer the next step
+- **What:** an empty list says what to do next with a button ("No appointments yet" → **Book Appointment**). A
+  search or filter that finds nothing shows a different picture (a crossed-out magnifying glass) with **Clear
+  Filters**, so "nothing found" never looks like "nothing there". Empty boxes inside a card get a light dashed
+  frame.
+- **Where in the pet store:** `src/components/shared/AppEmptyState.vue` and
+  `src/components/shared/EntityListEmptyState.vue` (no data versus no results).
+- **Why for clinic staff:** a new receptionist is never stuck on an empty screen, and a search with a typo
+  is not mistaken for a missing patient.
+
+### D3. An icon in each card's title on record pages
+- **What:** `Card` takes an `icon`. It is drawn in a small tinted square before the title (Contact, Medical
+  Information, Payments, Treatment Sessions, Lab Work and so on). Cards without one look as they did.
+- **Where in the pet store:** `src/components/shared/AppSectionCard.vue` (the 36 px icon square in the card
+  header).
+- **Why for clinic staff:** on long patient and treatment pages, the eye finds the right card by its icon
+  before reading the title.
+
+### D4. Record pages keep their shape while they load
+- **What:** while a patient, appointment, treatment plan or payment loads, a grey outline of the page (title,
+  summary card, two cards) gently pulses, instead of a spinner in an empty page.
+- **Where in the pet store:** `src/components/shared/PageEntryLoader.vue` (the skeleton grid under the page
+  title).
+- **Why for clinic staff:** the page does not jump when the data arrives, and on a slow connection it is
+  clear that something is on its way.
+
+### D5. Calm motion
+- **What:** a new page fades in while lifting 6 px (0.22 s). Buttons shrink very slightly while pressed.
+  Clickable cards lift 1 px with a deeper shadow on hover. All of it is switched off for people who ask their
+  computer for reduced motion.
+- **Where in the pet store:** `src/@core/scss/base/_route-transitions.scss` (the "soft page" transition), the
+  button press in the Vuetify button styles, and the hover lift in `src/pages/clinic-station.vue`
+  (lines 644-661).
+- **Why for clinic staff:** a press and a page change are felt at once, which matters on a touch screen at
+  the front desk. The motion is short and small, so it never slows anyone down.
+
+### D6. Form errors next to the field (proposed, not done yet)
+- **What:** a field that is missing or wrong gets a red border and its own message under it, and the page
+  scrolls to the first one. The label turns the clinic colour while the field has focus.
+- **Where in the pet store:** `src/@core/components/app-form-elements/AppTextField.vue` and
+  `src/@core/scss/template/libs/vuetify/components/_field.scss`.
+- **Why for clinic staff:** in a long form, the problem is shown where it is.
+- **Why not now:** each form's checks would have to be rewritten to report per field (today they return one
+  message shown at the top). It is worth its own item later.
+
+### Looked at and left out (they would make screens busier, or do not fit)
+- **Counts on menu items** (for example "Today 5"): the bell and the Today board already show them; more
+  numbers in the menu compete for attention.
+- **Coloured stripes and "eyebrow" labels on clinical cards:** they add colour everywhere. The icons of D3 help
+  scanning with less noise.
+- **Initials avatars in every table row:** more shapes per row with little new information.
+- **Gradient menu items with coloured glows, square chips, the violet palette and the template's fonts:**
+  they belong to the template's look. DentClinic keeps its flat teal style, rounded badges and its own font.
+- **A bottom tab bar on phones:** a large change to the app shell. The slide-in menu works on phones today.
+- **Rows-per-page choices, a column chooser, filters behind an Apply button:** extra controls that clinic lists
+  (20 rows, a few filters) do not need.
+- **Workspace tabs to keep several patients open:** see section 6.

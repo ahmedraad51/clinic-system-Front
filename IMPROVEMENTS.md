@@ -231,7 +231,7 @@ Each finished item says what changed, when, and which commit holds it.
   names, addresses in Baghdad (Al-Mansour, Karrada, Zayouna, Al-Adhamiya...) and in Basra, Erbil, Najaf
   and Hilla, mobile numbers such as 0770 123 4567, and prices in Iraqi dinars (a filling 40,000, a root
   canal 150,000, a crown 200,000, an implant 1,000,000). The clinic currency is IQD, and the app shows IQD
-  when no currency is set. The tests and the README pictures were updated to match. Commit PENDING.
+  when no currency is set. The tests and the README pictures were updated to match. Commit 5a16064.
 
 ## Questions for the owner
 
