@@ -414,7 +414,7 @@ function TodayBoard() {
                   return (
                     <li key={a.name} className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
                       <span className="w-[5.5rem] shrink-0 font-semibold text-gray-800 whitespace-nowrap">{formatTime(a.appointment_time)}</span>
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-[10rem] flex-1">
                         <Link href={appointmentHref(a.name)} className="font-medium text-gray-800 hover:text-primary-600">
                           {a.patient_name || a.patient}
                         </Link>
@@ -454,7 +454,7 @@ function TodayBoard() {
                   return (
                     <li key={p.name}>
                       <Link href={treatmentHref(p.name)} className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-1 hover:bg-gray-50">
-                        <span className="min-w-0 flex-1">
+                        <span className="min-w-[10rem] flex-1">
                           <span className="block font-medium text-gray-800">{p.patient_name || p.patient}</span>
                           <span className="block text-sm text-gray-500">
                             {p.treatment_type}
@@ -483,7 +483,7 @@ function TodayBoard() {
               <ul className="divide-y divide-gray-100">
                 {earlierOpen.map((a) => (
                   <li key={a.name} className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-[10rem] flex-1">
                       <Link href={appointmentHref(a.name)} className="font-medium text-gray-800 hover:text-primary-600">
                         {a.patient_name || a.patient}
                       </Link>

@@ -334,7 +334,8 @@ FRAPPE_URL=http://<your-site>:8000
 
 Before switching over, work through [`docs/backend-todo.md`](docs/backend-todo.md): a few fields
 (like `Patient.dental_chart` and the `patient_name` fetch fields) and read permissions must exist on
-the backend first.
+the backend first. Its last section lists every doctype and field the front end uses, with the type and
+whether it is required.
 
 ---
 

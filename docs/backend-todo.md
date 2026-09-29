@@ -5,6 +5,9 @@ app `dent_app` must provide so the same screens work with `MOCK_DATA = false`. T
 exactly what the front end sends and reads. If the back end uses a different name, change one side so they
 match, and update `src/lib/types.ts`, the mock and `AGENTS.md`.
 
+**Section 9 lists every doctype and field the front end uses, with its type and whether it is required.**
+Sections 1 and 2 explain what is new or still to confirm.
+
 ## 1. New fields
 
 | Doctype | Field | Type | Notes |
@@ -265,3 +268,264 @@ whitelisted methods that return the sums for a date range (revenue by treatment,
 the outstanding total), and switch `src/app/reports/page.tsx` and `src/app/dashboard/page.tsx` to them. The
 existing query reports (Daily Revenue, Monthly Revenue, Treatment Revenue, Outstanding Balances) are a good
 base.
+
+## 9. Field reference: every doctype and field the front end uses
+
+This is the whole contract in one place, checked against the code on 2026-09-30. Sections 1 and 2 explain the
+new and unconfirmed fields in more detail. If a field is not listed here, the front end neither reads nor sends it.
+
+How to read the tables:
+
+- **Type** is the Frappe field type we expect.
+- **Required**: **Yes** means the form will not save without it, so the doctype should mark it `reqd` too.
+  **Server** means the front end never sends it (or its value is replaced): the back end works it out or fetches
+  it. **No** means optional.
+- **Stored** (in Notes) means the field is used in a filter, a search or a sort, so it must be a real column,
+  not a virtual field. Fetch fields (`fetch_from`) are stored by default; keep them that way.
+
+Rules for every doctype:
+
+- Dates are sent as `YYYY-MM-DD`. Times are sent as `HH:MM` (no seconds); Frappe's `HH:MM:SS` is read fine.
+- Check fields are sent as `0` or `1`.
+- An empty Link, Date or Time field is sent as `null`, never `""`. Empty text is sent as `""`.
+- A child table is always sent whole (every row, without `name` or `idx`), so each save replaces the table.
+- Link fields hold the record ID; the screens show the fetched `*_name` field instead.
+
+### Patient
+
+Naming `PAT-.YYYY.-.#####`. Searched with `like` on `full_name`, `phone_number`, `secondary_phone` and `name`.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `full_name` | Data | Yes | |
+| `gender` | Select: Male, Female, Other | No | |
+| `date_of_birth` | Date | No | |
+| `age` | Int | No | Sent only when `date_of_birth` is empty (0-120). Worked out from the date when there is one. Must not be read only (section 2). |
+| `phone_number` | Data | Yes | Stored as typed; searched with digit patterns (section 2, **Phone numbers**). |
+| `secondary_phone` | Data | No | Same as `phone_number`. |
+| `email` | Data (Email) | No | |
+| `address` | Small Text | No | |
+| `allergies`, `current_medications`, `chronic_diseases`, `medical_history`, `notes` | Small Text | No | The medical alerts and prescription warnings are read from these texts. |
+| `dental_chart` | JSON | No | New (section 1). |
+| `next_recall_date` | Date | No | New (section 1). |
+| `recall_interval_months` | Int | No | New: 0, 3, 6, 9 or 12. |
+| `no_recall` | Check | No | New. |
+| `total_paid` | Currency | Server | |
+| `total_remaining` | Currency | Server | Stored: filtered (`> 0`) and sorted. |
+| `total_appointments`, `total_treatments` | Int | Server | Not read by the front end. |
+
+### Doctor
+
+Naming `DOC-.#####`. Written only on `/doctors`; never deleted.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `full_name` | Data | Yes | |
+| `specialization` | Select: General Dentist, Orthodontist, Endodontist, Periodontist, Oral Surgeon, Pediatric Dentist, Prosthodontist | No | Defaults to General Dentist in the form. |
+| `phone_number` | Data | No | |
+| `email` | Data (Email) | No | Links a user to their Doctor record (section 2). Every clinic role must be able to read it. |
+| `start_time`, `end_time` | Time | No | Both or neither; the end must be after the start. |
+| `is_active` | Check, default 1 | No | Only active doctors are offered. |
+
+### Appointment
+
+Naming `APT-.YYYY.-.#####`. Searched on `patient_name`, `doctor_name`, `reason_for_visit` and `name`.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `patient` | Link Patient | Yes | |
+| `patient_name` | Data, `fetch_from: patient.full_name` | Server | Stored (search). |
+| `doctor` | Link Doctor | Yes | |
+| `doctor_name` | Data, `fetch_from: doctor.full_name` | Server | Stored (search). |
+| `appointment_date` | Date | Yes | Filtered with `=`, `<`, `>`, `>=`, `<=`, `between`. |
+| `appointment_time` | Time | Yes | |
+| `duration_minutes` | Int, default 30 | No | 15, 30, 45, 60, 90 or 120. |
+| `status` | Select: Scheduled, Confirmed, Completed, Cancelled, No Show | Yes | Always sent; new bookings are Scheduled. |
+| `reason_for_visit` | Data | No | |
+| `notes` | Small Text | No | |
+
+### Treatment Plan
+
+Naming `TRT-.YYYY.-.#####`. Searched on `patient_name`, `treatment_type`, `tooth_number` and `name`.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `patient` | Link Patient | Yes | |
+| `patient_name` | Data, fetched | Server | Stored (search). |
+| `doctor` | Link Doctor | No | |
+| `doctor_name` | Data, fetched | Server | |
+| `treatment_type` | Select: Filling, Root Canal, Crown, Bridge, Extraction, Implant, Cleaning, Whitening | Yes | |
+| `tooth_number` | Data | No | An FDI number as text (`"36"`, `"51"`); older free text like `"36, 37"` is still read. |
+| `total_cost` | Currency | Yes | 0 or more; cannot go below what was already paid. |
+| `status` | Select: Planned, In Progress, Completed, Cancelled | Yes | New plans are always sent as Planned. |
+| `diagnosis`, `treatment_notes` | Small Text | No | |
+| `paid_amount` | Currency | Server | Sum of the plan's payments. |
+| `remaining_amount` | Currency | Server | Stored: filtered (`> 0`) and sorted. 0 for a Cancelled plan. |
+| `lab_name` | Data | No | New (section 1). |
+| `lab_sent_date` | Date | No | New. Required by the Lab Work dialog when it saves. Filtered with `is set`. |
+| `lab_due_date` | Date | No | New. Not before `lab_sent_date`. |
+| `lab_received_date` | Date | No | New. Filtered with `is not set`. |
+
+### Treatment Session
+
+Naming `SES-.YYYY.-.#####`.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `treatment_plan` | Link Treatment Plan | Yes | Always sent. |
+| `patient` | Link Patient | Yes | Sent from the plan; filtered on the patient page. |
+| `patient_name` | Data, fetched | Server | |
+| `doctor` | Link Doctor | No | |
+| `doctor_name` | Data, fetched | Server | |
+| `session_date` | Date | Yes | |
+| `session_time` | Time | No | |
+| `status` | Select: Scheduled, Completed, Cancelled | Yes | |
+| `notes` | Small Text | No | "What was done in this visit?" is saved here. |
+
+### Payment
+
+Naming `PAY-.YYYY.-.#####`. Searched on `patient_name`, `treatment_type`, `notes` and `name`.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `patient` | Link Patient | Yes | |
+| `patient_name` | Data, fetched | Server | Stored (search). |
+| `treatment_plan` | Link Treatment Plan | No | Empty for a general payment. |
+| `treatment_type` | Data, `fetch_from: treatment_plan.treatment_type` | Server | Stored (search, reports). |
+| `payment_date` | Date | Yes | |
+| `amount` | Currency | Yes | Above 0, and not more than the plan has left. |
+| `payment_method` | Select: Cash, Card, Bank Transfer | Yes | |
+| `notes` | Small Text | No | |
+
+### User (Frappe core)
+
+The name is the email address. Created on `/users`; only `enabled` and `roles` are changed afterwards; never deleted.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `email` | Data | Yes | On create. |
+| `first_name` | Data | Yes | On create; the form calls it "Full Name". |
+| `full_name` | Data | Server | |
+| `enabled` | Check | No | A user cannot disable their own account. |
+| `roles` | Table (Has Role): `role` | Yes | Clinic Manager, Clinic Doctor or Clinic Receptionist. Other roles on the user (such as System Manager) are kept. |
+| `new_password` | Password | Yes | On create only, at least 8 characters. |
+| `send_welcome_email` | Check | No | Always sent as 0. |
+
+### Clinic Permission
+
+One per user; the record **name must equal the user ID** (`autoname: field:user`), because the front end loads it
+with `GET /api/resource/Clinic Permission/<user>`.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `user` | Link User | Yes | Unique. |
+| `view_patients`, `add_patients`, `edit_patients`, `delete_patients`, `view_appointments`, `add_appointments`, `edit_appointments`, `view_treatments`, `add_treatments`, `edit_treatments`, `view_payments`, `add_payments`, `view_reports`, `manage_users` | Check | No | 14 switches, sent as 0 or 1. |
+
+### Clinic Settings (single)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `clinic_name` | Data | Yes | |
+| `logo` | Attach Image | No | A public file URL. |
+| `phone`, `email`, `tax_number` | Data | No | Printed on the letterhead. |
+| `address` | Small Text | No | |
+| `currency` | Link Currency (or Data) | No | ISO code; empty is treated as IQD. |
+| `phone_country_code` | Data | No | New (section 1). Digits only; empty means 964. |
+| `opening_time`, `closing_time` | Time | No | |
+| `working_days` | Data | No | Day names, comma-separated (section 2). Empty means open every day. |
+| `theme_color` | Color | No | A hex colour. |
+| `enable_whatsapp`, `enable_financial_reports` | Check, **default 1** | No | The front end treats only an explicit 0 as off. |
+| `enable_patient_portal` | Check | No | Saved only; not used yet. |
+| `treatment_prices` | Table (**Clinic Treatment Price**) | No | New (section 1). Rows: `treatment_type` (Select, the plan types), `price` (Currency). Only rows with a price are sent. |
+
+### WhatsApp Template
+
+Naming `WAT-.#####`.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `template_name` | Data | Yes | |
+| `trigger` | Select: 24 Hours Before, 2 Hours Before, Manual | Yes | |
+| `message` | Text | Yes | With the placeholders in section 2. |
+| `is_active` | Check | No | |
+
+### WhatsApp Log (read only for the front end)
+
+Naming `WAL-.YYYY.-.#####`. Searched on `patient_name`, `phone_number` and `message`; filtered on `status` and
+`appointment`; sorted by `sent_at`.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `patient` | Link Patient | Server | |
+| `patient_name` | Data, fetched | Server | Stored (search). |
+| `appointment` | Link Appointment | Server | |
+| `phone_number` | Data | Server | |
+| `status` | Select: Sent, Failed, Pending | Server | |
+| `sent_at` | Datetime | Server | |
+| `message` | Text | Server | |
+| `error_message` | Small Text | Server | |
+
+### Cash Count
+
+Details and rules in section 1. The front end sends `count_date`, `opening_float`, `cash_counted`, `note` and
+`counted_by`, and also its own `cash_payments`, `expected_cash` and `difference`, which `validate()` must replace.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `count_date` | Date | Yes | Unique. |
+| `opening_float` | Currency | No | |
+| `cash_counted` | Currency | Yes | |
+| `note` | Small Text | Yes when short or over | |
+| `counted_by` | Link User | No | |
+| `cash_payments`, `expected_cash`, `difference` | Currency | Server | |
+| `counted_by_name` | Data, fetched | Server | |
+| `counted_at` | Datetime | Server | |
+
+### Dental Medicine
+
+Details in section 1. Searched on `medicine_name`, `medicine_group` and `strength`; never deleted.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `medicine_name` | Data | Yes | |
+| `strength` | Data | No | |
+| `dosage_form` | Select (section 1) | No | |
+| `medicine_group` | Select (section 1) | No | |
+| `default_dose`, `default_frequency`, `default_instructions` | Data | No | |
+| `default_duration_days` | Int | No | |
+| `allergy_words` | Data | No | |
+| `is_nsaid`, `avoid_in_pregnancy` | Check | No | |
+| `max_daily_mg` | Int | No | 0 means no check. |
+| `child_note` | Small Text | No | |
+| `is_active` | Check, default 1 | No | |
+
+### Prescription and Prescription Medicine
+
+Details in section 1.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `patient` | Link Patient | Yes | |
+| `patient_name` | Data, fetched | Server | |
+| `doctor` | Link Doctor | Yes | |
+| `doctor_name` | Data, fetched | Server | |
+| `appointment` | Link Appointment | No | |
+| `prescription_date` | Date | Yes | |
+| `notes` | Small Text | No | |
+| `medicines` | Table (Prescription Medicine) | Yes, at least one row | Rows below. |
+| `summary` | Data | Server | Stored: read in the lists. |
+
+| Prescription Medicine field | Type | Required | Notes |
+|---|---|---|---|
+| `medicine` | Link Dental Medicine | Yes | |
+| `medicine_name` | Data | Yes | Sent by the front end (name and strength when written). |
+| `dose`, `frequency`, `instructions` | Data | No | |
+| `duration_days` | Int | No | |
+
+### File (Frappe core)
+
+Uploaded with `upload_file` (section 4). The front end reads `name`, `file_name`, `file_url` and `creation`, filters on `attached_to_doctype` and `attached_to_name`, and deletes Files attached to a patient.
+
+### Version (Frappe core)
+
+Never queried directly; read through `frappe.desk.form.load.getdoc` for the History card (section 4).

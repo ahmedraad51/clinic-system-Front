@@ -10,7 +10,6 @@ import {
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
 import { createDoc, errorMessage, updateDoc, type FilterRow } from "@/lib/frappe";
-import { display } from "@/lib/format";
 import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
 import { FREQUENCIES, MEDICINE_FIELDS, medicineLabel } from "@/lib/prescriptions";
 import { MEDICINE_FORMS, MEDICINE_GROUPS, type DentalMedicine } from "@/lib/types";
@@ -71,7 +70,6 @@ function MedicinesList() {
           <thead>
             <tr>
               <Th>Medicine</Th>
-              <Th>Group</Th>
               <Th>Usual dose</Th>
               <Th>Warnings</Th>
               <Th>Status</Th>
@@ -80,11 +78,11 @@ function MedicinesList() {
           </thead>
           <tbody>
             {list.error ? (
-              <TableError colSpan={6} message={list.error} onRetry={list.reload} />
+              <TableError colSpan={5} message={list.error} onRetry={list.reload} />
             ) : list.initialLoading ? (
-              <TableLoading colSpan={6} />
+              <TableLoading colSpan={5} />
             ) : list.rows.length === 0 ? (
-              <TableMessage icon={Pill} colSpan={6}>
+              <TableMessage icon={Pill} colSpan={5}>
                 {debounced || status ? (
                   <>
                     No medicines match.
@@ -112,9 +110,12 @@ function MedicinesList() {
                       >
                         {medicineLabel(medicine)}
                       </button>
-                      {medicine.dosage_form && <span className="block text-xs text-gray-500">{medicine.dosage_form}</span>}
+                      {(medicine.dosage_form || medicine.medicine_group) && (
+                        <span className="block text-xs text-gray-500">
+                          {Array.from(new Set([medicine.dosage_form, medicine.medicine_group].filter(Boolean))).join(" · ")}
+                        </span>
+                      )}
                     </Td>
-                    <Td label="Group">{display(medicine.medicine_group)}</Td>
                     <Td label="Usual dose">
                       {[medicine.default_dose, medicine.default_frequency, medicine.default_duration_days ? `${medicine.default_duration_days} days` : ""]
                         .filter(Boolean)

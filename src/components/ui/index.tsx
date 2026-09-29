@@ -107,7 +107,7 @@ export function PageHeader({
       {back && (
         <Link
           href={back.href}
-          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 print:hidden"
+          className="inline-flex items-center gap-1.5 pointer-coarse:min-h-11 text-sm text-gray-500 hover:text-gray-800 print:hidden"
         >
           <ArrowLeft size={15} className="rtl:rotate-180" />
           {back.label}
@@ -160,7 +160,7 @@ export function Card({
   return (
     <section className={cx("bg-white rounded-2xl border border-gray-100 shadow-sm", className)}>
       {hasHeader && (
-        <div className={cx("flex items-center justify-between gap-3 px-5 sm:px-6 pt-5", flush && "pb-4")}>
+        <div className={cx("flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 sm:px-6 pt-5", flush && "pb-4")}>
           {title ? (
             <div className="flex items-center gap-2.5 min-w-0">
               {icon && <CardIcon icon={icon} />}
@@ -566,7 +566,7 @@ export function Segmented<K extends string>({
   label: string;
 }) {
   return (
-    <div role="group" aria-label={label} className="inline-flex rounded-xl bg-gray-100 p-1 gap-1">
+    <div role="group" aria-label={label} className="inline-flex flex-wrap max-w-full rounded-xl bg-gray-100 p-1 gap-1">
       {options.map((option) => {
         const Icon = option.icon;
         const active = option.value === value;
@@ -577,7 +577,7 @@ export function Segmented<K extends string>({
             aria-pressed={active}
             onClick={() => onChange(option.value)}
             className={cx(
-              "inline-flex items-center justify-center gap-1.5 min-h-9 pointer-coarse:min-h-11 px-3.5 rounded-lg text-sm font-medium transition",
+              "inline-flex items-center justify-center gap-1.5 min-h-9 pointer-coarse:min-h-11 px-2.5 sm:px-3.5 rounded-lg text-sm font-medium transition",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
               active ? "bg-white text-primary-700 shadow-sm" : "text-gray-600 hover:text-gray-900",
             )}
@@ -795,9 +795,9 @@ export function Pagination({
 export function DetailRow({ label, children }: { label: string; children?: ReactNode }) {
   const empty = children === null || children === undefined || children === "";
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-4 py-2.5 border-b border-gray-50 last:border-0">
-      <dt className="text-sm text-gray-500">{label}</dt>
-      <dd className="sm:col-span-2 text-sm text-gray-800 whitespace-pre-line break-words">
+    <div className="grid grid-cols-1 @xs:grid-cols-3 gap-1 @xs:gap-4 py-2.5 border-b border-gray-50 last:border-0">
+      <dt className="text-sm text-gray-500 break-words">{label}</dt>
+      <dd className="@xs:col-span-2 min-w-0 text-sm text-gray-800 whitespace-pre-line break-words">
         {empty ? <span className="text-gray-300">—</span> : children}
       </dd>
     </div>
@@ -805,7 +805,8 @@ export function DetailRow({ label, children }: { label: string; children?: React
 }
 
 export function DetailList({ children }: { children: ReactNode }) {
-  return <dl>{children}</dl>;
+  // Label beside the value when the card is wide enough, above it in a narrow card.
+  return <dl className="@container">{children}</dl>;
 }
 
 export function Tabs<K extends string>({

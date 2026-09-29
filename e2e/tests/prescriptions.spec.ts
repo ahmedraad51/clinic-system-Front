@@ -98,7 +98,7 @@ test("write a prescription from a visit, with a warning for a penicillin allergy
   await expect(page.getByRole("button", { name: "Print" })).toBeVisible();
 
   // It is listed on the visit and on the patient's Prescriptions tab.
-  await page.getByRole("link", { name: "APT-2026-00001" }).click();
+  await page.getByRole("link", { name: "8 Sep 2026, 10:00 AM" }).click();
   await expect(page.getByRole("heading", { name: "Zahraa Hussein" })).toBeVisible();
   await waitForData(page);
   const card = page.locator("section").filter({ has: page.getByRole("heading", { name: "Prescriptions" }) });

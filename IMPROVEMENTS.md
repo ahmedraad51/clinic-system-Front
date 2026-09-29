@@ -280,7 +280,20 @@ Each finished item says what changed, when, and which commit holds it.
   stop the prescription; the dentist decides. The saved prescription prints on the clinic letterhead with a
   signature line. A new Medicines page (managers) keeps the list: 10 usual dental medicines are included as a
   start, and **a dentist must check every line before real use**. Two new record types for the back end
-  (docs/backend-todo.md). Commit PENDING.
+  (docs/backend-todo.md). Commit 4206b50.
+- 2026-09-30 - **Final check before the back end.** I opened every page as a receptionist, a dentist and a
+  manager, on a computer, a tablet and a phone (333 screens). Every person saw only the buttons they are allowed
+  to use, and no page had errors. Fixed what looked wrong: on a phone, the treatment plan's cost, paid and
+  remaining amounts ran into each other (now one per line); on the Today board, tomorrow's reminders, lab work
+  and the "Earlier, still open" list squeezed the patient's name into a narrow column; printouts squeezed the
+  clinic address on a phone; the Screen Size buttons on My Profile were a little too wide for a phone. On a
+  tablet, the patient's contact card let "Secondary Phone" run into the number, the Medicines list cut off its
+  Edit buttons (the group now shows under the medicine's name), and the four big dashboard buttons were too
+  narrow (now two by two until the screen is wide). A prescription now shows its visit as a date and time, not
+  a code. Back links, "View all", "Only know the age?", "Pay full balance", the colour picker and the call link
+  on the recall list are now easy to tap on a tablet. The list of what the back end must have
+  (docs/backend-todo.md) now ends with every record type and field the app uses, with its type and whether it
+  is required. README pictures retaken. In the commit "fix: final check before the back end".
 
 ## Questions for the owner
 

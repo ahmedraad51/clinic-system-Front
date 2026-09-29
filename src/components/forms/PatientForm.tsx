@@ -276,7 +276,7 @@ export default function PatientForm({
                   setAgeError("");
                   setForm({ ...form, age: "" });
                 }}
-                className="mt-1 text-xs text-primary-700 underline"
+                className="mt-1 pointer-coarse:min-h-11 text-xs text-primary-700 underline"
               >
                 Enter the date of birth instead
               </button>
@@ -292,7 +292,7 @@ export default function PatientForm({
                   setAgeOnly(true);
                   setForm({ ...form, date_of_birth: "" });
                 }}
-                className="mt-1 text-xs text-primary-700 underline"
+                className="mt-1 pointer-coarse:min-h-11 text-xs text-primary-700 underline"
               >
                 Only know the age?
               </button>

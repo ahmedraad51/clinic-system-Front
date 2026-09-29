@@ -190,7 +190,7 @@ function Dashboard() {
           <h2 id="quick-actions" className="sr-only">
             Quick Actions
           </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
             {quickActions.map((action) => (
               <ActionTile key={action.href} href={action.href} label={action.label} hint={action.hint} icon={action.icon} />
             ))}
@@ -254,7 +254,7 @@ function Dashboard() {
                 title={mine ? "My patients today" : "Today"}
                 flush
                 actions={
-                  <Link href="/today" className="text-sm text-primary-600 hover:underline">
+                  <Link href="/today" className="inline-flex items-center pointer-coarse:min-h-11 text-sm text-primary-600 hover:underline">
                     View all
                   </Link>
                 }
@@ -269,7 +269,7 @@ function Dashboard() {
                 title={mine ? "My next 7 days" : "Next 7 days"}
                 flush
                 actions={
-                  <Link href="/appointments?date=upcoming" className="text-sm text-primary-600 hover:underline">
+                  <Link href="/appointments?date=upcoming" className="inline-flex items-center pointer-coarse:min-h-11 text-sm text-primary-600 hover:underline">
                     View all
                   </Link>
                 }

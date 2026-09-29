@@ -383,7 +383,7 @@ function ThemeColorPicker({ value, onChange }: { value: string; onChange: (value
             value={current}
             onChange={(event) => onChange(event.target.value)}
             aria-label="Choose any colour"
-            className="h-9 w-12 rounded-lg border border-gray-200 bg-white p-1 cursor-pointer"
+            className="h-9 w-12 pointer-coarse:h-11 pointer-coarse:w-14 rounded-lg border border-gray-200 bg-white p-1 cursor-pointer"
           />
           Other
         </label>

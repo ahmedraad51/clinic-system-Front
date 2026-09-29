@@ -150,7 +150,7 @@ function Recall() {
                     </Td>
                     <Td label="Phone" className="whitespace-nowrap">
                       {patient.phone_number ? (
-                        <a href={`tel:${patient.phone_number.replace(/\s/g, "")}`} className="inline-flex items-center gap-1.5 text-gray-700 hover:text-primary-600">
+                        <a href={`tel:${patient.phone_number.replace(/\s/g, "")}`} className="inline-flex items-center gap-1.5 pointer-coarse:min-h-11 text-gray-700 hover:text-primary-600">
                           <Phone size={14} />
                           {patient.phone_number}
                         </a>

@@ -195,18 +195,18 @@ function TreatmentDetail() {
       <MedicalAlerts patient={medical} />
 
       <Card>
-        <div className="grid grid-cols-3 gap-4 text-center sm:text-start">
-          <div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
+          <div className="flex items-baseline justify-between gap-3 sm:block">
             <p className="text-xs text-gray-500">Total Cost</p>
-            <p className="text-xl sm:text-2xl font-bold text-gray-800 mt-1">{money(total)}</p>
+            <p className="text-lg sm:text-2xl font-bold text-gray-800 sm:mt-1">{money(total)}</p>
           </div>
-          <div>
+          <div className="flex items-baseline justify-between gap-3 sm:block">
             <p className="text-xs text-gray-500">Paid</p>
-            <p data-testid="plan-paid" className="text-xl sm:text-2xl font-bold text-green-600 mt-1">{money(paid)}</p>
+            <p data-testid="plan-paid" className="text-lg sm:text-2xl font-bold text-green-600 sm:mt-1">{money(paid)}</p>
           </div>
-          <div>
+          <div className="flex items-baseline justify-between gap-3 sm:block">
             <p className="text-xs text-gray-500">Remaining</p>
-            <p data-testid="plan-remaining" className={cx("text-xl sm:text-2xl font-bold mt-1", remaining > 0 ? "text-red-600" : "text-gray-500")}>
+            <p data-testid="plan-remaining" className={cx("text-lg sm:text-2xl font-bold sm:mt-1", remaining > 0 ? "text-red-600" : "text-gray-500")}>
               {money(remaining)}
             </p>
           </div>

@@ -266,7 +266,7 @@ function PatientDetail() {
           )}
         </div>
 
-        <dl className="grid grid-cols-2 lg:grid-cols-5 gap-x-6 gap-y-4 mt-5 pt-5 border-t border-gray-100">
+        <dl className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-x-6 gap-y-4 mt-5 pt-5 border-t border-gray-100">
           {showAppointments && (
             <Fact icon={History} label="Last visit">
               {lastVisit ? (

@@ -194,7 +194,7 @@ export default function PaymentForm({
                         setAmountError("");
                         setForm({ ...form, amount: String(maxAmount) });
                       }}
-                      className="rounded-lg border border-primary-200 bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700 hover:bg-primary-100"
+                      className="rounded-lg border border-primary-200 bg-primary-50 px-2 py-0.5 pointer-coarse:min-h-11 pointer-coarse:px-3 text-xs font-medium text-primary-700 hover:bg-primary-100"
                     >
                       Pay full balance
                     </button>

@@ -12,11 +12,11 @@ import { ConfirmDialog } from "@/components/ui/Modal";
 import { useSession } from "@/context/SessionContext";
 import { useToast } from "@/context/ToastContext";
 import { deleteDoc, errorMessage, getList } from "@/lib/frappe";
-import { display, formatDate } from "@/lib/format";
+import { display, formatDate, formatTime } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
 import { appointmentHref, patientHref, prescriptionHref, routeId } from "@/lib/links";
 import { MEDICINE_FIELDS, PRESCRIPTION_PATIENT_FIELDS, prescriptionWarnings, type PatientForPrescription } from "@/lib/prescriptions";
-import type { DentalMedicine, Patient, Prescription } from "@/lib/types";
+import type { Appointment, DentalMedicine, Patient, Prescription } from "@/lib/types";
 
 export default function PrescriptionDetailPage() {
   return (
@@ -45,6 +45,7 @@ function PrescriptionDetail() {
   const id = routeId(params.id);
   const { doc, loading, notFound, error } = useDocument<Prescription>("Prescription", id);
   const [checked, setChecked] = useState<Checked | null>(null);
+  const [visit, setVisit] = useState<Appointment | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const patientId = doc?.patient ?? "";
@@ -74,6 +75,29 @@ function PrescriptionDetail() {
       cancelled = true;
     };
   }, [patientId, medicineIds]);
+
+  // The visit's date and time, so the page does not show its ID.
+  const appointmentId = doc?.appointment ?? "";
+  useEffect(() => {
+    if (!appointmentId) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const rows = await getList<Appointment>("Appointment", ["name", "appointment_date", "appointment_time"], {
+          filters: [["name", "=", appointmentId]],
+          limit: 1,
+        });
+        if (!cancelled) setVisit(rows[0] ?? null);
+      } catch (err) {
+        // The link still works; it shows the ID instead.
+        console.error(err);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [appointmentId]);
 
   if (loading) return <RecordLoading />;
   if (notFound || !doc) return <NotFoundCard error={error} what="Prescription" backHref="/patients" backLabel="Back to Patients" />;
@@ -150,7 +174,9 @@ function PrescriptionDetail() {
               <dt className="text-xs text-gray-500">Visit</dt>
               <dd className="text-sm font-medium text-gray-800 mt-0.5">
                 <Link href={appointmentHref(doc.appointment)} className="text-primary-600 hover:underline">
-                  {doc.appointment}
+                  {visit?.name === doc.appointment
+                    ? `${formatDate(visit.appointment_date)}, ${formatTime(visit.appointment_time)}`
+                    : doc.appointment}
                 </Link>
               </dd>
             </div>

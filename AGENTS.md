@@ -15,7 +15,8 @@ owns the data model, money calculations, roles, scheduled reports and WhatsApp s
 
 `README.md` is the overview for people. This file is the working reference for agents: how the code fits
 together, the rules to follow, and what is still open. `docs/backend-todo.md` lists what the back end must
-provide for this front end. `CLAUDE.md` imports this file, so every Claude Code session loads it. Keep it
+provide for this front end (its section 9 lists every doctype and field the front end uses, with type and
+whether it is required). `CLAUDE.md` imports this file, so every Claude Code session loads it. Keep it
 accurate.
 
 ---
@@ -27,9 +28,9 @@ accurate.
 | Data source | **Dummy data.** Every read and write goes to an in-memory store. No back end needed. | `MOCK_DATA = true` in `src/lib/frappe.ts` |
 | Login | **Off.** A stand-in `Administrator` session is used and logout buttons are hidden. `/profile` has a **Try Another User** card to see the app with another user's permissions. The login page sits in a private folder, so `/login` is not a route. | `AUTH_DISABLED = true` in `src/context/AuthContext.tsx`; page in `src/app/_login/page.tsx` |
 | `npm run dev` | Works. Dev output goes to `.next/dev`, so `npm run build` can run while it is up. Changing `next.config.ts` restarts it, and the first page after that can take several minutes to compile. | |
-| `npm run build` | **Passes** (checked 2026-09-26): compiles, type-checks and prerenders every route, with no warnings. | |
-| `npm run lint` | **Passes** with 0 problems (checked 2026-09-26). `npx tsc --noEmit` passes too. | |
-| Tests | **Playwright tests pass** (112 tests, checked 2026-09-28): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| `npm run build` | **Passes** (checked 2026-09-30): compiles, type-checks and prerenders every route, with no warnings. | |
+| `npm run lint` | **Passes** with 0 problems (checked 2026-09-30). `npx tsc --noEmit` passes too. | |
+| Tests | **Playwright tests pass** (115 tests, checked 2026-09-30): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -232,7 +233,7 @@ on the form, and a click made while the save is still running is overridden by t
 | `/treatments/[id]` | `view_treatments` | `MedicalAlerts` for the patient, a **History** card at the bottom (`RecordHistory`), cost/paid/remaining with a progress bar, details, status buttons, payments of the plan, **Treatment Sessions** (add, edit, delete in a dialog; **Book Visit** opens the booking form with the patient, the plan's doctor and the reason filled in, for Planned and In Progress plans), and the patient's **dental chart** read-only, opened at the plan's tooth (`initialTooth`), loaded with `usePatientChart()`; a **Lab Work** card (`LabWorkCard`, for `LAB_TREATMENT_TYPES` or when something was sent): lab, sent, due back, received, with Send to lab / Edit and one-tap Received today (`edit_treatments`) |
 | `/treatments/[id]/edit` | `edit_treatments` | Shared `TreatmentForm` with status |
 | `/prescriptions/new` | `add_treatments` | Shared `PrescriptionForm`. Reads `?patient=`, `?appointment=` and `?doctor=` (else the doctor using the app). Patient, `MedicalAlerts`, doctor, date, then one row per medicine (a `fieldset` "Medicine N": medicine from the active Dental Medicines by group, dose, how often (`FREQUENCIES`), days, instructions; choosing a medicine fills its usual values unless the row was already typed in), the **Check before signing** band (`PrescriptionWarnings`, from `prescriptionWarnings()` in `src/lib/prescriptions.ts`: an `allergy_words` word in the patient's allergies, an NSAID with a blood thinner, `avoid_in_pregnancy` with a pregnancy, a patient under 12 with the medicine's `child_note`, `doseMg() × timesPerDay()` above `max_daily_mg`, the same medicine twice; never blocking) and notes. Saves `medicine_name` on each row |
-| `/prescriptions/[id]` | `view_treatments` | Printable prescription on the letterhead: patient (with age), doctor, the visit (screen only), the numbered medicines with dose · frequency · days and instructions, the notes and a signature line; on screen the warnings band above it (`print:hidden`). Print, Edit and an icon Delete (`add_treatments`) |
+| `/prescriptions/[id]` | `view_treatments` | Printable prescription on the letterhead: patient (with age), doctor, the visit's date and time (a link, screen only), the numbered medicines with dose · frequency · days and instructions, the notes and a signature line; on screen the warnings band above it (`print:hidden`). Print, Edit and an icon Delete (`add_treatments`) |
 | `/prescriptions/[id]/edit` | `add_treatments` | Shared `PrescriptionForm` |
 | `/payments` | `view_payments` | Search, method filter, date range, paging, total of everything that matches |
 | `/payments/new` | `add_payments` | Shared `PaymentForm`. Reads `?patient=&treatment=`. A new payment for a patient with exactly one plan with a balance picks that plan; **Pay full balance** fills the amount. Blocks amounts above what the plan has left |
@@ -632,7 +633,7 @@ whatsapp, trigger, user) and `statusTone(kind, status)` for other views that mus
 `NumberInput` (every amount, price or age box; `decimals={false}` for whole numbers), `PhoneInput` (every phone box),
 `SelectInput`, `TextArea`, `Toggle`,
 `SearchInput`, `Toolbar`, `Table`, `Th`, `Td` (with `label` for the phone cards), `ClickableRow`, `TableLoading`, `TableMessage`, `TableError` (a failed list load with Try Again), `ClearFiltersButton`, `LoadError` (a failed page load with Try Again), `Pagination`, `DetailList` and
-`DetailRow`, `Tabs`, `Alert`, `Spinner`, `ProgressBar` (0-100 with a label and percentage, or `showLabel={false}`; uploads and the plan's paid bar), `PageLoading`, `RecordLoading`, `EmptyState`, `NoAccess`, `NotFoundCard`; plus
+`DetailRow` (label beside the value when the card is at least 20rem wide, above it in a narrower card: a container query on `DetailList`), `Tabs`, `Alert`, `Spinner`, `ProgressBar` (0-100 with a label and percentage, or `showLabel={false}`; uploads and the plan's paid bar), `PageLoading`, `RecordLoading`, `EmptyState`, `NoAccess`, `NotFoundCard`; plus
 `Modal` (moves focus in, traps Tab, restores focus on close, Escape closes, locks page scroll; with two open, only
 the newest reacts to Escape and Tab; `priority` puts it above other dialogs) and `ConfirmDialog` (focus starts on Cancel) in `Modal.tsx`, and `LinkSelect` for searchable Link fields. Use these instead of
 writing new class lists.
@@ -740,10 +741,11 @@ Children under 6, or charts with only child teeth marked, open on the child teet
 
 ## Known issues
 
-Updated on 2026-09-26.
+Updated on 2026-09-30.
 
 - **The back end does not have everything yet.** `Patient.dental_chart`, the `*_name` fetch fields,
-  read permissions and several field names must be added or confirmed. See `docs/backend-todo.md`.
+  read permissions and several field names must be added or confirmed. See `docs/backend-todo.md` (section 9
+  is the full field list).
 - **Totals are computed in the browser.** The dashboard's revenue and amount owed, the payments total and the
   reports load every matching row (`limit: 0`) and add them up. That is fine for one clinic for years, but a
   back-end report method would be faster later.
