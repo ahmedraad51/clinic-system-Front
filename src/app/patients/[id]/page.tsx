@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   BellRing, Calendar, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, CreditCard, HeartPulse, History, IdCard,
-  MessageCircle, Pencil, Phone, Plus, Printer, Stethoscope, Trash2, Wallet, type LucideIcon,
+  MessageCircle, Pencil, Phone, Pill, Plus, Printer, Stethoscope, Trash2, Wallet, type LucideIcon,
 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import DentalChart from "@/components/DentalChart";
@@ -26,16 +26,17 @@ import { addMonths, cx, display, formatDate, formatMonth, formatTime, todayISO }
 import { useDocument } from "@/lib/hooks";
 import { DEFAULT_RECALL_MONTHS } from "@/lib/recall";
 import { whatsappNumber } from "@/lib/whatsapp";
-import { appointmentHref, patientHref, paymentHref, routeId, treatmentHref } from "@/lib/links";
-import type { Appointment, DentalChartData, Patient, Payment, TreatmentPlan, TreatmentSession } from "@/lib/types";
+import { appointmentHref, patientHref, paymentHref, prescriptionHref, routeId, treatmentHref } from "@/lib/links";
+import type { Appointment, DentalChartData, Patient, Payment, Prescription, TreatmentPlan, TreatmentSession } from "@/lib/types";
 
-type TabKey = "overview" | "appointments" | "treatments" | "payments" | "chart" | "files" | "history";
+type TabKey = "overview" | "appointments" | "treatments" | "prescriptions" | "payments" | "chart" | "files" | "history";
 
 interface Related {
   id: string;
   appointments: Appointment[];
   plans: TreatmentPlan[];
   sessions: TreatmentSession[];
+  prescriptions: Prescription[];
   payments: Payment[];
 }
 
@@ -75,7 +76,7 @@ function PatientDetail() {
     const load = async () => {
       const byPatient: FilterRow[] = [["patient", "=", id]];
       try {
-        const [appointments, plans, sessions, payments] = await Promise.all([
+        const [appointments, plans, sessions, prescriptions, payments] = await Promise.all([
           showAppointments
             ? getList<Appointment>(
                 "Appointment",
@@ -97,6 +98,13 @@ function PatientDetail() {
                 { filters: byPatient, orderBy: "session_date desc", limit: 200 },
               )
             : Promise.resolve([]),
+          showTreatments
+            ? getList<Prescription>("Prescription", ["name", "prescription_date", "doctor_name", "summary"], {
+                filters: byPatient,
+                orderBy: "prescription_date desc, name desc",
+                limit: 200,
+              })
+            : Promise.resolve([]),
           showPayments
             ? getList<Payment>(
                 "Payment",
@@ -106,7 +114,7 @@ function PatientDetail() {
             : Promise.resolve([]),
         ]);
         if (!cancelled) {
-          setRelated({ id, appointments, plans, sessions, payments });
+          setRelated({ id, appointments, plans, sessions, prescriptions, payments });
           setRelatedError("");
         }
       } catch (err) {
@@ -174,6 +182,7 @@ function PatientDetail() {
     { key: "overview", label: "Overview" },
     ...(showAppointments ? [{ key: "appointments" as const, label: "Appointments", count: data?.appointments.length }] : []),
     ...(showTreatments ? [{ key: "treatments" as const, label: "Treatment Plans", count: data?.plans.length }] : []),
+    ...(showTreatments ? [{ key: "prescriptions" as const, label: "Prescriptions", count: data?.prescriptions.length }] : []),
     ...(showPayments ? [{ key: "payments" as const, label: "Payments", count: data?.payments.length }] : []),
     { key: "chart", label: "Dental Chart" },
     { key: "files", label: "X-rays & Photos" },
@@ -479,6 +488,58 @@ function PatientDetail() {
                         {money(plan.remaining_amount)}
                       </span>
                     </Td>
+                  </ClickableRow>
+                ))}
+              </tbody>
+            </Table>
+          )}
+        </Card>
+      )}
+
+      {tab === "prescriptions" && can("add_treatments") && (
+        <div className="flex justify-end -mt-2">
+          <LinkButton href={`/prescriptions/new?patient=${encodeURIComponent(id)}`} variant="secondary" size="sm" icon={Plus}>
+            New Prescription
+          </LinkButton>
+        </div>
+      )}
+
+      {tab === "prescriptions" && (
+        <Card flush>
+          {!data ? (
+            relatedWaiting
+          ) : data.prescriptions.length === 0 ? (
+            <EmptyState
+              icon={Pill}
+              title="No prescriptions yet"
+              text="Write one from a visit, or here."
+              action={
+                can("add_treatments") && (
+                  <LinkButton href={`/prescriptions/new?patient=${encodeURIComponent(id)}`} icon={Plus}>
+                    New Prescription
+                  </LinkButton>
+                )
+              }
+            />
+          ) : (
+            <Table>
+              <thead>
+                <tr>
+                  <Th>Date</Th>
+                  <Th>Medicines</Th>
+                  <Th>Doctor</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.prescriptions.map((rx) => (
+                  <ClickableRow key={rx.name} href={prescriptionHref(rx.name)}>
+                    <Td className="whitespace-nowrap">
+                      <Link href={prescriptionHref(rx.name)} className="font-medium text-gray-800 hover:text-primary-600">
+                        {formatDate(rx.prescription_date)}
+                      </Link>
+                    </Td>
+                    <Td label="Medicines">{display(rx.summary)}</Td>
+                    <Td label="Doctor">{display(rx.doctor_name)}</Td>
                   </ClickableRow>
                 ))}
               </tbody>

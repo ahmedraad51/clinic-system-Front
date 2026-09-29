@@ -387,6 +387,52 @@ const cashCounts: MockDoc[] = [
   { name: "CC-2026-00001", count_date: "2026-07-22", opening_float: 100000, cash_payments: 75000, expected_cash: 175000, cash_counted: 175000, difference: 0, note: "", counted_by: "dalia.jawad@dentclinic.test", counted_at: "2026-07-22 18:02:00" },
 ];
 
+/* The clinic's medicine list, with the usual dental doses. A dentist must check every line before real use. */
+const M = {
+  amoxicillin: "MED-00001", augmentin: "MED-00002", metronidazole: "MED-00003", clindamycin: "MED-00004", azithromycin: "MED-00005",
+  ibuprofen: "MED-00006", diclofenac: "MED-00007", paracetamol: "MED-00008", chlorhexidine: "MED-00009", nystatin: "MED-00010",
+};
+
+const medicines: MockDoc[] = [
+  { name: M.amoxicillin, medicine_name: "Amoxicillin", strength: "500 mg", dosage_form: "Capsule", medicine_group: "Antibiotic", default_dose: "500 mg", default_frequency: "Three times a day", default_duration_days: 5, default_instructions: "After food", allergy_words: "penicillin, amoxicillin, amoxil, augmentin", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "Under 12: 25-50 mg/kg a day in 3 doses (suspension 250 mg/5 ml).", is_active: 1 },
+  { name: M.augmentin, medicine_name: "Amoxicillin + clavulanic acid", strength: "625 mg", dosage_form: "Tablet", medicine_group: "Antibiotic", default_dose: "625 mg", default_frequency: "Three times a day", default_duration_days: 5, default_instructions: "After food", allergy_words: "penicillin, amoxicillin, augmentin, clavulanate", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "Under 12: use the suspension, by weight.", is_active: 1 },
+  { name: M.metronidazole, medicine_name: "Metronidazole", strength: "500 mg", dosage_form: "Tablet", medicine_group: "Antibiotic", default_dose: "500 mg", default_frequency: "Three times a day", default_duration_days: 5, default_instructions: "After food. No alcohol during the course and for 2 days after.", allergy_words: "metronidazole, flagyl", is_nsaid: 0, avoid_in_pregnancy: 1, max_daily_mg: 0, child_note: "Under 12: 7.5 mg/kg per dose, 3 times a day.", is_active: 1 },
+  { name: M.clindamycin, medicine_name: "Clindamycin", strength: "300 mg", dosage_form: "Capsule", medicine_group: "Antibiotic", default_dose: "300 mg", default_frequency: "Four times a day", default_duration_days: 5, default_instructions: "With a full glass of water", allergy_words: "clindamycin, lincomycin", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "Under 12: 10-20 mg/kg a day in 3-4 doses.", is_active: 1 },
+  { name: M.azithromycin, medicine_name: "Azithromycin", strength: "500 mg", dosage_form: "Tablet", medicine_group: "Antibiotic", default_dose: "500 mg", default_frequency: "Once a day", default_duration_days: 3, default_instructions: "One hour before food", allergy_words: "azithromycin, erythromycin, macrolide", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "Under 12: 10 mg/kg once a day (suspension 200 mg/5 ml).", is_active: 1 },
+  { name: M.ibuprofen, medicine_name: "Ibuprofen", strength: "400 mg", dosage_form: "Tablet", medicine_group: "Painkiller", default_dose: "400 mg", default_frequency: "Three times a day", default_duration_days: 3, default_instructions: "After food", allergy_words: "ibuprofen, brufen, nsaid, aspirin, diclofenac", is_nsaid: 1, avoid_in_pregnancy: 1, max_daily_mg: 2400, child_note: "Under 12: 5-10 mg/kg per dose, up to 3 times a day (suspension 100 mg/5 ml).", is_active: 1 },
+  { name: M.diclofenac, medicine_name: "Diclofenac", strength: "50 mg", dosage_form: "Tablet", medicine_group: "Painkiller", default_dose: "50 mg", default_frequency: "Three times a day", default_duration_days: 3, default_instructions: "After food", allergy_words: "diclofenac, voltaren, nsaid, aspirin, ibuprofen", is_nsaid: 1, avoid_in_pregnancy: 1, max_daily_mg: 150, child_note: "Not for children under 12.", is_active: 1 },
+  { name: M.paracetamol, medicine_name: "Paracetamol", strength: "500 mg", dosage_form: "Tablet", medicine_group: "Painkiller", default_dose: "500 mg", default_frequency: "Every 6 hours", default_duration_days: 3, default_instructions: "Up to 8 tablets a day", allergy_words: "paracetamol, acetaminophen, panadol", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 4000, child_note: "Under 12: 15 mg/kg per dose, up to 4 times a day (syrup 120 mg/5 ml).", is_active: 1 },
+  { name: M.chlorhexidine, medicine_name: "Chlorhexidine", strength: "0.12%", dosage_form: "Mouthwash", medicine_group: "Mouthwash", default_dose: "10 ml", default_frequency: "Twice a day", default_duration_days: 7, default_instructions: "Rinse for one minute and spit out. Nothing to eat or drink for 30 minutes after.", allergy_words: "chlorhexidine", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "Under 6: not recommended (may be swallowed).", is_active: 1 },
+  { name: M.nystatin, medicine_name: "Nystatin", strength: "100,000 IU/ml", dosage_form: "Suspension", medicine_group: "Antifungal", default_dose: "1 ml", default_frequency: "Four times a day", default_duration_days: 7, default_instructions: "Hold in the mouth for a minute, then swallow", allergy_words: "nystatin", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "", is_active: 1 },
+];
+
+/* Prescriptions written at earlier visits. Each row keeps the medicine's name as it was when it was written. */
+const prescriptions: MockDoc[] = [
+  {
+    name: "RX-2026-00003", patient: P.hassan, doctor: D.noor, appointment: A(11), prescription_date: "2026-08-06", notes: "",
+    medicines: [
+      { medicine: M.metronidazole, medicine_name: "Metronidazole 500 mg", dose: "500 mg", frequency: "Three times a day", duration_days: 5, instructions: "After food. No alcohol during the course and for 2 days after." },
+      { medicine: M.paracetamol, medicine_name: "Paracetamol 500 mg", dose: "500 mg", frequency: "Every 6 hours", duration_days: 3, instructions: "Up to 8 tablets a day" },
+    ],
+  },
+  {
+    name: "RX-2026-00002", patient: P.saad, doctor: D.haider, appointment: A(13), prescription_date: "2026-07-22",
+    notes: "No aspirin or ibuprofen: the patient takes warfarin.",
+    medicines: [
+      { medicine: M.amoxicillin, medicine_name: "Amoxicillin 500 mg", dose: "500 mg", frequency: "Three times a day", duration_days: 5, instructions: "After food" },
+      { medicine: M.paracetamol, medicine_name: "Paracetamol 500 mg", dose: "500 mg", frequency: "Every 6 hours", duration_days: 3, instructions: "Up to 8 tablets a day" },
+      { medicine: M.chlorhexidine, medicine_name: "Chlorhexidine 0.12%", dose: "10 ml", frequency: "Twice a day", duration_days: 7, instructions: "Rinse for one minute and spit out. Start the day after the extraction." },
+    ],
+  },
+  {
+    name: "RX-2026-00001", patient: P.zahraa, doctor: D.noor, appointment: A(17), prescription_date: "2026-06-18", notes: "",
+    medicines: [
+      { medicine: M.clindamycin, medicine_name: "Clindamycin 300 mg", dose: "300 mg", frequency: "Four times a day", duration_days: 5, instructions: "With a full glass of water" },
+      { medicine: M.ibuprofen, medicine_name: "Ibuprofen 400 mg", dose: "400 mg", frequency: "Three times a day", duration_days: 3, instructions: "After food" },
+    ],
+  },
+];
+
 /**
  * Earlier changes, like the Version records Frappe keeps for doctypes with Track Changes on, so the History card
  * has something to show. `data.changed` rows are [field, old value, new value].
@@ -422,6 +468,8 @@ const store: Store = {
   "WhatsApp Template": whatsappTemplates,
   "WhatsApp Log": whatsappLogs,
   "Cash Count": cashCounts,
+  "Dental Medicine": medicines,
+  Prescription: prescriptions,
   Version: versions,
   File: [],
 };
@@ -447,23 +495,26 @@ const NAME_SERIES: Record<string, { prefix: string; year: boolean }> = {
   File: { prefix: "FILE", year: false },
   Version: { prefix: "VER", year: false },
   "Cash Count": { prefix: "CC", year: true },
+  "Dental Medicine": { prefix: "MED", year: false },
+  Prescription: { prefix: "RX", year: true },
 };
 
 /** Which doctypes link to which, so a delete can be refused the way Frappe refuses it. */
 const LINKED_FROM: Record<string, Array<[doctype: string, field: string]>> = {
   Patient: [
     ["Appointment", "patient"], ["Treatment Plan", "patient"], ["Treatment Session", "patient"],
-    ["Payment", "patient"], ["WhatsApp Log", "patient"],
+    ["Payment", "patient"], ["WhatsApp Log", "patient"], ["Prescription", "patient"],
   ],
-  Doctor: [["Appointment", "doctor"], ["Treatment Plan", "doctor"], ["Treatment Session", "doctor"]],
+  Doctor: [["Appointment", "doctor"], ["Treatment Plan", "doctor"], ["Treatment Session", "doctor"], ["Prescription", "doctor"]],
   "Treatment Plan": [["Payment", "treatment_plan"], ["Treatment Session", "treatment_plan"]],
-  Appointment: [["WhatsApp Log", "appointment"]],
+  Appointment: [["WhatsApp Log", "appointment"], ["Prescription", "appointment"]],
 };
 
 const NUMBER_FIELDS = [
   "total_cost", "amount", "duration_minutes", "age", "enabled", "is_active",
   "opening_float", "cash_payments", "expected_cash", "cash_counted", "difference",
   "recall_interval_months", "no_recall",
+  "default_duration_days", "max_daily_mg", "is_nsaid", "avoid_in_pregnancy",
 ];
 
 const num = (value: MockValue): number => {
@@ -510,6 +561,11 @@ function stampSeeds(): void {
     Appointment: (doc) => [`${addDays(String(doc.appointment_date), -7)} 10:00:00`, "dalia.jawad@dentclinic.test"],
     "Treatment Plan": () => ["2026-06-01 12:00:00", "laith.hamid@dentclinic.test"],
     Payment: (doc) => [`${doc.payment_date} 10:30:00`, "dalia.jawad@dentclinic.test"],
+    // The doctor who wrote it, at the end of the visit.
+    Prescription: (doc) => [
+      `${doc.prescription_date} 11:00:00`,
+      String(store.Doctor.find((row) => row.name === doc.doctor)?.email ?? "Administrator"),
+    ],
   };
   Object.keys(DEFAULTS).forEach((doctype) => store[doctype].forEach((doc) => applyDefaults(doctype, doc)));
   Object.entries(made).forEach(([doctype, when]) => {
@@ -564,7 +620,7 @@ function recalculate(): void {
   const plansById = new Map(store["Treatment Plan"].map((doc) => [doc.name, doc]));
 
   // "Fetch from" fields: link labels copied onto the linking doc.
-  ["Appointment", "Treatment Plan", "Treatment Session", "Payment", "WhatsApp Log"].forEach((doctype) => {
+  ["Appointment", "Treatment Plan", "Treatment Session", "Payment", "WhatsApp Log", "Prescription"].forEach((doctype) => {
     collection(doctype).forEach((doc) => {
       doc.patient_name = patientsById.get(String(doc.patient))?.full_name ?? "";
       if (doctype !== "Payment" && doctype !== "WhatsApp Log") {
@@ -578,6 +634,11 @@ function recalculate(): void {
   });
   store.Payment.forEach((pay) => {
     pay.treatment_type = pay.treatment_plan ? plansById.get(String(pay.treatment_plan))?.treatment_type ?? "" : "";
+  });
+  // The medicine names in one line, for lists (Frappe's list API does not return child tables).
+  store.Prescription.forEach((rx) => {
+    const rows = Array.isArray(rx.medicines) ? (rx.medicines as Array<{ medicine_name?: MockValue }>) : [];
+    rx.summary = rows.map((row) => String(row.medicine_name ?? "")).filter(Boolean).join(", ");
   });
 
   store["Treatment Plan"].forEach((plan) => {

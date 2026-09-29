@@ -126,6 +126,8 @@ src/
 │   ├── reports/page.tsx
 │   ├── doctors/page.tsx           doctors list with add/edit dialog
 │   ├── users/         page · [id]
+│   ├── prescriptions/ new · [id] (printable) · [id]/edit
+│   ├── medicines/page.tsx         the clinic's medicine list with add/edit dialog
 │   ├── whatsapp/page.tsx
 │   ├── settings/page.tsx
 │   └── profile/page.tsx
@@ -152,7 +154,8 @@ src/
 │   ├── MedicalAlerts.tsx     the red/yellow medical alerts band (show it wherever treatment is decided)
 │   ├── RecallDialog.tsx      "Next check-up" on the patient page: every 3-12 months, no recall, or the usual rule
 │   ├── RecordHistory.tsx     the History card: who added a record and who changed what (closed until asked)
-│   ├── forms/                PatientForm, AppointmentForm, TreatmentForm, PaymentForm (shared by new and edit)
+│   ├── PrescriptionWarnings.tsx  the "Check before signing" band of a prescription (never blocking)
+│   ├── forms/                PatientForm, AppointmentForm, TreatmentForm, PaymentForm, PrescriptionForm (shared by new and edit)
 │   └── ui/
 │       ├── index.tsx         the UI kit (cards, buttons, inputs, tables, badges, paging, tabs, alerts, …)
 │       ├── Modal.tsx         Modal, ConfirmDialog
@@ -176,6 +179,7 @@ src/
     ├── iraq.ts               IRAQ_GOVERNORATES (English and Arabic names), suggested in the patient address box
     ├── recall.ts             dueForRecall() (the dentist's date first, then the period), RECALL_CHOICES, recallUpdate()
     ├── history.ts            parseDocHistory() (Frappe's Version records), field labels, hidden fields, historyValue()
+    ├── prescriptions.ts      FREQUENCIES, medicineDefaults(), doseMg(), prescriptionWarnings() (allergy, blood thinner, pregnancy, child, daily maximum, duplicate)
     ├── cashCount.ts          compareCash(): matched, short or over
     ├── receiptSlip.ts        the thermal receipt slip: buildReceiptSlip(), printHtml(), this computer's paper settings
     ├── theme.ts              the clinic colour: presets, contrast fix, applyThemeColor, the boot script
@@ -213,20 +217,23 @@ on the form, and a click made while the save is still running is overridden by t
 | `/patients` | `view_patients` | Server-side search (name, phone, second phone, ID), gender filter, paging. Each row: name with ID, age and gender, medical-alert chips (`medicalFlags`), phone, next booked visit (`view_appointments`, loaded for the rows on the page) and balance (`view_payments`). With `view_payments`, a **Balance** filter ("Owes money": `total_remaining > 0`, biggest first; `?balance=owing` opens on it) adds a WhatsApp **Remind** link with the balance written in |
 | `/recall` | `view_patients` and `view_appointments` | Patients due for a check-up and with nothing Scheduled or Confirmed from today on: a patient with `next_recall_date` (the dentist's choice) is due from that date whatever the period, one with `no_recall` never is, and everyone else is due when no Completed visit falls within the chosen period (3, 6, 9 or 12 months; default 6). A **Check-up due** column says when and why ("Dentist: every 3 months" or "6 months after the last visit"); longest overdue first, never-seen patients last. Tap to call, a WhatsApp link with a ready reminder text (`wa.me/<digits>?text=`), and Book (`add_appointments`). Worked out in the browser from all appointments |
 | `/patients/new` | `add_patients` | Shared `PatientForm`. While typing, patients with the same phone number (`samePhone()` from `src/lib/phone.ts`: the last 10 digits of either phone field, so `0770 123 4567` and `+964 770 123 4567` match) or exactly the same name show under **Already registered?** with a link; saving with the same phone number asks first (also on edit when the phone changes; `currentName` excludes the patient itself). The Medical Information card starts with a **Quick checklist** (`CHECKLIST` in `PatientForm.tsx`): tick boxes that add or remove a standard word in `allergies`, `current_medications` or `chronic_diseases` (no new fields); a box already true from other wording (e.g. "Warfarin 3mg") shows ticked and disabled. The Address box suggests the governorates of Iraq (`IRAQ_GOVERNORATES`, a `datalist`; free text still works). **Only know the age?** swaps the date of birth for an **Age** box (for patients who do not know their birth date); `age` is sent only when `date_of_birth` is empty. Opens the new record after saving |
-| `/patients/[id]` | `view_patients` | `MedicalAlerts` band; a summary card with tap-to-call (`tel:`) and WhatsApp (`https://wa.me/<digits>`) buttons, last visit, next appointment, balance to pay (with Add payment), paid so far, and **Next check-up** (the dentist's date and interval, "No recall" or "Usual rule"; **Change** with `edit_patients` opens `RecallDialog`: every 3, 6, 9 or 12 months with the date counted from the last visit and editable, no recall, or the usual rule); tabs: **Overview** (a timeline of appointments, treatment sessions and payments, grouped Upcoming / Today / by month, beside the contact and medical cards), Appointments, Treatment Plans, Payments, Dental Chart, **X-rays & Photos** (`PatientFiles`: private File records attached to the patient; Take Photo opens the camera on tablets, Add Files takes images and PDFs up to 10 MB, sent one after another with an upload `ProgressBar` ("Uploading 2 of 3: …", by size); if one fails, the ones before it are kept and the message names the one that was not added; a viewer with Open in a new tab and Delete; adding and deleting need `edit_patients`), **History** (`RecordHistory`, open at once). Buttons: New Appointment, New Treatment, Edit, Delete (icon; each by permission) |
+| `/patients/[id]` | `view_patients` | `MedicalAlerts` band; a summary card with tap-to-call (`tel:`) and WhatsApp (`https://wa.me/<digits>`) buttons, last visit, next appointment, balance to pay (with Add payment), paid so far, and **Next check-up** (the dentist's date and interval, "No recall" or "Usual rule"; **Change** with `edit_patients` opens `RecallDialog`: every 3, 6, 9 or 12 months with the date counted from the last visit and editable, no recall, or the usual rule); tabs: **Overview** (a timeline of appointments, treatment sessions and payments, grouped Upcoming / Today / by month, beside the contact and medical cards), Appointments, Treatment Plans, Payments, Dental Chart, **Prescriptions** (`view_treatments`: date, medicines and doctor, with **New Prescription** for `add_treatments`), **X-rays & Photos** (`PatientFiles`: private File records attached to the patient; Take Photo opens the camera on tablets, Add Files takes images and PDFs up to 10 MB, sent one after another with an upload `ProgressBar` ("Uploading 2 of 3: …", by size); if one fails, the ones before it are kept and the message names the one that was not added; a viewer with Open in a new tab and Delete; adding and deleting need `edit_patients`), **History** (`RecordHistory`, open at once). Buttons: New Appointment, New Treatment, Edit, Delete (icon; each by permission) |
 | `/patients/[id]/edit` | `edit_patients` | Shared `PatientForm` |
 | `/patients/[id]/estimate` | `view_patients` and `view_treatments` | Printable treatment estimate on the clinic letterhead: the patient's Planned and In Progress plans with cost, paid and to pay, totals, a 30-day validity note (`VALID_DAYS`) and signature lines. Linked as **Print estimate** above the Treatment Plans tab |
 | `/patients/[id]/statement` | `view_patients` and `view_payments` | Printable statement: every plan that is not Cancelled (cost, paid, left), every payment, total for treatments, total paid and the balance (`total_remaining`). Linked as **Print statement** above the Payments tab |
 | `/patients/[id]/chart` | `view_patients` | Printable dental chart: letterhead, patient, `MedicalAlerts`, the chart read-only (Adult/Child switch and hints hidden on paper) and its Findings. Linked as **Print** in the chart header |
 | `/appointments` | `view_appointments` | Three views, chosen with `?view=day\|week\|list` (default `day`, or `list` when `?date=` is given). **Day**: one column per active doctor, rows from Clinic Settings opening to closing time (stretched to fit), blocks as long as the appointment and coloured by status, overlapping ones side by side, a red "now" line, and striped shading outside each doctor's `start_time`–`end_time`, which are also shown under the name (and in the week view when one doctor is chosen); `?day=YYYY-MM-DD` and `?doctor=` pick the day and one doctor. On phones (`useMediaQuery("(max-width: 639px)")`) the day view shows one doctor at a time with Previous / Next doctor buttons, starting with the first doctor who has patients. **Week**: one column per day (the week starts on `WEEK_STARTS_ON` in `format.ts`, Sunday). Clicking an empty 15-minute slot opens `/appointments/new` with date, time and doctor filled in (needs `add_appointments`). With `edit_appointments`, a Scheduled or Confirmed block can be dragged (mouse, pen or touch; pointer events, `touch-none` on the block) to another time, doctor column or day; a dashed preview snaps to 15 minutes, dropping asks "Move this appointment?" (with the same overlap check, then "Move anyway") and saves `appointment_date`, `appointment_time` and `doctor`. A click without moving still opens the appointment. **List**: search, date filter (All/Today/Tomorrow/Upcoming/Past, also `?date=today`), status filter, paging. The grid is `src/components/AppointmentCalendar.tsx` |
 | `/appointments/new` | `add_appointments` | Shared `AppointmentForm`. Reads `?patient=`, `?date=`, `?time=HH:MM`, `?doctor=` and `?reason=`; Back returns to that day in the calendar. Once a doctor and date are chosen, the form shows that doctor's bookings for the day and up to 8 free times that fit the chosen length (within the doctor's own working hours when set, otherwise the clinic hours, and from now for today; tap one to fill in the time) and says when the typed time overlaps. With no `?doctor=`, it starts with the doctor of the last booking made on this computer (`localStorage.last_doctor`). Warns if the doctor already has an overlapping appointment (always checked for a new booking) |
-| `/appointments/[id]` | `view_appointments` | `MedicalAlerts` for the patient, details (with **Print Card**), status buttons, Edit and an icon Delete (`edit_appointments`), a **History** card at the bottom (`RecordHistory`), and WhatsApp messages for this appointment with **Send Message** (`SendWhatsAppDialog`: pick an active template, placeholders filled, text editable, opens `wa.me` with it; shown when Clinic Settings `enable_whatsapp` is on and the patient has a phone). Completed opens `FinishVisitDialog` |
+| `/appointments/[id]` | `view_appointments` | `MedicalAlerts` for the patient, details (with **Print Card**), status buttons, Edit and an icon Delete (`edit_appointments`), a **Prescriptions** card (`view_treatments`: the prescriptions written at this visit, and **Write Prescription** with `add_treatments`, which opens `/prescriptions/new` with the patient, the visit and its doctor filled in), a **History** card at the bottom (`RecordHistory`), and WhatsApp messages for this appointment with **Send Message** (`SendWhatsAppDialog`: pick an active template, placeholders filled, text editable, opens `wa.me` with it; shown when Clinic Settings `enable_whatsapp` is on and the patient has a phone). Completed opens `FinishVisitDialog` |
 | `/appointments/[id]/edit` | `edit_appointments` | Shared `AppointmentForm` with status |
 | `/appointments/[id]/card` | `view_appointments` | Printable appointment card for the patient (date, time, doctor, visit, the clinic phone and address). **Print Card** on the appointment page |
 | `/treatments` | `view_treatments` | Search, type and status filters, paging |
 | `/treatments/new` | `add_treatments` | Shared `TreatmentForm`. Reads `?patient=` and `?tooth=`. New plans are always `Planned`. Choosing a treatment type fills in its price-list price unless a different cost was typed |
 | `/treatments/[id]` | `view_treatments` | `MedicalAlerts` for the patient, a **History** card at the bottom (`RecordHistory`), cost/paid/remaining with a progress bar, details, status buttons, payments of the plan, **Treatment Sessions** (add, edit, delete in a dialog; **Book Visit** opens the booking form with the patient, the plan's doctor and the reason filled in, for Planned and In Progress plans), and the patient's **dental chart** read-only, opened at the plan's tooth (`initialTooth`), loaded with `usePatientChart()`; a **Lab Work** card (`LabWorkCard`, for `LAB_TREATMENT_TYPES` or when something was sent): lab, sent, due back, received, with Send to lab / Edit and one-tap Received today (`edit_treatments`) |
 | `/treatments/[id]/edit` | `edit_treatments` | Shared `TreatmentForm` with status |
+| `/prescriptions/new` | `add_treatments` | Shared `PrescriptionForm`. Reads `?patient=`, `?appointment=` and `?doctor=` (else the doctor using the app). Patient, `MedicalAlerts`, doctor, date, then one row per medicine (a `fieldset` "Medicine N": medicine from the active Dental Medicines by group, dose, how often (`FREQUENCIES`), days, instructions; choosing a medicine fills its usual values unless the row was already typed in), the **Check before signing** band (`PrescriptionWarnings`, from `prescriptionWarnings()` in `src/lib/prescriptions.ts`: an `allergy_words` word in the patient's allergies, an NSAID with a blood thinner, `avoid_in_pregnancy` with a pregnancy, a patient under 12 with the medicine's `child_note`, `doseMg() × timesPerDay()` above `max_daily_mg`, the same medicine twice; never blocking) and notes. Saves `medicine_name` on each row |
+| `/prescriptions/[id]` | `view_treatments` | Printable prescription on the letterhead: patient (with age), doctor, the visit (screen only), the numbered medicines with dose · frequency · days and instructions, the notes and a signature line; on screen the warnings band above it (`print:hidden`). Print, Edit and an icon Delete (`add_treatments`) |
+| `/prescriptions/[id]/edit` | `add_treatments` | Shared `PrescriptionForm` |
 | `/payments` | `view_payments` | Search, method filter, date range, paging, total of everything that matches |
 | `/payments/new` | `add_payments` | Shared `PaymentForm`. Reads `?patient=&treatment=`. A new payment for a patient with exactly one plan with a balance picks that plan; **Pay full balance** fills the amount. Blocks amounts above what the plan has left |
 | `/payments/day` | `view_payments` | End-of-day report for `?date=` (default today): totals per payment method and overall, every payment of the day, a **Cash in the drawer** box (`CashCountCard`): Opening float and Cash counted boxes, Should be in the drawer (float + the day's Cash payments), Matched / Short by / Over by (`compareCash()` in `src/lib/cashCount.ts`), a Note required when short or over, and **Save Count** / **Update Count** (`add_payments`), saved as one **Cash Count** per day with who counted it and when (a notice appears if the day's Cash payments changed after the count); on paper the typed values print, empty ones as lines; Counted by / Checked by lines; and below, **Recent cash counts** (`RecentCashCounts`: the last 14 days counted, each day opening its report) so a manager can look back. Linked from Payments and the Today board |
@@ -234,6 +241,7 @@ on the form, and a click made while the save is still running is overridden by t
 | `/payments/[id]/edit` | `add_payments` | Shared `PaymentForm` |
 | `/reports` | `view_reports`, and Clinic Settings `enable_financial_reports` | Period picker; revenue, count, average, outstanding; revenue by treatment, method and month; latest payments; outstanding balances; CSV export of both; revenue by **doctor** (through each payment's treatment plan; payments without a plan are "General payments") and **Appointments** outcomes up to today (completed, no show, cancelled, still open) with the no-show rate, no-shows out of completed plus no-shows, shown red at 15% or more |
 | `/doctors` | `manage_users` | Doctor list (search, Active / Not active filter, paging); Add Doctor and Edit in a dialog: name, specialization (`DOCTOR_SPECIALIZATIONS`), phone, email, working hours (`start_time`, `end_time`; both or neither, end after start) and Active. No delete: switch Active off |
+| `/medicines` | `manage_users` | The medicine list (search, Active filter, paging); Add Medicine and Edit in a dialog: name, strength, form (`MEDICINE_FORMS`), group (`MEDICINE_GROUPS`), the usual dose / how often / days / instructions, and the warning flags (allergy words, daily maximum in mg, note for children, NSAID, avoid in pregnancy) and Active. No delete: switch Active off, so old prescriptions keep their rows |
 | `/users` | `manage_users` | Staff list (without Administrator and Guest), search, status filter, Add User dialog (can apply the role's usual permissions) |
 | `/users/[id]` | `manage_users` | Clinic role, enable/disable, the 14 permission switches with presets. `[id]` is `encodeURIComponent(btoa(user.name))` |
 | `/whatsapp` | `manage_users` | Templates (add, edit, delete, placeholders, live preview) and the message log (phone numbers shown with the middle hidden, `maskPhone()`; the full number is on the patient's page) |
@@ -277,7 +285,7 @@ Rules for data code:
 - **Doctype names are exact strings with spaces:** `"Patient"`, `"Doctor"`, `"Appointment"`,
   `"Treatment Plan"`, `"Treatment Session"`, `"Payment"`, `"User"`, `"Clinic Permission"`,
   `"Clinic Settings"` (a single; its doc name is also `"Clinic Settings"`), `"WhatsApp Template"`,
-  `"WhatsApp Log"`, `"Cash Count"`.
+  `"WhatsApp Log"`, `"Cash Count"`, `"Dental Medicine"`, `"Prescription"`.
 - **`getList` returns only the fields you ask for**, in both Frappe and the mock. If you render a field, put
   it in `fields`. `name` always comes back.
 - **Show names, not IDs.** Link fields hold IDs (`PAT-2026-00001`). Read the fetched label fields instead:
@@ -339,19 +347,23 @@ either source.
   treatment sessions, 15 payments (two dated today), 9 users (including `Administrator`, `Guest` and one
   disabled doctor), 3 `Clinic Permission` records (the manager has every permission; the receptionist and
   one doctor have some), the `Clinic Settings` single (currency `IQD`, country code 964), 3 WhatsApp templates, 7 WhatsApp
-  log entries and 3 Cash Counts (22 Jul matched, 30 Jul short by 10,000, 18 Aug over by 5,000, counted by Dalia Jawad).
+  log entries, 3 Cash Counts (22 Jul matched, 30 Jul short by 10,000, 18 Aug over by 5,000, counted by Dalia Jawad),
+  10 Dental Medicines (`MED-00001` Amoxicillin … `MED-00010` Nystatin, with usual dental doses a dentist must
+  check) and 3 Prescriptions (`RX-2026-00001` Zahraa after her root canal, `RX-2026-00002` Saad after his
+  extraction with a note about warfarin, `RX-2026-00003` Hassan).
 - **Recall:** completing an appointment (created or updated to Completed) moves the patient's `next_recall_date` to
   the visit plus `recall_interval_months`, never earlier (`rollRecall()`), as `Appointment.on_update` should.
 - **Cash Count** (`CC-2026-00001`) is checked on save like its `validate()` should: one per day, `cash_payments` = the
   day's Cash payments, `expected_cash` = float + that, `difference` = counted - expected, a note required when it
   is not 0, `counted_by_name` from the User, `counted_at` = now.
 - **IDs match the real naming series:** `PAT-2026-00001`, `DOC-00001`, `APT-2026-00001`,
-  `TRT-2026-00001`, `SES-2026-00001`, `PAY-2026-00001`, `WAT-00001`, `WAL-2026-00001`. New docs get the next
+  `TRT-2026-00001`, `SES-2026-00001`, `PAY-2026-00001`, `WAT-00001`, `WAL-2026-00001`, `MED-00001`, `RX-2026-00001`. New docs get the next
   number with the current year. Users are named by `email`, Clinic Permissions by `user` (a duplicate gets
   `" 2"`, `" 3"` …).
 - **Fields the server computes or fetches are rebuilt after every write** by `recalculate()`:
-  - `patient_name` on Appointment, Treatment Plan, Treatment Session, Payment and WhatsApp Log;
-    `doctor_name` on Appointment, Treatment Plan and Treatment Session; `treatment_type` on Payment.
+  - `patient_name` on Appointment, Treatment Plan, Treatment Session, Payment, WhatsApp Log and Prescription;
+    `doctor_name` on Appointment, Treatment Plan, Treatment Session and Prescription; `treatment_type` on Payment;
+    `summary` on Prescription (the rows' `medicine_name` joined with ", ").
   - Treatment Plan: `paid_amount` is the sum of its payments. `remaining_amount` is
     `max(0, total_cost − paid_amount)`, or `0` if the plan is `Cancelled`.
   - Patient: `total_treatments`, `total_appointments`, `total_paid`, `total_remaining`.
@@ -419,6 +431,8 @@ Field names are Frappe fieldnames. Form state keys must match them exactly. Fiel
 | **Clinic Settings** † (single) | `clinic_name`, `logo`, `phone`, `email`, `address`, `tax_number`, `currency`, `opening_time`, `closing_time`, `theme_color`, `enable_whatsapp`, `enable_patient_portal`, `enable_financial_reports`, `treatment_prices` † (child table rows `{ treatment_type, price }`; `useSettings().prices` is the lookup), `phone_country_code` † | |
 | **WhatsApp Template** † | `template_name`, `trigger`, `message`, `is_active` | |
 | **Cash Count** † | `count_date`\*, `opening_float`, `cash_counted`\*, `note` (required when short or over), `counted_by` | `cash_payments`, `expected_cash`, `difference`, `counted_by_name`, `counted_at` |
+| **Dental Medicine** † | `medicine_name`\*, `strength`, `dosage_form`, `medicine_group`, `default_dose`, `default_frequency`, `default_duration_days`, `default_instructions`, `allergy_words`, `is_nsaid`, `avoid_in_pregnancy`, `max_daily_mg`, `child_note`, `is_active` (on `/medicines`) | |
+| **Prescription** † | `patient`\*, `doctor`\*, `appointment`, `prescription_date`\*, `notes`, `medicines` (rows `{ medicine, medicine_name, dose, frequency, duration_days, instructions }`) | `patient_name`, `doctor_name`, `summary` |
 | **WhatsApp Log** † | none (read: `patient`, `appointment`, `phone_number`, `status`, `sent_at`, `message`, `error_message`) | `patient_name` |
 
 \* = required in the form.
@@ -431,6 +445,7 @@ Allowed values live in `src/lib/types.ts`. Keep form options, badge colours (`ST
 - Treatment Plan `treatment_type`: `Filling`, `Root Canal`, `Crown`, `Bridge`, `Extraction`, `Implant`, `Cleaning`, `Whitening`
 - Treatment Session `status` †: `Scheduled`, `Completed`, `Cancelled`
 - Payment `payment_method`: `Cash`, `Card`, `Bank Transfer`
+- Dental Medicine `dosage_form`: `MEDICINE_FORMS`; `medicine_group`: `MEDICINE_GROUPS`; a prescription row's `frequency`: the values of `FREQUENCIES` in `src/lib/prescriptions.ts`
 - WhatsApp Template `trigger`: `24 Hours Before`, `2 Hours Before`, `Manual`; WhatsApp Log `status`: `Sent`, `Failed`, `Pending`
 - Roles: `Clinic Manager`, `Clinic Doctor`, `Clinic Receptionist`, plus Frappe's own roles such as `System Manager`
 - Template placeholders †: `{{ patient_name }}`, `{{ appointment_date }}`, `{{ appointment_time }}`, `{{ doctor_name }}`, `{{ clinic_name }}`
@@ -505,9 +520,9 @@ doc means no section is open (the dashboard and profile still work).
 |---|---|---|
 | Patients | `view_patients`, `add_patients`, `edit_patients`, `delete_patients` | menu item and pages; Add, Edit, Delete buttons; editing the dental chart needs `edit_patients` |
 | Appointments | `view_appointments`, `add_appointments`, `edit_appointments` | menu, pages, bell; status buttons, Edit and Delete need `edit_appointments` |
-| Treatments | `view_treatments`, `add_treatments`, `edit_treatments` | menu, pages; status, Edit, Delete and sessions need `edit_treatments` |
+| Treatments | `view_treatments`, `add_treatments`, `edit_treatments` | menu, pages; status, Edit, Delete and sessions need `edit_treatments`; prescriptions are read with `view_treatments` and written, changed and deleted with `add_treatments` |
 | Finance | `view_payments`, `add_payments`, `view_reports` | Payments menu and pages, balances and money cards; Add, Edit and Delete payments need `add_payments`; Reports needs `view_reports` |
-| System | `manage_users` | Doctors, Users, WhatsApp and Settings pages and menu items, the settings icon |
+| System | `manage_users` | Doctors, Medicines, Users, WhatsApp and Settings pages and menu items, the settings icon |
 
 **The UI only hides things.** The back end must refuse the data too. `/users/[id]` saves with `updateDoc`
 when the doc exists and `createDoc` when it does not, and refreshes the session when you edit yourself.

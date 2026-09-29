@@ -284,6 +284,58 @@ export interface CashCount extends BaseDoc {
   counted_at?: string;
 }
 
+/* -------------------------------------------------------- prescriptions -- */
+
+export const MEDICINE_FORMS = ["Tablet", "Capsule", "Suspension", "Syrup", "Mouthwash", "Gel", "Drops", "Injection", "Other"] as const;
+export const MEDICINE_GROUPS = ["Antibiotic", "Painkiller", "Mouthwash", "Antifungal", "Other"] as const;
+
+/** One medicine on the clinic's list: its usual prescription, and the flags the safety warnings use. */
+export interface DentalMedicine extends BaseDoc {
+  medicine_name: string;
+  /** "500 mg", "0.12%". */
+  strength?: string;
+  dosage_form?: string;
+  medicine_group?: string;
+  default_dose?: string;
+  default_frequency?: string;
+  default_duration_days?: number;
+  default_instructions?: string;
+  /** Words in a patient's allergies that mean this medicine must not be given: "penicillin, amoxicillin". */
+  allergy_words?: string;
+  /** Warns when the patient takes a blood thinner. */
+  is_nsaid?: number;
+  avoid_in_pregnancy?: number;
+  /** The usual maximum a day in mg; 0 means no check. */
+  max_daily_mg?: number;
+  /** Shown when the patient is a child: how the dose is worked out. */
+  child_note?: string;
+  is_active?: number;
+}
+
+/** One row of a prescription (the child table Prescription Medicine). */
+export interface PrescriptionMedicine {
+  medicine: string;
+  /** Copied from the medicine when saved, so the printed paper does not change with the list. */
+  medicine_name?: string;
+  dose?: string;
+  frequency?: string;
+  duration_days?: number;
+  instructions?: string;
+}
+
+export interface Prescription extends BaseDoc {
+  patient: string;
+  patient_name?: string;
+  doctor: string;
+  doctor_name?: string;
+  appointment?: string | null;
+  prescription_date: string;
+  notes?: string;
+  medicines: PrescriptionMedicine[];
+  /** Read-only, worked out by the server: the medicine names, comma-separated, for lists. */
+  summary?: string;
+}
+
 export interface WhatsAppLog extends BaseDoc {
   patient?: string;
   patient_name?: string;

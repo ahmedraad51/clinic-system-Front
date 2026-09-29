@@ -204,17 +204,18 @@ export function useDoctorList() {
 const NO_DOCTORS: Doctor[] = [];
 
 /**
- * The medical fields (and phone number) of one patient, for the MedicalAlerts band on pages about something
- * else (an appointment, a treatment plan). Null until loaded, or when there is no patient.
+ * The medical fields (with the phone number and age) of one patient, for the MedicalAlerts band on pages about
+ * something else (an appointment, a treatment plan) and the prescription warnings. Null until loaded, or when
+ * there is no patient.
  */
 export function usePatientMedical(patient: string | undefined) {
-  const [result, setResult] = useState<{ patient: string; fields: (MedicalFields & Pick<Patient, "phone_number">) | null } | null>(null);
+  const [result, setResult] = useState<{ patient: string; fields: (MedicalFields & Pick<Patient, "phone_number" | "age">) | null } | null>(null);
   useEffect(() => {
     if (!patient) return;
     let cancelled = false;
     const load = async () => {
       try {
-        const rows = await getList<Patient>("Patient", ["name", "phone_number", ...MEDICAL_FIELDS], {
+        const rows = await getList<Patient>("Patient", ["name", "phone_number", "age", ...MEDICAL_FIELDS], {
           filters: [["name", "=", patient]],
           limit: 1,
         });

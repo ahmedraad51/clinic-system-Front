@@ -78,6 +78,44 @@ Permissions: users with `add_payments` create and update; users with `view_payme
 for the front desk (a manager can correct a count by updating it). The front end reads it with
 `GET /api/resource/Cash Count` filtered on `count_date` and sorted `count_date desc`.
 
+### New doctypes: Dental Medicine and Prescription
+
+The prescription form (`/prescriptions/new`) and the Medicines page (`/medicines`, `manage_users`).
+
+**Dental Medicine**, name series `MED-.#####`: the clinic's medicine list.
+
+| Field | Type | Notes |
+|---|---|---|
+| `medicine_name` | Data, required | The generic name, "Amoxicillin". |
+| `strength` | Data | "500 mg", "0.12%". |
+| `dosage_form` | Select | Tablet, Capsule, Suspension, Syrup, Mouthwash, Gel, Drops, Injection, Other. |
+| `medicine_group` | Select | Antibiotic, Painkiller, Mouthwash, Antifungal, Other. |
+| `default_dose`, `default_frequency`, `default_instructions` | Data | The usual prescription, filled into a new row. `default_frequency` is one of the values in `FREQUENCIES` (`src/lib/prescriptions.ts`): Once a day, Twice a day, Three times a day, Four times a day, Every 4 hours, Every 6 hours, Every 8 hours, Every 12 hours, When needed, Once only. |
+| `default_duration_days` | Int | |
+| `allergy_words` | Data | Comma-separated words; when one appears in `Patient.allergies` the form warns. |
+| `is_nsaid`, `avoid_in_pregnancy` | Check | Warn with a blood thinner / a pregnancy in the patient's medical text. |
+| `max_daily_mg` | Int | The usual daily maximum; 0 means no check. |
+| `child_note` | Small Text | Shown when the patient is under 12. |
+| `is_active` | Check, default 1 | Only active medicines are offered; nothing is deleted. |
+
+**Prescription**, name series `RX-.YYYY.-.#####`, with a child table **Prescription Medicine**.
+
+| Field | Type | Notes |
+|---|---|---|
+| `patient` | Link Patient, required | |
+| `patient_name` | Data, read only, `fetch_from: patient.full_name` | |
+| `doctor` | Link Doctor, required | |
+| `doctor_name` | Data, read only, `fetch_from: doctor.full_name` | |
+| `appointment` | Link Appointment | The visit it was written at (empty when written from the patient page). |
+| `prescription_date` | Date, required | |
+| `notes` | Small Text | Printed under the medicines. |
+| `medicines` | Table (Prescription Medicine) | Rows: `medicine` (Link Dental Medicine), `medicine_name` (Data: the name and strength as they were when written, sent by the front end), `dose` (Data), `frequency` (Data), `duration_days` (Int), `instructions` (Data). |
+| `summary` | Data, read only | Set in `validate()`: the rows' `medicine_name` joined with ", ", because the list API does not return child tables and the patient page and the appointment page list prescriptions by it. |
+
+Permissions: `view_treatments` reads both; `add_treatments` creates, updates and deletes Prescription; `manage_users`
+writes Dental Medicine. Track Changes on Prescription is welcome but not read yet. The safety warnings are worked
+out in the browser from the patient's medical text and the medicine flags; nothing to compute on the server.
+
 ## 2. Field names to confirm
 
 These come from the README, not from the doctype JSON files. Check each one in the back-end repo.

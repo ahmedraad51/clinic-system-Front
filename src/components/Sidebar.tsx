@@ -17,6 +17,7 @@ import {
   UserCog,
   Settings,
   MessageCircle,
+  Pill,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -58,6 +59,7 @@ const menuGroups: Array<{ group: string; items: MenuItem[] }> = [
     group: "SYSTEM",
     items: [
       { label: "Doctors", icon: BriefcaseMedical, path: "/doctors", permission: "manage_users" },
+      { label: "Medicines", icon: Pill, path: "/medicines", permission: "manage_users" },
       { label: "Users", icon: UserCog, path: "/users", permission: "manage_users" },
       { label: "WhatsApp", icon: MessageCircle, path: "/whatsapp", permission: "manage_users" },
       { label: "Settings", icon: Settings, path: "/settings", permission: "manage_users" },

@@ -254,6 +254,13 @@ Paths are inside `D:\Projects\alkhokh_pet_store_front`.
   read access to `getdoc`.
 
 ### 9. Prescriptions with safety warnings
+- **Brought in** (2026-09-28), front end with the dummy data: the Dental Medicine and Prescription doctypes (see
+  `docs/backend-todo.md`), `src/lib/prescriptions.ts` (the warnings), `PrescriptionForm`, `PrescriptionWarnings`,
+  the `/prescriptions` pages (printable on the letterhead), the `/medicines` page, a Prescriptions card on the
+  appointment page and tab on the patient page, and `e2e/tests/prescriptions.spec.ts`. The pet store turned out to
+  have no allergy check, dose rule or printout in use (only a "dose outside the usual range" note on injectables);
+  the warnings here are built on DentClinic's own medical alerts and a few flags per medicine. The local
+  anaesthetic maximum was left out: it is given in the chair, not prescribed.
 - **What:** write a prescription from a short medicine list that fills in the usual dose, how often, for how
   many days, and the instructions. Warnings come from DentClinic's own medical alerts and never block
   saving:

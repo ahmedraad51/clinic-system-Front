@@ -6,6 +6,7 @@ export const patientHref = (name: string) => docHref("/patients", name);
 export const appointmentHref = (name: string) => docHref("/appointments", name);
 export const treatmentHref = (name: string) => docHref("/treatments", name);
 export const paymentHref = (name: string) => docHref("/payments", name);
+export const prescriptionHref = (name: string) => docHref("/prescriptions", name);
 
 /** User IDs are email addresses, so they go through base64 to stay URL-safe. */
 export const userHref = (name: string) => `/users/${encodeURIComponent(btoa(name))}`;

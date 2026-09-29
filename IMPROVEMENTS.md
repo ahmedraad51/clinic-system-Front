@@ -269,7 +269,18 @@ Each finished item says what changed, when, and which commit holds it.
   150,000 → IQD 100,000". It reads Frappe's own change log, which the back end already keeps for these four
   record types; the back end only has to stop logging its own total updates as changes (docs/backend-todo.md).
   With the dummy data it records the changes you make in the app, as the user you are viewing it as. Commit
-  PENDING.
+  ac17b47.
+- 2026-09-28 - **Prescriptions with safety warnings** (pet store item 9). A "Write Prescription" button on the
+  appointment page (and a Prescriptions tab on the patient page) opens a short form: pick a medicine from the
+  clinic's list and its usual dose, how often, for how many days and the instructions are filled in, ready to
+  change. Before saving, a "Check before signing" box warns when the patient's record says they are allergic to
+  that medicine, when a painkiller of the NSAID kind is given to a patient on a blood thinner, when a medicine
+  should be avoided in pregnancy, when the patient is a child (with the medicine's own note on children's
+  doses), when the dose is above the usual daily maximum, and when a medicine is listed twice. The warnings never
+  stop the prescription; the dentist decides. The saved prescription prints on the clinic letterhead with a
+  signature line. A new Medicines page (managers) keeps the list: 10 usual dental medicines are included as a
+  start, and **a dentist must check every line before real use**. Two new record types for the back end
+  (docs/backend-todo.md). Commit PENDING.
 
 ## Questions for the owner
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ClipboardList, ListChecks, MessageCircle, Pencil, Printer, Stethoscope, Trash2 } from "lucide-react";
+import { ClipboardList, ListChecks, MessageCircle, Pencil, Pill, Printer, Stethoscope, Trash2 } from "lucide-react";
 import FinishVisitDialog from "@/components/FinishVisitDialog";
 import RecordHistory from "@/components/RecordHistory";
 import SendWhatsAppDialog from "@/components/SendWhatsAppDialog";
@@ -19,8 +19,8 @@ import { useToast } from "@/context/ToastContext";
 import { deleteDoc, errorMessage, getList, updateDoc } from "@/lib/frappe";
 import { cx, formatDate, formatDateTime, formatTime } from "@/lib/format";
 import { useDocument, usePatientMedical } from "@/lib/hooks";
-import { appointmentHref, patientHref, routeId } from "@/lib/links";
-import { APPOINTMENT_STATUSES, type Appointment, type AppointmentStatus, type WhatsAppLog } from "@/lib/types";
+import { appointmentHref, patientHref, prescriptionHref, routeId } from "@/lib/links";
+import { APPOINTMENT_STATUSES, type Appointment, type AppointmentStatus, type Prescription, type WhatsAppLog } from "@/lib/types";
 
 export default function AppointmentDetailPage() {
   return (
@@ -46,6 +46,8 @@ function AppointmentDetail() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [logs, setLogs] = useState<{ id: string; rows: WhatsAppLog[] }>({ id: "", rows: [] });
+  const [prescriptions, setPrescriptions] = useState<{ id: string; rows: Prescription[] }>({ id: "", rows: [] });
+  const showPrescriptions = can("view_treatments");
 
   useEffect(() => {
     let cancelled = false;
@@ -68,6 +70,28 @@ function AppointmentDetail() {
     };
   }, [id]);
 
+  // The prescriptions written at this visit.
+  useEffect(() => {
+    if (!showPrescriptions) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const rows = await getList<Prescription>("Prescription", ["name", "prescription_date", "doctor_name", "summary"], {
+          filters: [["appointment", "=", id]],
+          orderBy: "prescription_date desc, name desc",
+          limit: 20,
+        });
+        if (!cancelled) setPrescriptions({ id, rows });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, showPrescriptions]);
+
   if (loading) return <RecordLoading />;
   if (notFound || !appointment) {
     return <NotFoundCard error={error} what="Appointment" backHref="/appointments" backLabel="Back to Appointments" />;
@@ -75,6 +99,12 @@ function AppointmentDetail() {
 
   const canEdit = can("edit_appointments");
   const messages = logs.id === id ? logs.rows : [];
+  const written = prescriptions.id === id ? prescriptions.rows : [];
+  const newPrescriptionHref = `/prescriptions/new?${new URLSearchParams({
+    patient: appointment.patient,
+    appointment: id,
+    ...(appointment.doctor ? { doctor: appointment.doctor } : {}),
+  }).toString()}`;
   const canMessage = settings.enable_whatsapp !== 0 && Boolean(medical?.phone_number);
 
   const changeStatus = async (status: AppointmentStatus) => {
@@ -223,6 +253,36 @@ function AppointmentDetail() {
               </li>
             ))}
           </ul>
+        </Card>
+      )}
+
+      {showPrescriptions && (
+        <Card
+          title="Prescriptions"
+          icon={Pill}
+          actions={
+            can("add_treatments") && (
+              <LinkButton href={newPrescriptionHref} variant="secondary" size="sm" icon={Pill}>
+                Write Prescription
+              </LinkButton>
+            )
+          }
+        >
+          {written.length === 0 ? (
+            <p className="text-sm text-gray-500">No prescription written at this visit.</p>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {written.map((rx) => (
+                <li key={rx.name}>
+                  <Link href={prescriptionHref(rx.name)} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5 min-h-11 hover:bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-800">{formatDate(rx.prescription_date)}</span>
+                    <span className="text-sm text-gray-700 flex-1 min-w-[10rem]">{rx.summary || rx.name}</span>
+                    {rx.doctor_name && <span className="text-xs text-gray-500">{rx.doctor_name}</span>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
       )}
 
