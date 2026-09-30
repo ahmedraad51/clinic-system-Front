@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { getCount, getDoc, getList, errorMessage, isNotFound, type FilterRow } from "./frappe";
-import { DEFAULT_DESIGN, readDesign, subscribeDesign, type DesignOption } from "./design";
 import { MEDICAL_FIELDS, type MedicalFields } from "./medical";
 import { phoneSearchPattern, toLatinDigits } from "./phone";
 import type { BaseDoc, Doctor, Patient } from "./types";
@@ -21,13 +20,6 @@ export function useMediaQuery(query: string): boolean {
     [query],
   );
   return useSyncExternalStore(subscribe, () => window.matchMedia(query).matches, () => false);
-}
-
-const serverDesign = () => DEFAULT_DESIGN;
-
-/** The design option chosen on this computer (A, B or C). */
-export function useDesign(): DesignOption {
-  return useSyncExternalStore(subscribeDesign, readDesign, serverDesign);
 }
 
 /** Returns the value once it has stopped changing for `delay` ms. Used for search boxes. */

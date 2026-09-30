@@ -32,8 +32,7 @@ export default function Avatar({
 }) {
   const look = avatarLook(name, gender, age);
   const box = cx(
-    "relative inline-flex shrink-0 overflow-hidden rounded-full ring-2 ring-white shadow-sm print:hidden",
-    "design-b:ring-white/80 design-c:ring-[3px]",
+    "relative inline-flex shrink-0 overflow-hidden rounded-full ring-2 ring-white/80 shadow-sm print:hidden",
     className,
   );
   const style = { width: `${size / 16}rem`, height: `${size / 16}rem` };

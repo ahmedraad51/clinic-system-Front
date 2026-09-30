@@ -23,11 +23,11 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
   };
 
   const iconButton =
-    "w-11 h-11 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition design-c:rounded-full design-c:bg-orange-50 design-c:hover:bg-orange-100";
+    "w-11 h-11 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition";
 
   // No backdrop-blur on the bar: it would trap the fixed overlays of the search, bell and profile menus inside it.
   return (
-    <header className="h-16 bg-white border-b border-gray-100 design-b:border-gray-200/80 design-c:bg-[#fffaf4] design-c:border-orange-100 flex items-center justify-between px-4 sm:px-6 fixed top-0 end-0 start-0 lg:start-64 z-30 print:hidden">
+    <header className="h-16 bg-white border-b border-gray-200/80 flex items-center justify-between px-4 sm:px-6 fixed top-0 end-0 start-0 lg:start-64 z-30 print:hidden">
       <div className="flex items-center gap-2">
         <button type="button" onClick={onOpenMenu} className={`${iconButton} lg:hidden`} aria-label="Open menu">
           <Menu size={18} />

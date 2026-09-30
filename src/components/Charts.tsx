@@ -52,12 +52,8 @@ export function BarChart({
                 style={style}
                 className={cx(
                   "w-full origin-bottom motion-safe:animate-grow-up",
-                  // A: soft rounded bars; B: gradient bars; C: round-topped solid bars.
-                  "rounded-t-xl",
-                  index === strong ? "bg-sec" : "bg-sec-light",
-                  "design-b:rounded-t-md design-b:bg-linear-to-t design-b:from-sec design-b:to-sec-light",
-                  index !== strong && "design-b:opacity-70",
-                  "design-c:rounded-t-full design-c:rounded-b-md",
+                  "rounded-t-md bg-linear-to-t from-sec to-sec-light",
+                  index !== strong && "opacity-70",
                 )}
               />
             </div>
@@ -69,7 +65,7 @@ export function BarChart({
   );
 }
 
-/** The colours of a ring's slices, in order: the section colours of the design, then greys. */
+/** The colours of a ring's slices, in order: the section colours, then greys. */
 const SLICE_COLOURS = [
   "var(--sec-treatments)",
   "var(--sec-patients)",
@@ -125,7 +121,6 @@ export function DonutChart({
                 // A small gap between slices (none when there is only one).
                 strokeDasharray={`${Math.max(0, share - (data.length > 1 ? 1 : 0))} ${100 - share + (data.length > 1 ? 1 : 0)}`}
                 strokeDashoffset={-start}
-                className="design-c:[stroke-linecap:round]"
                 style={{ stroke: SLICE_COLOURS[index % SLICE_COLOURS.length] }}
               />
           ))}

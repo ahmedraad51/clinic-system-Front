@@ -4,7 +4,6 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Check, KeyRound, Users, X } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import { MyAvatar } from "@/components/Avatar";
-import DesignOptionCard from "@/components/DesignOptionCard";
 import ScreenSizeCard from "@/components/ScreenSizeCard";
 import {
   Alert, Badge, Button, Card, DetailList, DetailRow, Field, PageContainer, PageHeader, SelectInput, TextInput,
@@ -61,7 +60,6 @@ function Profile() {
         </div>
       </Card>
 
-      <DesignOptionCard />
       <ScreenSizeCard />
 
       <Card title="What I Can Do">

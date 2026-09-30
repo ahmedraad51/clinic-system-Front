@@ -93,16 +93,14 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       <aside
         className={cx(
           "fixed inset-y-0 start-0 z-50 w-64 flex flex-col transition-transform print:hidden",
-          // A: white. B: a dark night-blue menu. C: warm cream.
-          "bg-white border-e border-gray-100",
-          "design-b:bg-linear-to-b design-b:from-slate-900 design-b:via-slate-900 design-b:to-indigo-950 design-b:border-e-0",
-          "design-c:bg-[#fffaf4] design-c:border-orange-100",
+          // A dark night-blue menu.
+          "bg-linear-to-b from-slate-900 via-slate-900 to-indigo-950",
           open ? "translate-x-0" : "-translate-x-full",
           "lg:translate-x-0",
         )}
       >
         {/* Logo */}
-        <div className="h-16 px-5 flex items-center justify-between border-b border-gray-100 design-b:border-white/10 design-c:border-orange-100">
+        <div className="h-16 px-5 flex items-center justify-between border-b border-white/10">
           <Link href="/dashboard" onClick={onClose} className="flex items-center gap-3 min-w-0">
             {settings.logo ? (
               // eslint-disable-next-line @next/next/no-img-element -- the logo is an uploaded file of unknown size
@@ -110,20 +108,19 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
             ) : (
               <span
                 className={cx(
-                  "w-9 h-9 shrink-0 bg-primary-600 rounded-xl flex items-center justify-center text-white shadow-sm",
-                  "design-b:bg-linear-to-br design-b:from-primary-500 design-b:to-(--sec-appointments) design-b:shadow-lg design-b:shadow-black/30",
-                  "design-c:rounded-full",
+                  "w-9 h-9 shrink-0 rounded-xl flex items-center justify-center text-white",
+                  "bg-linear-to-br from-primary-500 to-(--sec-appointments) shadow-lg shadow-black/30",
                 )}
               >
                 <ToothLogo size={20} />
               </span>
             )}
-            <span className="font-bold text-gray-800 text-lg truncate design-b:text-white">{clinicName}</span>
+            <span className="font-bold text-lg truncate text-white">{clinicName}</span>
           </Link>
           <button
             type="button"
             onClick={onClose}
-            className="lg:hidden w-11 h-11 -me-2 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 design-b:text-slate-300 design-b:hover:bg-white/10"
+            className="lg:hidden w-11 h-11 -me-2 flex items-center justify-center rounded-lg text-slate-300 hover:bg-white/10"
             aria-label="Close menu"
           >
             <X size={18} />
@@ -137,7 +134,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
             if (items.length === 0) return null;
             return (
               <div key={group.group}>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 mb-2 design-b:text-slate-400">{group.group}</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">{group.group}</p>
                 <div className="space-y-1">
                   {items.map((item) => {
                     const active = pathname === item.path || pathname.startsWith(item.path + "/");
@@ -150,22 +147,17 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                         aria-current={active ? "page" : undefined}
                         className={cx(
                           hueClass(item.section ?? "primary"),
-                          "group relative flex items-center gap-3 min-h-11 px-2 py-1.5 rounded-xl text-sm font-medium transition-all design-c:rounded-full",
-                          active
-                            ? "bg-sec-soft text-sec-ink design-b:bg-white/10 design-b:text-white design-c:bg-sec design-c:text-white design-c:shadow-md"
-                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 design-b:text-slate-300 design-b:hover:bg-white/5 design-b:hover:text-white design-c:text-gray-700 design-c:hover:bg-sec-soft",
+                          "group relative flex items-center gap-3 min-h-11 px-2 py-1.5 rounded-xl text-sm font-medium transition-all",
+                          active ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5 hover:text-white",
                         )}
                       >
-                        {active && <span aria-hidden="true" className="hidden design-b:block absolute -start-3 top-2 bottom-2 w-1 rounded-e bg-sec-light" />}
+                        {active && <span aria-hidden="true" className="absolute -start-3 top-2 bottom-2 w-1 rounded-e bg-sec-light" />}
                         <span
                           aria-hidden="true"
                           className={cx(
                             "w-8 h-8 shrink-0 rounded-lg flex items-center justify-center transition",
-                            active ? "bg-sec text-white shadow-sm" : "bg-sec-soft text-sec-ink",
-                            "design-b:bg-linear-to-br design-b:from-sec design-b:to-sec-deep design-b:text-white",
-                            !active && "design-b:opacity-80 design-b:group-hover:opacity-100",
-                            "design-c:rounded-full",
-                            active ? "design-c:bg-white/25 design-c:shadow-none" : "design-c:bg-sec design-c:text-white",
+                            "bg-linear-to-br from-sec to-sec-deep text-white",
+                            active ? "shadow-sm" : "opacity-80 group-hover:opacity-100",
                           )}
                         >
                           <Icon size={17} />
@@ -181,20 +173,20 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
         </nav>
 
         {/* User */}
-        <div className="px-4 py-4 border-t border-gray-100 design-b:border-white/10 design-c:border-orange-100">
-          <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gray-50 design-b:bg-white/5 design-c:bg-white design-c:rounded-full design-c:border design-c:border-orange-100">
+        <div className="px-4 py-4 border-t border-white/10">
+          <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/5">
             <Link href="/profile" onClick={onClose} className="flex items-center gap-3 flex-1 min-w-0">
               <MyAvatar size={36} />
               <span className="min-w-0">
-                <span className="block text-sm font-medium text-gray-800 truncate design-b:text-white">{displayName}</span>
-                <span className="block text-xs text-gray-500 truncate design-b:text-slate-400">{roleLabel}</span>
+                <span className="block text-sm font-medium text-white truncate">{displayName}</span>
+                <span className="block text-xs text-slate-400 truncate">{roleLabel}</span>
               </span>
             </Link>
             {!authDisabled && (
               <button
                 type="button"
                 onClick={handleLogout}
-                className="text-gray-500 hover:text-red-500 transition design-b:text-slate-400"
+                className="text-slate-400 hover:text-red-400 transition"
                 aria-label="Log out"
               >
                 <LogOut size={16} />

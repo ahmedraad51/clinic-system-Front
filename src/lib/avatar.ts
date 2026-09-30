@@ -39,7 +39,7 @@ export interface AvatarLook {
   hair: string;
   shirt: string;
   scarf: string;
-  /** 1-6: which of the design's background colours (--avatar-1 … --avatar-6). */
+  /** 1-6: which of the avatar background colours (--avatar-1 … --avatar-6). */
   background: number;
   beard: boolean;
   moustache: boolean;

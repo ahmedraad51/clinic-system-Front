@@ -415,30 +415,28 @@ function Dashboard() {
 }
 
 /**
- * The greeting at the top: the date, "Good morning, …" and a one-line summary of the day, on a soft tint (A), a
- * bold gradient (B) or a warm glow (C), with a smiling tooth.
+ * The greeting at the top: the date, "Good morning, …" and a one-line summary of the day, on a bold gradient with a
+ * smiling tooth.
  */
 function WelcomeBanner({ title, date, summary, actions }: { title: string; date: string; summary?: string; actions?: ReactNode }) {
   return (
     <div
       className={cx(
-        "relative overflow-hidden rounded-2xl px-6 py-6 sm:px-8 border",
-        "bg-linear-to-br from-primary-50 via-white to-(--avatar-2) border-primary-100",
-        "design-b:from-primary-800 design-b:via-primary-600 design-b:to-(--sec-appointments) design-b:border-transparent design-b:shadow-lg",
-        "design-c:from-orange-100 design-c:via-amber-50 design-c:to-rose-100 design-c:border-orange-200",
+        "relative overflow-hidden rounded-2xl px-6 py-6 sm:px-8 shadow-lg",
+        "bg-linear-to-br from-primary-800 via-primary-600 to-(--sec-appointments)",
       )}
     >
       {/* Soft circles in the corner. */}
-      <span aria-hidden="true" className="absolute -top-16 -end-10 w-56 h-56 rounded-full bg-primary-100/60 design-b:bg-white/10 design-c:bg-orange-200/40" />
-      <span aria-hidden="true" className="absolute -bottom-20 end-40 w-40 h-40 rounded-full bg-(--avatar-3)/60 design-b:bg-white/5 design-c:bg-rose-200/40" />
+      <span aria-hidden="true" className="absolute -top-16 -end-10 w-56 h-56 rounded-full bg-white/10" />
+      <span aria-hidden="true" className="absolute -bottom-20 end-40 w-40 h-40 rounded-full bg-white/5" />
       <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-primary-700 design-b:text-white/85 design-c:text-orange-800">{date}</p>
-          <h1 className="text-2xl font-bold text-gray-900 mt-0.5 break-words design-b:text-white">{title}</h1>
-          {summary && <p className="text-sm text-gray-600 mt-1 design-b:text-white/85 design-c:text-gray-700">{summary}</p>}
+          <p className="text-sm font-medium text-white/85">{date}</p>
+          <h1 className="text-2xl font-bold text-white mt-0.5 break-words">{title}</h1>
+          {summary && <p className="text-sm text-white/85 mt-1">{summary}</p>}
           {actions && <div className="mt-4">{actions}</div>}
         </div>
-        <ToothMascot size={104} className="hidden sm:block shrink-0 text-primary-600 motion-safe:animate-bob design-b:text-white/90 design-c:text-orange-600" />
+        <ToothMascot size={104} className="hidden sm:block shrink-0 text-white/90 motion-safe:animate-bob" />
       </div>
     </div>
   );
@@ -477,7 +475,7 @@ function AppointmentList({
                 <span className="block text-sm font-semibold text-sec-ink whitespace-nowrap">{formatTime(a.appointment_time)}</span>
                 {showDate && <span className="block text-xs text-gray-500">{formatDate(a.appointment_date)}</span>}
               </span>
-              <Avatar name={a.patient_name || a.patient} gender={look?.gender} age={look?.age} size={36} />
+              <Avatar name={a.patient_name || a.patient} gender={look?.gender} age={look?.age} size={36} className="max-sm:hidden" />
               <span className="flex-1 min-w-0">
                 <span className="block text-sm font-medium text-gray-800 truncate">{a.patient_name || a.name}</span>
                 <span className="block text-xs text-gray-500 truncate">

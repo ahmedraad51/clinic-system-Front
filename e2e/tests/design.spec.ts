@@ -7,38 +7,23 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("a design option can be tried on this computer, and it stays", async ({ page }) => {
-  await page.goto("/profile");
+test("the app is indigo with the Manrope font until the clinic picks its own colour", async ({ page }) => {
+  await page.goto("/settings");
   await waitForData(page);
-  const html = page.locator("html");
-  await expect(html).toHaveAttribute("data-design", "a");
-
-  const options = page.getByRole("radiogroup", { name: "Design option" });
-  await expect(options.getByRole("radio", { name: /Fresh Mint/ })).toHaveAttribute("aria-checked", "true");
-  await options.getByRole("radio", { name: /Midnight/ }).click();
-  await expect(html).toHaveAttribute("data-design", "b");
-  await expect(options.getByRole("radio", { name: /Midnight/ })).toHaveAttribute("aria-checked", "true");
-  // Arrow keys move through the options like any radio group.
-  await page.keyboard.press("ArrowRight");
-  await expect(html).toHaveAttribute("data-design", "c");
-  await expect(options.getByRole("radio", { name: /Sunrise/ })).toBeFocused();
-  await page.keyboard.press("ArrowLeft");
-  await expect(html).toHaveAttribute("data-design", "b");
-  // Each option has its own font.
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain("Manrope");
+  const brand = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--brand").trim());
+  expect(await brand()).toBe("#4f46e5");
+  await expect(page.getByRole("button", { name: "Default colour" })).toHaveAttribute("aria-pressed", "true");
 
-  // Kept while moving around, and after the page is loaded again.
+  // A colour chosen and saved is used at once; the default can be chosen again.
+  await page.getByRole("button", { name: "Rose" }).click();
+  await page.getByRole("button", { name: "Save Settings" }).click();
+  await expect.poll(brand).toBe("#be123c");
+  await page.getByRole("button", { name: "Default colour" }).click();
+  await page.getByRole("button", { name: "Save Settings" }).click();
+  await expect.poll(brand).toBe("#4f46e5");
   await navigate(page, "/dashboard");
-  await expect(html).toHaveAttribute("data-design", "b");
-  await page.reload();
-  await waitForData(page);
-  await expect(html).toHaveAttribute("data-design", "b");
-
-  // No clinic colour chosen: the design's own colour is used, and Settings says so.
-  await navigate(page, "/settings");
-  await expect(page.getByRole("button", { name: "Colour of the design" })).toHaveAttribute("aria-pressed", "true");
-  const brand = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--brand").trim());
-  expect(brand).toBe("#4f46e5");
+  expect(await brand()).toBe("#4f46e5");
 });
 
 test("the dashboard shows revenue, visits and treatments as charts", async ({ page }) => {

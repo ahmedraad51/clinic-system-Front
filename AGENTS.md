@@ -30,7 +30,6 @@ accurate.
 | `npm run dev` | Works. Dev output goes to `.next/dev`, so `npm run build` can run while it is up. Changing `next.config.ts` restarts it, and the first page after that can take several minutes to compile. | |
 | `npm run build` | **Passes** (checked 2026-09-30): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-30). `npx tsc --noEmit` passes too. | |
-| Design | **Three design options, waiting for the owner's choice** (Phase 1 of the redesign). A, B and C are switchable on `/profile` → Design Option (this computer only, `localStorage.design_option`); A is the default. Pictures of each are in `docs/design-options/`. Once the owner answers "a", "b" or "c", apply that one everywhere and delete the other two (see **Design options** under Styling). | `src/lib/design.ts`, `src/app/globals.css` |
 | Tests | **Playwright tests pass** (120 tests, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
@@ -50,7 +49,6 @@ Both flags are set this way on purpose. Leave them alone unless the task is abou
 | `npm run test:e2e` | Playwright tests in `e2e/tests` (Chromium only). Builds, then serves the build on port **3100** (`E2E_PORT`), so it never clashes with `npm run dev` on 3000. `SKIP_BUILD=1` reuses the last build. Output goes to `test-results/` and `playwright-report/` (ignored by git). |
 | `npm run screenshots` | Full-page screenshots of every page at desktop 1440×900, tablet 1024×768 and phone 390×844, saved to `screenshots/<size>/<page>.png` (ignored by git). `PAGES=dashboard,patients` limits it; `SKIP_BUILD=1` works here too. |
 | `npm run screenshots:readme` | Retakes the pictures in `README.md` into `docs/screenshots/` (desktop, dummy data). Run it after a visible change and commit the images. `SKIP_BUILD=1` works here too |
-| `npm run screenshots:designs` | Pictures of the three design options (dashboard, patient page, calendar, Today board, and the dashboard on a phone) into `docs/design-options/option-a`, `-b`, `-c`. `SKIP_BUILD=1` works here too |
 
 The Frappe address comes from the `FRAPPE_URL` environment variable (for example in `.env.local`), default
 `http://dent_clinic.localhost:8000`. See `next.config.ts`.
@@ -64,7 +62,7 @@ The Frappe address comes from the `FRAPPE_URL` environment variable (for example
 | Framework | Next.js **16.2.9**, App Router, Turbopack |
 | UI | React **19.2.4**, TypeScript 5 with `strict: true`, path alias `@/*` → `src/*` |
 | Styling | Tailwind CSS **v4** via `@tailwindcss/postcss`. It is CSS-first: no `tailwind.config.*`; the design tokens (the `primary-*` palette and the text scale) are an `@theme` block in `src/app/globals.css` |
-| Font | Plus Jakarta Sans through `next/font/google` in `layout.tsx` |
+| Font | Manrope through `next/font/google` in `layout.tsx` (the `--font-manrope` variable, used by `body` in `globals.css`) |
 | Icons | `lucide-react` everywhere; the tooth logo is our own SVG in `src/components/ToothLogo.tsx` |
 | HTTP | `axios`, one instance in `src/lib/frappe.ts` |
 | State | React Context (auth, settings, session, toasts) and per-page `useState`. No global store, no data-fetching library |
@@ -151,7 +149,6 @@ src/
 │   ├── LabWorkCard.tsx       lab work of a treatment plan; labState() and LAB_BADGES
 │   ├── ClinicLetterhead.tsx  the clinic header on printouts (receipt, estimate)
 │   ├── ScreenSizeCard.tsx    the screen size switch on /profile
-│   ├── DesignOptionCard.tsx  the design option switch (A, B, C) on /profile
 │   ├── Avatar.tsx            round avatars: an uploaded photo, or a drawing (man, woman, boy, girl; a white coat for doctors); MyAvatar
 │   ├── Charts.tsx            BarChart and DonutChart, drawn in code in the colour of their section
 │   ├── ToothMascot.tsx       the smiling tooth in the dashboard's welcome banner
@@ -183,7 +180,6 @@ src/
     ├── whatsapp.ts           PLACEHOLDERS, fillTemplate(), whatsappNumber(), whatsappLink() (wa.me links)
     ├── phone.ts              toLatinDigits(), dialableNumber() (0770… → 964770…), samePhone(), phoneSearchPattern(), maskPhone()
     ├── display.ts            this computer's screen size (80-120 %): readZoom, saveZoom, the boot script
-    ├── design.ts             the design options A, B, C: DESIGN_OPTIONS, readDesign, saveDesign, the boot script
     ├── avatar.ts             avatarKind() (gender and age: man, woman, boy, girl, person), avatarLook() (details from the name)
     ├── iraq.ts               IRAQ_GOVERNORATES (English and Arabic names), suggested in the patient address box
     ├── recall.ts             dueForRecall() (the dentist's date first, then the period), RECALL_CHOICES, recallUpdate()
@@ -195,8 +191,7 @@ src/
     └── links.ts              URL builders for records (always use these)
 docs/
 ├── backend-todo.md           what the back end must provide for this front end
-├── screenshots/              images used by README.md (retake with npm run screenshots:readme)
-└── design-options/           pictures of design options A, B and C (npm run screenshots:designs) and a README
+└── screenshots/              images used by README.md (retake with npm run screenshots:readme)
 public/                       placeholder SVGs from create-next-app (unused)
 e2e/
 ├── helpers.ts                waitForData, navigate (client-side, keeps the dummy data), openFromMenu, pickLink
@@ -256,7 +251,7 @@ on the form, and a click made while the save is still running is overridden by t
 | `/users/[id]` | `manage_users` | Clinic role, enable/disable, the 14 permission switches with presets. `[id]` is `encodeURIComponent(btoa(user.name))` |
 | `/whatsapp` | `manage_users` | Templates (add, edit, delete, placeholders, live preview) and the message log (phone numbers shown with the middle hidden, `maskPhone()`; the full number is on the patient's page) |
 | `/settings` | `manage_users` | Clinic Settings: name, logo upload, contact, tax number, currency, working hours, feature switches, theme colour, **Phone Country Code** (`phone_country_code`, digits only, empty means 964; added to local numbers in WhatsApp links, `useSettings().countryCode`), **Price List** (a usual price per treatment type, saved in `treatment_prices`), and **Open on** day toggles saved as `working_days` (`useSettings().isOpenOn(iso)`; nothing set means open every day). Closed days are shaded "Closed" in the calendar, the day view shows a notice, and booking on one shows a note and asks "Book anyway?" |
-| `/profile` | none | My details (with `MyAvatar`), **Design Option** (`DesignOptionCard`: A, B or C, with a small picture of each, saved by `saveDesign()` in `localStorage.design_option` and applied before the first paint by `DESIGN_BOOT_SCRIPT`), **Screen Size on This Computer** (80, 90, 100, 110 or 120 %: `saveZoom()` sets the root font size, and every size is in rem, so text and spacing scale together; kept in `localStorage.screen_zoom` and applied before the first paint by `ZOOM_BOOT_SCRIPT` in `layout.tsx`), what I can do, change password, and (login off only) Try Another User |
+| `/profile` | none | My details (with `MyAvatar`), **Screen Size on This Computer** (80, 90, 100, 110 or 120 %: `saveZoom()` sets the root font size, and every size is in rem, so text and spacing scale together; kept in `localStorage.screen_zoom` and applied before the first paint by `ZOOM_BOOT_SCRIPT` in `layout.tsx`), what I can do, change password, and (login off only) Try Another User |
 
 Links use `<Link>` from `next/link`; buttons that navigate after an action use `router.push`. Table rows are
 clickable through `ClickableRow`, and the first cell always holds a real link for keyboard users.
@@ -330,7 +325,6 @@ Rules for data code:
 | `useDoctorList()` | The same, as `{ doctors, loading }`, for screens that would look empty while doctors load (the calendar) |
 | `useDebounced(value, ms)` | Waits until typing stops |
 | `useMediaQuery(query)` | True while a media query matches (false on the server); e.g. phone-only layouts |
-| `useDesign()` | The design option chosen on this computer (`"a"`, `"b"` or `"c"`) |
 | `usePatientLooks(ids)` | Gender and age of a few patients by ID, for avatars in lists whose rows only hold `patient_name` |
 
 ### Getting requests to the real back end
@@ -358,7 +352,7 @@ either source.
   them are dated today and tomorrow when the app loads), 15 treatment plans (all four statuses), 10
   treatment sessions, 15 payments (two dated today), 9 users (including `Administrator`, `Guest` and one
   disabled doctor), 3 `Clinic Permission` records (the manager has every permission; the receptionist and
-  one doctor have some), the `Clinic Settings` single (currency `IQD`, country code 964, no `theme_color`, so each design option shows its own colour; doctors and staff users have a `gender` for their avatars), 3 WhatsApp templates, 7 WhatsApp
+  one doctor have some), the `Clinic Settings` single (currency `IQD`, country code 964, no `theme_color`, so the default indigo shows; doctors and staff users have a `gender` for their avatars), 3 WhatsApp templates, 7 WhatsApp
   log entries, 3 Cash Counts (22 Jul matched, 30 Jul short by 10,000, 18 Aug over by 5,000, counted by Dalia Jawad),
   10 Dental Medicines (`MED-00001` Amoxicillin … `MED-00010` Nystatin, with usual dental doses a dentist must
   check) and 3 Prescriptions (`RX-2026-00001` Zahraa after her root canal, `RX-2026-00002` Saad after his
@@ -651,21 +645,12 @@ writing new class lists.
 
 ### Styling
 
-- **Design options (until the owner chooses).** `data-design="a" | "b" | "c"` on `<html>` picks one of three looks.
-  Each option sets CSS tokens in `globals.css` (`--brand`, `--page-bg`, the section colours, the avatar backgrounds,
-  and for B and C the whole `gray` scale and the radii), its own font (A Plus Jakarta Sans, B Manrope, C Nunito, all
-  through `next/font`), and a few structural differences written as `design-b:` / `design-c:` classes next to
-  the A classes (the unprefixed classes are option A; `design-a:` exists but is rarely needed). **When the owner
-  chooses:** keep the chosen option's classes (for B or C, turn its `design-x:` classes into plain ones and drop the
-  A classes they replace), delete every `design-` class of the other two, their token blocks and fonts in
-  `globals.css`/`layout.tsx`, `src/lib/design.ts`, `DesignOptionCard`, `useDesign`, the `designs` Playwright
-  project and `docs/design-options/`; `grep -rn "design-[abc]:" src` must then find nothing.
-  - **A, Fresh Mint:** teal, white menu with pastel icon tiles, pastel stat cards, soft brand-tinted card shadows.
-  - **B, Midnight:** indigo, slate greys, a dark menu with glowing gradient tiles, a gradient welcome banner, white
-    stat cards with a coloured edge, gradient buttons, pill tabs in a white bar.
-  - **C, Sunrise:** warm orange, stone greys, cream menu with round icons, solid-colour stat cards with white text,
-    pill-shaped buttons and tabs, rounder cards.
-- **Section colours.** Each part of the clinic has its own colour in every option: `patients`, `appointments`,
+- **The design ("Midnight", chosen by the owner on 2026-09-30).** Indigo clinic colour, cool slate greys (the `gray`
+  scale in `globals.css` is Tailwind's slate), a dark night-blue menu (`Sidebar`) with glowing gradient icon tiles,
+  a gradient welcome banner on the dashboard, white cards with a thin border (`CARD_CLASS`; a card with a `section`
+  gets a 3 px top edge in its colour), white stat cards with a coloured bottom edge, gradient action tiles with white
+  text, gradient primary buttons, and pill tabs in a white bar. Font: Manrope.
+- **Section colours.** Each part of the clinic has its own colour: `patients`, `appointments`,
   `treatments`, `money`, `reports`, `system` and `whatsapp` (`Section` in the UI kit). A `sec-patients` (etc.)
   class, written for you by `hueClass()`, sets `--sec` for everything inside, and `bg-sec`, `bg-sec-soft`,
   `bg-sec-light`, `text-sec-ink` (readable text), `from-sec`, `to-sec-deep` use it. Pass `section` to `Card`,
@@ -675,14 +660,14 @@ writing new class lists.
   or `<MyAvatar />` for the user. They are `aria-hidden`, so always write the name next to them. Patients under 13
   are drawn as children. Details (skin tone, hair, beard, headscarf, glasses) come from the name, so they never
   change between screens.
-- One visual style everywhere: white cards (`Card`, or `CARD_CLASS`) on the option's page background (`app-bg`),
+- One visual style everywhere: white cards (`Card`, or `CARD_CLASS`) on the page background (`app-bg`, `--page-bg`),
   `rounded-xl` inputs and buttons, the `primary-*` colour, lucide icons in coloured tiles. No emoji titles.
 - **Colour: use `primary-50` … `primary-900` for anything that is "the clinic colour"** (buttons, links, active
   menu items, focus rings, highlights). Never write `blue-*` for that. The palette is mixed from one CSS variable,
   `--brand`, which `SettingsContext` sets from Clinic Settings `theme_color` through `applyThemeColor()`
   (`src/lib/theme.ts`). A colour too light for white text is darkened to 4.5:1 contrast. With no `theme_color` (the
-  dummy data has none) the design option's own colour is used (A teal `#0f766e`, B indigo `#4f46e5`, C orange
-  `#c2410c`); Settings offers it as the first swatch, "Colour of the design". A script in `layout.tsx` applies the
+  dummy data has none) the default indigo `#4f46e5` (`DEFAULT_THEME_COLOR`) is used; Settings offers it as the first
+  swatch, "Default colour". A script in `layout.tsx` applies the
   last colour before the first paint. `blue` stays only as a
   status tone (see Badge colours). The `Tone` type also has `primary`; `StatCard` uses it by default.
 - **Text sizes:** `--text-xs` is 13 px and `--text-sm` is 15 px (a little larger than Tailwind's default, for

@@ -150,7 +150,7 @@ These come from the README, not from the doctype JSON files. Check each one in t
   role must be able to read `Doctor.email`.
 - **Clinic Settings** (single doctype): `clinic_name`, `logo` (Attach Image), `phone`, `email`, `address`,
   `currency` (default `IQD`; the front end also shows IQD when it is empty), `tax_number`, `opening_time` (Time), `closing_time` (Time), `theme_color` (Color or Data, a hex
-  colour such as `#0e7c86`; the whole front end is coloured from it), `enable_whatsapp`,
+  colour such as `#4f46e5`, or empty for the default; the whole front end is coloured from it), `enable_whatsapp`,
   `enable_patient_portal`, `enable_financial_reports` (Checks), and `working_days` (Data: the English day names the
   clinic is open, comma-separated, e.g. `Saturday,Sunday,Monday,Tuesday,Wednesday,Thursday`; empty = every day).
 - **Treatment Session:** `patient`, `treatment_plan`, `doctor`, `session_date`, `session_time`, `status`,
@@ -438,7 +438,7 @@ with `GET /api/resource/Clinic Permission/<user>`.
 | `phone_country_code` | Data | No | New (section 1). Digits only; empty means 964. |
 | `opening_time`, `closing_time` | Time | No | |
 | `working_days` | Data | No | Day names, comma-separated (section 2). Empty means open every day. |
-| `theme_color` | Color | No | A hex colour. Empty means the colour of the design the front end uses; the front end sends `""` for that. |
+| `theme_color` | Color | No | A hex colour. Empty means the front end's default indigo; the front end sends `""` for that. |
 | `enable_whatsapp`, `enable_financial_reports` | Check, **default 1** | No | The front end treats only an explicit 0 as off. |
 | `enable_patient_portal` | Check | No | Saved only; not used yet. |
 | `treatment_prices` | Table (**Clinic Treatment Price**) | No | New (section 1). Rows: `treatment_type` (Select, the plan types), `price` (Currency). Only rows with a price are sent. |

@@ -26,9 +26,7 @@ import { useToast } from "@/context/ToastContext";
 import { errorMessage, updateDoc, uploadFile, fileHref } from "@/lib/frappe";
 import { currencyDecimals, cx } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
-import { DESIGN_OPTIONS } from "@/lib/design";
-import { useDesign } from "@/lib/hooks";
-import { normalizeHex, readableBrand, THEME_PRESETS } from "@/lib/theme";
+import { DEFAULT_THEME_COLOR, normalizeHex, readableBrand, THEME_PRESETS } from "@/lib/theme";
 import { CURRENCIES, TREATMENT_TYPES, WEEK_DAYS, type ClinicSettings } from "@/lib/types";
 import { cleanCountryCode, DEFAULT_COUNTRY_CODE } from "@/lib/phone";
 
@@ -72,7 +70,7 @@ function toForm(doc: ClinicSettings): SettingsForm {
       const saved = (doc.working_days || "").split(",").map((d) => d.trim()).filter((d) => (WEEK_DAYS as readonly string[]).includes(d));
       return saved.length ? saved : [...WEEK_DAYS];
     })(),
-    // Empty: the colour of the design option.
+    // Empty: the default colour (indigo).
     theme_color: normalizeHex(doc.theme_color) ?? "",
     logo: doc.logo ?? "",
     enable_whatsapp: Number(doc.enable_whatsapp) === 1,
@@ -357,33 +355,30 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
 }
 
 /**
- * The clinic colour: the design option's own colour, a few calm presets, or any colour. Shows a sample of how
- * buttons will look.
+ * The clinic colour: the default indigo, a few calm presets, or any colour. Shows a sample of how buttons will look.
  */
 function ThemeColorPicker({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  const design = useDesign();
-  const designColour = DESIGN_OPTIONS.find((option) => option.value === design)?.brand ?? DESIGN_OPTIONS[0].brand;
   const chosen = normalizeHex(value);
-  const current = chosen ?? designColour;
+  const current = chosen ?? DEFAULT_THEME_COLOR;
   const used = readableBrand(current);
   return (
     <div className="pt-1">
       <p className="text-sm font-medium text-gray-800">Theme colour</p>
       <p className="text-xs text-gray-500 mt-0.5">
-        Buttons, links and highlights use this colour. The first choice follows the design option.
+        Buttons, links and highlights use this colour. The first choice is the default indigo.
       </p>
       <div className="flex flex-wrap items-center gap-2 mt-3">
         <button
           type="button"
           onClick={() => onChange("")}
-          aria-label="Colour of the design"
+          aria-label="Default colour"
           aria-pressed={!chosen}
-          title="Colour of the design"
+          title="Default colour"
           className={cx(
             "relative w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11 rounded-full border-2 transition",
             !chosen ? "border-gray-800 scale-110" : "border-white shadow-sm hover:scale-105",
           )}
-          style={{ backgroundColor: designColour }}
+          style={{ backgroundColor: DEFAULT_THEME_COLOR }}
         >
           <Sparkles size={14} className="absolute inset-0 m-auto text-white" aria-hidden="true" />
         </button>

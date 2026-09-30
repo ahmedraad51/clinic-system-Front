@@ -74,9 +74,8 @@ own `fetch`. That is what makes the dummy-data switch a one-line change.
 
 ## Screens
 
-**New look coming.** Three colourful design options (A Fresh Mint, B Midnight, C Sunrise) are waiting for the
-clinic's choice: see [docs/design-options](docs/design-options/README.md), or switch between them in the app under
-**My Profile → Design Option**. The pictures below will be retaken once one is chosen.
+**New look.** The clinic chose the "Midnight" design: a dark menu, a colour for each part of the clinic, drawn
+avatars and dashboard charts. The pictures below are retaken as the new look reaches every screen.
 
 The pictures are taken from the running app with the dummy data (`npm run screenshots:readme`).
 
@@ -314,7 +313,6 @@ npx playwright install chromium   # once, before the first test run
 npm run test:e2e          # browser tests (builds, then serves on port 3100)
 npm run screenshots       # every page at desktop, tablet and phone size, into screenshots/
 npm run screenshots:readme   # the pictures in this README, into docs/screenshots/
-npm run screenshots:designs  # the three design options, into docs/design-options/
 ```
 
 The browser tests walk through the daily work: adding a patient, booking an appointment (and the

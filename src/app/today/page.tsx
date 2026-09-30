@@ -555,9 +555,7 @@ function Count({ label, value, icon, hue }: { label: string; value: number; icon
       className={cx(
         hueClass(hue),
         "flex items-center gap-3 rounded-2xl px-4 py-3 border motion-safe:animate-rise",
-        "bg-sec-soft border-sec/10",
-        "design-b:bg-white design-b:border-gray-200/80 design-b:shadow-sm",
-        "design-c:bg-white design-c:border-orange-100",
+        "bg-white border-gray-200/80 shadow-sm",
       )}
     >
       <IconTile icon={icon} />

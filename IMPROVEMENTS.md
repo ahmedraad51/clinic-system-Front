@@ -5,10 +5,22 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- **Choose a design: answer "a", "b" or "c".** Three colourful looks are ready to compare (2026-09-30). Open
-  [docs/design-options](docs/design-options/README.md) for pictures of the dashboard, a patient page, the calendar
-  and the Today board in each, or try them in the app: **My Profile → Design Option** (only your computer
-  changes). All three have:
+- **Arabic version (Phase 5), next.** Arabic as the default language, an Arabic / English switch in the menu,
+  right-to-left layout everywhere, and every text in translation files. Then Phases 2, 3 and 4.
+
+## Backlog
+
+1. Phases 2, 3 and 4 of the redesign plan (the new look on every screen, the X-ray section, the features from the
+   competitor study), after the Arabic version, in both languages.
+
+## Done
+
+- 2026-09-30 - **Design "Midnight" (option B) chosen and applied.** The other two options and the switch on My
+  Profile are removed. The app is now indigo with a dark menu, glowing icon tiles, white cards with coloured
+  edges, gradient buttons and pill-shaped tabs, in the Manrope font. Settings → Theme colour starts with
+  "Default colour" (indigo). On phones the dashboard lists leave out the small pictures, so patient names are not
+  cut short. The rest of Phase 2 (every screen, real charts on Reports) comes after the Arabic version.
+- 2026-09-30 - **Three design options to choose from** (commit 6dd4a1f). All three had:
   - a colour for each part of the clinic (patients, appointments, treatments, money, reports), used in the menu,
     the number cards, the icons and the charts;
   - icons in coloured rounded tiles;
@@ -24,14 +36,6 @@ Each finished item says what changed, when, and which commit holds it.
   the dummy clinic uses it, so each option shows its own colour. In the dummy data Fatima Salman is now 9 years
   old, to show a child's avatar. No new package and no change to next.config.ts, so your dev server does not need
   a restart.
-
-
-## Backlog
-
-1. Arabic interface: only when the owner turns the "Arabic interface" setting to YES (currently NO).
-
-## Done
-
 - 2026-09-26 - **Code checks pass.** Type check, lint and production build all pass with no warnings; the
   results are written in AGENTS.md. Also fixed a build warning about the project folder. Commit f7c0476.
 - 2026-09-26 - **Automatic browser tests.** `npm run test:e2e` now clicks through the app like a person:
