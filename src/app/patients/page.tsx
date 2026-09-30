@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { HeartPulse, MessageCircle, UserPlus, UserSearch } from "lucide-react";
+import { Users, HeartPulse, MessageCircle, UserPlus, UserSearch } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import {
@@ -105,8 +105,8 @@ function PatientsList() {
     );
 
   return (
-    <PageContainer>
-      <PageHeader
+    <PageContainer section="patients">
+      <PageHeader icon={Users} section="patients"
         title={p.title}
         subtitle={p.subtitle}
         actions={

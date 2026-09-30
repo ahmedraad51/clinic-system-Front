@@ -127,7 +127,7 @@ function PrescriptionDetail() {
   };
 
   return (
-    <PageContainer narrow>
+    <PageContainer section="treatments" narrow>
       <PageHeader
         title={p.title}
         subtitle={

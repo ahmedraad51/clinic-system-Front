@@ -1,5 +1,6 @@
 "use client";
 
+import { Stethoscope } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import RequirePermission from "@/components/Guard";
 import TreatmentForm, { treatmentPayload, treatmentToForm, type TreatmentFormData } from "@/components/forms/TreatmentForm";
@@ -40,8 +41,8 @@ function EditTreatment() {
   };
 
   return (
-    <PageContainer narrow>
-      <PageHeader title={t.treatments.editTitle} subtitle={id} back={{ href: treatmentHref(id), label: t.treatments.what }} />
+    <PageContainer section="treatments" narrow>
+      <PageHeader icon={Stethoscope} section="treatments" title={t.treatments.editTitle} subtitle={id} back={{ href: treatmentHref(id), label: t.treatments.what }} />
       <TreatmentForm
         initial={treatmentToForm(plan)}
         patientLabel={plan.patient_name}

@@ -1,5 +1,6 @@
 "use client";
 
+import { Pill } from "lucide-react";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import RequirePermission from "@/components/Guard";
@@ -47,8 +48,8 @@ function NewPrescription() {
   };
 
   return (
-    <PageContainer narrow>
-      <PageHeader
+    <PageContainer section="treatments" narrow>
+      <PageHeader icon={Pill} section="treatments"
         title={t.prescriptions.newTitle}
         back={{ href: backHref, label: appointment ? t.prescriptions.backAppointment : t.prescriptions.backPatient }}
       />

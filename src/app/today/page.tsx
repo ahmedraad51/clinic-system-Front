@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
+import { ClipboardCheck,
   AlarmClock, Check, CheckCheck, Clock, CreditCard, FileText, FlaskConical, HeartPulse, History, MessageCircle, Plus, RefreshCw, UserX,
   type LucideIcon,
 } from "lucide-react";
@@ -225,8 +225,8 @@ function TodayBoard() {
   const walkInTime = fromMinutes(Math.min(23 * 60 + 45, Math.ceil(nowMinutes / 15) * 15));
 
   return (
-    <PageContainer>
-      <PageHeader
+    <PageContainer section="appointments">
+      <PageHeader icon={ClipboardCheck} section="appointments"
         title={mine ? t.today.titleMine : t.today.title}
         subtitle={formatLongDate(today)}
         actions={

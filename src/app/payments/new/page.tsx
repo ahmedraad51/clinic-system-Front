@@ -1,5 +1,6 @@
 "use client";
 
+import { CreditCard } from "lucide-react";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import RequirePermission from "@/components/Guard";
@@ -42,8 +43,8 @@ function NewPayment() {
   };
 
   return (
-    <PageContainer narrow>
-      <PageHeader
+    <PageContainer section="money" narrow>
+      <PageHeader icon={CreditCard} section="money"
         title={t.payments.newTitle}
         back={{ href: backHref, label: plan ? t.payments.backToPlan : t.payments.title }}
       />

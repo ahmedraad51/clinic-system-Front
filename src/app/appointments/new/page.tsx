@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarPlus } from "lucide-react";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import RequirePermission from "@/components/Guard";
@@ -48,8 +49,8 @@ function NewAppointment() {
   };
 
   return (
-    <PageContainer narrow>
-      <PageHeader title={t.appointments.newAppointment} back={{ href: backHref, label: t.appointments.title }} />
+    <PageContainer section="appointments" narrow>
+      <PageHeader icon={CalendarPlus} section="appointments" title={t.appointments.newAppointment} back={{ href: backHref, label: t.appointments.title }} />
       <AppointmentForm
         initial={initial}
         submitLabel={t.appointments.book}

@@ -38,7 +38,7 @@ function AppointmentCard() {
   }
 
   return (
-    <PageContainer narrow>
+    <PageContainer section="appointments" narrow>
       <PageHeader
         title={card.title}
         subtitle={card.subtitle}

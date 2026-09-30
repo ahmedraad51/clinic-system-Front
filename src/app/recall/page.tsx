@@ -76,8 +76,8 @@ function Recall() {
     whatsappLink(p.phone_number, t.recall.whatsappText(p.full_name, clinicName), countryCode);
 
   return (
-    <PageContainer>
-      <PageHeader
+    <PageContainer section="patients">
+      <PageHeader icon={BellRing} section="patients"
         title={t.recall.title}
         subtitle={t.recall.subtitle}
         actions={

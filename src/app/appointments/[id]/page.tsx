@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ClipboardList, ListChecks, MessageCircle, Pencil, Pill, Printer, Stethoscope, Trash2 } from "lucide-react";
+import { CalendarClock, ClipboardList, ListChecks, MessageCircle, Pencil, Pill, Printer, Stethoscope, Trash2 } from "lucide-react";
 import FinishVisitDialog from "@/components/FinishVisitDialog";
 import RecordHistory from "@/components/RecordHistory";
 import SendWhatsAppDialog from "@/components/SendWhatsAppDialog";
@@ -140,8 +140,8 @@ function AppointmentDetail() {
   };
 
   return (
-    <PageContainer narrow>
-      <PageHeader
+    <PageContainer section="appointments" narrow>
+      <PageHeader icon={CalendarClock} section="appointments"
         title={appointment.patient_name || appointment.patient}
         subtitle={t.appointments.subtitle(formatDate(appointment.appointment_date), formatTime(appointment.appointment_time), id)}
         badge={<StatusBadge kind="appointment" status={appointment.status} />}

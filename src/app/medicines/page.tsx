@@ -49,8 +49,8 @@ function MedicinesList() {
   });
 
   return (
-    <PageContainer>
-      <PageHeader
+    <PageContainer section="treatments">
+      <PageHeader icon={Pill} section="treatments"
         title={m.title}
         subtitle={m.subtitle}
         actions={

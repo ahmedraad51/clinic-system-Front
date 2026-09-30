@@ -1,5 +1,6 @@
 "use client";
 
+import { Pill } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import RequirePermission from "@/components/Guard";
 import PrescriptionForm, { prescriptionPayload, prescriptionToForm, type PrescriptionFormData } from "@/components/forms/PrescriptionForm";
@@ -47,8 +48,8 @@ function EditPrescription() {
   };
 
   return (
-    <PageContainer narrow>
-      <PageHeader
+    <PageContainer section="treatments" narrow>
+      <PageHeader icon={Pill} section="treatments"
         title={t.prescriptions.editTitle}
         subtitle={<span dir="ltr">{id}</span>}
         back={{ href: prescriptionHref(id), label: t.prescriptions.backPrescription }}

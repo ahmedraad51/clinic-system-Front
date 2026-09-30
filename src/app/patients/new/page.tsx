@@ -1,5 +1,6 @@
 "use client";
 
+import { UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import RequirePermission from "@/components/Guard";
 import PatientForm, { EMPTY_PATIENT, patientPayload, type PatientFormData } from "@/components/forms/PatientForm";
@@ -30,8 +31,8 @@ function NewPatient() {
   };
 
   return (
-    <PageContainer narrow>
-      <PageHeader title={t.patients.newTitle} back={{ href: "/patients", label: t.patients.title }} />
+    <PageContainer section="patients" narrow>
+      <PageHeader icon={UserPlus} section="patients" title={t.patients.newTitle} back={{ href: "/patients", label: t.patients.title }} />
       <PatientForm initial={EMPTY_PATIENT} submitLabel={t.patients.savePatient} cancelHref="/patients" onSubmit={handleSubmit} />
     </PageContainer>
   );

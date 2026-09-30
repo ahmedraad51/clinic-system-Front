@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, CreditCard, Download, Receipt, TrendingUp } from "lucide-react";
+import { AlertCircle, BarChart2, BriefcaseMedical, CalendarCheck, CalendarDays, CreditCard, Download, PieChart, Receipt, TrendingUp } from "lucide-react";
+import { BarChart, DonutChart, type ChartPoint } from "@/components/Charts";
 import RequirePermission from "@/components/Guard";
 import {
   Button, Card, EmptyState, LoadError, PageContainer, PageHeader, PageLoading, SelectInput, StatCard,
@@ -12,7 +13,7 @@ import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
 import { label, messages, num } from "@/i18n";
 import { errorMessage, getList, type FilterRow } from "@/lib/frappe";
-import { addDays, downloadCsv, formatDate, formatMonth, monthStart, todayISO } from "@/lib/format";
+import { addDays, addMonths, downloadCsv, formatCompact, formatDate, formatMonth, formatMonthName, monthStart, todayISO } from "@/lib/format";
 import { patientHref, paymentHref, treatmentHref } from "@/lib/links";
 import type { Appointment, Payment, TreatmentPlan } from "@/lib/types";
 
@@ -45,8 +46,43 @@ interface ReportData {
   outstanding: TreatmentPlan[];
   /** Plan → doctor, to share revenue out by doctor. */
   planDoctors: Record<string, string>;
-  /** Appointments in the period up to today, for the outcomes. */
+  /** Appointments in the period up to today, for the outcomes and the per-day chart. */
   appointments: Appointment[];
+  /** Plans started in the period, for the ring of treatment types. */
+  plans: TreatmentPlan[];
+}
+
+/** A period up to this many days is charted day by day; a longer one month by month. */
+const DAILY_UP_TO = 45;
+/** The longest a chart goes back when the period has no start ("All time"). */
+const MOST_MONTHS = 24;
+
+/**
+ * The buckets of a chart from `from` to `to`: days for a short period, months for a long one. Each has its key
+ * (the start of a date, "2026-09-26" or "2026-09"), a short label and a long one.
+ */
+function chartBuckets(from: string, to: string): Array<{ key: string; label: string; fullLabel: string }> {
+  const days: string[] = [];
+  for (let day = from; day <= to && days.length <= DAILY_UP_TO; day = addDays(day, 1)) days.push(day);
+  if (days.length <= DAILY_UP_TO) {
+    return days.map((day) => ({ key: day, label: num(Number(day.slice(8))), fullLabel: formatDate(day) }));
+  }
+  const months: string[] = [];
+  for (let month = monthStart(from); month <= to && months.length < MOST_MONTHS * 2; month = addMonths(month, 1)) {
+    months.push(month.slice(0, 7));
+  }
+  return months.slice(-MOST_MONTHS).map((month) => ({ key: month, label: formatMonthName(month), fullLabel: formatMonth(month) }));
+}
+
+/** Adds up `value` of each row into its bucket (by the start of its date). */
+function sumInto<T>(buckets: ReturnType<typeof chartBuckets>, rows: T[], date: (row: T) => string, value: (row: T) => number): ChartPoint[] {
+  const length = buckets[0]?.key.length ?? 10;
+  const totals = new Map(buckets.map((bucket) => [bucket.key, 0]));
+  rows.forEach((row) => {
+    const key = (date(row) || "").slice(0, length);
+    if (totals.has(key)) totals.set(key, (totals.get(key) ?? 0) + value(row));
+  });
+  return buckets.map((bucket) => ({ label: bucket.label, fullLabel: bucket.fullLabel, value: totals.get(bucket.key) ?? 0 }));
 }
 
 function groupSum(rows: Payment[], keyOf: (row: Payment) => string): Array<[string, number]> {
@@ -87,7 +123,7 @@ function Reports() {
       ];
       try {
         const today = todayISO();
-        const [payments, outstanding, plans, appointments] = await Promise.all([
+        const [payments, outstanding, plans, appointments, started] = await Promise.all([
           getList<Payment>(
             "Payment",
             ["name", "patient", "patient_name", "payment_date", "amount", "payment_method", "treatment_type", "treatment_plan"],
@@ -99,17 +135,26 @@ function Reports() {
             { filters: [["remaining_amount", ">", 0]], orderBy: "remaining_amount desc", limit: 0 },
           ),
           getList<TreatmentPlan>("Treatment Plan", ["name", "doctor_name"], { limit: 0 }),
-          getList<Appointment>("Appointment", ["name", "status"], {
+          getList<Appointment>("Appointment", ["name", "status", "appointment_date"], {
             filters: [
               ...(start ? [["appointment_date", ">=", start] as FilterRow] : []),
               ["appointment_date", "<=", end && end < today ? end : today],
             ],
             limit: 0,
           }),
+          // Plans started in the period (Frappe's own creation time).
+          getList<TreatmentPlan>("Treatment Plan", ["name", "treatment_type", "status", "creation"], {
+            filters: [
+              ...(start ? [["creation", ">=", start] as FilterRow] : []),
+              ...(end ? [["creation", "<", addDays(end, 1)] as FilterRow] : []),
+              ["status", "!=", "Cancelled"],
+            ],
+            limit: 0,
+          }),
         ]);
         const planDoctors = Object.fromEntries(plans.map((plan) => [plan.name, plan.doctor_name || ""]));
         if (!cancelled) {
-          setData({ key, payments, outstanding, planDoctors, appointments });
+          setData({ key, payments, outstanding, planDoctors, appointments, plans: started });
           setFailed("");
         }
       } catch (err) {
@@ -125,7 +170,7 @@ function Reports() {
 
   if (settings.enable_financial_reports === 0) {
     return (
-      <PageContainer narrow>
+      <PageContainer section="reports" narrow>
         <Card>
           <EmptyState
             icon={TrendingUp}
@@ -144,7 +189,7 @@ function Reports() {
   // Never report zeros for a period that could not load.
   if (!data)
     return failed ? (
-      <PageContainer>
+      <PageContainer section="reports">
         <PageHeader title={r.shortTitle} />
         <LoadError message={failed} onRetry={retry} />
       </PageContainer>
@@ -163,9 +208,6 @@ function Reports() {
   const byMethod = groupSum(payments, (row) =>
     row.payment_method ? label(t.enums.paymentMethod, row.payment_method) : r.otherMethod,
   ).sort((a, b) => b[1] - a[1]);
-  const byMonth = groupSum(payments, (row) => (row.payment_date || "").slice(0, 7))
-    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
-    .map(([month, total]): [string, number] => [formatMonth(month), total]);
   const byDoctor = groupSum(payments, (row) =>
     row.treatment_plan ? data.planDoctors[row.treatment_plan] || r.noDoctor : r.generalPayments,
   ).sort((a, b) => b[1] - a[1]);
@@ -175,6 +217,21 @@ function Reports() {
   const cancelledVisits = outcome("Cancelled");
   const stillOpen = outcome("Scheduled") + outcome("Confirmed");
   const noShowRate = completed + noShows > 0 ? Math.round((noShows / (completed + noShows)) * 100) : null;
+  // The charts: from the period's start (or the first record) to its end (or today).
+  const chartTo = to || todayISO();
+  const firstDate = [...payments.map((row) => row.payment_date), ...data.appointments.map((a) => a.appointment_date)]
+    .filter(Boolean)
+    .sort()[0];
+  const chartFrom = from || (firstDate && firstDate > addMonths(chartTo, -MOST_MONTHS) ? firstDate : addMonths(chartTo, -MOST_MONTHS + 1));
+  const buckets = chartFrom && chartFrom <= chartTo ? chartBuckets(chartFrom, chartTo) : [];
+  const daily = (buckets[0]?.key.length ?? 10) === 10;
+  const revenueSeries = sumInto(buckets, payments, (row) => row.payment_date, (row) => Number(row.amount) || 0);
+  const visitSeries = sumInto(buckets, data.appointments.filter((a) => a.status !== "Cancelled"), (a) => a.appointment_date, () => 1);
+  const typeCounts = new Map<string, number>();
+  data.plans.forEach((plan) => typeCounts.set(plan.treatment_type || "", (typeCounts.get(plan.treatment_type || "") ?? 0) + 1));
+  const typeSeries: ChartPoint[] = [...typeCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([type, value]) => ({ label: type ? label(t.enums.treatmentType, type) : r.otherType, value }));
   const rangeLabel =
     from || to ? r.rangeText(from ? formatDate(from) : r.theStart, to ? formatDate(to) : r.today) : r.allTime;
 
@@ -204,8 +261,8 @@ function Reports() {
     );
 
   return (
-    <PageContainer>
-      <PageHeader title={r.title} subtitle={r.subtitle(rangeLabel)} />
+    <PageContainer section="reports">
+      <PageHeader title={r.title} subtitle={r.subtitle(rangeLabel)} icon={BarChart2} section="reports" />
 
       <Toolbar>
         <SelectInput value={range} onChange={(e) => setRange(e.target.value as Range)} className="sm:w-48" aria-label={r.period}>
@@ -226,34 +283,55 @@ function Reports() {
 
       <div className={stale ? "opacity-60 transition-opacity space-y-6" : "space-y-6"}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title={r.revenue} value={money(revenue)} icon={TrendingUp} tone="primary" />
-          <StatCard title={r.payments} value={num(payments.length)} icon={CreditCard} tone="purple" />
+          <StatCard title={r.revenue} value={money(revenue)} icon={TrendingUp} section="money" order={0} />
+          <StatCard title={r.payments} value={num(payments.length)} icon={CreditCard} section="reports" order={1} />
           <StatCard
             title={r.average}
             value={money(payments.length ? revenue / payments.length : 0)}
             icon={Receipt}
-            tone="green"
+            section="patients"
+            order={2}
           />
-          <StatCard title={r.outstanding} value={money(outstandingTotal)} icon={AlertCircle} tone="red" hint={r.outstandingHint} />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card title={r.byTreatment}>
-            <Bars rows={byType} money={money} empty={r.noPayments} />
-          </Card>
-          <Card title={r.byMethod}>
-            <Bars rows={byMethod} money={money} empty={r.noPayments} />
-          </Card>
-          <Card title={r.byMonth}>
-            <Bars rows={byMonth} money={money} empty={r.noPayments} />
-          </Card>
+          <StatCard title={r.outstanding} value={money(outstandingTotal)} icon={AlertCircle} tone="red" hint={r.outstandingHint} order={3} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card title={r.byDoctor}>
+          <Card title={r.byTreatment} icon={Receipt} section="treatments">
+            <Bars rows={byType} money={money} empty={r.noPayments} />
+          </Card>
+          <Card title={r.byMethod} icon={CreditCard} section="money">
+            <Bars rows={byMethod} money={money} empty={r.noPayments} />
+          </Card>
+        </div>
+
+        {/* The charts: money over time, visits per day (or month) and the kinds of treatment started. */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <Card title={r.revenueChart} icon={TrendingUp} section="money">
+            <BarChart
+              label={r.revenueChartLabel(settings.currency || "IQD")}
+              data={revenueSeries}
+              format={(value) => formatCompact(value)}
+              empty={r.noPayments}
+            />
+            <p className="text-xs text-gray-500 mt-3">
+              {daily ? r.byDayNote(settings.currency || "IQD") : r.byMonthNote(settings.currency || "IQD")}
+            </p>
+          </Card>
+          <Card title={daily ? r.visitsChart : r.visitsChartMonths} icon={CalendarDays} section="appointments">
+            <BarChart label={r.visitsChartLabel} data={visitSeries} empty={r.noVisits} />
+            <p className="text-xs text-gray-500 mt-3">{r.visitsNote}</p>
+          </Card>
+        </div>
+        <Card title={r.typesChart} icon={PieChart} section="treatments">
+          <DonutChart label={r.typesChartLabel} data={typeSeries} centerLabel={r.plans} empty={r.noPlans} />
+          <p className="text-xs text-gray-500 mt-3">{r.typesNote}</p>
+        </Card>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card title={r.byDoctor} icon={BriefcaseMedical} section="system">
             <Bars rows={byDoctor} money={money} empty={r.noPayments} />
           </Card>
-          <Card title={r.appointments}>
+          <Card title={r.appointments} icon={CalendarCheck} section="appointments">
             {data.appointments.length === 0 ? (
               <p className="text-sm text-gray-500">{r.noAppointments}</p>
             ) : (
@@ -281,6 +359,8 @@ function Reports() {
 
         <Card
           title={r.latestTitle}
+          icon={Receipt}
+          section="money"
           flush
           actions={
             payments.length > 0 && (
@@ -333,6 +413,8 @@ function Reports() {
 
         <Card
           title={r.outstandingTitle}
+          icon={AlertCircle}
+          section="red"
           flush
           actions={
             data.outstanding.length > 0 && (

@@ -1,5 +1,6 @@
 "use client";
 
+import { UserRound } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import RequirePermission from "@/components/Guard";
 import PatientForm, { patientPayload, patientToForm, type PatientFormData } from "@/components/forms/PatientForm";
@@ -39,8 +40,8 @@ function EditPatient() {
   };
 
   return (
-    <PageContainer narrow>
-      <PageHeader title={t.patients.editTitle(patient.full_name)} back={{ href: patientHref(id), label: patient.full_name }} />
+    <PageContainer section="patients" narrow>
+      <PageHeader icon={UserRound} section="patients" title={t.patients.editTitle(patient.full_name)} back={{ href: patientHref(id), label: patient.full_name }} />
       <PatientForm
         initial={patientToForm(patient)}
         currentName={id}

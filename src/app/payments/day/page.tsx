@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Printer, Receipt } from "lucide-react";
+import { Wallet, Printer, Receipt } from "lucide-react";
 import { CashCountCard, RecentCashCounts } from "@/components/CashCountCard";
 import ClinicLetterhead from "@/components/ClinicLetterhead";
 import RequirePermission from "@/components/Guard";
@@ -75,8 +75,8 @@ function DayReport() {
   });
 
   return (
-    <PageContainer narrow>
-      <PageHeader
+    <PageContainer section="money" narrow>
+      <PageHeader icon={Wallet} section="money"
         title={c.title}
         subtitle={formatLongDate(date)}
         back={{ href: "/payments", label: t.payments.title }}

@@ -16,9 +16,13 @@ export interface ChartPoint {
   fullLabel?: string;
 }
 
+/** More bars than this and the chart turns compact: thinner bars, no values on top, only some labels. */
+const DENSE_AFTER = 12;
+
 /**
  * Vertical bars with the value above each one. `format` writes a value ("450K"); the highest bar is drawn in
- * the full colour, the others lighter, so the best month stands out.
+ * the full colour, the others lighter, so the best month stands out. With many bars (days of a month) the values
+ * move into the tooltips and only every few labels are written.
  */
 export function BarChart({
   data,
@@ -39,15 +43,22 @@ export function BarChart({
   const strong = highlight ?? (max > 0 ? data.findIndex((point) => point.value === max) : -1);
   const summary = `${label}: ${data.map((point) => `${point.fullLabel ?? point.label} ${format(point.value)}`).join(", ")}`;
   if (max === 0) return <p className="text-sm text-gray-500 py-10 text-center">{empty}</p>;
+  const dense = data.length > DENSE_AFTER;
+  // In a compact chart, a label every `step` bars (and on the last one).
+  const step = dense ? Math.ceil(data.length / 7) : 1;
   return (
-    <div role="img" aria-label={summary} className="flex items-end gap-2 sm:gap-3 h-48 pt-6">
+    <div role="img" aria-label={summary} className={cx("flex items-end h-48 pt-6", dense ? "gap-0.5 sm:gap-1" : "gap-2 sm:gap-3")}>
       {data.map((point, index) => {
-        const height = Math.max(3, Math.round((point.value / max) * 100));
-        const style: CSSProperties = { height: `${height}%`, animationDelay: `${index * 60}ms` };
+        const height = point.value > 0 ? Math.max(3, Math.round((point.value / max) * 100)) : 0;
+        const delay = dense ? Math.round((index / data.length) * 600) : index * 60;
+        const style: CSSProperties = { height: `${height}%`, animationDelay: `${delay}ms` };
+        const showLabel = !dense || index % step === 0 || index === data.length - 1;
         return (
           <div key={point.label + index} aria-hidden="true" className="flex-1 min-w-0 h-full flex flex-col items-center justify-end gap-1.5">
-            <span className="text-xs font-semibold text-gray-700 tabular-nums whitespace-nowrap">{point.value > 0 ? format(point.value) : ""}</span>
-            <div className="w-full max-w-14 flex-1 flex items-end">
+            {!dense && (
+              <span className="text-xs font-semibold text-gray-700 tabular-nums whitespace-nowrap">{point.value > 0 ? format(point.value) : ""}</span>
+            )}
+            <div className="w-full max-w-14 flex-1 flex items-end border-b border-gray-100">
               <div
                 title={`${point.fullLabel ?? point.label}: ${format(point.value)}`}
                 style={style}
@@ -58,7 +69,7 @@ export function BarChart({
                 )}
               />
             </div>
-            <span className="text-xs text-gray-500 whitespace-nowrap">{point.label}</span>
+            <span className={cx("text-xs text-gray-500 whitespace-nowrap", !showLabel && "invisible")}>{point.label}</span>
           </div>
         );
       })}

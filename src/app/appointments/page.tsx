@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarDays, CalendarRange, CalendarX, ChevronLeft, ChevronRight, List, Plus } from "lucide-react";
+import { PatientLink } from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import AppointmentCalendar, { type CalendarView } from "@/components/AppointmentCalendar";
 import {
@@ -17,8 +18,8 @@ import { useSettings } from "@/context/SettingsContext";
 import { label } from "@/i18n";
 import type { FilterRow } from "@/lib/frappe";
 import { addDays, display, formatDate, formatLongDate, formatTime, todayISO, weekStart } from "@/lib/format";
-import { searchFilters, useDebounced, useDoctorList, usePagedList } from "@/lib/hooks";
-import { appointmentHref, patientHref } from "@/lib/links";
+import { searchFilters, useDebounced, useDoctorList, usePagedList, usePatientLooks } from "@/lib/hooks";
+import { appointmentHref } from "@/lib/links";
 import { APPOINTMENT_STATUSES, type Appointment } from "@/lib/types";
 
 type View = CalendarView | "list";
@@ -102,8 +103,8 @@ function Appointments() {
   const newHref = `/appointments/new${newParams.size ? `?${newParams.toString()}` : ""}`;
 
   return (
-    <PageContainer>
-      <PageHeader
+    <PageContainer section="appointments">
+      <PageHeader icon={CalendarDays} section="appointments"
         title={t.appointments.title}
         subtitle={view === "list" ? t.appointments.listSubtitle : heading}
         actions={
@@ -204,6 +205,7 @@ function AppointmentsList() {
     orFilters: searchFilters(debounced, ["patient_name", "doctor_name", "reason_for_visit", "name"]),
     orderBy: `appointment_date ${direction}, appointment_time ${direction}`,
   });
+  const looks = usePatientLooks(list.rows.map((row) => row.patient));
   const filtered = Boolean(debounced.trim() || status || when !== "all");
   const clearFilters = () => {
     setSearch("");
@@ -270,9 +272,7 @@ function AppointmentsList() {
                   </Td>
                   <Td label={t.common.time} className="whitespace-nowrap">{formatTime(a.appointment_time)}</Td>
                   <Td label={t.common.patient}>
-                    <Link href={patientHref(a.patient)} className="text-gray-700 hover:text-primary-600">
-                      {a.patient_name || a.patient}
-                    </Link>
+                    <PatientLink id={a.patient} name={a.patient_name} look={looks[a.patient]} />
                   </Td>
                   <Td label={t.common.doctor}>{display(a.doctor_name)}</Td>
                   <Td label={t.appointments.reason} className="max-w-[240px] truncate">{display(a.reason_for_visit)}</Td>

@@ -34,7 +34,7 @@ function ChartPrint() {
   }
 
   return (
-    <PageContainer>
+    <PageContainer section="treatments">
       <PageHeader
         title={t.chart.title}
         subtitle={patient.full_name}

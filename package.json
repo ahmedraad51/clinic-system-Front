@@ -10,7 +10,8 @@
     "test:e2e": "playwright test --project=e2e",
     "screenshots": "playwright test --project=screens",
     "screenshots:readme": "playwright test --project=readme",
-    "screenshots:arabic": "playwright test --project=arabic"
+    "screenshots:arabic": "playwright test --project=arabic",
+    "screenshots:design": "playwright test --project=design-changes"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.18",

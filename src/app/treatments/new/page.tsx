@@ -1,5 +1,6 @@
 "use client";
 
+import { Stethoscope } from "lucide-react";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import RequirePermission from "@/components/Guard";
@@ -41,8 +42,8 @@ function NewTreatment() {
   };
 
   return (
-    <PageContainer narrow>
-      <PageHeader title={t.treatments.newTitle} back={{ href: "/treatments", label: t.treatments.title }} />
+    <PageContainer section="treatments" narrow>
+      <PageHeader icon={Stethoscope} section="treatments" title={t.treatments.newTitle} back={{ href: "/treatments", label: t.treatments.title }} />
       <TreatmentForm initial={initial} submitLabel={t.treatments.saveTreatment} cancelHref="/treatments" onSubmit={handleSubmit} />
     </PageContainer>
   );

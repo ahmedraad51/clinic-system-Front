@@ -17,3 +17,18 @@ test("reports show revenue by doctor and appointment outcomes", async ({ page })
   await expect(visits).toContainText("11%");
   await expect(visits).toContainText("Completed");
 });
+
+test("reports chart revenue and appointments over the period, and the kinds of treatment started", async ({ page }) => {
+  await page.goto("/reports");
+  // This month, day by day: the two payments of 26 Sep make IQD 250,000.
+  const revenue = page.getByRole("img", { name: /^Revenue in IQD:/ });
+  await expect(revenue).toHaveAttribute("aria-label", /26 Sep 2026 250K/);
+  await expect(page.getByRole("heading", { name: "Appointments per Day" })).toBeVisible();
+  await expect(page.getByRole("img", { name: /^Appointments:/ })).toBeVisible();
+
+  // A long period is charted month by month.
+  await page.getByLabel("Period").selectOption("this_year");
+  await expect(page.getByRole("heading", { name: "Appointments per Month" })).toBeVisible();
+  await expect(revenue).toHaveAttribute("aria-label", /Aug 2026 450K/);
+  await expect(page.getByRole("img", { name: /^Treatment plans started in this period, by type:/ })).toBeVisible();
+});

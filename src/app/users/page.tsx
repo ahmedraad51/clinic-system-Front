@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Shield, UserPlus, UserSearch } from "lucide-react";
+import { UserCog, Shield, UserPlus, UserSearch } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import {
@@ -52,8 +52,8 @@ function UsersList() {
   });
 
   return (
-    <PageContainer>
-      <PageHeader
+    <PageContainer section="system">
+      <PageHeader icon={UserCog} section="system"
         title={t.users.title}
         subtitle={t.users.subtitle}
         actions={

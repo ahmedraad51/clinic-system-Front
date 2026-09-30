@@ -5,8 +5,8 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- **Next: Phases 2, 3 and 4**, in both languages: the new look on every screen with real charts on Reports, the
-  X-ray section, then the features from the competitor study.
+- **Next: Phase 3 (a real X-ray section), then Phase 4** (the features from the competitor study), in both
+  languages.
 
 ## Backlog
 
@@ -15,6 +15,12 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Done
 
+- 2026-09-30 - **The new look on every screen (Phase 2).** Every screen now carries the colour of its part of the
+  clinic: an icon in a coloured tile next to its title, and the same colour on its cards, icons and charts. The
+  appointment, treatment and payment lists show each patient's drawing. Reports has three real charts: revenue
+  over time and appointments per day (per month for long periods), and the treatment plans started, by type. The
+  pictures in the README are retaken, and [docs/design-changes](docs/design-changes/README.md) shows every main
+  screen before and after, at desktop, tablet and phone size.
 - 2026-09-30 - **Arabic version.** The app now opens in Arabic, right to left, in a clear Arabic font (IBM Plex
   Sans Arabic). An Arabic / English switch sits in the menu; each person's choice is kept on their account, and the
   computer remembers it too. Settings has a new **Language** card: the clinic's **default language**, and **Arabic

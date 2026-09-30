@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ClipboardList, Plus } from "lucide-react";
+import { Stethoscope, ClipboardList, Plus } from "lucide-react";
+import { PatientLink } from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import {
   Card, ClearFiltersButton, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination, SearchInput,
@@ -14,8 +15,8 @@ import { useSettings } from "@/context/SettingsContext";
 import { label } from "@/i18n";
 import type { FilterRow } from "@/lib/frappe";
 import { display } from "@/lib/format";
-import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
-import { patientHref, treatmentHref } from "@/lib/links";
+import { searchFilters, useDebounced, usePagedList, usePatientLooks } from "@/lib/hooks";
+import { treatmentHref } from "@/lib/links";
 import { TREATMENT_STATUSES, TREATMENT_TYPES, type TreatmentPlan } from "@/lib/types";
 
 export default function TreatmentsPage() {
@@ -48,6 +49,7 @@ function TreatmentsList() {
     orFilters: treatmentSearch(debounced, (type) => label(t.enums.treatmentType, type)),
     orderBy: "name desc",
   });
+  const looks = usePatientLooks(list.rows.map((row) => row.patient));
   const filtered = Boolean(debounced.trim() || status || type);
   const clearFilters = () => {
     setSearch("");
@@ -56,8 +58,8 @@ function TreatmentsList() {
   };
 
   return (
-    <PageContainer>
-      <PageHeader
+    <PageContainer section="treatments">
+      <PageHeader icon={Stethoscope} section="treatments"
         title={t.treatments.title}
         subtitle={t.treatments.subtitle}
         actions={
@@ -130,9 +132,7 @@ function TreatmentsList() {
                     </span>
                   </Td>
                   <Td label={t.common.patient}>
-                    <Link href={patientHref(plan.patient)} className="text-gray-700 hover:text-primary-600">
-                      {plan.patient_name || plan.patient}
-                    </Link>
+                    <PatientLink id={plan.patient} name={plan.patient_name} look={looks[plan.patient]} />
                   </Td>
                   <Td label={t.treatments.tooth}>{display(plan.tooth_number)}</Td>
                   <Td label={t.common.doctor}>{display(plan.doctor_name)}</Td>

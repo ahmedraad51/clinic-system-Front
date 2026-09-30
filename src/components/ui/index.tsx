@@ -128,9 +128,13 @@ export function StatusBadge({ kind, status }: { kind: StatusKind; status?: strin
 
 /* --------------------------------------------------------------- layout -- */
 
-export function PageContainer({ children, narrow = false }: { children: ReactNode; narrow?: boolean }) {
+/**
+ * The page's frame. `section` gives everything inside the colour of that part of the clinic (icon tiles, charts,
+ * the header's icon), unless a card sets its own.
+ */
+export function PageContainer({ children, narrow = false, section }: { children: ReactNode; narrow?: boolean; section?: Hue }) {
   return (
-    <div className={cx("mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6", narrow ? "max-w-3xl" : "max-w-7xl")}>
+    <div className={cx("mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6", narrow ? "max-w-3xl" : "max-w-7xl", hueClass(section))}>
       {children}
     </div>
   );
@@ -143,6 +147,8 @@ export function PageHeader({
   actions,
   badge,
   avatar,
+  icon,
+  section,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
@@ -151,6 +157,9 @@ export function PageHeader({
   badge?: ReactNode;
   /** A picture before the title, e.g. the patient's Avatar. */
   avatar?: ReactNode;
+  /** The screen's icon, in a tile of its section's colour before the title (when there is no avatar). */
+  icon?: CardIconType;
+  section?: Hue;
 }) {
   return (
     <div className="space-y-2">
@@ -165,7 +174,7 @@ export function PageHeader({
       )}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="min-w-0 flex items-center gap-4">
-          {avatar}
+          {avatar ?? (icon && <IconTile icon={icon} hue={section} size="lg" className="max-sm:hidden" />)}
           <div className="min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl font-bold text-gray-900 break-words">{title}</h1>

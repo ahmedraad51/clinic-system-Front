@@ -31,7 +31,7 @@ accurate.
 | `npm run build` | **Passes** (checked 2026-09-30): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-30). `npx tsc --noEmit` passes too. | |
 | Languages | **Arabic (default, right to left) and English.** Every text is in `src/i18n/en/*.ts` and `src/i18n/ar/*.ts`; the switch is in the menu. See **Languages** below. **Every new text must be added in both languages.** | `src/i18n/`, `src/context/LanguageContext.tsx` |
-| Tests | **Playwright tests pass** (129 tests, 9 of them in Arabic, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (130 tests, 9 of them in Arabic, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -51,6 +51,7 @@ Both flags are set this way on purpose. Leave them alone unless the task is abou
 | `npm run screenshots` | Full-page screenshots of every page at desktop 1440×900, tablet 1024×768 and phone 390×844, saved to `screenshots/<size>/<page>.png` (ignored by git). `PAGES=dashboard,patients` limits it; `SKIP_BUILD=1` works here too. |
 | `npm run screenshots:readme` | Retakes the pictures in `README.md` into `docs/screenshots/` (desktop, dummy data). Run it after a visible change and commit the images. `SKIP_BUILD=1` works here too |
 | `npm run screenshots:arabic` | The main screens in Arabic at desktop, tablet and phone size into `docs/arabic/<size>/<screen>.png` (dummy data, 26 September 2026). `SKIP_BUILD=1` works here too |
+| `npm run screenshots:design` | The redesign's "after" pictures (main screens in English at three sizes) into `docs/design-changes/after/`; the "before" ones come from the plain design (commit 147e676). `SKIP_BUILD=1` works here too |
 
 The Frappe address comes from the `FRAPPE_URL` environment variable (for example in `.env.local`), default
 `http://dent_clinic.localhost:8000`. See `next.config.ts`.
@@ -200,7 +201,9 @@ src/
     └── links.ts              URL builders for records (always use these)
 docs/
 ├── backend-todo.md           what the back end must provide for this front end
-└── screenshots/              images used by README.md (retake with npm run screenshots:readme)
+├── screenshots/              images used by README.md (retake with npm run screenshots:readme)
+├── arabic/                   the main screens in Arabic at three sizes (npm run screenshots:arabic)
+└── design-changes/           the redesign before and after, at three sizes (npm run screenshots:design)
 public/                       placeholder SVGs from create-next-app (unused)
 e2e/
 ├── helpers.ts                waitForData, navigate (client-side, keeps the dummy data), openFromMenu, pickLink
@@ -253,7 +256,7 @@ on the form, and a click made while the save is still running is overridden by t
 | `/payments/day` | `view_payments` | End-of-day report for `?date=` (default today): totals per payment method and overall, every payment of the day, a **Cash in the drawer** box (`CashCountCard`): Opening float and Cash counted boxes, Should be in the drawer (float + the day's Cash payments), Matched / Short by / Over by (`compareCash()` in `src/lib/cashCount.ts`), a Note required when short or over, and **Save Count** / **Update Count** (`add_payments`), saved as one **Cash Count** per day with who counted it and when (a notice appears if the day's Cash payments changed after the count); on paper the typed values print, empty ones as lines; Counted by / Checked by lines; and below, **Recent cash counts** (`RecentCashCounts`: the last 14 days counted, each day opening its report) so a manager can look back. Linked from Payments and the Today board |
 | `/payments/[id]` | `view_payments` | Printable receipt with clinic details; under it a **Receipt slip** row (`ReceiptSlipControls`): **Print Slip** prints the receipt for a 58 or 80 mm thermal receipt printer (clinic, receipt number, date, patient, what it was for, method, amount, **Left on this treatment** as it was right after this payment (the plan's cost minus its payments up to this one, so a reprint shows the same figure; none for a general payment or a cancelled plan), notes, and "Printed <time> by <user>"; the button waits until that balance has loaded) and **Slip Settings** sets this computer's paper width (58, 80 or 40-120 mm), side margin (0-10 mm) and text size, with **Print Test Slip**, kept in `localStorage.receipt_slip_paper`; a **History** card at the bottom (`RecordHistory`, not printed); Edit/Delete (`add_payments`); **WhatsApp** opens `wa.me` with a short receipt (amount, date, treatment, receipt number and method, and what the patient still has to pay) when `enable_whatsapp` is on |
 | `/payments/[id]/edit` | `add_payments` | Shared `PaymentForm` |
-| `/reports` | `view_reports`, and Clinic Settings `enable_financial_reports` | Period picker; revenue, count, average, outstanding; revenue by treatment, method and month; latest payments; outstanding balances; CSV export of both; revenue by **doctor** (through each payment's treatment plan; payments without a plan are "General payments") and **Appointments** outcomes up to today (completed, no show, cancelled, still open) with the no-show rate, no-shows out of completed plus no-shows, shown red at 15% or more |
+| `/reports` | `view_reports`, and Clinic Settings `enable_financial_reports` | Period picker; revenue, count, average, outstanding; revenue by treatment, method and month; latest payments; outstanding balances; CSV export of both; revenue by **doctor** (through each payment's treatment plan; payments without a plan are "General payments") and **Appointments** outcomes up to today (completed, no show, cancelled, still open) with the no-show rate, no-shows out of completed plus no-shows, shown red at 15% or more Three charts (`Charts.tsx`): **Revenue over Time** and **Appointments per Day** (a day per bar up to 45 days, else a month per bar, at most 24 months; cancelled appointments left out; appointments up to today), and **Treatment Plans by Type** (a ring of the plans started in the period, from Frappe's `creation`, not counting cancelled ones). |
 | `/doctors` | `manage_users` | Doctor list (search, Active / Not active filter, paging); Add Doctor and Edit in a dialog: name, specialization (`DOCTOR_SPECIALIZATIONS`), phone, email, working hours (`start_time`, `end_time`; both or neither, end after start), **gender** (for the drawn avatar), a **photo** (Upload Photo / Change Photo / Remove Photo, an image up to 5 MB through `uploadFile`, shown as the doctor's `Avatar` in lists, the calendar and the Today board) and Active. No delete: switch Active off |
 | `/medicines` | `manage_users` | The medicine list (search, Active filter, paging); Add Medicine and Edit in a dialog: name, strength, form (`MEDICINE_FORMS`), group (`MEDICINE_GROUPS`), the usual dose / how often / days / instructions, and the warning flags (allergy words, daily maximum in mg, note for children, NSAID, avoid in pregnancy) and Active. No delete: switch Active off, so old prescriptions keep their rows |
 | `/users` | `manage_users` | Staff list (without Administrator and Guest), search, status filter, Add User dialog (can apply the role's usual permissions) |
@@ -638,7 +641,7 @@ function Things() {
 
 ### The UI kit (`src/components/ui`)
 
-`PageContainer` (`narrow` for forms), `PageHeader` (title, subtitle, back link, actions, badge, `avatar`), `Card`
+`PageContainer` (`narrow` for forms; `section` colours every icon tile and chart inside), `PageHeader` (title, subtitle, back link, actions, badge, `avatar`, or `icon` + `section`: the screen's icon in a gradient tile; give every screen one), `Card`
 (`flush` for tables; `icon` draws a lucide icon, or `ToothLogo`, in a small coloured tile before the title, via
 `CardIcon`: give every titled card on a record page one; `section` gives the card the colour of a part of the clinic), `CARD_CLASS` (the card look, for boxes that are not a `Card`), `IconTile` (an icon in a coloured rounded tile; `hue`, sizes sm, md, lg), `hueClass(hue)`, `StatCard` (`section` for its colour, `order` for the rise-in delay), `ActionTile` (a large tile for an everyday job, with a hint; `section`, `order`), `Badge`, `StatusBadge` (kinds: appointment, treatment, session, method,
 whatsapp, trigger, user) and `statusTone(kind, status)` for other views that must match the badge colours,
@@ -665,6 +668,10 @@ writing new class lists.
   `bg-sec-light`, `text-sec-ink` (readable text), `from-sec`, `to-sec-deep` use it. Pass `section` to `Card`,
   `StatCard` and `ActionTile`, or `hue` to `IconTile` (a `Tone` works too: `sec-red`, `sec-green` …). Write the
   class names out in full (`hueClass` does): Tailwind only builds classes it can find in the code.
+- **Every screen carries its section's colour**: `<PageContainer section="patients">` and `<PageHeader icon={Users} section="patients">`
+  (printouts only the container). Lists show the patient with `<PatientLink id name look />` (`Avatar.tsx`, looks from
+  `usePatientLooks`), cards on record pages have an `icon`. `BarChart` turns compact after 12 bars (thin bars,
+  values in the tooltips, every few labels).
 - **Avatars:** show a person with `<Avatar name gender age photo role="doctor" size />` (`src/components/Avatar.tsx`)
   or `<MyAvatar />` for the user. They are `aria-hidden`, so always write the name next to them. Patients under 13
   are drawn as children. Details (skin tone, hair, beard, headscarf, glasses) come from the name, so they never

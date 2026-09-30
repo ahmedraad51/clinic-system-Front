@@ -1,5 +1,6 @@
 "use client";
 
+import { CreditCard } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import RequirePermission from "@/components/Guard";
 import PaymentForm, { paymentPayload, paymentToForm, type PaymentFormData } from "@/components/forms/PaymentForm";
@@ -46,8 +47,8 @@ function EditPayment() {
   };
 
   return (
-    <PageContainer narrow>
-      <PageHeader title={t.payments.editTitle} subtitle={id} back={{ href: paymentHref(id), label: t.payments.backToPayment }} />
+    <PageContainer section="money" narrow>
+      <PageHeader icon={CreditCard} section="money" title={t.payments.editTitle} subtitle={id} back={{ href: paymentHref(id), label: t.payments.backToPayment }} />
       <PaymentForm
         initial={paymentToForm(payment)}
         patientLabel={payment.patient_name}

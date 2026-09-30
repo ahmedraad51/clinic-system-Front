@@ -1,9 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useSession } from "@/context/SessionContext";
 import { avatarLook, type AvatarLook } from "@/lib/avatar";
 import { cx } from "@/lib/format";
 import { fileHref } from "@/lib/frappe";
+import type { PatientLook } from "@/lib/hooks";
+import { patientHref } from "@/lib/links";
 
 /**
  * A round picture of a person: their uploaded photo when there is one (doctors, users), otherwise a friendly
@@ -159,5 +162,15 @@ export function MyAvatar({ size = 32, className }: { size?: number; className?: 
       size={size}
       className={className}
     />
+  );
+}
+
+/** A patient in a list: their drawing and their name, linking to their page. `look` comes from usePatientLooks(). */
+export function PatientLink({ id, name, look }: { id: string; name?: string | null; look?: PatientLook }) {
+  return (
+    <Link href={patientHref(id)} className="inline-flex items-center gap-2.5 text-gray-700 hover:text-primary-600">
+      <Avatar name={name || id} gender={look?.gender} age={look?.age} size={30} className="max-sm:hidden" />
+      <span className="min-w-0">{name || id}</span>
+    </Link>
   );
 }

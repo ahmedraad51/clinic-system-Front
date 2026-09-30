@@ -8,6 +8,7 @@ import { defineConfig, devices } from "@playwright/test";
  *   npm run screenshots   every page at desktop, tablet and phone size, saved to screenshots/
  *   npm run screenshots:readme   the pictures in README.md, saved to docs/screenshots/
  *   npm run screenshots:arabic   the main screens in Arabic at three sizes, saved to docs/arabic/
+ *   npm run screenshots:design   the redesign's "after" pictures, saved to docs/design-changes/after/
  */
 const PORT = Number(process.env.E2E_PORT || 3100);
 const BASE_URL = `http://localhost:${PORT}`;
@@ -36,6 +37,11 @@ export default defineConfig({
     {
       name: "arabic",
       testDir: "e2e/arabic",
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "design-changes",
+      testDir: "e2e/design-changes",
       use: { ...devices["Desktop Chrome"] },
     },
     {

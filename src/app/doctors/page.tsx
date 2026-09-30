@@ -50,8 +50,8 @@ function DoctorsList() {
   });
 
   return (
-    <PageContainer>
-      <PageHeader
+    <PageContainer section="system">
+      <PageHeader icon={BriefcaseMedical} section="system"
         title={t.doctors.title}
         subtitle={t.doctors.subtitle}
         actions={

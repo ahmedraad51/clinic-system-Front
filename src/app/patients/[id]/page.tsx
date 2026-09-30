@@ -200,7 +200,7 @@ function PatientDetail() {
   const remaining = Number(patient.total_remaining) || 0;
 
   return (
-    <PageContainer>
+    <PageContainer section="patients">
       <PageHeader
         title={patient.full_name}
         subtitle={subtitle}

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FileText, Plus, Receipt } from "lucide-react";
+import { CreditCard, FileText, Plus, Receipt } from "lucide-react";
+import { PatientLink } from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import {
   Card, ClearFiltersButton, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination, SearchInput,
@@ -14,8 +15,8 @@ import { useSettings } from "@/context/SettingsContext";
 import { label } from "@/i18n";
 import { getList, type FilterRow } from "@/lib/frappe";
 import { display, formatDate } from "@/lib/format";
-import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
-import { patientHref, paymentHref, treatmentHref } from "@/lib/links";
+import { searchFilters, useDebounced, usePagedList, usePatientLooks } from "@/lib/hooks";
+import { paymentHref, treatmentHref } from "@/lib/links";
 import { PAYMENT_METHODS, type Payment } from "@/lib/types";
 
 export default function PaymentsPage() {
@@ -51,6 +52,7 @@ function PaymentsList() {
     orFilters,
     orderBy: "payment_date desc, name desc",
   });
+  const looks = usePatientLooks(list.rows.map((row) => row.patient));
 
   // The total of every payment that matches, not just this page.
   const sumKey = JSON.stringify({ filters, orFilters });
@@ -84,8 +86,8 @@ function PaymentsList() {
   };
 
   return (
-    <PageContainer>
-      <PageHeader
+    <PageContainer section="money">
+      <PageHeader icon={CreditCard} section="money"
         title={p.title}
         subtitle={
           sum ? (
@@ -165,9 +167,7 @@ function PaymentsList() {
                     <span className="block text-xs text-gray-500">{pay.name}</span>
                   </Td>
                   <Td label={p.colPatient}>
-                    <Link href={patientHref(pay.patient)} className="text-gray-700 hover:text-primary-600">
-                      {pay.patient_name || pay.patient}
-                    </Link>
+                    <PatientLink id={pay.patient} name={pay.patient_name} look={looks[pay.patient]} />
                   </Td>
                   <Td label={p.colTreatment}>
                     {pay.treatment_plan ? (

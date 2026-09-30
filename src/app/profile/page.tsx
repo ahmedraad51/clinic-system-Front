@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { Check, KeyRound, Users, X } from "lucide-react";
+import { UserRound, Check, KeyRound, Users, X } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import { MyAvatar } from "@/components/Avatar";
 import ScreenSizeCard from "@/components/ScreenSizeCard";
@@ -35,7 +35,7 @@ function Profile() {
 
   return (
     <PageContainer narrow>
-      <PageHeader title={t.profile.title} />
+      <PageHeader icon={UserRound} section="primary" title={t.profile.title} />
 
       <Card>
         <div className="flex items-center gap-4">

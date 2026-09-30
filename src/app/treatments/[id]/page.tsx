@@ -3,7 +3,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { CalendarCheck, CalendarPlus, ClipboardList, CreditCard, ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
+import { Stethoscope, CalendarCheck, CalendarPlus, ClipboardList, CreditCard, ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import DentalChart from "@/components/DentalChart";
 import RecordHistory from "@/components/RecordHistory";
@@ -164,8 +164,8 @@ function TreatmentDetail() {
   const paymentHrefForPlan = `/payments/new?treatment=${encodeURIComponent(id)}&patient=${encodeURIComponent(plan.patient)}`;
 
   return (
-    <PageContainer>
-      <PageHeader
+    <PageContainer section="treatments">
+      <PageHeader icon={Stethoscope} section="treatments"
         title={title}
         subtitle={`${plan.patient_name || plan.patient}${t.common.dot}${id}`}
         badge={<StatusBadge kind="treatment" status={plan.status} />}

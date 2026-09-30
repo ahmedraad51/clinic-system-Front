@@ -169,7 +169,7 @@ function PaymentDetail() {
   };
 
   return (
-    <PageContainer narrow>
+    <PageContainer section="money" narrow>
       <PageHeader
         title={p.receiptTitle}
         subtitle={id}

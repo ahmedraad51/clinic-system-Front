@@ -71,7 +71,7 @@ function Estimate() {
   const today = todayISO();
 
   return (
-    <PageContainer narrow>
+    <PageContainer section="treatments" narrow>
       <PageHeader
         title={t.estimate.title}
         subtitle={patient.full_name}

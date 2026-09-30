@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Check, Save, Shield } from "lucide-react";
+import { UserCog, Check, Save, Shield } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import {
@@ -126,8 +126,8 @@ function UserDetail() {
   };
 
   return (
-    <PageContainer narrow>
-      <PageHeader title={t.users.manageUser} back={{ href: "/users", label: t.users.title }} />
+    <PageContainer section="system" narrow>
+      <PageHeader icon={UserCog} section="system" title={t.users.manageUser} back={{ href: "/users", label: t.users.title }} />
 
       <Card>
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">

@@ -77,7 +77,7 @@ function Statement() {
   const paid = (ready?.payments ?? []).reduce((sum, pay) => sum + (Number(pay.amount) || 0), 0);
 
   return (
-    <PageContainer narrow>
+    <PageContainer section="money" narrow>
       <PageHeader
         title={s.title}
         subtitle={patient.full_name}

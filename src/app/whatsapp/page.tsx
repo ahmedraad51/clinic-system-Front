@@ -40,8 +40,8 @@ function WhatsApp() {
   const [tab, setTab] = useState<TabKey>("templates");
 
   return (
-    <PageContainer>
-      <PageHeader title={t.whatsapp.title} subtitle={t.whatsapp.subtitle} />
+    <PageContainer section="whatsapp">
+      <PageHeader icon={MessageCircle} section="whatsapp" title={t.whatsapp.title} subtitle={t.whatsapp.subtitle} />
       {settings.enable_whatsapp === 0 && (
         <Alert tone="yellow" title={t.whatsapp.offTitle}>
           {t.whatsapp.offTextBefore}{" "}

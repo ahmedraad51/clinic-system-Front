@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarClock } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import RequirePermission from "@/components/Guard";
 import AppointmentForm, {
@@ -43,8 +44,8 @@ function EditAppointment() {
   };
 
   return (
-    <PageContainer narrow>
-      <PageHeader title={t.appointments.editTitle} subtitle={id} back={{ href: appointmentHref(id), label: t.appointments.appointment }} />
+    <PageContainer section="appointments" narrow>
+      <PageHeader icon={CalendarClock} section="appointments" title={t.appointments.editTitle} subtitle={id} back={{ href: appointmentHref(id), label: t.appointments.appointment }} />
       <AppointmentForm
         initial={appointmentToForm(appointment)}
         currentName={id}

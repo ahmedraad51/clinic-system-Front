@@ -2,7 +2,7 @@
 
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import ToothLogo from "@/components/ToothLogo";
-import { Save, Sparkles, Trash2, Upload } from "lucide-react";
+import { Settings, Save, Sparkles, Trash2, Upload } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import {
@@ -101,8 +101,8 @@ function SettingsView() {
 
   if (loading) return <PageLoading />;
   return (
-    <PageContainer narrow>
-      <PageHeader title={t.settings.title} subtitle={t.settings.subtitle} />
+    <PageContainer section="system" narrow>
+      <PageHeader icon={Settings} section="system" title={t.settings.title} subtitle={t.settings.subtitle} />
       {doc ? (
         <SettingsFormView initial={doc} onSaved={reload} />
       ) : (
