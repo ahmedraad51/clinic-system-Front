@@ -55,6 +55,8 @@ export const history: Messages["history"] = {
     Appointment: {
       appointment_date: "التاريخ",
       appointment_time: "الوقت",
+      arrived_at: "الوصول",
+      in_chair_at: "على الكرسي",
       duration_minutes: "المدة (دقائق)",
       reason_for_visit: "سبب الزيارة",
     },

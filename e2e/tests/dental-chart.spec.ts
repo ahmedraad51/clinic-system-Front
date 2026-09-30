@@ -57,7 +57,9 @@ test("a treatment plan shows the chart at its tooth, and the chart prints", asyn
   await expect(page.getByRole("button", { name: "Root canal", exact: true })).toHaveCount(0);
 
   await page.getByRole("link", { name: "Print", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Dental Chart" })).toBeVisible();
+  // The printable page's own title (the chart card on the plan has a heading of the same name).
+  await expect(page).toHaveURL(/\/patients\/[^/]+\/chart$/);
+  await expect(page.getByRole("heading", { name: "Dental Chart", level: 1 })).toBeVisible();
   await waitForData(page);
   await expect(page.getByRole("button", { name: /^36\s/ })).toContainText("Crown, root canal");
 });

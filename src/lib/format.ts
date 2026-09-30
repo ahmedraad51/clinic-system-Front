@@ -111,6 +111,12 @@ export function todayISO(): string {
   return toISODate(new Date());
 }
 
+/** Now as Frappe writes a Datetime, in local time: "2026-09-26 10:05:00". */
+export function nowDateTime(): string {
+  const now = new Date();
+  return `${toISODate(now)} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+
 export function addDays(iso: string, days: number): string {
   const [year, month, day] = iso.split("-").map(Number);
   return toISODate(new Date(year, month - 1, day + days));

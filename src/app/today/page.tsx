@@ -5,7 +5,8 @@ import { useRecordDialogs } from "@/components/RecordDialogs";
 import { useDataVersion } from "@/lib/dataVersion";
 import Link from "next/link";
 import { ClipboardCheck,
-  AlarmClock, Check, CheckCheck, Clock, CreditCard, FileText, FlaskConical, HeartPulse, History, MessageCircle, Plus, RefreshCw, UserX,
+  AlarmClock, Armchair, Check, CheckCheck, Clock, CreditCard, DoorOpen, FileText, FlaskConical, HeartPulse, History, Hourglass, MessageCircle,
+  Plus, RefreshCw, Tv, Undo2, UserX,
   type LucideIcon,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
@@ -21,11 +22,12 @@ import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { label, messages, num } from "@/i18n";
 import { errorMessage, getList, updateDoc } from "@/lib/frappe";
-import { addDays, cx, formatDate, formatLongDate, formatTime, fromMinutes, todayISO, toMinutes } from "@/lib/format";
+import { addDays, cx, formatDate, formatLongDate, formatTime, fromMinutes, nowDateTime, todayISO, toMinutes } from "@/lib/format";
 import { useDoctors, useOpenBalances } from "@/lib/hooks";
 import { appointmentHref, patientHref, treatmentHref } from "@/lib/links";
 import { MEDICAL_FIELDS, medicalFlags } from "@/lib/medical";
 import { fillAppointmentMessage, pickTemplate, whatsappLink } from "@/lib/whatsapp";
+import { minutesSince, visitStep } from "@/lib/waitingRoom";
 import type { Appointment, AppointmentStatus, Patient, TreatmentPlan, WhatsAppTemplate } from "@/lib/types";
 
 /** Minutes after the start time before a patient who has not been seen counts as late. */
@@ -98,7 +100,7 @@ function TodayBoard() {
           "Appointment",
           [
             "name", "patient", "patient_name", "doctor", "doctor_name", "appointment_time", "duration_minutes",
-            "status", "reason_for_visit",
+            "status", "reason_for_visit", "arrived_at", "in_chair_at",
           ],
           { filters: [["appointment_date", "=", today]], orderBy: "appointment_time asc", limit: 0 },
         );
@@ -181,16 +183,35 @@ function TodayBoard() {
     }
   };
 
+  // The waiting room steps: arrived at the desk, then in the chair (and back one step if tapped by mistake).
+  const setStep = async (appointment: Appointment, change: Pick<Appointment, "arrived_at" | "in_chair_at">, step: string) => {
+    setSaving(appointment.name);
+    try {
+      await updateDoc("Appointment", appointment.name, change);
+      setBoard(
+        (prev) => prev && { ...prev, appointments: prev.appointments.map((a) => (a.name === appointment.name ? { ...a, ...change } : a)) },
+      );
+      toast.success(t.today.stepSaved(appointment.patient_name || appointment.patient, step));
+    } catch (err) {
+      toast.error(errorMessage(err, t.today.statusFailed));
+    } finally {
+      setSaving(null);
+    }
+  };
+
   if (!board && !error) return <PageLoading />;
 
   const appointments = (board?.appointments ?? []).filter((a) => !mine || a.doctor === mine);
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const open = (a: Appointment) => a.status === "Scheduled" || a.status === "Confirmed";
-  const minutesLate = (a: Appointment) => (open(a) ? nowMinutes - toMinutes(a.appointment_time) : 0);
+  // Someone already in the waiting room is not late.
+  const minutesLate = (a: Appointment) => (open(a) && !a.arrived_at ? nowMinutes - toMinutes(a.appointment_time) : 0);
   const isLate = (a: Appointment) => minutesLate(a) >= LATE_AFTER;
 
   const counts = {
-    toCome: appointments.filter(open).length,
+    toCome: appointments.filter((a) => open(a) && !a.arrived_at).length,
+    waiting: appointments.filter((a) => visitStep(a) === "waiting").length,
+    inChair: appointments.filter((a) => visitStep(a) === "in_chair").length,
     late: appointments.filter(isLate).length,
     done: appointments.filter((a) => a.status === "Completed").length,
     missed: appointments.filter((a) => a.status === "No Show").length,
@@ -258,6 +279,9 @@ function TodayBoard() {
                 {t.today.dayReport}
               </LinkButton>
             )}
+            <LinkButton href="/waiting-room" variant="secondary" icon={Tv}>
+              {t.today.waitingRoomScreen}
+            </LinkButton>
             <Button variant="secondary" icon={RefreshCw} onClick={() => setVersion((v) => v + 1)}>
               {t.common.refresh}
             </Button>
@@ -283,8 +307,10 @@ function TodayBoard() {
       {/* Nothing loaded yet: no zeros and no "No appointments today", only the error above. */}
       {board && (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
             <Count label={t.today.counts.toCome} value={counts.toCome} icon={Clock} hue="appointments" />
+            <Count label={t.today.counts.waiting} value={counts.waiting} icon={Hourglass} hue={counts.waiting ? "yellow" : "gray"} />
+            <Count label={t.today.counts.inChair} value={counts.inChair} icon={Armchair} hue={counts.inChair ? "blue" : "gray"} />
             <Count label={t.today.counts.late} value={counts.late} icon={AlarmClock} hue={counts.late ? "yellow" : "gray"} />
             <Count label={t.today.counts.completed} value={counts.done} icon={CheckCheck} hue="green" />
             <Count label={t.today.counts.noShow} value={counts.missed} icon={UserX} hue={counts.missed ? "red" : "gray"} />
@@ -332,6 +358,7 @@ function TodayBoard() {
                       const owes = Number(patient?.total_remaining) || 0;
                       const late = isLate(a);
                       const busy = saving === a.name;
+                      const step = visitStep(a);
                       return (
                         <li
                           key={a.name}
@@ -357,7 +384,13 @@ function TodayBoard() {
                                 >
                                   {a.patient_name || a.patient}
                                 </Link>
-                                <StatusBadge kind="appointment" status={a.status} />
+                                {step === "waiting" ? (
+                                  <Badge tone="yellow">{t.today.waitingFor(minutesSince(a.arrived_at, now))}</Badge>
+                                ) : step === "in_chair" ? (
+                                  <Badge tone="blue">{t.today.inChairSince(formatTime((a.in_chair_at ?? "").slice(11, 16)))}</Badge>
+                                ) : (
+                                  <StatusBadge kind="appointment" status={a.status} />
+                                )}
                                 {urgent.length > 0 && (
                                   <span
                                     className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 px-2 py-0.5 text-xs font-medium"
@@ -386,9 +419,25 @@ function TodayBoard() {
 
                           {(canEdit || (showMoney && can("add_payments"))) && (
                             <div className="flex flex-wrap gap-2 sm:ps-[9.25rem]">
-                              {canEdit && a.status === "Scheduled" && (
+                              {canEdit && a.status === "Scheduled" && !a.arrived_at && (
                                 <Button size="sm" variant="secondary" icon={Check} loading={busy} onClick={() => setStatus(a, "Confirmed")}>
                                   {t.today.confirm}
+                                </Button>
+                              )}
+                              {canEdit && open(a) && !a.arrived_at && (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  icon={DoorOpen}
+                                  disabled={busy}
+                                  onClick={() => setStep(a, { arrived_at: nowDateTime() }, t.today.stepArrived)}
+                                >
+                                  {t.today.arrived}
+                                </Button>
+                              )}
+                              {canEdit && step === "waiting" && (
+                                <Button size="sm" icon={Armchair} disabled={busy} onClick={() => setStep(a, { in_chair_at: nowDateTime() }, t.today.stepInChair)}>
+                                  {t.today.inChair}
                                 </Button>
                               )}
                               {canEdit && open(a) && (
@@ -406,6 +455,19 @@ function TodayBoard() {
                                   className="text-red-600 hover:bg-red-50"
                                 >
                                   {t.today.noShow}
+                                </Button>
+                              )}
+                              {canEdit && step && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  icon={Undo2}
+                                  disabled={busy}
+                                  onClick={() =>
+                                    setStep(a, step === "in_chair" ? { in_chair_at: null } : { arrived_at: null }, t.today.stepUndone)
+                                  }
+                                >
+                                  {t.today.undoStep}
                                 </Button>
                               )}
                               {canEdit && (a.status === "Completed" || a.status === "No Show") && (

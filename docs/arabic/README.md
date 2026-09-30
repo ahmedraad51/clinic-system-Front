@@ -16,6 +16,7 @@ Retake them with `npm run screenshots:arabic`.
 | Payments | ![](desktop/payments.png) | ![](tablet/payments.png) | ![](phone/payments.png) |
 | Receipt | ![](desktop/receipt.png) | ![](tablet/receipt.png) | ![](phone/receipt.png) |
 | Expenses | ![](desktop/expenses.png) | ![](tablet/expenses.png) | ![](phone/expenses.png) |
+| Waiting room screen | ![](desktop/waiting-room.png) | ![](tablet/waiting-room.png) | ![](phone/waiting-room.png) |
 | Reports | ![](desktop/reports.png) | ![](tablet/reports.png) | ![](phone/reports.png) |
 | Prescription | ![](desktop/prescription.png) | ![](tablet/prescription.png) | ![](phone/prescription.png) |
 | Settings | ![](desktop/settings.png) | ![](tablet/settings.png) | ![](phone/settings.png) |

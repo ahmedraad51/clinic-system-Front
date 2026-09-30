@@ -162,6 +162,10 @@ export interface Doctor extends BaseDoc {
 }
 
 export interface Appointment extends BaseDoc {
+  /** When the patient reported at the front desk (the waiting room), "YYYY-MM-DD HH:mm:ss"; empty until then. */
+  arrived_at?: string | null;
+  /** When the patient was called into the chair; empty until then. */
+  in_chair_at?: string | null;
   patient: string;
   /** Read-only, fetched from the patient. */
   patient_name?: string;

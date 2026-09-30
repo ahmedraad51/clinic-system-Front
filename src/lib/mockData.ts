@@ -633,6 +633,8 @@ export function setMockUser(user: string | null): void {
 /** Like Frappe, every record has every field: 0 for numbers and checks, null for the rest, unless set. */
 const DEFAULTS: Record<string, Record<string, MockValue>> = {
   Patient: { next_recall_date: null, recall_interval_months: 0, no_recall: 0 },
+  // The waiting room steps, set on the Today board.
+  Appointment: { arrived_at: null, in_chair_at: null },
 };
 
 function applyDefaults(doctype: string, doc: MockDoc): void {

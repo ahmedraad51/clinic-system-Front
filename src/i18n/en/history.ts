@@ -58,6 +58,8 @@ export const history = {
       appointment_time: "Time",
       duration_minutes: "Length (minutes)",
       reason_for_visit: "Reason",
+      arrived_at: "Arrived",
+      in_chair_at: "In the chair",
     },
     "Treatment Plan": {
       treatment_type: "Treatment",

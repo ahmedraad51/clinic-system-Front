@@ -43,6 +43,7 @@ const PAGES: Array<[string, string]> = [
   ["payment-detail", "/payments/PAY-2026-00001"],
   ["payment-edit", "/payments/PAY-2026-00001/edit"],
   ["expenses", "/expenses"],
+  ["waiting-room", "/waiting-room"],
   ["reports", "/reports"],
   ["doctors", "/doctors"],
   ["medicines", "/medicines"],

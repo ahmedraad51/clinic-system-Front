@@ -17,6 +17,7 @@ import { appointmentForm } from "./appointmentForm";
 import { finishVisit } from "./finishVisit";
 import { notifications } from "./notifications";
 import { today } from "./today";
+import { waitingRoom } from "./waitingRoom";
 import { whatsapp } from "./whatsapp";
 import { sendWhatsapp } from "./sendWhatsapp";
 import { treatments } from "./treatments";
@@ -62,6 +63,7 @@ export const en = {
   finishVisit,
   notifications,
   today,
+  waitingRoom,
   whatsapp,
   sendWhatsapp,
   treatments,

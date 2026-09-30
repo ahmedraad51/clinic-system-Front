@@ -15,6 +15,7 @@ Sections 1 and 2 explain what is new or still to confirm.
 | Patient | `dental_chart` | JSON | The dental chart. The front end sends a JSON string in the shape below and reads either a string or an object. It also reads the first shape, `{"36": "treated", "37": "pending"}`, so records saved before do not need a migration. |
 | Appointment | `patient_name` | Data, read only, `fetch_from: patient.full_name` | Shown in lists instead of the ID. |
 | Appointment | `doctor_name` | Data, read only, `fetch_from: doctor.full_name` | |
+| Appointment | `arrived_at`, `in_chair_at` | Datetime | The waiting room steps, set by the Today board ("2026-09-26 10:05:00", the front desk computer's local time; `null` clears a step). Both stay after the visit is closed. Users with `edit_appointments` write them; everyone with `view_appointments` reads them (the waiting room screen, `/waiting-room`, polls today's open appointments every 20 seconds with these two fields). Track changes on them like the other Appointment fields. |
 | Treatment Plan | `patient_name`, `doctor_name` | same as above | |
 | Treatment Session | `patient_name`, `doctor_name` | same as above | |
 | Payment | `patient_name` | Data, read only, `fetch_from: patient.full_name` | |
@@ -455,6 +456,8 @@ Naming `APT-.YYYY.-.#####`. Searched on `patient_name`, `doctor_name`, `reason_f
 | `status` | Select: Scheduled, Confirmed, Completed, Cancelled, No Show | Yes | Always sent; new bookings are Scheduled. |
 | `reason_for_visit` | Data | No | |
 | `notes` | Small Text | No | |
+| `arrived_at` | Datetime | No | Arrived at the front desk (waiting room). |
+| `in_chair_at` | Datetime | No | Called into the chair. |
 
 ### Treatment Plan
 

@@ -5,14 +5,24 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Phase 4 goes on in the new look: the waiting room, QR codes, the whole patient file in print,
+- Phase 4 goes on in the new look: QR codes, the whole patient file in print,
   custom prescription paper, restoring deleted records, and installing the app.
 
 ## Backlog
 
-1. Phase 4 of the redesign plan (the features from the competitor study), items 3 to 8, in both languages.
+1. Phase 4 of the redesign plan (the features from the competitor study), items 4 to 8, in both languages.
 
 ## Done
+
+- 2026-10-01 - **The waiting room (Phase 4, item 3).** The Today board has two new steps for each patient:
+  **Arrived** when they report at the desk (the card then says how long they have been waiting) and **In Chair** when
+  the doctor calls them in, with **Undo step** for a wrong tap. The counts at the top now show who is still to come,
+  waiting and in the chair; someone already waiting is no longer marked late. **Waiting Room Screen** opens a page
+  for a TV in the waiting room: the clinic logo, a big clock, and who is in the chair, who is waiting and who comes
+  next, each with only the first name and an initial ("Zahraa H.") and the doctor. It updates itself every 20
+  seconds, and Full Screen hides the browser. English and Arabic. **What to check:** mark a patient Arrived and then
+  In Chair on the Today board, and open the Waiting Room Screen on a second screen (with the real back end; in the
+  demo a new tab starts from the demo data).
 
 - 2026-10-01 - **Expenses and profit (Phase 4, item 2).** A new **Expenses** page under Finance keeps what the
   clinic spends: rent, salaries, dental supplies, lab bills, equipment, electricity and water, maintenance,

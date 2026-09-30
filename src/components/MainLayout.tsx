@@ -33,6 +33,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   if (isLoginPage) return <>{children}</>;
   if (isLoading || !user) return <PageLoading />;
+  // The waiting room screen fills a TV: no menu, top bar or footer.
+  if (pathname === "/waiting-room") return <>{children}</>;
 
   return (
     <RecordDialogsProvider>
