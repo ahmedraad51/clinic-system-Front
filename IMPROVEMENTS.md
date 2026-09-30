@@ -10,9 +10,17 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Backlog
 
-1. Phase 4 of the redesign plan (the features from the competitor study), items 7 and 8, in both languages.
+1. Phase 4 of the redesign plan (the features from the competitor study), item 8, in both languages.
 
 ## Done
+
+- 2026-10-01 - **Activity log and restoring deleted records (Phase 4, item 7).** A new **Activity** page (menu:
+  System, for managers) lists who added, changed and deleted which record (patients, appointments, treatment plans,
+  payments, expenses, prescriptions, X-rays, doctors), newest first, with the changes spelled out ("Amount: IQD
+  150,000 → IQD 100,000"). Each deleted record has **Restore**, which puts it back as it was, under its old number;
+  it refuses politely when something it belongs to is gone (restore the patient first, then their appointment).
+  Filters for what happened and the kind of record. English and Arabic. **What to check:** delete a test payment,
+  then restore it from Activity.
 
 - 2026-10-01 - **Each doctor's own prescription paper (Phase 4, item 6).** A doctor's page has a new **Prescription
   Paper** card. **Edit Paper** sets the paper size (A5 or A4); the qualifications printed under the doctor's name;

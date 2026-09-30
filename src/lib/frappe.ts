@@ -357,6 +357,14 @@ export async function changePassword(oldPassword: string, newPassword: string): 
   });
 }
 
+/**
+ * Puts a deleted record back from its Deleted Document (Frappe's own restore): under its old name, with the same
+ * checks as a new record. Refused when it was restored already, its name is taken, or a record it links to is gone.
+ */
+export async function restoreDeleted(deletedDocument: string): Promise<void> {
+  await callMethod("frappe.core.doctype.deleted_document.deleted_document.restore", { name: deletedDocument });
+}
+
 export interface UploadOptions {
   /** Called while the file goes out, with how much of it has been sent (0 to 1). */
   onProgress?: (fraction: number) => void;

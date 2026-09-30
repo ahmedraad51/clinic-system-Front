@@ -548,6 +548,32 @@ const dentalImages: MockDoc[] = [
   },
 ];
 
+/**
+ * Deleted records, the way Frappe keeps them (Deleted Document): the whole record as JSON, who deleted it and when,
+ * and whether it was restored. Two seed ones: an appointment booked twice and a payment entered twice.
+ */
+const deletedDocuments: MockDoc[] = [
+  {
+    name: "DEL-00002", deleted_doctype: "Payment", deleted_name: "PAY-2026-00018", restored: 0, new_name: "",
+    owner: "laith.hamid@dentclinic.test", creation: "2026-09-21 09:05:00", modified: "2026-09-21 09:05:00", modified_by: "laith.hamid@dentclinic.test",
+    data: JSON.stringify({
+      name: "PAY-2026-00018", doctype: "Payment", patient: P.yousif, patient_name: "Yousif Sattar", treatment_plan: T(15), treatment_type: "Filling",
+      payment_date: "2026-09-20", amount: 10000, payment_method: "Cash", notes: "Entered twice by mistake.",
+      owner: "dalia.jawad@dentclinic.test", creation: "2026-09-20 11:40:00",
+    }),
+  },
+  {
+    name: "DEL-00001", deleted_doctype: "Appointment", deleted_name: "APT-2026-00025", restored: 0, new_name: "",
+    owner: "dalia.jawad@dentclinic.test", creation: "2026-09-19 12:10:00", modified: "2026-09-19 12:10:00", modified_by: "dalia.jawad@dentclinic.test",
+    data: JSON.stringify({
+      name: "APT-2026-00025", doctype: "Appointment", patient: P.hassan, patient_name: "Hassan Falih", doctor: D.noor, doctor_name: "Dr. Noor Al-Saadi",
+      appointment_date: "2026-09-29", appointment_time: "11:00", duration_minutes: 30, status: "Scheduled",
+      reason_for_visit: "Root canal session 3", notes: "Booked twice by mistake.", arrived_at: null, in_chair_at: null,
+      owner: "dalia.jawad@dentclinic.test", creation: "2026-09-19 12:05:00",
+    }),
+  },
+];
+
 const store: Store = {
   Patient: patients,
   Doctor: doctors,
@@ -566,6 +592,7 @@ const store: Store = {
   Prescription: prescriptions,
   "Dental Image": dentalImages,
   Version: versions,
+  "Deleted Document": deletedDocuments,
   File: [],
 };
 
@@ -594,6 +621,7 @@ const NAME_SERIES: Record<string, { prefix: string; year: boolean }> = {
   "Dental Medicine": { prefix: "MED", year: false },
   Prescription: { prefix: "RX", year: true },
   "Dental Image": { prefix: "IMG", year: true },
+  "Deleted Document": { prefix: "DEL", year: false },
 };
 
 /** Which doctypes link to which, so a delete can be refused the way Frappe refuses it. */
@@ -948,9 +976,14 @@ function nextName(doctype: string, data: Record<string, MockValue>): string {
 
   const series = NAME_SERIES[doctype] ?? { prefix: doctype.toUpperCase().slice(0, 3), year: false };
   const prefix = series.prefix + "-" + (series.year ? new Date().getFullYear() + "-" : "");
-  const highest = collection(doctype).reduce((max, doc) => {
-    if (!doc.name.startsWith(prefix)) return max;
-    const parsed = Number(doc.name.slice(prefix.length));
+  // Like Frappe's naming series, the counter never goes back: a deleted record's number is not given out again.
+  const taken = [
+    ...collection(doctype).map((doc) => doc.name),
+    ...store["Deleted Document"].filter((deleted) => deleted.deleted_doctype === doctype).map((deleted) => String(deleted.deleted_name)),
+  ];
+  const highest = taken.reduce((max, name) => {
+    if (!name.startsWith(prefix)) return max;
+    const parsed = Number(name.slice(prefix.length));
     return Number.isFinite(parsed) && parsed > max ? parsed : max;
   }, 0);
   return prefix + String(highest + 1).padStart(5, "0");
@@ -1273,11 +1306,25 @@ export async function mockDeleteDoc(doctype: string, name: string): Promise<void
       );
     }
   }
-  docs.splice(index, 1);
+  const [removed] = docs.splice(index, 1);
+  // Like Frappe, a copy is kept in Deleted Document, so the record can be restored (its Versions stay too).
+  if (!NOT_KEPT_WHEN_DELETED.includes(doctype)) {
+    const now = stamp();
+    store["Deleted Document"].unshift({
+      name: nextName("Deleted Document", {}),
+      deleted_doctype: doctype,
+      deleted_name: name,
+      data: JSON.stringify({ ...removed, doctype }),
+      restored: 0,
+      new_name: "",
+      owner: actingUser,
+      creation: now,
+      modified: now,
+      modified_by: actingUser,
+    });
+  }
   // Frappe deletes the files attached to a deleted record.
   store.File = store.File.filter((file) => !(file.attached_to_doctype === doctype && file.attached_to_name === name));
-  // Its history goes with it (Frappe never gives the name to another record; the dummy data might).
-  store.Version = store.Version.filter((version) => !(version.ref_doctype === doctype && version.docname === name));
   recalculate();
 }
 
@@ -1311,7 +1358,51 @@ export async function mockCall(method: string, args: Record<string, MockValue>):
     if (!args.new_password) throw new Error(messages().errors.mock.newPassword);
     return "ok";
   }
+  if (method === RESTORE_METHOD) return restoreDeleted(String(args.name ?? ""));
   throw new Error(messages().errors.mock.noMethod(method));
+}
+
+/** Kept out of Deleted Document: files, the history itself, and the deleted-record copies. */
+const NOT_KEPT_WHEN_DELETED = ["File", "Version", "Deleted Document"];
+
+/** Frappe's method that puts a deleted record back. */
+const RESTORE_METHOD = "frappe.core.doctype.deleted_document.deleted_document.restore";
+
+/** The Link fields a restored record may point at, to refuse one whose patient, plan … is gone. */
+const RESTORE_LINKS: Array<[field: string, doctype: string]> = [
+  ["patient", "Patient"], ["doctor", "Doctor"], ["treatment_plan", "Treatment Plan"], ["appointment", "Appointment"],
+];
+
+/**
+ * Like Frappe's restore(): the record goes back under its own name, with the same checks as a new one, unless it was
+ * restored already, its name is taken, or a record it links to is gone. Returns the restored record's name.
+ */
+function restoreDeleted(name: string): string {
+  const e = messages().errors.mock;
+  const deleted = find("Deleted Document", name);
+  if (!deleted) throw new Error("Deleted Document " + name + " not found");
+  if (Number(deleted.restored) === 1) throw new Error(e.alreadyRestored(String(deleted.deleted_name)));
+  const doctype = String(deleted.deleted_doctype);
+  const doc = JSON.parse(String(deleted.data)) as MockDoc;
+  delete doc.doctype;
+  if (find(doctype, doc.name)) throw new Error(e.nameTaken(doc.name));
+  const doctypes: Record<string, string> = messages().enums.doctype;
+  for (const [field, linked] of RESTORE_LINKS) {
+    if (doc[field] && !find(linked, doc[field])) {
+      throw new Error(e.restoreLinkGone(doctypes[linked] ?? linked, String(doc[field])));
+    }
+  }
+  normalize(doc);
+  if (doctype === "Payment") checkPayment(doc);
+  if (doctype === "Treatment Plan") checkPlan(doc);
+  if (doctype === "Expense") checkExpense(doc);
+  if (doctype === "Cash Count") checkCashCount(doc);
+  doc.modified = stamp();
+  doc.modified_by = actingUser;
+  collection(doctype).unshift(doc);
+  Object.assign(deleted, { restored: 1, new_name: doc.name, modified: stamp(), modified_by: actingUser });
+  recalculate();
+  return doc.name;
 }
 
 /** Reads a file into a data URL, which works as an image src in the browser. */

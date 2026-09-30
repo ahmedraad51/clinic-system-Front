@@ -15,6 +15,7 @@ import {
   Stethoscope,
   CreditCard,
   Wallet,
+  History,
   BarChart2,
   Minus,
   UserCog,
@@ -34,7 +35,7 @@ import type { Messages } from "@/i18n";
 import type { PermissionKey } from "@/lib/types";
 
 /** A menu entry's text in the translation files (nav.*). */
-type MenuKey = "dashboard" | "today" | "patients" | "recall" | "appointments" | "treatments" | "payments" | "expenses" | "reports" | "doctors" | "medicines" | "users" | "whatsapp" | "settings";
+type MenuKey = "dashboard" | "today" | "patients" | "recall" | "appointments" | "treatments" | "payments" | "expenses" | "reports" | "doctors" | "medicines" | "users" | "whatsapp" | "activity" | "settings";
 
 interface MenuItem {
   key: MenuKey;
@@ -71,6 +72,7 @@ const menuGroups: Array<{ group: keyof Messages["nav"]["groups"]; items: MenuIte
       { key: "medicines", icon: Pill, path: "/medicines", permission: "manage_users" },
       { key: "users", icon: UserCog, path: "/users", permission: "manage_users" },
       { key: "whatsapp", icon: MessageCircle, path: "/whatsapp", permission: "manage_users" },
+      { key: "activity", icon: History, path: "/activity", permission: "manage_users" },
       { key: "settings", icon: Settings, path: "/settings", permission: "manage_users" },
     ],
   },

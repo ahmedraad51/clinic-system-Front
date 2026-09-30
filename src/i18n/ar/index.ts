@@ -21,6 +21,7 @@ import { waitingRoom } from "./waitingRoom";
 import { qr } from "./qr";
 import { patientFile } from "./patientFile";
 import { rxPaper } from "./rxPaper";
+import { activity } from "./activity";
 import { whatsapp } from "./whatsapp";
 import { sendWhatsapp } from "./sendWhatsapp";
 import { treatments } from "./treatments";
@@ -71,6 +72,7 @@ export const ar: Messages = {
   qr,
   patientFile,
   rxPaper,
+  activity,
   whatsapp,
   sendWhatsapp,
   treatments,

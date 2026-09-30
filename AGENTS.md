@@ -31,7 +31,7 @@ accurate.
 | `npm run build` | **Passes** (checked 2026-09-30): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-30). `npx tsc --noEmit` passes too. | |
 | Languages | **Arabic (default, right to left) and English.** Every text is in `src/i18n/en/*.ts` and `src/i18n/ar/*.ts`; the switch is in the menu. See **Languages** below. **Every new text must be added in both languages.** | `src/i18n/`, `src/context/LanguageContext.tsx` |
-| Tests | **Playwright tests pass** (184 tests, 17 of them in Arabic, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, expenses and profit, the waiting room, QR codes, the printed patient file, prescription paper, phone numbers, the form dialogs and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (190 tests, 18 of them in Arabic, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, expenses and profit, the waiting room, QR codes, the printed patient file, prescription paper, the activity log, phone numbers, the form dialogs and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -145,6 +145,7 @@ src/
 │   ├── prescriptions/ new · [id] (printable) · [id]/edit
 │   ├── medicines/page.tsx         the clinic's medicine list with add/edit dialog
 │   ├── whatsapp/page.tsx
+│   ├── activity/page.tsx          the activity log: added, changed, deleted; Restore
 │   ├── settings/page.tsx
 │   └── profile/page.tsx
 ├── components/
@@ -221,6 +222,7 @@ src/
     ├── iraq.ts               IRAQ_GOVERNORATES (English and Arabic names), suggested in the patient address box
     ├── waitingRoom.ts        visitStep() (waiting, in the chair), minutesSince(), shortName() ("Zahraa H.")
     ├── recall.ts             dueForRecall() (the dentist's date first, then the period), RECALL_CHOICES, recallUpdate()
+    ├── activity.ts           the activity log: ACTIVITY_DOCTYPES, TITLE_FIELDS, recordTitle(), recordHref(), mergeActivity()
     ├── history.ts            parseDocHistory() (Frappe's Version records), field labels, hidden fields, historyValue()
     ├── prescriptions.ts      FREQUENCIES, medicineDefaults(), doseMg(), prescriptionWarnings() (allergy, blood thinner, pregnancy, child, daily maximum, duplicate)
     ├── cashCount.ts          compareCash(): matched, short or over
@@ -302,6 +304,7 @@ the dialog to be hidden, and use `openSaved(page, "Payment recorded.")` to follo
 | `/users` | `manage_users` | Staff list (without Administrator and Guest), search, status filter, Add User dialog (can apply the role's usual permissions) |
 | `/doctors/[id]` | `manage_users` | The doctor's page: a profile card (photo or initials, specialization, working hours, contact, Active, Edit in `DoctorDialog`, New Appointment in the booking dialog; numbers for today, the next 30 days and open plans) beside **Today** (with a link to the doctor's day in the calendar), **Next 30 days** and **Open treatment plans**, and **Prescription Paper** (a sentence about the paper, and **Edit Paper**: `RxPaperDialog`, with paper size, pre-printed or not, the mm left for a printed header and footer (0-120), qualifications, footer, logo and signature uploads (images up to 2 MB), and a live preview; saved on the Doctor with `rxPaperPayload()`); the visits need `view_appointments` and the plans `view_treatments`, else they are left out. `doctorHref(name)` |
 | `/users/[id]` | `manage_users` | A profile card (initials, name, email, role, status, permissions on, sections open, details) beside **Account** (clinic role, enable/disable) and **Permissions**: the role presets (Manager, Doctor, Receptionist, Select all, Clear all) above a table built from `PERMISSION_MATRIX` in `types.ts`: a row per section (Patients, Appointments, Treatments, Payments, Reports, Clinic setup), a column each for View, Add, Edit and Delete (`PERMISSION_ACTIONS`), a checkbox in each cell and an empty cell ("Not available") where the section has no such action, and a select-all box for every row and column (partly on shows as a dash). Clinic setup has one box, `manage_users`, under Edit. `[id]` is `encodeURIComponent(btoa(user.name))` |
+| `/activity` | `manage_users` | The activity log (menu: System → Activity): who **added** (each record's `owner` and `creation`), **changed** (`Version` records, shown with `readableChanges()`, `fieldLabel()` and `historyValue()`, up to 3 changes a line; a version with nothing readable is left out) and **deleted** (`Deleted Document`) which record, newest first, merged by `mergeActivity()` over `ACTIVITY_DOCTYPES`; filters **What happened** and **Record**; 40 at a time with Show More. A deleted record has **Restore** (`restoreDeleted()`): it comes back under its own name, and the line then says Restored and links to it. Titles and IDs sit in `<bdi>` for Arabic screens |
 | `/whatsapp` | `manage_users` | Templates (add, edit, delete, placeholders, live preview) and the message log (phone numbers shown with the middle hidden, `maskPhone()`; the full number is on the patient's page) Each template has a **Language** (Arabic, English or any; `language`), shown on its card; reminders and the Send Message dialog prefer the screen's language (`pickTemplate`). |
 | `/settings` | `manage_users` | A clinic card (logo, name, phone, currencies, open days, prices set, contact details) beside the settings in tabs: **Clinic**, **Currencies**, **Language**, **Working Hours**, **Price List**, **Features**; one Save Settings for all of them, and a failed check opens the tab that has the problem. Clinic Settings: name, logo upload, contact, tax number, currency, working hours, feature switches, theme colour, **Phone Country Code** (`phone_country_code`, digits only, empty means 964; added to local numbers in WhatsApp links, `useSettings().countryCode`), **Currencies** (a **Second currency** such as USD, `second_currency`, and its **Exchange rates**, `exchange_rates`: rows of a date and "1 USD in IQD", each counting from its date; Add Rate, a remove button per row; every row needs a date and an amount above zero, one per date), **Price List** (a usual price per treatment type, saved in `treatment_prices`), and **Open on** day toggles saved as `working_days` (`useSettings().isOpenOn(iso)`; nothing set means open every day). Closed days are shaded "Closed" in the calendar, the day view shows a notice, and booking on one shows a note and asks "Book anyway?" The **Language** card: **Default language** (`default_language`, Arabic or English: the language of users who did not choose one) and **Arabic digits** (`arabic_digits`: Arabic screens write ٠-٩). |
 | `/profile` | none | A profile card beside the rest; what I can do is the permissions table, read only. My details (with `MyAvatar`), **Screen Size on This Computer** (80, 90, 100, 110 or 120 %: `saveZoom()` sets the root font size, and every size is in rem, so text and spacing scale together; kept in `localStorage.screen_zoom` and applied before the first paint by `ZOOM_BOOT_SCRIPT` in `layout.tsx`), what I can do, change password, and (login off only) Try Another User |
@@ -335,6 +338,7 @@ clickable through `ClickableRow`, and the first cell always holds a real link fo
 | `deleteDoc(doctype, name)` | `DELETE /frappe/api/resource/<Doctype>/<name>` | `mockDeleteDoc` |
 | `callMethod(method, args)` | `POST /frappe/api/method/<method>`, returns `message` | `mockCall` (knows `update_password` only) |
 | `changePassword(old, new)` | `frappe.core.doctype.user.user.update_password` | via `mockCall` |
+| `restoreDeleted(name)` | `frappe.core.doctype.deleted_document.deleted_document.restore` with a Deleted Document's `name` | `restoreDeleted()` in the mock, via `mockCall` |
 | `getDocHistory(doctype, name)` | `GET /frappe/api/method/frappe.desk.form.load.getdoc`: the doc's `owner` and `creation`, `docinfo.versions` (Frappe's Version records, the last 10; Frappe writes their values as formatted text, `150,000.00`, `20-08-2026`, `<br>` for a line break, which `historyValue()` reads) and `docinfo.user_info` (the names of the owner, the last editor and the users in the versions), read through `parseDocHistory()`; a user getdoc does not name shows as their ID | `mockGetDocInfo` (values kept as numbers and ISO dates) |
 | `setSessionUser(user)` | nothing (the server knows the user) | `setMockUser`: who owns new docs and makes the changes; `AuthContext` calls it whenever the user changes |
 | `uploadFile(file, { onProgress })` | multipart `POST /frappe/api/method/upload_file` with `uploadRequestConfig()` (10-minute limit, `onProgress(0…1)` from axios `onUploadProgress`), returns `file_url` | a data URL, after a pretend send at about 4 MB/s with progress |
@@ -431,7 +435,12 @@ either source.
   left; and 6 Dental Images (`IMG-2026-00001` …): Zahraa's
   periapicals of 36 before (with a drawing: a circle, an arrow and "Lesion") and after the root canal, a panoramic, a
   bitewing of the left side and an intraoral photo, and Abbas's implant in 46. Their pictures are drawn SVGs in
-  `public/demo/xrays/`. Deleting a record also deletes the Files attached to it, like Frappe.
+  `public/demo/xrays/`. Deleting a record also deletes the Files attached to it, like Frappe, and keeps a copy in `Deleted Document`
+  (`DEL-00001` …; not for File, Version or Deleted Document itself); two seed ones, an appointment booked twice
+  (`APT-2026-00025`, Dalia Jawad) and a payment entered twice (`PAY-2026-00018`, Laith Hamid), can be restored.
+  **Restore** (`mockCall` with the restore method) puts the record back under its own name with the same checks as a
+  new one, and refuses one restored already, one whose name is taken, and one whose patient, doctor, plan or
+  appointment is gone. Like Frappe's naming series, `nextName()` never gives out a deleted record's number again.
 - **Recall:** completing an appointment (created or updated to Completed) moves the patient's `next_recall_date` to
   the visit plus `recall_interval_months`, never earlier (`rollRecall()`), as `Appointment.on_update` should.
 - **Cash Count** (`CC-2026-00001`) is checked on save like its `validate()` should: one per day, `cash_payments` = the
@@ -486,8 +495,8 @@ either source.
   (Patient, Appointment, Treatment Plan, Payment) that changes fields adds a `Version` (`VER-00001`) with
   `data.changed` rows `[field, old, new]` for the fields that were sent and changed (plus `patient_name`,
   `doctor_name` and `treatment_type` when a Link change changed them), like Frappe's Track Changes. Times get a
-  microsecond part that differs on every save (`stamp()`), so `modified` always changes, and deleting a record
-  deletes its Versions. A completed visit that moves the patient's next check-up (`rollRecall()`) records a
+  microsecond part that differs on every save (`stamp()`), so `modified` always changes; a deleted record's Versions
+  stay (the activity log shows them, and a restored record keeps its history). A completed visit that moves the patient's next check-up (`rollRecall()`) records a
   Patient Version too. `RecordHistory` shows Link changes by those names (`readableChanges()`).
   Seed records get a creation date and owner (`stampSeeds()`), three seed Versions show changes to
   `PAY-2026-00001` and `TRT-2026-00002`, and `DEFAULTS` gives patients 0 or null for fields they did not set, and appointments `arrived_at` and `in_chair_at` null.

@@ -14,6 +14,7 @@ export const nav = {
   medicines: "Medicines",
   users: "Users",
   whatsapp: "WhatsApp",
+  activity: "Activity",
   settings: "Settings",
   profile: "Profile",
   logout: "Log out",

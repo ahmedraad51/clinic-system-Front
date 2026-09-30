@@ -166,6 +166,7 @@ export const enums = {
     Prescription: "Prescription",
     File: "File",
     "Dental Image": "Dental Image",
+    "Deleted Document": "Deleted Record",
   },
   language: {
     ar: "Arabic",

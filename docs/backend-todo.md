@@ -244,12 +244,30 @@ A simpler option for the first two reads is one whitelisted method, for example
 `dent_app.api.get_my_session`, that returns the user's name, roles and permission flags. If you add it,
 change `src/context/SessionContext.tsx` to call it with `callMethod`.
 
+### The activity log and restoring deleted records
+
+The Activity page (`/activity`, `manage_users`) reads three things Frappe already keeps:
+
+- each record's `owner` and `creation` (Patient, Appointment, Treatment Plan, Payment, Expense, Prescription, Dental
+  Image, Doctor), newest first, for "added";
+- `Version` (`ref_doctype`, `docname`, `data`, `owner`, `creation`), filtered on `ref_doctype in (…)`, for
+  "changed": turn on **Track Changes** for those doctypes;
+- `Deleted Document` (`deleted_doctype`, `deleted_name`, `data`, `restored`, `new_name`, `owner`, `creation`), for
+  "deleted", and **Restore** calls `frappe.core.doctype.deleted_document.deleted_document.restore` with `name`.
+
+Users with `manage_users` need read access to `Version`, `Deleted Document` and `User` (for the names), and the
+right to call the restore method. Frappe's naming series never gives a deleted record's number out again, which the
+restore relies on (the record goes back under its own name). Restore should refuse a record whose patient, doctor,
+plan or appointment is gone, with a readable message, and run the same `validate()` as a new record (a payment must
+still fit its plan). Deleted X-rays and photos come back without their file (Frappe deletes the File).
+
 ## 4. API calls the front end makes
 
 - `GET /api/resource/<Doctype>` with `fields`, `filters`, `or_filters`, `order_by`, `limit_start`,
   `limit_page_length` (`0` means all rows).
 - `GET /api/resource/<Doctype>/<name>`, `POST /api/resource/<Doctype>`, `PUT …/<name>`, `DELETE …/<name>`.
 - `GET /api/method/frappe.client.get_count` with `doctype`, `filters`.
+- `POST /api/method/frappe.core.doctype.deleted_document.deleted_document.restore` with `name` (the Activity page).
 - `GET /api/method/frappe.desk.reportview.get_count` with `doctype`, `fields`, `filters`, `or_filters`,
   `distinct` — used for the count when a search box is filled. **Check that this works for every role**; if
   not, add a small whitelisted count method.

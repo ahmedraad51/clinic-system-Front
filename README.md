@@ -203,6 +203,7 @@ what they are not allowed to do.
 | `/doctors` | The clinic's doctors: add and edit name, specialization, phone, email, working hours, and switch a doctor off when they leave |
 | `/doctors/[id]` | One doctor: their details and working hours, today's patients, the next 30 days and their open treatment plans |
 | `/users`, `/users/[id]` | Staff accounts, roles, enable/disable, and the permissions table (sections by View, Add, Edit and Delete) with role presets |
+| `/activity` | The activity log: who added, changed and deleted which record, and when; a record deleted by mistake is restored with one click |
 | `/whatsapp` | Reminder templates with a live preview, and the message log, with phone numbers partly hidden |
 | `/settings` | In tabs: clinic name and logo, contact details, currency (Iraqi dinars are shown without decimals), a second currency (US dollars) with its exchange rates by date, the phone country code (964 for Iraq, added to local numbers such as `0770…` in WhatsApp links), working hours, feature switches, and the clinic colour (the whole app follows it), and a price list that fills in treatment costs |
 | `/profile` | Your details and permissions, change password, and the screen size on this computer (bigger text for a reception monitor) |

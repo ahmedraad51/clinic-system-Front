@@ -162,6 +162,7 @@ export const enums: Messages["enums"] = {
     Prescription: "الوصفة الطبية",
     File: "الملف",
     "Dental Image": "الصورة السنية",
+    "Deleted Document": "السجل المحذوف",
   },
   language: {
     ar: "العربية",
