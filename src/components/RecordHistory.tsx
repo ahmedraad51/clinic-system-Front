@@ -11,6 +11,7 @@ import { cx, formatDateTime } from "@/lib/format";
 import {
   HISTORY_LIMIT, fieldLabel, historyValue, isEmptyValue, readableChanges, showsValues, type DocHistory,
 } from "@/lib/history";
+import type { DocValue } from "@/lib/types";
 
 /**
  * Who created this record and who changed what, and when. Closed until someone asks, so the page stays calm and
@@ -21,14 +22,17 @@ export default function RecordHistory({
   name,
   changedAt,
   startOpen = false,
+  currency,
 }: {
   doctype: string;
   name: string;
   changedAt?: string;
+  /** The currency of the record (a plan or payment in the second currency); amounts in its history are in it. */
+  currency?: string;
   startOpen?: boolean;
 }) {
   const { t } = useI18n();
-  const { money } = useSettings();
+  const settings = useSettings();
   const [open, setOpen] = useState(startOpen);
   const [history, setHistory] = useState<{ key: string; data: DocHistory } | null>(null);
   const [error, setError] = useState("");
@@ -58,9 +62,19 @@ export default function RecordHistory({
 
   const data = history?.key === key ? history.data : null;
   // A save that only touched fields the server works out has nothing to show.
-  const entries = (data?.entries ?? [])
-    .map((entry) => ({ ...entry, changes: readableChanges(doctype, entry.changes) }))
+  const all = data?.entries ?? [];
+  const currencies = currenciesThen(all, currency || "");
+  const entries = all
+    .map((entry, index) => ({
+      ...entry,
+      changes: readableChanges(doctype, entry.changes),
+      moneyBefore: (amount: number | string | null | undefined) => settings.money(amount, currencies[index].before),
+      moneyAfter: (amount: number | string | null | undefined) => settings.money(amount, currencies[index].after),
+    }))
     .filter((entry) => entry.changes.length > 0);
+  // A currency shows by its code; empty is the clinic's own.
+  const shown = (field: string, value: DocValue, money: (amount: number | string | null | undefined) => string) =>
+    field === "currency" ? String(value || settings.currency) : historyValue(field, value, money, doctype);
 
   const body = !open ? (
     <p className="text-sm text-gray-500">{t.history.intro}</p>
@@ -95,10 +109,10 @@ export default function RecordHistory({
                 {showsValues(change.field) ? (
                   <>
                     <bdi className={cx("text-gray-500", !isEmptyValue(change.from) && "line-through decoration-gray-300")}>
-                      {historyValue(change.field, change.from, money, doctype)}
+                      {shown(change.field, change.from, entry.moneyBefore)}
                     </bdi>
                     {t.history.arrow}
-                    <bdi>{historyValue(change.field, change.to, money, doctype)}</bdi>
+                    <bdi>{shown(change.field, change.to, entry.moneyAfter)}</bdi>
                   </>
                 ) : (
                   t.history.updated
@@ -142,4 +156,20 @@ export default function RecordHistory({
       {body}
     </Card>
   );
+}
+
+/**
+ * The currency a record had before and after each change (newest first): walking back from today, a change of
+ * currency tells what it was before. "" is the clinic's own. Amounts in the History card are shown in it.
+ */
+function currenciesThen(entries: DocHistory["entries"], current: string): { before: string; after: string }[] {
+  const result: { before: string; after: string }[] = [];
+  let after = current;
+  for (const entry of entries) {
+    const changed = entry.changes.find((change) => change.field === "currency");
+    const before = changed ? String(changed.from ?? "") : after;
+    result.push({ before, after });
+    after = before;
+  }
+  return result;
 }

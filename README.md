@@ -176,14 +176,14 @@ what they are not allowed to do.
 | `/prescriptions/new`, `/prescriptions/[id]/edit` | Write a prescription: pick a medicine from the clinic's list and its usual dose, how often, days and instructions are filled in; a "Check before signing" box warns about an allergy, an NSAID with a blood thinner, pregnancy, a child's dose, a dose above the daily maximum or a medicine listed twice (never blocking) |
 | `/prescriptions/[id]` | The prescription, printable on the clinic letterhead with a signature line, with the warnings shown on screen |
 | `/medicines` | The clinic's medicine list (managers): usual dose, how often, days, instructions, allergy words and the safety flags; a medicine is switched off, never deleted |
-| `/payments` | Ledger with search, method and date filters, and the total |
-| `/payments/new`, `/payments/[id]/edit` | Record or edit a payment (pre-fills from a treatment plan; cannot go above what is left) |
+| `/payments` | Ledger with search, method and date filters, and the total (dinars and dollars each on their own) |
+| `/payments/new`, `/payments/[id]/edit` | Record or edit a payment in dinars or dollars (pre-fills from a treatment plan; cannot go above what is left; a payment in the other currency uses that day's exchange rate, shown on the form and the receipt) |
 | `/payments/[id]` | Printable receipt, a receipt slip for 58 or 80 mm thermal receipt printers (paper size set per computer), and the payment's history |
-| `/reports` | Revenue by treatment, method and month for a chosen period, outstanding balances, CSV export |
+| `/reports` | Revenue by treatment, method and month for a chosen period (in dinars, dollar payments at their day's rate), outstanding balances, CSV export |
 | `/doctors` | The clinic's doctors: add and edit name, specialization, phone, email, working hours, and switch a doctor off when they leave |
 | `/users`, `/users/[id]` | Staff accounts, roles, enable/disable, and the 14 permission switches with role presets |
 | `/whatsapp` | Reminder templates with a live preview, and the message log, with phone numbers partly hidden |
-| `/settings` | Clinic name and logo, contact details, currency (Iraqi dinars are shown without decimals), the phone country code (964 for Iraq, added to local numbers such as `0770…` in WhatsApp links), working hours, feature switches, and the clinic colour (the whole app follows it), and a price list that fills in treatment costs |
+| `/settings` | Clinic name and logo, contact details, currency (Iraqi dinars are shown without decimals), a second currency (US dollars) with its exchange rates by date, the phone country code (964 for Iraq, added to local numbers such as `0770…` in WhatsApp links), working hours, feature switches, and the clinic colour (the whole app follows it), and a price list that fills in treatment costs |
 | `/profile` | Your details and permissions, change password, and the screen size on this computer (bigger text for a reception monitor) |
 
 ### Project structure
@@ -239,8 +239,8 @@ session cookie rides along. `errorMessage(err)` turns a failed call into a sente
 `src/lib/mockData.ts` instead — an in-memory store shaped like Frappe's REST responses: IDs use the
 real naming series (`PAT-2026-00001`), link fields hold the linked doc's `name`, list queries return
 only the requested fields and support filters, search, sorting and paging, and a missing doc rejects
-the way a 404 would. It ships with 12 patients, 5 doctors, 24 appointments, 15 treatment plans, 10
-treatment sessions, 15 payments, 9 users, clinic settings, and WhatsApp templates and logs. A few
+the way a 404 would. It ships with 12 patients, 5 doctors, 24 appointments, 16 treatment plans (one priced in US
+dollars), 10 treatment sessions, 17 payments, 9 users, clinic settings, and WhatsApp templates and logs. A few
 appointments and payments are dated today, so the dashboard is never empty.
 
 The money is *computed*, not hard-coded: payments sum into each plan's paid and remaining amounts,
@@ -263,11 +263,11 @@ Frappe app `dent_app` · MIT
 | **Patient** | `PAT-{YYYY}-{#####}` | `full_name`, `gender`, `date_of_birth`, `age`, `phone_number`, `secondary_phone`, `email`, `address`, `medical_history`, `allergies`, `current_medications`, `chronic_diseases`, `notes` — plus read-only rollups `total_appointments`, `total_treatments`, `total_paid`, `total_remaining` |
 | **Doctor** | `DOC-{#####}` | `full_name`, `specialization` (General Dentist / Orthodontist / Endodontist / Periodontist / Oral Surgeon / Pediatric Dentist / Prosthodontist), `phone_number`, `email`, `working_days`, `start_time`, `end_time`, `is_active` |
 | **Appointment** | `APT-{YYYY}-{#####}` | `patient`, `doctor`, `appointment_date`, `appointment_time`, `duration_minutes`, `status` (Scheduled / Confirmed / Completed / Cancelled / No Show), `reason_for_visit`, `notes` |
-| **Treatment Plan** | `TRT-{YYYY}-{#####}` | `patient`, `doctor`, `treatment_type` (Filling / Root Canal / Crown / Bridge / Extraction / Implant / Cleaning / Whitening), `tooth_number`, `status` (Planned / In Progress / Completed / Cancelled), `diagnosis`, `treatment_notes`, `total_cost`, read-only `paid_amount` and `remaining_amount` |
+| **Treatment Plan** | `TRT-{YYYY}-{#####}` | `patient`, `doctor`, `treatment_type` (Filling / Root Canal / Crown / Bridge / Extraction / Implant / Cleaning / Whitening), `tooth_number`, `status` (Planned / In Progress / Completed / Cancelled), `diagnosis`, `treatment_notes`, `currency` (the clinic's or the second one), `total_cost`, read-only `paid_amount` and `remaining_amount` |
 | **Treatment Session** | `SES-{YYYY}-{#####}` | `patient`, `treatment_plan`, `doctor`, `session_date`, `session_time`, `status`, `notes` |
-| **Payment** | `PAY-{YYYY}-{#####}` | `patient`, `treatment_plan`, `payment_date`, `amount`, `payment_method` (Cash / Card / Bank Transfer), `notes` |
+| **Payment** | `PAY-{YYYY}-{#####}` | `patient`, `treatment_plan`, `payment_date`, `amount`, `currency`, `exchange_rate` (the rate of its day), `payment_method` (Cash / Card / Bank Transfer), `notes`, read-only `plan_amount` and `base_amount` |
 | **Clinic Permission** | one per `user` | 14 checkboxes: view/add/edit/delete patients, view/add/edit appointments, view/add/edit treatments, view/add payments, view reports, manage users |
-| **Clinic Settings** | single | `clinic_name`, `logo`, contact details, `currency`, `tax_number`, `phone_country_code`, working hours, `theme_color`, and feature switches for WhatsApp, the patient portal and financial reports |
+| **Clinic Settings** | single | `clinic_name`, `logo`, contact details, `currency`, `second_currency`, `exchange_rates`, `tax_number`, `phone_country_code`, working hours, `theme_color`, and feature switches for WhatsApp, the patient portal and financial reports |
 | **WhatsApp Template** | `WAT-{#####}` | `template_name`, `trigger` (24 Hours Before / 2 Hours Before / Manual), `message`, `is_active` |
 | **Cash Count** | `CC-{YYYY}-{#####}` | `count_date` (one per day), `opening_float`, `cash_payments`, `expected_cash`, `cash_counted`, `difference`, `note`, `counted_by`, `counted_at` (new, see `docs/backend-todo.md`) |
 | **Dental Medicine** | `MED-{#####}` | `medicine_name`, `strength`, `dosage_form`, `medicine_group`, the usual `default_dose` / `default_frequency` / `default_duration_days` / `default_instructions`, and the warning flags `allergy_words`, `is_nsaid`, `avoid_in_pregnancy`, `max_daily_mg`, `child_note`, `is_active` (new, see `docs/backend-todo.md`) |

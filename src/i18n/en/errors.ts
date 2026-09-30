@@ -18,6 +18,12 @@ export const errors = {
   tooLong: (field: string) => `Too much text for ${field}. Please shorten it.`,
   /** The dummy back end: the same checks the real one makes. */
   mock: {
+    noRate: (code: string) => `Set the ${code} exchange rate in Settings first.`,
+    currencyNotTaken: (code: string) => `The clinic does not take ${code}. Add it in Settings first.`,
+    planCurrencyLocked: "This plan already has payments, so its currency cannot be changed.",
+    ratesInvalid: "Each exchange rate needs a date and an amount above zero, one rate per date, and at least one rate for the second currency.",
+    secondInUse: (code: string) => `Plans or payments are in ${code}, so it stays as the second currency.`,
+    mainInUse: "The clinic currency cannot change once there are plans or payments.",
     amountAboveZero: "Amount must be more than zero.",
     paidAboveCost: (paid: string, cost: string, plan: string) =>
       `Paid amount (${paid}) cannot be more than the total cost (${cost}) of ${plan}.`,

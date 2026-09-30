@@ -48,6 +48,7 @@ function EditTreatment() {
         patientLabel={plan.patient_name}
         doctorLabel={plan.doctor_name}
         showStatus
+        currencyLocked={Number(plan.paid_amount) > 0}
         submitLabel={t.common.saveChanges}
         cancelHref={treatmentHref(id)}
         onSubmit={handleSubmit}

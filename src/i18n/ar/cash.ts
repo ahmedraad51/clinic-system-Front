@@ -56,4 +56,5 @@ export const cash: Messages["cash"] = {
   colResult: "النتيجة",
   colNote: "ملاحظة",
   colCountedBy: "عدّه",
+  otherCash: (amount: string) => `نقد بالعملة الأخرى في هذا اليوم: ${amount}. لا يدخل في العدّ أدناه؛ عُدّه على حدة.`,
 };

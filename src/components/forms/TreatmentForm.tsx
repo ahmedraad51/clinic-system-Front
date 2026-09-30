@@ -6,6 +6,8 @@ import { Alert, Button, Card, Field, FormActions, LinkButton, NumberInput, focus
 import MedicalAlerts from "@/components/MedicalAlerts";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import LinkSelect from "@/components/ui/LinkSelect";
+import CurrencySelect from "@/components/CurrencySelect";
+import { convertMoney } from "@/lib/currency";
 import { errorMessage } from "@/lib/frappe";
 import { currencyDecimals } from "@/lib/format";
 import { useDoctors, usePatientMedical } from "@/lib/hooks";
@@ -21,6 +23,8 @@ export interface TreatmentFormData {
   doctor: string;
   treatment_type: string;
   tooth_number: string;
+  /** "" is the clinic's own currency. */
+  currency: string;
   total_cost: string;
   status: string;
   diagnosis: string;
@@ -32,6 +36,7 @@ export const EMPTY_TREATMENT: TreatmentFormData = {
   doctor: "",
   treatment_type: "",
   tooth_number: "",
+  currency: "",
   total_cost: "",
   status: "Planned",
   diagnosis: "",
@@ -44,6 +49,7 @@ export function treatmentToForm(plan: TreatmentPlan): TreatmentFormData {
     doctor: plan.doctor ?? "",
     treatment_type: plan.treatment_type ?? "",
     tooth_number: plan.tooth_number ?? "",
+    currency: plan.currency ?? "",
     total_cost: String(plan.total_cost ?? ""),
     status: plan.status ?? "Planned",
     diagnosis: plan.diagnosis ?? "",
@@ -75,6 +81,7 @@ export default function TreatmentForm({
   patientLabel,
   doctorLabel,
   showStatus = false,
+  currencyLocked = false,
   submitLabel,
   cancelHref,
   onSubmit,
@@ -83,12 +90,14 @@ export default function TreatmentForm({
   patientLabel?: string;
   doctorLabel?: string;
   showStatus?: boolean;
+  /** The plan has payments: they were counted in its currency, so it cannot change. */
+  currencyLocked?: boolean;
   submitLabel: string;
   cancelHref: string;
   onSubmit: (data: TreatmentFormData) => Promise<void>;
 }) {
   const { t } = useI18n();
-  const { currency, prices, money } = useSettings();
+  const { currency, currencies, rateOn, prices, money } = useSettings();
   const doctors = useDoctors();
   const [form, setForm] = useState<TreatmentFormData>(initial);
   // The chosen patient's medical alerts, shown while booking or planning treatment.
@@ -99,20 +108,32 @@ export default function TreatmentForm({
   const [error, setError] = useState("");
   const [costError, setCostError] = useState("");
 
+  const planCurrency = (form.currency || currency).toUpperCase();
+  const inClinicCurrency = planCurrency === currency;
+  // The cost is still the price list's (or empty): a new type or currency may replace it.
+  const costUntouched = form.total_cost === "" || (prices[form.treatment_type] !== undefined && inClinicCurrency && Number(form.total_cost) === prices[form.treatment_type]);
+
   const handleChange = (event: InputEvent) => {
     const { name, value } = event.target;
     if (name === "total_cost" || name === "treatment_type") setCostError("");
     if (name === "treatment_type") {
-      // Fill in the usual price, unless someone already typed a different cost.
-      const previous = prices[form.treatment_type];
-      const untouched = form.total_cost === "" || (previous !== undefined && Number(form.total_cost) === previous);
+      // Fill in the usual price (the price list is in the clinic's currency), unless someone typed a different cost.
       const price = prices[value];
-      setForm({ ...form, treatment_type: value, total_cost: untouched && price ? String(price) : form.total_cost });
+      setForm({ ...form, treatment_type: value, total_cost: costUntouched && price && inClinicCurrency ? String(price) : form.total_cost });
       return;
     }
     setForm({ ...form, [name]: value });
   };
+  const changeCurrency = (code: string) => {
+    const next = code === currency ? "" : code;
+    const price = prices[form.treatment_type];
+    setCostError("");
+    // A price-list cost belongs to the clinic's currency: it goes when the plan moves to the other one.
+    const cost = !costUntouched ? form.total_cost : next === "" && price ? String(price) : "";
+    setForm({ ...form, currency: next, total_cost: cost });
+  };
   const listPrice = prices[form.treatment_type];
+  const listPriceConverted = listPrice && !inClinicCurrency ? convertMoney(listPrice, currency, planCurrency, rateOn(), currency) : null;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -198,15 +219,26 @@ export default function TreatmentForm({
               ))}
             </SelectInput>
           </Field>
+          {currencies.length > 1 && (
+            <Field label={t.money.currency} hint={currencyLocked ? t.money.currencyLocked : undefined}>
+              <CurrencySelect value={form.currency} onChange={changeCurrency} disabled={currencyLocked} />
+            </Field>
+          )}
           <Field
-            label={t.treatmentForm.totalCost(t.dates.currencySymbols[currency] ?? currency)}
+            label={t.treatmentForm.totalCost(t.dates.currencySymbols[planCurrency] ?? planCurrency)}
             required
             error={costError}
-            hint={listPrice ? t.treatmentForm.usualPrice(label(t.enums.treatmentType, form.treatment_type), money(listPrice)) : undefined}
+            hint={
+              !listPrice
+                ? undefined
+                : listPriceConverted
+                  ? t.money.usualPriceConverted(label(t.enums.treatmentType, form.treatment_type), money(listPrice), money(listPriceConverted, planCurrency))
+                  : t.treatmentForm.usualPrice(label(t.enums.treatmentType, form.treatment_type), money(listPrice))
+            }
           >
             <NumberInput
               name="total_cost"
-              decimals={currencyDecimals(currency) > 0}
+              decimals={currencyDecimals(planCurrency) > 0}
               value={form.total_cost}
               onChange={handleChange}
               required

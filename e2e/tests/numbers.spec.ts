@@ -35,7 +35,7 @@ test("number boxes keep only the number, whatever keyboard typed it", () => {
 test("an amount typed with Arabic digits is saved and shown in dinars", async ({ page }) => {
   await page.goto("/settings");
   await waitForData(page);
-  await page.getByLabel("Currency").selectOption("IQD");
+  await page.getByRole("combobox", { name: /^Currency/ }).selectOption("IQD");
   await page.getByRole("button", { name: "Save Settings" }).click();
   await expect(page.getByText("Settings saved.")).toBeVisible();
 

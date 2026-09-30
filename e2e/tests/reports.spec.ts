@@ -29,6 +29,7 @@ test("reports chart revenue and appointments over the period, and the kinds of t
   // A long period is charted month by month.
   await page.getByLabel("Period").selectOption("this_year");
   await expect(page.getByRole("heading", { name: "Appointments per Month" })).toBeVisible();
-  await expect(revenue).toHaveAttribute("aria-label", /Aug 2026 450K/);
+  // August: IQD 450,000, plus Ruqaya's $300 (at 1,480) and IQD 148,000 on her dollar implant.
+  await expect(revenue).toHaveAttribute("aria-label", /Aug 2026 1M/);
   await expect(page.getByRole("img", { name: /^Treatment plans started in this period, by type:/ })).toBeVisible();
 });

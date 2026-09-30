@@ -80,7 +80,7 @@ function TreatmentDetail() {
             { filters: [["treatment_plan", "=", id]], orderBy: "session_date asc, session_time asc", limit: 0 },
           ),
           showPayments
-            ? getList<Payment>("Payment", ["name", "payment_date", "amount", "payment_method"], {
+            ? getList<Payment>("Payment", ["name", "payment_date", "amount", "currency", "plan_amount", "payment_method"], {
                 filters: [["treatment_plan", "=", id]],
                 orderBy: "payment_date desc",
                 limit: 0,
@@ -203,16 +203,16 @@ function TreatmentDetail() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
           <div className="flex items-baseline justify-between gap-3 sm:block">
             <p className="text-xs text-gray-500">{t.treatments.totalCost}</p>
-            <p className="text-lg sm:text-2xl font-bold text-gray-800 sm:mt-1">{money(total)}</p>
+            <p className="text-lg sm:text-2xl font-bold text-gray-800 sm:mt-1">{money(total, plan.currency)}</p>
           </div>
           <div className="flex items-baseline justify-between gap-3 sm:block">
             <p className="text-xs text-gray-500">{t.treatments.paid}</p>
-            <p data-testid="plan-paid" className="text-lg sm:text-2xl font-bold text-green-600 sm:mt-1">{money(paid)}</p>
+            <p data-testid="plan-paid" className="text-lg sm:text-2xl font-bold text-green-600 sm:mt-1">{money(paid, plan.currency)}</p>
           </div>
           <div className="flex items-baseline justify-between gap-3 sm:block">
             <p className="text-xs text-gray-500">{t.treatments.remaining}</p>
             <p data-testid="plan-remaining" className={cx("text-lg sm:text-2xl font-bold sm:mt-1", remaining > 0 ? "text-red-600" : "text-gray-500")}>
-              {money(remaining)}
+              {money(remaining, plan.currency)}
             </p>
           </div>
         </div>
@@ -296,7 +296,13 @@ function TreatmentDetail() {
                           <span className="block text-sm text-gray-800">{formatDate(pay.payment_date)}</span>
                           <StatusBadge kind="method" status={pay.payment_method} />
                         </span>
-                        <span className="font-medium text-green-600 whitespace-nowrap">{money(pay.amount)}</span>
+                        <span className="text-end whitespace-nowrap">
+                          <span className="block font-medium text-green-600">{money(pay.amount, pay.currency)}</span>
+                          {/* Paid in the other currency: what it took off this plan. */}
+                          {(pay.currency || "") !== (plan.currency || "") && pay.plan_amount !== undefined && pay.plan_amount !== null && (
+                            <span className="block text-xs text-gray-500">{t.money.countsAs(money(pay.plan_amount, plan.currency))}</span>
+                          )}
+                        </span>
                       </Link>
                     </li>
                   ))}
@@ -389,7 +395,7 @@ function TreatmentDetail() {
         )}
       </Card>
 
-      <RecordHistory doctype="Treatment Plan" name={plan.name} changedAt={plan.modified} />
+      <RecordHistory doctype="Treatment Plan" name={plan.name} changedAt={plan.modified} currency={plan.currency} />
 
       {sessionModal.open && (
         <SessionModal

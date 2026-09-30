@@ -8,11 +8,11 @@ test("the dashboard lists what needs attention today", async ({ page }) => {
   await expect(card).toContainText("5 past appointments to close");
   await expect(card).toContainText("1 reminder to send for tomorrow");
   await expect(card).toContainText("4 patients due for a check-up");
-  await expect(card).toContainText("6 patients owe money");
+  await expect(card).toContainText("7 patients owe money");
 
   await card.getByRole("link", { name: /patients owe money/ }).click();
   await expect(page.getByLabel("Balance")).toHaveValue("owing");
-  await expect(page.getByText("6 records")).toBeVisible();
+  await expect(page.getByText("7 records")).toBeVisible();
 });
 
 test("the everyday jobs are large tiles at the top of the dashboard", async ({ page }) => {

@@ -15,7 +15,7 @@ import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { label } from "@/i18n";
 import { getList, type FilterRow } from "@/lib/frappe";
-import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
+import { searchFilters, useDebounced, useOpenBalances, usePagedList } from "@/lib/hooks";
 import { cx, display, formatShortDate, formatTime, todayISO } from "@/lib/format";
 import { appointmentHref, patientHref } from "@/lib/links";
 import { MEDICAL_FIELDS, medicalFlags } from "@/lib/medical";
@@ -37,7 +37,7 @@ function PatientsList() {
   const { t } = useI18n();
   const p = t.patients;
   const { can } = useSession();
-  const { money, settings, clinicName, countryCode } = useSettings();
+  const { money, settings, clinicName, countryCode, secondCurrency, owedText } = useSettings();
   const [search, setSearch] = useState("");
   const [gender, setGender] = useState("");
   // Collections: only patients with money left to pay, biggest balance first.
@@ -58,6 +58,12 @@ function PatientsList() {
     orderBy: owing ? "total_remaining desc" : "full_name asc",
   });
   const columns = 2 + (showNext ? 1 : 0) + (showBalance ? 1 : 0);
+  // With two currencies, what is left on each plan, so a dollar balance shows in dollars.
+  const balances = useOpenBalances(
+    list.rows.filter((row) => Number(row.total_remaining) > 0).map((row) => row.name),
+    showBalance && Boolean(secondCurrency),
+  );
+  const owed = (patient: Patient) => owedText(patient.total_remaining, balances[patient.name]);
 
   // The next booked visit of each patient on this page.
   const pageKey = list.rows.map((row) => row.name).join("|");
@@ -100,7 +106,7 @@ function PatientsList() {
   const reminder = (patient: Patient) =>
     whatsappLink(
       patient.phone_number,
-      p.balanceReminder(patient.full_name, clinicName, money(patient.total_remaining)),
+      p.balanceReminder(patient.full_name, clinicName, owed(patient)),
       countryCode,
     );
 
@@ -211,7 +217,7 @@ function PatientsList() {
                     <Td label={p.balance} className="text-end whitespace-nowrap">
                       {Number(patient.total_remaining) > 0 ? (
                         <span className="inline-flex items-center gap-2">
-                          <span className="font-medium text-red-600">{money(patient.total_remaining)}</span>
+                          <span className="font-medium text-red-600">{owed(patient)}</span>
                           {owing && settings.enable_whatsapp !== 0 && reminder(patient) && (
                             <a
                               href={reminder(patient)}

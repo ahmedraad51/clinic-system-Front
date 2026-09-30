@@ -13,6 +13,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { label } from "@/i18n";
 import { getList } from "@/lib/frappe";
 import { display, formatDate, todayISO } from "@/lib/format";
+import { currencyOf, sumByCurrency } from "@/lib/currency";
 import { useDocument } from "@/lib/hooks";
 import { patientHref, routeId } from "@/lib/links";
 import type { Patient, TreatmentPlan } from "@/lib/types";
@@ -36,7 +37,7 @@ function Estimate() {
   const { t } = useI18n();
   const params = useParams();
   const id = routeId(params.id);
-  const { money } = useSettings();
+  const { money, moneyTotals, currency } = useSettings();
   const { doc: patient, loading, notFound, error } = useDocument<Patient>("Patient", id);
   const [plans, setPlans] = useState<{ id: string; rows: TreatmentPlan[] } | null>(null);
 
@@ -46,7 +47,7 @@ function Estimate() {
       try {
         const rows = await getList<TreatmentPlan>(
           "Treatment Plan",
-          ["name", "treatment_type", "tooth_number", "doctor_name", "status", "total_cost", "paid_amount", "remaining_amount"],
+          ["name", "treatment_type", "tooth_number", "doctor_name", "status", "currency", "total_cost", "paid_amount", "remaining_amount"],
           { filters: [["patient", "=", id], ["status", "in", ["Planned", "In Progress"]]], orderBy: "name asc", limit: 0 },
         );
         if (!cancelled) setPlans({ id, rows });
@@ -66,8 +67,9 @@ function Estimate() {
   }
 
   const rows = plans?.id === id ? plans.rows : null;
+  // Each currency adds up on its own: "IQD 250,000 + $300".
   const sum = (key: "total_cost" | "paid_amount" | "remaining_amount") =>
-    (rows ?? []).reduce((total, row) => total + (Number(row[key]) || 0), 0);
+    moneyTotals(sumByCurrency(rows ?? [], (row) => Number(row[key]) || 0, (row) => currencyOf(row, currency)));
   const today = todayISO();
 
   return (
@@ -123,10 +125,10 @@ function Estimate() {
                       <Td className="font-medium text-gray-800">{label(t.enums.treatmentType, plan.treatment_type)}</Td>
                       <Td label={t.estimate.tooth}>{display(plan.tooth_number)}</Td>
                       <Td label={t.common.doctor}>{display(plan.doctor_name)}</Td>
-                      <Td label={t.estimate.cost} className="text-end whitespace-nowrap">{money(plan.total_cost)}</Td>
-                      <Td label={t.estimate.paid} className="text-end whitespace-nowrap">{money(plan.paid_amount)}</Td>
+                      <Td label={t.estimate.cost} className="text-end whitespace-nowrap">{money(plan.total_cost, plan.currency)}</Td>
+                      <Td label={t.estimate.paid} className="text-end whitespace-nowrap">{money(plan.paid_amount, plan.currency)}</Td>
                       <Td label={t.estimate.toPay} className="text-end whitespace-nowrap font-medium text-gray-800">
-                        {money(plan.remaining_amount)}
+                        {money(plan.remaining_amount, plan.currency)}
                       </Td>
                     </tr>
                   ))}
@@ -137,15 +139,15 @@ function Estimate() {
             <div className="mt-5 ms-auto max-w-xs space-y-1.5 text-sm">
               <div className="flex justify-between gap-4">
                 <span className="text-gray-500">{t.estimate.totalCost}</span>
-                <span className="text-gray-800">{money(sum("total_cost"))}</span>
+                <span className="text-gray-800">{sum("total_cost")}</span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-gray-500">{t.estimate.alreadyPaid}</span>
-                <span className="text-gray-800">{money(sum("paid_amount"))}</span>
+                <span className="text-gray-800">{sum("paid_amount")}</span>
               </div>
               <div className="flex justify-between gap-4 rounded-xl bg-primary-50 px-3 py-2 print:bg-white print:border print:border-gray-300">
                 <span className="font-semibold text-primary-900">{t.estimate.leftToPay}</span>
-                <span className="font-bold text-primary-900">{money(sum("remaining_amount"))}</span>
+                <span className="font-bold text-primary-900">{sum("remaining_amount")}</span>
               </div>
             </div>
 

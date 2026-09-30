@@ -4,6 +4,8 @@
  * so a form's keys must match these names exactly.
  */
 
+import type { ExchangeRate } from "./currency";
+
 /** A field value as the Frappe REST API returns it. */
 export type DocValue =
   | string
@@ -184,8 +186,10 @@ export interface TreatmentPlan extends BaseDoc {
   status: TreatmentStatus;
   diagnosis?: string;
   treatment_notes?: string;
+  /** The plan's currency: the clinic's own (empty) or the second one (Clinic Settings). Cost, paid and left are in it. */
+  currency?: string;
   total_cost: number;
-  /** Read-only, computed by the server. */
+  /** Read-only, computed by the server: the plan's payments, each in the plan's currency (Payment.plan_amount). */
   paid_amount?: number;
   /** Read-only, computed by the server. */
   remaining_amount?: number;
@@ -218,7 +222,16 @@ export interface Payment extends BaseDoc {
   /** Read-only, fetched from the treatment plan. */
   treatment_type?: string;
   payment_date: string;
+  /** In the payment's currency. */
   amount: number;
+  /** The currency the patient paid in: the clinic's own (empty) or the second one. */
+  currency?: string;
+  /** How many of the clinic's own units one unit of the second currency was worth that day (1 USD = 1,460 IQD). */
+  exchange_rate?: number;
+  /** Read-only, worked out by the server: the amount in the plan's currency (what it takes off the plan). */
+  plan_amount?: number;
+  /** Read-only, worked out by the server: the amount in the clinic's own currency, for totals. */
+  base_amount?: number;
   payment_method: PaymentMethod;
   notes?: string;
 }
@@ -254,6 +267,10 @@ export interface ClinicSettings extends BaseDoc {
   email?: string;
   address?: string;
   currency?: string;
+  /** A second currency the clinic also takes ("USD"), or empty for one currency only. */
+  second_currency?: string;
+  /** The rate of the second currency, each from its date on (a child table). */
+  exchange_rates?: ExchangeRate[];
   tax_number?: string;
   opening_time?: string;
   closing_time?: string;

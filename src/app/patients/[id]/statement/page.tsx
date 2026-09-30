@@ -11,6 +11,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { label } from "@/i18n";
 import { getList } from "@/lib/frappe";
 import { display, formatDate, todayISO } from "@/lib/format";
+import { currencyOf, planAmountOf, sumByCurrency } from "@/lib/currency";
 import { useDocument } from "@/lib/hooks";
 import { patientHref, routeId } from "@/lib/links";
 import type { Patient, Payment, TreatmentPlan } from "@/lib/types";
@@ -35,7 +36,7 @@ function Statement() {
   const id = routeId(params.id);
   const { t } = useI18n();
   const s = t.statement;
-  const { money } = useSettings();
+  const { money, moneyTotals, currency } = useSettings();
   const { doc: patient, loading, notFound, error } = useDocument<Patient>("Patient", id);
   const [data, setData] = useState<Data | null>(null);
 
@@ -46,10 +47,10 @@ function Statement() {
         const [plans, payments] = await Promise.all([
           getList<TreatmentPlan>(
             "Treatment Plan",
-            ["name", "treatment_type", "tooth_number", "status", "total_cost", "paid_amount", "remaining_amount"],
+            ["name", "treatment_type", "tooth_number", "status", "currency", "total_cost", "paid_amount", "remaining_amount"],
             { filters: [["patient", "=", id], ["status", "!=", "Cancelled"]], orderBy: "name asc", limit: 0 },
           ),
-          getList<Payment>("Payment", ["name", "payment_date", "amount", "payment_method", "treatment_type"], {
+          getList<Payment>("Payment", ["name", "payment_date", "amount", "currency", "plan_amount", "treatment_plan", "payment_method", "treatment_type"], {
             filters: [["patient", "=", id]],
             orderBy: "payment_date asc",
             limit: 0,
@@ -73,8 +74,19 @@ function Statement() {
     );
 
   const ready = data?.id === id ? data : null;
-  const charged = (ready?.plans ?? []).reduce((sum, plan) => sum + (Number(plan.total_cost) || 0), 0);
-  const paid = (ready?.payments ?? []).reduce((sum, pay) => sum + (Number(pay.amount) || 0), 0);
+  // Each currency adds up on its own: "IQD 250,000 + $300".
+  const inCurrency = (row: { currency?: string }) => currencyOf(row, currency);
+  const charged = moneyTotals(sumByCurrency(ready?.plans ?? [], (plan) => Number(plan.total_cost) || 0, inCurrency));
+  // A payment on a plan counts in the plan's currency (what it took off the plan); a general payment in its own.
+  const planCurrencies = new Map((ready?.plans ?? []).map((plan) => [plan.name, inCurrency(plan)]));
+  const paid = moneyTotals(
+    sumByCurrency(
+      ready?.payments ?? [],
+      (pay) => (pay.treatment_plan && planCurrencies.has(pay.treatment_plan) ? planAmountOf(pay) : Number(pay.amount) || 0),
+      (pay) => (pay.treatment_plan && planCurrencies.get(pay.treatment_plan)) || inCurrency(pay),
+    ),
+  );
+  const balance = moneyTotals(sumByCurrency(ready?.plans ?? [], (plan) => Number(plan.remaining_amount) || 0, inCurrency));
 
   return (
     <PageContainer section="money" narrow>
@@ -137,9 +149,9 @@ function Statement() {
                           <Td label={s.colStatus}>
                             <StatusBadge kind="treatment" status={plan.status} />
                           </Td>
-                          <Td label={s.colCost} className="text-end whitespace-nowrap">{money(plan.total_cost)}</Td>
-                          <Td label={s.colPaid} className="text-end whitespace-nowrap">{money(plan.paid_amount)}</Td>
-                          <Td label={s.colLeft} className="text-end whitespace-nowrap">{money(plan.remaining_amount)}</Td>
+                          <Td label={s.colCost} className="text-end whitespace-nowrap">{money(plan.total_cost, plan.currency)}</Td>
+                          <Td label={s.colPaid} className="text-end whitespace-nowrap">{money(plan.paid_amount, plan.currency)}</Td>
+                          <Td label={s.colLeft} className="text-end whitespace-nowrap">{money(plan.remaining_amount, plan.currency)}</Td>
                         </tr>
                       ))
                     )}
@@ -173,7 +185,7 @@ function Statement() {
                             {pay.treatment_type ? label(t.enums.treatmentType, pay.treatment_type) : s.generalPayment}
                           </Td>
                           <Td label={s.colMethod}>{label(t.enums.paymentMethod, pay.payment_method)}</Td>
-                          <Td label={s.colAmount} className="text-end whitespace-nowrap">{money(pay.amount)}</Td>
+                          <Td label={s.colAmount} className="text-end whitespace-nowrap">{money(pay.amount, pay.currency)}</Td>
                         </tr>
                       ))
                     )}
@@ -185,15 +197,15 @@ function Statement() {
             <div className="ms-auto max-w-xs space-y-1.5 text-sm">
               <div className="flex justify-between gap-4">
                 <span className="text-gray-500">{s.totalTreatments}</span>
-                <span className="text-gray-800">{money(charged)}</span>
+                <span className="text-gray-800">{charged}</span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-gray-500">{s.totalPaid}</span>
-                <span className="text-gray-800">{money(paid)}</span>
+                <span className="text-gray-800">{paid}</span>
               </div>
               <div className="flex justify-between gap-4 rounded-xl bg-primary-50 px-3 py-2 print:bg-white print:border print:border-gray-300">
                 <span className="font-semibold text-primary-900">{s.balance}</span>
-                <span className="font-bold text-primary-900">{money(Number(patient.total_remaining) || 0)}</span>
+                <span className="font-bold text-primary-900">{balance}</span>
               </div>
             </div>
           </div>

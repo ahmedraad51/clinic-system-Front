@@ -97,6 +97,8 @@ export interface SlipData {
   amount: string;
   /** A balance line under the amount, e.g. { label: "Left on this treatment", amount: "IQD 3,000" }; none when unknown. */
   balance?: { label: string; amount: string };
+  /** More lines under the amount, e.g. the exchange rate of a payment in the other currency. */
+  extra?: { label: string; value: string }[];
   notes?: string;
   /** Who printed the slip (the payment record does not say who took the money). */
   printedBy?: string;
@@ -171,6 +173,7 @@ ${row(t.for, data.forWhat)}
 ${row(t.method, data.method)}
 <hr>
 ${row(t.paid, data.amount, "amount")}
+${(data.extra ?? []).map((line) => row(line.label, line.value)).join("\n")}
 ${data.balance ? row(data.balance.label, data.balance.amount) : ""}
 ${data.notes ? `<div class="notes small">${escapeHtml(data.notes)}</div>` : ""}
 <hr>

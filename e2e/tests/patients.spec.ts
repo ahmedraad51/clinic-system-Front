@@ -133,7 +133,7 @@ test("the patient list shows who owes money, biggest balance first", async ({ pa
   await page.goto("/patients");
   await waitForData(page);
   await page.getByLabel("Balance").selectOption("owing");
-  await expect(page.getByText("6 records")).toBeVisible();
+  await expect(page.getByText("7 records")).toBeVisible();
   const first = page.getByRole("row").nth(1);
   await expect(first).toContainText("Abbas Mahdi");
   await expect(first).toContainText("IQD 850,000");

@@ -15,6 +15,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { label, messages } from "@/i18n";
 import { errorMessage, getList } from "@/lib/frappe";
 import { formatDate, formatLongDate, todayISO } from "@/lib/format";
+import { currencyOf, sumByCurrency } from "@/lib/currency";
 import { patientHref, paymentHref } from "@/lib/links";
 import { PAYMENT_METHODS, type Payment } from "@/lib/types";
 
@@ -37,7 +38,7 @@ function DayReport() {
   const searchParams = useSearchParams();
   const { t } = useI18n();
   const c = t.cash;
-  const { money } = useSettings();
+  const { money, moneyTotals, currency } = useSettings();
   const param = searchParams.get("date") || "";
   const date = /^\d{4}-\d{2}-\d{2}$/.test(param) ? param : todayISO();
   const [result, setResult] = useState<{ date: string; version: number; rows: Payment[]; error: string } | null>(null);
@@ -51,7 +52,7 @@ function DayReport() {
       try {
         const rows = await getList<Payment>(
           "Payment",
-          ["name", "patient", "patient_name", "treatment_type", "amount", "payment_method", "notes"],
+          ["name", "patient", "patient_name", "treatment_type", "amount", "currency", "payment_method", "notes"],
           { filters: [["payment_date", "=", date]], orderBy: "name asc", limit: 0 },
         );
         if (!cancelled) setResult({ date, version, rows, error: "" });
@@ -68,11 +69,16 @@ function DayReport() {
 
   const ready = result?.date === date && result.version === version ? result : null;
   const rows = ready?.rows ?? [];
-  const total = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+  // Each currency adds up on its own: "IQD 250,000 + $300".
+  const totalsOf = (list: Payment[]) => sumByCurrency(list, (row) => Number(row.amount) || 0, (row) => currencyOf(row, currency));
+  const total = totalsOf(rows);
   const byMethod = PAYMENT_METHODS.map((method) => {
     const matching = rows.filter((row) => row.payment_method === method);
-    return { method, count: matching.length, total: matching.reduce((sum, row) => sum + (Number(row.amount) || 0), 0) };
+    return { method, count: matching.length, total: totalsOf(matching) };
   });
+  // The drawer is counted in the clinic's currency; cash in the other one is counted apart.
+  const cashTotals = byMethod.find((m) => m.method === "Cash")?.total ?? {};
+  const otherCash = Object.fromEntries(Object.entries(cashTotals).filter(([code]) => code !== currency));
 
   return (
     <PageContainer section="money" narrow>
@@ -117,13 +123,13 @@ function DayReport() {
               {byMethod.map((row) => (
                 <div key={row.method} className="rounded-xl border border-gray-100 px-4 py-3">
                   <p className="text-xs text-gray-500">{label(t.enums.paymentMethod, row.method)}</p>
-                  <p className="text-lg font-bold text-gray-800">{money(row.total)}</p>
+                  <p className="text-lg font-bold text-gray-800">{moneyTotals(row.total)}</p>
                   <p className="text-xs text-gray-500">{c.payments(row.count)}</p>
                 </div>
               ))}
               <div className="rounded-xl bg-primary-50 px-4 py-3 print:bg-white print:border print:border-gray-300">
                 <p className="text-xs text-primary-800">{c.total}</p>
-                <p className="text-lg font-bold text-primary-900">{money(total)}</p>
+                <p className="text-lg font-bold text-primary-900">{moneyTotals(total)}</p>
                 <p className="text-xs text-primary-800">{c.payments(rows.length)}</p>
               </div>
             </div>
@@ -162,7 +168,7 @@ function DayReport() {
                           </Link>
                         </Td>
                         <Td label={c.colAmount} className="text-end whitespace-nowrap font-medium text-gray-800">
-                          {money(row.amount)}
+                          {money(row.amount, row.currency)}
                         </Td>
                       </tr>
                     ))}
@@ -171,9 +177,14 @@ function DayReport() {
               </div>
             )}
 
+            {Object.values(otherCash).some((amount) => amount > 0) && (
+              <p data-testid="other-cash" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 print:bg-white">
+                {c.otherCash(moneyTotals(otherCash))}
+              </p>
+            )}
             <CashCountCard
               date={date}
-              cashPayments={byMethod.find((m) => m.method === "Cash")?.total ?? 0}
+              cashPayments={cashTotals[currency] ?? 0}
               onSaved={() => setCountsSaved((n) => n + 1)}
             />
 

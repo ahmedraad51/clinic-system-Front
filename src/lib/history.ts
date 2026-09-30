@@ -76,7 +76,7 @@ export function parseDocHistory(
 /** Fields the server works out or copies from another record: their changes follow from the ones shown. */
 const HIDDEN = new Set([
   "name", "owner", "creation", "modified", "modified_by", "idx", "docstatus",
-  "patient_name", "doctor_name", "paid_amount", "remaining_amount",
+  "patient_name", "doctor_name", "paid_amount", "remaining_amount", "plan_amount", "base_amount",
   "total_appointments", "total_treatments", "total_paid", "total_remaining",
 ]);
 /** Hidden for one doctype only: a Payment's treatment_type is copied from its plan. */

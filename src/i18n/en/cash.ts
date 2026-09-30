@@ -60,4 +60,5 @@ export const cash = {
   colResult: "Result",
   colNote: "Note",
   colCountedBy: "Counted by",
+  otherCash: (amount: string) => `Cash in the other currency on this day: ${amount}. It is not part of the count below: count it apart.`,
 };

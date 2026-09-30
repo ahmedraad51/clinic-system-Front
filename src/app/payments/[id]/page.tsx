@@ -17,7 +17,8 @@ import { useToast } from "@/context/ToastContext";
 import { label } from "@/i18n";
 import { deleteDoc, errorMessage, getDoc, getList } from "@/lib/frappe";
 import { formatDate } from "@/lib/format";
-import { useDocument } from "@/lib/hooks";
+import { currencyOf, planAmountOf, roundMoney } from "@/lib/currency";
+import { useDocument, useOpenBalances } from "@/lib/hooks";
 import { patientHref, paymentHref, routeId, treatmentHref } from "@/lib/links";
 import { whatsappLink } from "@/lib/whatsapp";
 import type { Patient, Payment, TreatmentPlan } from "@/lib/types";
@@ -36,7 +37,7 @@ function PaymentDetail() {
   const toast = useToast();
   const { t } = useI18n();
   const { can, displayName } = useSession();
-  const { money, settings, clinicName, countryCode } = useSettings();
+  const { money, settings, clinicName, countryCode, currency, secondCurrency, rateText, owedText } = useSettings();
   const id = routeId(params.id);
   const { doc: payment, loading, notFound, error } = useDocument<Payment>("Payment", id);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -44,6 +45,7 @@ function PaymentDetail() {
   // The patient's phone and what is left to pay, for sending the receipt on WhatsApp.
   const [patientInfo, setPatientInfo] = useState<{ id: string; row: Patient | null } | null>(null);
   const patientId = payment?.patient ?? "";
+  const balances = useOpenBalances(patientId ? [patientId] : [], Boolean(secondCurrency));
 
   useEffect(() => {
     if (!patientId) return;
@@ -69,7 +71,7 @@ function PaymentDetail() {
   // not count, so a reprint shows the same figure). null when it could not be worked out.
   const planId = payment?.treatment_plan ?? "";
   const paidOn = payment?.payment_date ?? "";
-  const [planBalance, setPlanBalance] = useState<{ key: string; left: number | null } | null>(null);
+  const [planBalance, setPlanBalance] = useState<{ key: string; left: number | null; currency: string } | null>(null);
 
   useEffect(() => {
     if (!planId) return;
@@ -77,28 +79,33 @@ function PaymentDetail() {
     const key = `${id}|${planId}|${paidOn}`;
     const load = async () => {
       let left: number | null = null;
+      let planCurrency = "";
       try {
         const [plan, payments] = await Promise.all([
           getDoc<TreatmentPlan>("Treatment Plan", planId),
-          getList<Payment>("Payment", ["name", "payment_date", "amount"], { filters: [["treatment_plan", "=", planId]], limit: 0 }),
+          getList<Payment>("Payment", ["name", "payment_date", "amount", "plan_amount"], {
+            filters: [["treatment_plan", "=", planId]],
+            limit: 0,
+          }),
         ]);
+        planCurrency = currencyOf(plan, currency);
         if (plan.status !== "Cancelled") {
-          // This payment and the ones before it (same day: by receipt number).
+          // This payment and the ones before it (same day: by receipt number), each in the plan's currency.
           const paid = payments
             .filter((row) => row.payment_date < paidOn || (row.payment_date === paidOn && row.name <= id))
-            .reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
-          left = Math.max(0, (Number(plan.total_cost) || 0) - paid);
+            .reduce((sum, row) => sum + planAmountOf(row), 0);
+          left = Math.max(0, roundMoney((Number(plan.total_cost) || 0) - paid, planCurrency));
         }
       } catch (err) {
         console.error(err);
       }
-      if (!cancelled) setPlanBalance({ key, left });
+      if (!cancelled) setPlanBalance({ key, left, currency: planCurrency });
     };
     load();
     return () => {
       cancelled = true;
     };
-  }, [id, planId, paidOn]);
+  }, [id, planId, paidOn, currency]);
 
   if (loading) return <RecordLoading />;
   if (notFound || !payment)
@@ -125,13 +132,13 @@ function PaymentDetail() {
           [
             p.whatsappThanks(
               payment.patient_name || payment.patient,
-              money(payment.amount),
+              money(payment.amount, payment.currency),
               formatDate(payment.payment_date),
               treatmentName,
               clinicName,
             ),
             p.whatsappReceipt(id, methodName),
-            left > 0 ? p.whatsappLeft(money(left)) : p.whatsappNothingLeft,
+            left > 0 ? p.whatsappLeft(owedText(left, balances[payment.patient])) : p.whatsappNothingLeft,
           ].join(" "),
           countryCode,
         )
@@ -139,6 +146,17 @@ function PaymentDetail() {
 
   // The same receipt for a thermal receipt printer; Print Slip waits until the plan balance has loaded.
   const balance = planId && planBalance?.key === `${id}|${planId}|${paidOn}` ? planBalance : null;
+  // Two currencies met: the receipt says at what rate, and what the payment took off the plan.
+  const payCurrency = currencyOf(payment, currency);
+  const planCurrency = balance ? currencyOf(balance, currency) : payCurrency;
+  const rate = Number(payment.exchange_rate) || 0;
+  const rateLines: { label: string; value: string }[] = [];
+  if (rate > 0 && (payCurrency !== currency || planCurrency !== currency)) {
+    rateLines.push({ label: t.money.rateUsed, value: rateText(rate) });
+  }
+  if (balance && planCurrency !== payCurrency && payment.plan_amount !== undefined && payment.plan_amount !== null) {
+    rateLines.push({ label: t.money.countedAs, value: money(payment.plan_amount, planCurrency) });
+  }
   const slip = planId && !balance ? null : {
     clinicName,
     clinicAddress: settings.address,
@@ -149,8 +167,9 @@ function PaymentDetail() {
     patient: payment.patient_name || payment.patient,
     forWhat: payment.treatment_plan ? treatmentName || r.treatment : r.generalPayment,
     method: methodName,
-    amount: money(payment.amount),
-    balance: balance && balance.left !== null ? { label: r.slip.leftOnTreatment, amount: money(balance.left) } : undefined,
+    amount: money(payment.amount, payment.currency),
+    extra: rateLines,
+    balance: balance && balance.left !== null ? { label: r.slip.leftOnTreatment, amount: money(balance.left, balance.currency) } : undefined,
     notes: payment.notes || undefined,
     printedBy: displayName,
   };
@@ -251,13 +270,23 @@ function PaymentDetail() {
 
         <div className="flex items-center justify-between rounded-xl bg-green-50 px-5 py-4">
           <span className="text-sm font-medium text-green-800">{r.amountPaid}</span>
-          <span className="text-2xl font-bold text-green-700">{money(payment.amount)}</span>
+          <span className="text-2xl font-bold text-green-700">{money(payment.amount, payment.currency)}</span>
         </div>
+        {rateLines.length > 0 && (
+          <dl data-testid="receipt-rate" className="mt-3 space-y-1 text-sm">
+            {rateLines.map((line) => (
+              <div key={line.label} className="flex justify-between gap-4">
+                <dt className="text-gray-500">{line.label}</dt>
+                <dd className="font-medium text-gray-800">{line.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
 
         <ReceiptSlipControls data={slip} />
       </Card>
 
-      <RecordHistory doctype="Payment" name={payment.name} changedAt={payment.modified} />
+      <RecordHistory doctype="Payment" name={payment.name} changedAt={payment.modified} currency={payment.currency} />
 
       <ConfirmDialog
         open={confirmDelete}
@@ -265,7 +294,7 @@ function PaymentDetail() {
         message={
           <p>
             {p.deleteBefore}
-            <strong>{money(payment.amount)}</strong>
+            <strong>{money(payment.amount, payment.currency)}</strong>
             {p.deleteAfter}
           </p>
         }

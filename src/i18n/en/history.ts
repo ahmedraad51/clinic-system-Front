@@ -62,6 +62,7 @@ export const history = {
     "Treatment Plan": {
       treatment_type: "Treatment",
       tooth_number: "Tooth",
+      currency: "Currency",
       total_cost: "Total cost",
       treatment_notes: "Notes",
       lab_name: "Lab",
@@ -73,6 +74,8 @@ export const history = {
       treatment_plan: "Treatment plan",
       payment_date: "Date",
       payment_method: "Method",
+      currency: "Currency",
+      exchange_rate: "Exchange rate",
     },
   } as Record<string, Record<string, string>>,
 };

@@ -14,6 +14,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { label, messages, num } from "@/i18n";
 import { errorMessage, getList, type FilterRow } from "@/lib/frappe";
 import { addDays, addMonths, downloadCsv, formatCompact, formatDate, formatMonth, formatMonthName, monthStart, todayISO } from "@/lib/format";
+import { baseAmount, currencyOf, sumByCurrency, totalsOrder } from "@/lib/currency";
 import { patientHref, paymentHref, treatmentHref } from "@/lib/links";
 import type { Appointment, Payment, TreatmentPlan } from "@/lib/types";
 
@@ -87,7 +88,8 @@ function sumInto<T>(buckets: ReturnType<typeof chartBuckets>, rows: T[], date: (
 
 function groupSum(rows: Payment[], keyOf: (row: Payment) => string): Array<[string, number]> {
   const totals = new Map<string, number>();
-  rows.forEach((row) => totals.set(keyOf(row), (totals.get(keyOf(row)) ?? 0) + (Number(row.amount) || 0)));
+  // In the clinic's currency: a payment in the other one counts at the rate of its day.
+  rows.forEach((row) => totals.set(keyOf(row), (totals.get(keyOf(row)) ?? 0) + baseAmount(row)));
   return [...totals.entries()];
 }
 
@@ -102,7 +104,7 @@ export default function ReportsPage() {
 function Reports() {
   const { t } = useI18n();
   const r = t.reports;
-  const { settings, money } = useSettings();
+  const { settings, money, moneyTotals, currency, toMain } = useSettings();
   const [range, setRange] = useState<Range>("this_month");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -126,12 +128,12 @@ function Reports() {
         const [payments, outstanding, plans, appointments, started] = await Promise.all([
           getList<Payment>(
             "Payment",
-            ["name", "patient", "patient_name", "payment_date", "amount", "payment_method", "treatment_type", "treatment_plan"],
+            ["name", "patient", "patient_name", "payment_date", "amount", "currency", "exchange_rate", "base_amount", "payment_method", "treatment_type", "treatment_plan"],
             { filters: filters.length ? filters : undefined, orderBy: "payment_date desc, name desc", limit: 0 },
           ),
           getList<TreatmentPlan>(
             "Treatment Plan",
-            ["name", "patient", "patient_name", "treatment_type", "tooth_number", "status", "total_cost", "paid_amount", "remaining_amount"],
+            ["name", "patient", "patient_name", "treatment_type", "tooth_number", "status", "currency", "total_cost", "paid_amount", "remaining_amount"],
             { filters: [["remaining_amount", ">", 0]], orderBy: "remaining_amount desc", limit: 0 },
           ),
           getList<TreatmentPlan>("Treatment Plan", ["name", "doctor_name"], { limit: 0 }),
@@ -199,8 +201,15 @@ function Reports() {
 
   const stale = data.key !== key;
   const payments = data.payments;
-  const revenue = payments.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
-  const outstandingTotal = data.outstanding.reduce((sum, row) => sum + (Number(row.remaining_amount) || 0), 0);
+  // Totals in the clinic's currency (each payment at the rate of its day), and what came in, per currency.
+  const revenue = payments.reduce((sum, row) => sum + baseAmount(row), 0);
+  const received = sumByCurrency(payments, (row) => Number(row.amount) || 0, (row) => currencyOf(row, currency));
+  const twoCurrencies = totalsOrder(received, currency).length > 1;
+  // What is left on a dollar plan counts at today's rate.
+  const outstandingTotal = data.outstanding.reduce((sum, row) => sum + toMain(row.remaining_amount, row.currency), 0);
+  const outstandingInOther = data.outstanding.some((row) => currencyOf(row, currency) !== currency);
+  // Biggest first, comparing every plan in the clinic's currency (the server sorts the raw numbers).
+  const outstanding = [...data.outstanding].sort((a, b) => toMain(b.remaining_amount, b.currency) - toMain(a.remaining_amount, a.currency));
   // Grouped by the label shown, so saved English values appear in the screen's language.
   const byType = groupSum(payments, (row) =>
     row.treatment_type ? label(t.enums.treatmentType, row.treatment_type) : r.noPlan,
@@ -225,7 +234,7 @@ function Reports() {
   const chartFrom = from || (firstDate && firstDate > addMonths(chartTo, -MOST_MONTHS) ? firstDate : addMonths(chartTo, -MOST_MONTHS + 1));
   const buckets = chartFrom && chartFrom <= chartTo ? chartBuckets(chartFrom, chartTo) : [];
   const daily = (buckets[0]?.key.length ?? 10) === 10;
-  const revenueSeries = sumInto(buckets, payments, (row) => row.payment_date, (row) => Number(row.amount) || 0);
+  const revenueSeries = sumInto(buckets, payments, (row) => row.payment_date, baseAmount);
   const visitSeries = sumInto(buckets, data.appointments.filter((a) => a.status !== "Cancelled"), (a) => a.appointment_date, () => 1);
   const typeCounts = new Map<string, number>();
   data.plans.forEach((plan) => typeCounts.set(plan.treatment_type || "", (typeCounts.get(plan.treatment_type || "") ?? 0) + 1));
@@ -246,6 +255,9 @@ function Reports() {
         label(t.enums.treatmentType, row.treatment_type),
         label(t.enums.paymentMethod, row.payment_method),
         Number(row.amount) || 0,
+        currencyOf(row, currency),
+        Number(row.exchange_rate) || "",
+        baseAmount(row),
       ]),
     );
 
@@ -253,9 +265,10 @@ function Reports() {
     downloadCsv(
       `outstanding-${todayISO()}.csv`,
       r.csvOutstanding,
-      data.outstanding.map((row) => [
+      outstanding.map((row) => [
         row.name, row.patient_name || row.patient, label(t.enums.treatmentType, row.treatment_type), row.tooth_number || "",
         label(t.enums.treatmentStatus, row.status),
+        currencyOf(row, currency),
         Number(row.total_cost) || 0, Number(row.paid_amount) || 0, Number(row.remaining_amount) || 0,
       ]),
     );
@@ -283,7 +296,14 @@ function Reports() {
 
       <div className={stale ? "opacity-60 transition-opacity space-y-6" : "space-y-6"}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title={r.revenue} value={money(revenue)} icon={TrendingUp} section="money" order={0} />
+          <StatCard
+            title={r.revenue}
+            value={money(revenue)}
+            icon={TrendingUp}
+            section="money"
+            order={0}
+            hint={twoCurrencies ? r.received(moneyTotals(received)) : undefined}
+          />
           <StatCard title={r.payments} value={num(payments.length)} icon={CreditCard} section="reports" order={1} />
           <StatCard
             title={r.average}
@@ -292,7 +312,7 @@ function Reports() {
             section="patients"
             order={2}
           />
-          <StatCard title={r.outstanding} value={money(outstandingTotal)} icon={AlertCircle} tone="red" hint={r.outstandingHint} order={3} />
+          <StatCard title={r.outstanding} value={money(outstandingTotal)} icon={AlertCircle} tone="red" hint={outstandingInOther ? `${r.outstandingHint}${t.common.dot}${r.outstandingNote}` : r.outstandingHint} order={3} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -400,7 +420,7 @@ function Reports() {
                     <Td label={r.colMethod}>
                       <StatusBadge kind="method" status={row.payment_method} />
                     </Td>
-                    <Td label={r.colAmount} className="text-end font-medium text-green-600 whitespace-nowrap">{money(row.amount)}</Td>
+                    <Td label={r.colAmount} className="text-end font-medium text-green-600 whitespace-nowrap">{money(row.amount, row.currency)}</Td>
                   </tr>
                 ))
               )}
@@ -439,7 +459,7 @@ function Reports() {
               {data.outstanding.length === 0 ? (
                 <TableMessage colSpan={6}>{r.noOutstanding}</TableMessage>
               ) : (
-                data.outstanding.map((row) => (
+                outstanding.map((row) => (
                   <tr key={row.name} className="hover:bg-gray-50">
                     <Td>
                       <Link href={patientHref(row.patient)} className="font-medium text-gray-800 hover:text-primary-600">
@@ -455,9 +475,9 @@ function Reports() {
                     <Td label={r.colStatus}>
                       <StatusBadge kind="treatment" status={row.status} />
                     </Td>
-                    <Td label={r.colTotalCost} className="text-end whitespace-nowrap">{money(row.total_cost)}</Td>
-                    <Td label={r.colPaid} className="text-end whitespace-nowrap text-green-600">{money(row.paid_amount)}</Td>
-                    <Td label={r.colRemaining} className="text-end whitespace-nowrap font-semibold text-red-600">{money(row.remaining_amount)}</Td>
+                    <Td label={r.colTotalCost} className="text-end whitespace-nowrap">{money(row.total_cost, row.currency)}</Td>
+                    <Td label={r.colPaid} className="text-end whitespace-nowrap text-green-600">{money(row.paid_amount, row.currency)}</Td>
+                    <Td label={r.colRemaining} className="text-end whitespace-nowrap font-semibold text-red-600">{money(row.remaining_amount, row.currency)}</Td>
                   </tr>
                 ))
               )}

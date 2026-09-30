@@ -26,6 +26,7 @@ import { useToast } from "@/context/ToastContext";
 import { label, messages } from "@/i18n";
 import { deleteDoc, errorMessage, getList, updateDoc, type FilterRow } from "@/lib/frappe";
 import { addMonths, display, formatDate, formatMonth, formatTime, todayISO } from "@/lib/format";
+import { currencyOf, sumByCurrency } from "@/lib/currency";
 import { useDocument, usePatientImages } from "@/lib/hooks";
 import { chartSketchToSave, type ChartSketch } from "@/lib/sketch";
 import { DEFAULT_RECALL_MONTHS } from "@/lib/recall";
@@ -61,7 +62,7 @@ function PatientDetail() {
   const router = useRouter();
   const toast = useToast();
   const { can } = useSession();
-  const { money, countryCode } = useSettings();
+  const { money, moneyTotals, currency, countryCode } = useSettings();
   const id = routeId(params.id);
   const { doc: patient, loading, notFound, error, reload } = useDocument<Patient>("Patient", id);
   // X-rays and photos: shown in their own tab and on the dental chart's teeth.
@@ -95,7 +96,7 @@ function PatientDetail() {
           showTreatments
             ? getList<TreatmentPlan>(
                 "Treatment Plan",
-                ["name", "treatment_type", "tooth_number", "doctor_name", "status", "total_cost", "remaining_amount"],
+                ["name", "treatment_type", "tooth_number", "doctor_name", "status", "currency", "total_cost", "remaining_amount"],
                 { filters: byPatient, orderBy: "name desc", limit: 200 },
               )
             : Promise.resolve([]),
@@ -116,7 +117,7 @@ function PatientDetail() {
           showPayments
             ? getList<Payment>(
                 "Payment",
-                ["name", "payment_date", "amount", "payment_method", "treatment_type"],
+                ["name", "payment_date", "amount", "currency", "payment_method", "treatment_type"],
                 { filters: byPatient, orderBy: "payment_date desc", limit: 200 },
               )
             : Promise.resolve([]),
@@ -213,6 +214,18 @@ function PatientDetail() {
   const subtitle = [ageText, label(t.enums.gender, patient.gender), patient.name].filter(Boolean).join(t.common.dot);
   const whatsapp = whatsappNumber(patient.phone_number, countryCode);
   const remaining = Number(patient.total_remaining) || 0;
+  // With plans or payments in the second currency, each currency is shown on its own ("IQD 150,000 + $300");
+  // otherwise the patient's totals (in the clinic's currency) are enough.
+  const inCurrency = (row: { currency?: string }) => currencyOf(row, currency);
+  const otherCurrency = (rows: { currency?: string }[]) => rows.some((row) => inCurrency(row) !== currency);
+  const remainingText =
+    data && otherCurrency(data.plans.filter((plan) => Number(plan.remaining_amount) > 0))
+      ? moneyTotals(sumByCurrency(data.plans, (plan) => Number(plan.remaining_amount) || 0, inCurrency))
+      : money(remaining);
+  const paidText =
+    data && otherCurrency(data.payments)
+      ? moneyTotals(sumByCurrency(data.payments, (pay) => Number(pay.amount) || 0, inCurrency))
+      : money(patient.total_paid);
 
   return (
     <PageContainer section="patients">
@@ -358,7 +371,7 @@ function PatientDetail() {
           </Fact>
           {showPayments && (
             <Fact icon={Wallet} hue={remaining > 0 ? "red" : "money"} label={p.balanceToPay}>
-              <span className={remaining > 0 ? "text-red-600" : "text-gray-500"}>{money(remaining)}</span>
+              <span className={remaining > 0 ? "text-red-600" : "text-gray-500"}>{remainingText}</span>
               {remaining > 0 && can("add_payments") && (
                 <Link
                   href={`/payments/new?patient=${encodeURIComponent(id)}`}
@@ -371,7 +384,7 @@ function PatientDetail() {
           )}
           {showPayments && (
             <Fact icon={CreditCard} hue="money" label={p.paidSoFar}>
-              {money(patient.total_paid)}
+              {paidText}
             </Fact>
           )}
         </dl>
@@ -512,10 +525,10 @@ function PatientDetail() {
                     <Td label={p.status}>
                       <StatusBadge kind="treatment" status={plan.status} />
                     </Td>
-                    <Td label={p.cost} className="text-end whitespace-nowrap">{money(plan.total_cost)}</Td>
+                    <Td label={p.cost} className="text-end whitespace-nowrap">{money(plan.total_cost, plan.currency)}</Td>
                     <Td label={p.remaining} className="text-end whitespace-nowrap">
                       <span className={Number(plan.remaining_amount) > 0 ? "font-medium text-red-600" : "text-gray-500"}>
-                        {money(plan.remaining_amount)}
+                        {money(plan.remaining_amount, plan.currency)}
                       </span>
                     </Td>
                   </ClickableRow>
@@ -624,7 +637,7 @@ function PatientDetail() {
                     <Td label={p.method}>
                       <StatusBadge kind="method" status={pay.payment_method} />
                     </Td>
-                    <Td label={p.amount} className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount)}</Td>
+                    <Td label={p.amount} className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount, pay.currency)}</Td>
                   </ClickableRow>
                 ))}
               </tbody>
@@ -722,7 +735,15 @@ interface TimelineItem {
 }
 
 /** Visits, treatment sessions and payments in one list, newest first, with upcoming ones on top. */
-function Timeline({ data, today, money }: { data: Related; today: string; money: (amount: number) => string }) {
+function Timeline({
+  data,
+  today,
+  money,
+}: {
+  data: Related;
+  today: string;
+  money: (amount: number, currency?: string) => string;
+}) {
   const { t } = useI18n();
   const tp = t.patients;
   const plans = new Map(data.plans.map((plan) => [plan.name, plan]));
@@ -759,7 +780,7 @@ function Timeline({ data, today, money }: { data: Related; today: string; money:
       date: p.payment_date,
       icon: CreditCard,
       hue: "money",
-      title: tp.paid(money(Number(p.amount) || 0)),
+      title: tp.paid(money(Number(p.amount) || 0, p.currency)),
       detail: [label(t.enums.paymentMethod, p.payment_method), label(t.enums.treatmentType, p.treatment_type)]
         .filter(Boolean)
         .join(t.common.dot),

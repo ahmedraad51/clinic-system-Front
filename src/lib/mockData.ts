@@ -11,6 +11,7 @@
 import { messages } from "@/i18n";
 import type { DocValue } from "./types";
 import { addDays, addMonths, todayISO } from "./format";
+import { convertMoney, rateOn, roundMoney, settleTolerance, type ExchangeRate } from "./currency";
 import { HISTORY_LIMIT, TRACKED_DOCTYPES } from "./history";
 import { toLatinDigits } from "./phone";
 
@@ -253,6 +254,7 @@ const treatmentPlans: MockDoc[] = [
   { name: T(12), patient: P.saad, doctor: D.haider, treatment_type: "Extraction", tooth_number: "38", status: "Completed", total_cost: 75000, diagnosis: "Partially erupted third molar, repeated infection.", treatment_notes: "Extraction under local anaesthetic, uneventful healing." },
   { name: T(13), patient: P.saad, doctor: D.zainab, treatment_type: "Crown", tooth_number: "37", status: "Planned", total_cost: 225000, diagnosis: "Cracked cusp on the lower left second molar.", treatment_notes: "" },
   { name: T(14), patient: P.ruqaya, doctor: D.ali, treatment_type: "Whitening", tooth_number: "", status: "Cancelled", total_cost: 250000, diagnosis: "Patient request.", treatment_notes: "Cancelled before the first session." },
+  { name: T(16), patient: P.ruqaya, doctor: D.haider, treatment_type: "Implant", tooth_number: "21", status: "In Progress", currency: "USD", total_cost: 700, diagnosis: "Missing upper left central incisor after a fall.", treatment_notes: "Priced in US dollars, as the patient asked. Fixture placed 10 Aug 2026." },
   { name: T(15), patient: P.yousif, doctor: D.zainab, treatment_type: "Filling", tooth_number: "14", status: "In Progress", total_cost: 50000, diagnosis: "Interproximal caries on the upper right first premolar.", treatment_notes: "Temporary restoration placed, final composite pending." },
 ];
 
@@ -273,6 +275,8 @@ const payments: MockDoc[] = [
   // Two payments relative to today, so "Revenue this month" is never empty.
   { name: "PAY-2026-00014", patient: P.hassan, treatment_plan: T(10), payment_date: TODAY, amount: 50000, payment_method: "Cash", notes: "" },
   { name: "PAY-2026-00015", patient: P.abbas, treatment_plan: T(7), payment_date: TODAY, amount: 200000, payment_method: "Card", notes: "Third instalment on the implant." },
+  { name: "PAY-2026-00017", patient: P.ruqaya, treatment_plan: T(16), payment_date: "2026-08-20", amount: 148000, exchange_rate: 1480, payment_method: "Card", notes: "Paid in dinars on the dollar plan." },
+  { name: "PAY-2026-00016", patient: P.ruqaya, treatment_plan: T(16), payment_date: "2026-08-10", amount: 300, currency: "USD", exchange_rate: 1480, payment_method: "Cash", notes: "Down payment in dollars." },
   { name: "PAY-2026-00001", patient: P.zahraa, treatment_plan: T(2), payment_date: "2026-08-20", amount: 100000, payment_method: "Bank Transfer", notes: "Deposit for the zirconia crown." },
   { name: "PAY-2026-00002", patient: P.yousif, treatment_plan: T(15), payment_date: "2026-08-18", amount: 25000, payment_method: "Cash", notes: "" },
   { name: "PAY-2026-00003", patient: P.abbas, treatment_plan: T(7), payment_date: "2026-08-11", amount: 250000, payment_method: "Card", notes: "Second instalment on the implant." },
@@ -333,6 +337,12 @@ const clinicSettings: MockDoc[] = [
     email: "hello@dentclinic.test",
     address: "14 Ramadan Street, Al-Mansour, Baghdad",
     currency: "IQD",
+    // Dollars too: 1 USD was 1,480 IQD from January and 1,460 from September.
+    second_currency: "USD",
+    exchange_rates: [
+      { rate_date: "2026-01-01", rate: 1480 },
+      { rate_date: "2026-09-01", rate: 1460 },
+    ],
     tax_number: "",
     opening_time: "09:00",
     closing_time: "18:00",
@@ -570,7 +580,7 @@ const LINKED_FROM: Record<string, Array<[doctype: string, field: string]>> = {
 };
 
 const NUMBER_FIELDS = [
-  "total_cost", "amount", "duration_minutes", "age", "enabled", "is_active",
+  "total_cost", "amount", "exchange_rate", "duration_minutes", "age", "enabled", "is_active",
   "opening_float", "cash_payments", "expected_cash", "cash_counted", "difference",
   "recall_interval_months", "no_recall",
   "default_duration_days", "max_daily_mg", "is_nsaid", "avoid_in_pregnancy",
@@ -672,6 +682,28 @@ function find(doctype: string, name: MockValue): MockDoc | undefined {
   return collection(doctype).find((doc) => doc.name === name);
 }
 
+/* Two currencies: the clinic's own (Clinic Settings.currency) and a second one, at the rate of the day. */
+function settingsDoc(): MockDoc {
+  return store["Clinic Settings"][0] ?? {};
+}
+function mainCurrency(): string {
+  return String(settingsDoc().currency || "IQD").toUpperCase();
+}
+function rates(): ExchangeRate[] {
+  return (Array.isArray(settingsDoc().exchange_rates) ? settingsDoc().exchange_rates : []) as unknown as ExchangeRate[];
+}
+function currencyOfDoc(doc: MockDoc | undefined): string {
+  return String(doc?.currency || mainCurrency()).toUpperCase();
+}
+/** The rate a payment uses: its own (kept from the day it was made), else the day's rate. */
+function paymentRate(pay: MockDoc): number | null {
+  return num(pay.exchange_rate) > 0 ? num(pay.exchange_rate) : rateOn(rates(), String(pay.payment_date || todayISO()));
+}
+/** What a payment takes off its plan, in the plan's currency. */
+function planAmount(pay: MockDoc, plan: MockDoc): number {
+  return convertMoney(num(pay.amount), currencyOfDoc(pay), currencyOfDoc(plan), paymentRate(pay), mainCurrency()) ?? 0;
+}
+
 /** Rebuild every field the real backend would compute or fetch, so the data stays self-consistent. */
 function recalculate(): void {
   const patientsById = new Map(store.Patient.map((doc) => [doc.name, doc]));
@@ -691,8 +723,26 @@ function recalculate(): void {
     const user = store.User.find((row) => row.name === count.counted_by);
     count.counted_by_name = user ? String(user.full_name || user.name) : String(count.counted_by ?? "");
   });
+  const main = mainCurrency();
   store.Payment.forEach((pay) => {
-    pay.treatment_type = pay.treatment_plan ? plansById.get(String(pay.treatment_plan))?.treatment_type ?? "" : "";
+    const plan = pay.treatment_plan ? plansById.get(String(pay.treatment_plan)) : undefined;
+    pay.treatment_type = plan?.treatment_type ?? "";
+    pay.plan_amount = plan ? planAmount(pay, plan) : null;
+    pay.base_amount = convertMoney(num(pay.amount), currencyOfDoc(pay), main, paymentRate(pay), main) ?? 0;
+  });
+  // A payment in another currency that settles a plan may be a little over what was left (a cent cannot be split):
+  // it takes off only what was left, in payment order.
+  store["Treatment Plan"].forEach((plan) => {
+    let running = 0;
+    store.Payment
+      .filter((pay) => pay.treatment_plan === plan.name)
+      .sort((a, b) => String(a.payment_date).localeCompare(String(b.payment_date)) || String(a.name).localeCompare(String(b.name)))
+      .forEach((pay) => {
+        if (currencyOfDoc(pay) !== currencyOfDoc(plan)) {
+          pay.plan_amount = roundMoney(Math.max(0, Math.min(num(pay.plan_amount), num(plan.total_cost) - running)), currencyOfDoc(plan));
+        }
+        running += num(pay.plan_amount);
+      });
   });
   // The medicine names in one line, for lists (Frappe's list API does not return child tables).
   store.Prescription.forEach((rx) => {
@@ -701,22 +751,30 @@ function recalculate(): void {
   });
 
   store["Treatment Plan"].forEach((plan) => {
-    const paid = store.Payment
-      .filter((pay) => pay.treatment_plan === plan.name)
-      .reduce((sum, pay) => sum + num(pay.amount), 0);
+    const code = currencyOfDoc(plan);
+    const paid = roundMoney(
+      store.Payment.filter((pay) => pay.treatment_plan === plan.name).reduce((sum, pay) => sum + num(pay.plan_amount), 0),
+      code,
+    );
     plan.paid_amount = paid;
     plan.remaining_amount =
-      plan.status === "Cancelled" ? 0 : Math.max(0, num(plan.total_cost) - paid);
+      plan.status === "Cancelled" ? 0 : Math.max(0, roundMoney(num(plan.total_cost) - paid, code));
   });
+  // A patient's totals are in the clinic's own currency; what is left on a dollar plan counts at today's rate.
+  const today = rateOn(rates(), todayISO());
 
   store.Patient.forEach((patient) => {
     const plans = store["Treatment Plan"].filter((plan) => plan.patient === patient.name);
     patient.total_treatments = plans.length;
     patient.total_appointments = store.Appointment.filter((a) => a.patient === patient.name).length;
-    patient.total_paid = store.Payment
-      .filter((pay) => pay.patient === patient.name)
-      .reduce((sum, pay) => sum + num(pay.amount), 0);
-    patient.total_remaining = plans.reduce((sum, plan) => sum + num(plan.remaining_amount), 0);
+    patient.total_paid = roundMoney(
+      store.Payment.filter((pay) => pay.patient === patient.name).reduce((sum, pay) => sum + num(pay.base_amount), 0),
+      main,
+    );
+    patient.total_remaining = roundMoney(
+      plans.reduce((sum, plan) => sum + (convertMoney(num(plan.remaining_amount), currencyOfDoc(plan), main, today, main) ?? 0), 0),
+      main,
+    );
   });
 }
 
@@ -886,17 +944,45 @@ function normalize(doc: MockDoc): void {
   });
 }
 
-/** Mirrors Treatment Plan.validate(): paid can never go above the total cost. */
-function checkPayment(payment: MockDoc): void {
+/**
+ * Mirrors Payment.validate() and Treatment Plan.validate(): a payment in a currency the clinic takes, the day's
+ * rate kept on it when two currencies meet, and paid never above the total cost (in the plan's currency).
+ * The rate is the server's: the one in Clinic Settings for the payment's day. An edit that keeps the day, the
+ * currency and the plan keeps the rate the payment already had.
+ */
+function checkPayment(payment: MockDoc, before?: MockDoc): void {
   if (num(payment.amount) <= 0) throw new Error(messages().errors.mock.amountAboveZero);
-  if (!payment.treatment_plan) return;
-  const plan = find("Treatment Plan", payment.treatment_plan);
-  if (!plan) throw new Error("Treatment Plan " + payment.treatment_plan + " not found");
+  const main = mainCurrency();
+  const second = String(settingsDoc().second_currency || "").toUpperCase();
+  const code = currencyOfDoc(payment);
+  if (code !== main && code !== second) throw new Error(messages().errors.mock.currencyNotTaken(code));
+  if (code === main) payment.currency = "";
+  const plan = payment.treatment_plan ? find("Treatment Plan", payment.treatment_plan) : undefined;
+  if (payment.treatment_plan && !plan) throw new Error("Treatment Plan " + payment.treatment_plan + " not found");
+  // Two currencies meet: the rate of the payment's day, kept for good while its day, currency and plan stay.
+  if (code !== main || (plan && currencyOfDoc(plan) !== main)) {
+    const keep =
+      before &&
+      num(before.exchange_rate) > 0 &&
+      before.payment_date === payment.payment_date &&
+      currencyOfDoc(before) === code &&
+      (before.treatment_plan || "") === (payment.treatment_plan || "");
+    payment.exchange_rate = keep ? num(before.exchange_rate) : rateOn(rates(), String(payment.payment_date || todayISO()));
+    if (!(num(payment.exchange_rate) > 0)) throw new Error(messages().errors.mock.noRate(second || code));
+  } else {
+    payment.exchange_rate = null;
+  }
+  // Worked out by the server only.
+  delete payment.plan_amount;
+  delete payment.base_amount;
+  if (!plan) return;
+  const planCode = currencyOfDoc(plan);
   const otherPayments = store.Payment
     .filter((pay) => pay.treatment_plan === plan.name && pay.name !== payment.name)
-    .reduce((sum, pay) => sum + num(pay.amount), 0);
-  const paid = otherPayments + num(payment.amount);
-  if (paid > num(plan.total_cost)) {
+    .reduce((sum, pay) => sum + num(pay.plan_amount), 0);
+  const paid = roundMoney(otherPayments + planAmount(payment, plan), planCode);
+  const tolerance = settleTolerance(code, planCode, num(payment.exchange_rate), main);
+  if (paid > num(plan.total_cost) + tolerance + 0.004) {
     throw new Error(messages().errors.mock.paidAboveCost(String(paid), String(num(plan.total_cost)), String(plan.name)));
   }
 }
@@ -910,8 +996,9 @@ function checkCashCount(count: MockDoc): void {
   if (count.cash_counted === undefined || count.cash_counted === null || count.cash_counted === "") throw new Error(messages().errors.mock.countCash);
   const sameDay = store["Cash Count"].find((other) => other.count_date === count.count_date && other.name !== count.name);
   if (sameDay) throw new Error(messages().errors.mock.countTwice(String(count.count_date), String(sameDay.name)));
+  // The drawer is counted in the clinic's own currency: cash in the second currency is kept apart.
   const cash = store.Payment
-    .filter((pay) => pay.payment_date === count.count_date && pay.payment_method === "Cash")
+    .filter((pay) => pay.payment_date === count.count_date && pay.payment_method === "Cash" && currencyOfDoc(pay) === mainCurrency())
     .reduce((sum, pay) => sum + num(pay.amount), 0);
   count.opening_float = num(count.opening_float);
   count.cash_payments = cash;
@@ -946,13 +1033,45 @@ function rollRecall(appointment: MockDoc, before?: MockDoc): void {
   trackChanges("Patient", wasPatient, patient, { next_recall_date: next });
 }
 
-function checkPlan(plan: MockDoc): void {
-  const paid = store.Payment
-    .filter((pay) => pay.treatment_plan === plan.name)
-    .reduce((sum, pay) => sum + num(pay.amount), 0);
-  if (paid > num(plan.total_cost)) {
+function checkPlan(plan: MockDoc, before?: MockDoc): void {
+  // The clinic's own currency (kept as "") or its second one.
+  const code = currencyOfDoc(plan);
+  const second = String(settingsDoc().second_currency || "").toUpperCase();
+  if (code !== mainCurrency() && code !== second) throw new Error(messages().errors.mock.currencyNotTaken(code));
+  if (code === mainCurrency()) plan.currency = "";
+  const payments = store.Payment.filter((pay) => pay.treatment_plan === plan.name);
+  // Its payments were counted in the plan's currency: it cannot change under them.
+  if (before && payments.length && currencyOfDoc(plan) !== currencyOfDoc(before)) {
+    throw new Error(messages().errors.mock.planCurrencyLocked);
+  }
+  const paid = roundMoney(payments.reduce((sum, pay) => sum + num(pay.plan_amount), 0), currencyOfDoc(plan));
+  if (paid > num(plan.total_cost) + 0.004) {
     throw new Error(messages().errors.mock.costBelowPaid(String(paid), String(num(plan.total_cost))));
   }
+}
+
+/**
+ * Mirrors what Clinic Settings.validate() should do for the two currencies: a second currency that is not the
+ * clinic's own, rates with a date and an amount above zero (one per date, at least one), and no change to a
+ * currency that plans or payments are already in.
+ */
+function checkSettings(next: MockDoc, before: MockDoc): void {
+  const e = messages().errors.mock;
+  const main = String(next.currency || "IQD").toUpperCase();
+  const wasMain = String(before.currency || "IQD").toUpperCase();
+  const second = String(next.second_currency || "").toUpperCase();
+  const wasSecond = String(before.second_currency || "").toUpperCase();
+  if (second === main) next.second_currency = "";
+  const inUse = (code: string) =>
+    code !== "" &&
+    (store["Treatment Plan"].some((plan) => String(plan.currency || "").toUpperCase() === code) ||
+      store.Payment.some((pay) => String(pay.currency || "").toUpperCase() === code));
+  if (main !== wasMain && (store["Treatment Plan"].length > 0 || store.Payment.length > 0)) throw new Error(e.mainInUse);
+  if (wasSecond && String(next.second_currency || "").toUpperCase() !== wasSecond && inUse(wasSecond)) throw new Error(e.secondInUse(wasSecond));
+  const rows = (Array.isArray(next.exchange_rates) ? next.exchange_rates : []) as unknown as ExchangeRate[];
+  const dates = rows.map((row) => String(row.rate_date || ""));
+  const bad = rows.some((row) => !row.rate_date || !(Number(row.rate) > 0)) || new Set(dates).size !== dates.length;
+  if (bad || (next.second_currency && rows.length === 0)) throw new Error(e.ratesInvalid);
 }
 
 /**
@@ -1027,6 +1146,7 @@ export async function mockCreateDoc(
     delete doc.send_welcome_email;
   }
   if (doctype === "Payment") checkPayment(doc);
+  if (doctype === "Treatment Plan") checkPlan(doc);
   if (doctype === "Cash Count") checkCashCount(doc);
   if (doctype === "Appointment") rollRecall(doc);
 
@@ -1055,8 +1175,9 @@ export async function mockUpdateDoc(
   if (doctype === "User" && ("first_name" in data || "last_name" in data) && !("full_name" in data)) {
     next.full_name = [next.first_name, next.last_name].filter(Boolean).join(" ");
   }
-  if (doctype === "Payment") checkPayment(next);
-  if (doctype === "Treatment Plan") checkPlan(next);
+  if (doctype === "Payment") checkPayment(next, doc);
+  if (doctype === "Treatment Plan") checkPlan(next, doc);
+  if (doctype === "Clinic Settings") checkSettings(next, doc);
   if (doctype === "Cash Count") checkCashCount(next);
   if (doctype === "Appointment") rollRecall(next, doc);
 

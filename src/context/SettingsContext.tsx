@@ -5,8 +5,10 @@ import { useAuth } from "./AuthContext";
 import { getDoc } from "@/lib/frappe";
 import { applyThemeColor } from "@/lib/theme";
 import { WEEK_DAYS, type ClinicSettings } from "@/lib/types";
-import { formatMoney, weekdayIndex } from "@/lib/format";
+import { formatMoney, todayISO, weekdayIndex } from "@/lib/format";
+import { cleanRates, convertMoney, currencyOf, rateOn as rateOnDay, sumByCurrency, totalsOrder, type ExchangeRate, type MoneyTotals } from "@/lib/currency";
 import { cleanCountryCode } from "@/lib/phone";
+import { messages } from "@/i18n";
 
 /** Used until the real settings arrive, and for any field the backend leaves empty. */
 const DEFAULTS: ClinicSettings = {
@@ -22,15 +24,35 @@ interface SettingsContextType {
   /** True once the clinic's settings have arrived (or failed to); until then `settings` holds the defaults. */
   loaded: boolean;
   clinicName: string;
+  /** The clinic's own currency (IQD): totals are kept in it. */
   currency: string;
+  /** The second currency the clinic takes ("USD"), or "" when it takes only its own. */
+  secondCurrency: string;
+  /** The currencies a plan or payment can be in: the clinic's own first. */
+  currencies: string[];
+  /** The rates of the second currency, oldest first. */
+  rates: ExchangeRate[];
+  /** The rate on a day (default today): how many of the clinic's units one unit of the second currency is worth. */
+  rateOn: (day?: string) => number | null;
+  /** An amount in the clinic's own currency, at the rate of a day (default today); 0 when there is no rate. */
+  toMain: (amount: number | string | null | undefined, code?: string | null, day?: string) => number;
   /** Country calling code as digits (Clinic Settings → phone_country_code, default "964"), for WhatsApp links. */
   countryCode: string;
   /** The price list: treatment type → usual price. Types without a price are missing. */
   prices: Record<string, number>;
   /** False on a day the clinic is closed (Clinic Settings → working_days). Every day is open when none are set. */
   isOpenOn: (iso: string) => boolean;
-  /** Formats an amount in the clinic currency. */
-  money: (amount: number | string | null | undefined) => string;
+  /** Formats an amount in a currency (default the clinic's own). */
+  money: (amount: number | string | null | undefined, currency?: string | null) => string;
+  /** Totals in more than one currency, the clinic's own first: "IQD 150,000 + $300". Nothing at all is "IQD 0". */
+  moneyTotals: (totals: MoneyTotals) => string;
+  /** An exchange rate in words: "$1 = IQD 1,460" (a rate below 1 keeps its decimals). */
+  rateText: (rate: number) => string;
+  /**
+   * What a patient owes: their total (Patient.total_remaining, in the clinic's currency), or, when some of it is on
+   * plans in the other currency, each currency on its own ("IQD 150,000 + $300").
+   */
+  owedText: (total: number | string | null | undefined, plans?: { currency?: string; remaining_amount?: number }[]) => string;
   /** Call after saving the settings page. */
   refresh: () => void;
 }
@@ -66,7 +88,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [user, version, loginCount]);
 
   const refresh = useCallback(() => setVersion((v) => v + 1), []);
-  const currency = settings.currency || "IQD";
+  const currency = (settings.currency || "IQD").toUpperCase();
+  const secondCurrency = settings.second_currency && settings.second_currency.toUpperCase() !== currency ? settings.second_currency.toUpperCase() : "";
+  const currencies = useMemo(() => (secondCurrency ? [currency, secondCurrency] : [currency]), [currency, secondCurrency]);
+  const rates = useMemo(() => cleanRates(settings.exchange_rates), [settings.exchange_rates]);
+  const rateOn = useCallback((day?: string) => rateOnDay(rates, day || todayISO()), [rates]);
+  const toMain = useCallback(
+    (amount: number | string | null | undefined, code?: string | null, day?: string) =>
+      convertMoney(Number(amount) || 0, (code || currency).toUpperCase(), currency, rateOnDay(rates, day || todayISO()), currency) ?? 0,
+    [currency, rates],
+  );
   const clinicName = settings.clinic_name || "DentClinic";
   const countryCode = cleanCountryCode(settings.phone_country_code);
   const prices = useMemo(() => {
@@ -87,11 +118,42 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     },
     [settings.working_days],
   );
-  const money = useCallback((amount: number | string | null | undefined) => formatMoney(amount, currency), [currency]);
+  const money = useCallback(
+    (amount: number | string | null | undefined, code?: string | null) => formatMoney(amount, code || currency),
+    [currency],
+  );
+  const moneyTotals = useCallback(
+    (totals: MoneyTotals) => {
+      const codes = totalsOrder(totals, currency);
+      return codes.length ? codes.map((code) => formatMoney(totals[code], code)).join(" + ") : formatMoney(0, currency);
+    },
+    [currency],
+  );
+
+  const rateText = useCallback(
+    (rate: number) => {
+      const decimals = rate >= 100 ? 2 : 6;
+      return messages().money.rate(formatMoney(1, secondCurrency || currency), formatMoney(rate, currency, decimals));
+    },
+    [currency, secondCurrency],
+  );
+
+  const owedText = useCallback(
+    (total: number | string | null | undefined, plans?: { currency?: string; remaining_amount?: number }[]) => {
+      const open = (plans ?? []).filter((plan) => Number(plan.remaining_amount) > 0);
+      return open.some((plan) => currencyOf(plan, currency) !== currency)
+        ? moneyTotals(sumByCurrency(open, (plan) => Number(plan.remaining_amount) || 0, (plan) => currencyOf(plan, currency)))
+        : formatMoney(total, currency);
+    },
+    [currency, moneyTotals],
+  );
 
   const value = useMemo(
-    () => ({ settings, loaded, clinicName, currency, countryCode, prices, isOpenOn, money, refresh }),
-    [settings, loaded, clinicName, currency, countryCode, prices, isOpenOn, money, refresh],
+    () => ({
+      settings, loaded, clinicName, currency, secondCurrency, currencies, rates, rateOn, toMain,
+      countryCode, prices, isOpenOn, money, moneyTotals, rateText, owedText, refresh,
+    }),
+    [settings, loaded, clinicName, currency, secondCurrency, currencies, rates, rateOn, toMain, countryCode, prices, isOpenOn, money, moneyTotals, rateText, owedText, refresh],
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

@@ -19,6 +19,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { errorMessage, getCount, getList, type FilterRow } from "@/lib/frappe";
 import { label, messages, num } from "@/i18n";
 import { addDays, cx, formatCompact, formatDate, formatLongDate, formatMonth, formatMonthName, formatTime, monthStart, todayISO } from "@/lib/format";
+import { baseAmount } from "@/lib/currency";
 import { usePatientLooks, type PatientLook } from "@/lib/hooks";
 import { appointmentHref } from "@/lib/links";
 import { DEFAULT_RECALL_MONTHS, RECALL_APPOINTMENT_FIELDS, RECALL_PATIENT_FIELDS, dueForRecall } from "@/lib/recall";
@@ -30,7 +31,8 @@ interface DashboardData {
   patients: number;
   activePlans: number;
   monthRevenue: number;
-  outstanding: number;
+  /** Plans with something left to pay (their currency and what is left). */
+  openPlans: TreatmentPlan[];
   today: Appointment[];
   upcoming: Appointment[];
   /** The charts, each null when the user may not see its numbers. */
@@ -105,7 +107,7 @@ function Dashboard() {
   // A doctor sees their own patients first; "Everyone" shows the whole clinic.
   const [everyone, setEveryone] = useState(false);
   const mine = myDoctor && !everyone ? myDoctor.name : "";
-  const { money, settings, currency } = useSettings();
+  const { money, settings, currency, toMain } = useSettings();
   const { t } = useI18n();
   const [data, setData] = useState<DashboardData | null>(null);
   // A failed load says so (with Try Again) instead of leaving the numbers loading or at zero.
@@ -130,10 +132,10 @@ function Dashboard() {
           seeTreatments ? getCount("Treatment Plan", [["status", "in", ["Planned", "In Progress"]]]) : Promise.resolve(0),
           // This month's revenue and the revenue chart come from the same rows.
           seeMoney
-            ? getList<Payment>("Payment", ["amount", "payment_date"], { filters: [["payment_date", ">=", chartStart]], limit: 0 })
+            ? getList<Payment>("Payment", ["amount", "base_amount", "payment_date"], { filters: [["payment_date", ">=", chartStart]], limit: 0 })
             : nothing<Payment>(),
           seeMoney
-            ? getList<TreatmentPlan>("Treatment Plan", ["remaining_amount"], { filters: [["remaining_amount", ">", 0]], limit: 0 })
+            ? getList<TreatmentPlan>("Treatment Plan", ["currency", "remaining_amount"], { filters: [["remaining_amount", ">", 0]], limit: 0 })
             : nothing<TreatmentPlan>(),
           seeAppointments
             ? getList<Appointment>("Appointment", APPOINTMENT_FIELDS, {
@@ -198,11 +200,11 @@ function Dashboard() {
           activePlans,
           monthRevenue: payments
             .filter((row) => row.payment_date >= thisMonth)
-            .reduce((sum, row) => sum + (Number(row.amount) || 0), 0),
-          outstanding: openPlans.reduce((sum, row) => sum + (Number(row.remaining_amount) || 0), 0),
+            .reduce((sum, row) => sum + baseAmount(row), 0),
+          openPlans,
           today: todayList,
           upcoming,
-          revenueByMonth: seeMoney ? byMonth(payments, months, (row) => row.payment_date, (row) => Number(row.amount) || 0) : null,
+          revenueByMonth: seeMoney ? byMonth(payments, months, (row) => row.payment_date, baseAmount) : null,
           // Visits that happened or are booked: cancelled ones and no-shows do not count.
           visitsByMonth: seeAppointments
             ? byMonth(visits.filter((a) => a.status !== "Cancelled" && a.status !== "No Show"), months, (a) => a.appointment_date, () => 1)
@@ -223,6 +225,8 @@ function Dashboard() {
   const looks = usePatientLooks([...(data?.today ?? []), ...(data?.upcoming ?? [])].map((a) => a.patient));
   const stillToCome = data?.today.filter((a) => a.status === "Scheduled" || a.status === "Confirmed").length ?? 0;
   const loadingValue = "…";
+  // In the clinic's currency: what is left on a plan in the other currency counts at today's rate.
+  const outstanding = (data?.openPlans ?? []).reduce((sum, row) => sum + toMain(row.remaining_amount, row.currency), 0);
 
   const quickActions = [
     can("add_appointments") && { href: "/appointments/new", ...t.dashboard.actions.newAppointment, icon: CalendarDays, section: "appointments" as const },
@@ -328,7 +332,7 @@ function Dashboard() {
               <StatCard
                 title={t.dashboard.revenueThisMonth}
                 value={data ? money(data.monthRevenue) : loadingValue}
-                hint={data ? t.dashboard.stillOwed(money(data.outstanding)) : undefined}
+                hint={data ? t.dashboard.stillOwed(money(outstanding)) : undefined}
                 icon={TrendingUp}
                 section="money"
                 href="/payments"

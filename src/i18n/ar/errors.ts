@@ -19,6 +19,12 @@ export const errors: Messages["errors"] = {
   duplicate: (value: string) => (value ? `القيمة "${value}" مستخدمة في سجل آخر.` : "هذه القيمة مستخدمة في سجل آخر."),
   tooLong: (field: string) => `النص في حقل ${field} طويل جدًا. يرجى اختصاره.`,
   mock: {
+    noRate: (code: string) => `حدّد سعر صرف ${code} في الإعدادات أولاً.`,
+    currencyNotTaken: (code: string) => `العيادة لا تستلم ${code}. أضفها في الإعدادات أولاً.`,
+    planCurrencyLocked: "لهذه الخطة دفعات، لذا لا يمكن تغيير عملتها.",
+    ratesInvalid: "يحتاج كل سعر صرف إلى تاريخ ومبلغ أكبر من صفر، وسعر واحد لكل تاريخ، وسعر واحد على الأقل للعملة الثانية.",
+    secondInUse: (code: string) => `توجد خطط أو دفعات بـ${code}، لذا تبقى العملة الثانية.`,
+    mainInUse: "لا يمكن تغيير عملة العيادة بعد وجود خطط أو دفعات.",
     amountAboveZero: "يجب أن يكون المبلغ أكبر من صفر.",
     paidAboveCost: (paid: string, cost: string, plan: string) =>
       `المبلغ المدفوع (${num(paid)}) لا يمكن أن يتجاوز الكلفة الكلية (${num(cost)}) لخطة العلاج ${plan}.`,

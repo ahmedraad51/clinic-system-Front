@@ -43,7 +43,7 @@ function TreatmentsList() {
   const list = usePagedList<TreatmentPlan>("Treatment Plan", {
     fields: [
       "name", "patient", "patient_name", "doctor_name", "treatment_type", "tooth_number",
-      "status", "total_cost", "remaining_amount",
+      "status", "currency", "total_cost", "remaining_amount",
     ],
     filters: filters.length ? filters : undefined,
     orFilters: treatmentSearch(debounced, (type) => label(t.enums.treatmentType, type)),
@@ -139,10 +139,10 @@ function TreatmentsList() {
                   <Td label={t.common.status}>
                     <StatusBadge kind="treatment" status={plan.status} />
                   </Td>
-                  <Td label={t.treatments.cost} className="text-end whitespace-nowrap">{money(plan.total_cost)}</Td>
+                  <Td label={t.treatments.cost} className="text-end whitespace-nowrap">{money(plan.total_cost, plan.currency)}</Td>
                   <Td label={t.treatments.remaining} className="text-end whitespace-nowrap">
                     <span className={Number(plan.remaining_amount) > 0 ? "font-medium text-red-600" : "text-gray-500"}>
-                      {money(plan.remaining_amount)}
+                      {money(plan.remaining_amount, plan.currency)}
                     </span>
                   </Td>
                 </ClickableRow>

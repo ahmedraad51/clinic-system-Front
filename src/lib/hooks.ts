@@ -5,7 +5,7 @@ import { messages } from "@/i18n";
 import { getCount, getDoc, getList, errorMessage, isNotFound, type FilterRow } from "./frappe";
 import { MEDICAL_FIELDS, type MedicalFields } from "./medical";
 import { phoneSearchPattern, toLatinDigits } from "./phone";
-import type { BaseDoc, DentalImage, Doctor, Patient } from "./types";
+import type { BaseDoc, DentalImage, Doctor, Patient, TreatmentPlan } from "./types";
 import { IMAGE_FIELDS, sortImages } from "./xrays";
 
 /**
@@ -293,6 +293,44 @@ export function usePatientLooks(ids: string[]): Record<string, PatientLook> {
 }
 
 const NO_LOOKS: Record<string, PatientLook> = {};
+
+/** A plan with something left to pay: its currency and what is left, in it. */
+export type OpenBalance = Pick<TreatmentPlan, "currency" | "remaining_amount">;
+
+/**
+ * What a few patients still owe on each plan (only plans with something left), by patient ID. Loaded only while
+ * `enabled` (the clinic takes two currencies), since with one currency Patient.total_remaining says it all. Show it
+ * with useSettings().owedText().
+ */
+export function useOpenBalances(ids: string[], enabled: boolean): Record<string, OpenBalance[]> {
+  const key = enabled ? [...new Set(ids.filter(Boolean))].sort().join("|") : "";
+  const [result, setResult] = useState<{ key: string; plans: Record<string, OpenBalance[]> } | null>(null);
+  useEffect(() => {
+    if (!key) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const rows = await getList<TreatmentPlan>("Treatment Plan", ["patient", "currency", "remaining_amount"], {
+          filters: [["patient", "in", key.split("|")], ["remaining_amount", ">", 0]],
+          limit: 0,
+        });
+        const plans: Record<string, OpenBalance[]> = {};
+        rows.forEach((row) => (plans[row.patient] ??= []).push(row));
+        if (!cancelled) setResult({ key, plans });
+      } catch (err) {
+        // Only the per-currency split is missing: the patient's total still shows.
+        console.error(err);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [key]);
+  return result && result.key === key ? result.plans : NO_BALANCES;
+}
+
+const NO_BALANCES: Record<string, OpenBalance[]> = {};
 
 /**
  * A patient's X-rays and photos (Dental Image records), newest first. `reload()` fetches them again after a change.

@@ -21,7 +21,7 @@ import { useToast } from "@/context/ToastContext";
 import { label, messages, num } from "@/i18n";
 import { errorMessage, getList, updateDoc } from "@/lib/frappe";
 import { addDays, cx, formatDate, formatLongDate, formatTime, fromMinutes, todayISO, toMinutes } from "@/lib/format";
-import { useDoctors } from "@/lib/hooks";
+import { useDoctors, useOpenBalances } from "@/lib/hooks";
 import { appointmentHref, patientHref, treatmentHref } from "@/lib/links";
 import { MEDICAL_FIELDS, medicalFlags } from "@/lib/medical";
 import { fillAppointmentMessage, pickTemplate, whatsappLink } from "@/lib/whatsapp";
@@ -62,7 +62,7 @@ function TodayBoard() {
   // A doctor sees their own patients first; "Everyone" shows the whole clinic.
   const [everyone, setEveryone] = useState(false);
   const mine = myDoctor && !everyone ? myDoctor.name : "";
-  const { money, settings, clinicName, countryCode } = useSettings();
+  const { settings, clinicName, countryCode, secondCurrency, owedText } = useSettings();
   // Reminders opened from this computer, so nobody gets two.
   const [reminded, setReminded] = useState<string[]>(() => readReminded());
   const toast = useToast();
@@ -76,6 +76,13 @@ function TodayBoard() {
   const [now, setNow] = useState(() => new Date());
 
   const showMoney = can("view_payments");
+  // With two currencies, what is left on each plan, so a dollar balance shows in dollars.
+  const balances = useOpenBalances(
+    Object.values(board?.patients ?? {})
+      .filter((row) => Number(row.total_remaining) > 0)
+      .map((row) => row.name),
+    showMoney && Boolean(secondCurrency),
+  );
   // For each doctor's photo or drawing above their patients.
   const doctors = useDoctors();
 
@@ -366,7 +373,7 @@ function TodayBoard() {
                                 {showMoney && owes > 0 && (
                                   <span className="text-red-600 font-medium">
                                     {t.common.dot}
-                                    {t.today.owes(money(owes))}
+                                    {t.today.owes(owedText(owes, balances[a.patient]))}
                                   </span>
                                 )}
                               </p>

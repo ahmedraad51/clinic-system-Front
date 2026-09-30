@@ -15,6 +15,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { label } from "@/i18n";
 import { getList, type FilterRow } from "@/lib/frappe";
 import { display, formatDate } from "@/lib/format";
+import { currencyOf, sumByCurrency, type MoneyTotals } from "@/lib/currency";
 import { searchFilters, useDebounced, usePagedList, usePatientLooks } from "@/lib/hooks";
 import { paymentHref, treatmentHref } from "@/lib/links";
 import { PAYMENT_METHODS, type Payment } from "@/lib/types";
@@ -31,12 +32,12 @@ function PaymentsList() {
   const { t } = useI18n();
   const p = t.payments;
   const { can } = useSession();
-  const { money } = useSettings();
+  const { money, moneyTotals, currency } = useSettings();
   const [search, setSearch] = useState("");
   const [method, setMethod] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [sum, setSum] = useState<{ key: string; total: number } | null>(null);
+  const [sum, setSum] = useState<{ key: string; total: MoneyTotals } | null>(null);
   const debounced = useDebounced(search);
 
   const filters: FilterRow[] = [
@@ -47,7 +48,7 @@ function PaymentsList() {
   const orFilters = searchFilters(debounced, ["patient_name", "treatment_type", "name", "notes"]);
 
   const list = usePagedList<Payment>("Payment", {
-    fields: ["name", "patient", "patient_name", "treatment_plan", "treatment_type", "payment_date", "amount", "payment_method"],
+    fields: ["name", "patient", "patient_name", "treatment_plan", "treatment_type", "payment_date", "amount", "currency", "payment_method"],
     filters: filters.length ? filters : undefined,
     orFilters,
     orderBy: "payment_date desc, name desc",
@@ -61,12 +62,13 @@ function PaymentsList() {
     const load = async () => {
       const q = JSON.parse(sumKey) as { filters: FilterRow[]; orFilters?: FilterRow[] };
       try {
-        const rows = await getList<Payment>("Payment", ["amount"], {
+        const rows = await getList<Payment>("Payment", ["amount", "currency"], {
           filters: q.filters.length ? q.filters : undefined,
           orFilters: q.orFilters,
           limit: 0,
         });
-        if (!cancelled) setSum({ key: sumKey, total: rows.reduce((total, row) => total + (Number(row.amount) || 0), 0) });
+        // Each currency adds up on its own: "IQD 1,250,000 + $300".
+        if (!cancelled) setSum({ key: sumKey, total: sumByCurrency(rows, (row) => Number(row.amount) || 0, (row) => currencyOf(row, currency)) });
       } catch (err) {
         console.error(err);
       }
@@ -75,7 +77,7 @@ function PaymentsList() {
     return () => {
       cancelled = true;
     };
-  }, [sumKey]);
+  }, [sumKey, currency]);
 
   const filtered = Boolean(debounced.trim() || method || from || to);
   const clearFilters = () => {
@@ -93,7 +95,7 @@ function PaymentsList() {
           sum ? (
             <>
               {filtered ? p.totalFiltered : p.totalAll}
-              <span className={sum.key === sumKey ? "font-semibold text-gray-800" : "text-gray-500"}>{money(sum.total)}</span>
+              <span className={sum.key === sumKey ? "font-semibold text-gray-800" : "text-gray-500"}>{moneyTotals(sum.total)}</span>
             </>
           ) : (
             p.subtitle
@@ -181,7 +183,7 @@ function PaymentsList() {
                   <Td label={p.colMethod}>
                     <StatusBadge kind="method" status={pay.payment_method} />
                   </Td>
-                  <Td label={p.colAmount} className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount)}</Td>
+                  <Td label={p.colAmount} className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount, pay.currency)}</Td>
                 </ClickableRow>
               ))
             )}

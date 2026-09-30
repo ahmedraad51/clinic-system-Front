@@ -85,6 +85,8 @@ export const reports = {
   total: "Total",
 
   /** The CSV files: headers in the screen's language; amounts stay plain numbers. */
-  csvPayments: ["Payment", "Date", "Patient", "Treatment", "Method", "Amount"],
-  csvOutstanding: ["Plan", "Patient", "Treatment", "Tooth", "Status", "Total Cost", "Paid", "Remaining"],
+  csvPayments: ["Payment", "Date", "Patient", "Treatment", "Method", "Amount", "Currency", "Exchange Rate", "Amount in Clinic Currency"],
+  csvOutstanding: ["Plan", "Patient", "Treatment", "Tooth", "Status", "Currency", "Total Cost", "Paid", "Remaining"],
+  received: (amounts: string) => `Received: ${amounts}`,
+  outstandingNote: "plans in the other currency at today's rate",
 };

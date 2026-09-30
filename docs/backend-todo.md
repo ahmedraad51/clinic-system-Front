@@ -30,6 +30,13 @@ Sections 1 and 2 explain what is new or still to confirm.
 | Doctor | `gender` | Select: Female, Male (empty allowed) | Picks the drawn avatar (a man or a woman in a white coat) when there is no photo. |
 | Clinic Settings | `default_language` | Select: ar, en (empty allowed) | The clinic's language for users who did not choose one. Empty means Arabic. |
 | Clinic Settings | `arabic_digits` | Check, default 0 | 1: Arabic screens write numbers ٠-٩ instead of 0-9. |
+| Clinic Settings | `second_currency` | Link Currency (or Data), empty allowed | A second currency the clinic takes (`USD`). Empty: one currency only. Never the same as `currency`. See **Two currencies** below. |
+| Clinic Settings | `exchange_rates` | Table (child doctype, e.g. **Clinic Exchange Rate**, `istable`) | The second currency's rates. Child fields: `rate_date` (Date) and `rate` (Float, how many of the clinic's currency one unit of the second is worth: `1460` for 1 USD = 1,460 IQD). One row per date; each counts from its date on. The front end always sends the whole table. |
+| Treatment Plan | `currency` | Link Currency (or Data), empty allowed | The plan's currency. Empty means the clinic's own. `total_cost`, `paid_amount` and `remaining_amount` are in it. |
+| Payment | `currency` | Link Currency (or Data), empty allowed | The currency the patient paid in. Empty means the clinic's own (the front end sends `""` for it). `amount` is in it. |
+| Payment | `exchange_rate` | Float | Set by the server (never sent by the front end): the rate of the payment's day when two currencies meet (a payment in the second currency, or on a plan in it), else empty. Kept while the payment's day, currency and plan stay the same (section 6, **Two currencies**). |
+| Payment | `plan_amount` | Currency, read only | Worked out by the server: `amount` in the plan's currency. What the payment takes off the plan. |
+| Payment | `base_amount` | Currency, read only | Worked out by the server: `amount` in the clinic's currency, for totals and reports. |
 | WhatsApp Template | `language` | Select: ar, en (empty allowed) | The language the message is written in; empty means any. The front end picks the template in the language of the screen, then one with no language. The reminder job should do the same with the clinic's default language (or the patient's, if a patient language is added later). |
 | Patient | `chart_sketch` | JSON | Drawings on top of the dental chart, one for the adult teeth and one for the child teeth: `{ "version": 1, "adult": { "version": 1, "aspect": 0.42, "shapes": [...] }, "child": {...} }` (each a SketchData, points from 0 to 1; either may be missing). Store and return it as is. The History card says it changed without showing the values. |
 | Doctor | `photo` | Attach Image | The doctor's photo, uploaded on `/doctors` with `upload_file` (a public file) and shown in round avatars: lists, the calendar, the Today board. Every clinic role must be able to read it with the Doctor list. |
@@ -276,9 +283,53 @@ by `/api/method/login` normally gets one only when the Frappe desk (`/app`) is o
 ## 6. Money and numbers
 
 Amounts arrive as plain numbers (the front end turns Arabic-keyboard digits into 0-9 before sending). For a
-clinic in Iraq, set the IQD currency to show no decimals in Frappe too (the `Currency` record's fraction and
-number format, or System Settings → Currency Precision 0), so server-side totals and any Frappe print format
-match the app, which never shows decimals for IQD.
+clinic in Iraq, set the IQD currency to show no decimals in Frappe too, through the IQD `Currency` record (its
+fraction units and number format), so server-side totals and any Frappe print format match the app, which never
+shows decimals for IQD. **Do not** set System Settings → Currency Precision to 0: it rounds every Currency field,
+and amounts in US dollars need cents. `total_cost`, `paid_amount` and `remaining_amount` (Treatment Plan) and
+`amount` and `plan_amount` (Payment) are Currency fields whose `options` point at the record's `currency` field,
+so each keeps the decimals of its own currency; `base_amount` is in the clinic's currency.
+
+### Two currencies
+
+The clinic's own currency (`Clinic Settings.currency`, IQD) and, when set, a second one (`second_currency`, USD).
+The front end does its own conversions only for display; the server must do the following and refuse the rest:
+
+- **Rate of a day** = the `exchange_rates` row with the latest `rate_date` on or before that day; a day before the
+  first row uses the first row. No row at all: refuse a payment where two currencies meet ("Set the USD exchange
+  rate in Settings first.").
+- **Payment.validate()**: `currency` must be empty, the clinic's own or `second_currency` (store the clinic's own
+  as empty). When the payment's currency or its plan's currency is not the clinic's own, the **server** sets
+  `exchange_rate` to the rate of `payment_date` (the front end never sends one, and one sent must be ignored, so
+  nobody can choose their own rate). An edit that keeps `payment_date`, `currency` and `treatment_plan` keeps the
+  rate the payment already had, even if the rates in Settings changed since; an edit that changes any of them
+  takes the rate of the (new) day. When the currencies match, `exchange_rate` is empty.
+- **plan_amount and base_amount are set on every payment**, ignoring anything sent: `plan_amount` = `amount`
+  converted to the plan's currency (empty for a general payment) and `base_amount` = `amount` converted to the
+  clinic's currency: second → own is `amount × rate`, own → second is `amount ÷ rate`, the same currency is
+  `amount`. Round to the currency: whole dinars for IQD, cents for USD.
+- **Settling a plan in the other currency**: a cent cannot be split, so a payment in another currency than its
+  plan may go over what the plan has left by **less than one smallest unit of the payment's currency** (one cent
+  is IQD 14.6 at 1,460; one dinar is $0.0007). Accept it, and cap its `plan_amount` at what was left (payments
+  in date order, then by name), so "Pay full balance" in dollars closes a dinar plan. Anything more is refused.
+- **Treatment Plan.validate()**: `currency` must be empty, the clinic's own or `second_currency` (store the
+  clinic's own as empty). `paid_amount` = the sum of its payments' `plan_amount` (rounded to the plan's
+  currency), `remaining_amount` = `total_cost − paid_amount` (0 when Cancelled), and refuse a payment that
+  takes `paid_amount` above `total_cost` (apart from the settling rule above). Refuse a change of `currency`
+  once the plan has payments ("This plan already has payments, so its currency cannot be changed.").
+- **Clinic Settings.validate()**: `second_currency` is not `currency`; every `exchange_rates` row has a date and
+  a rate above zero, one row per date, and at least one row while `second_currency` is set. Refuse to change
+  `currency` once any plan or payment exists ("The clinic currency cannot change once there are plans or
+  payments."), and refuse to clear or change `second_currency` while plans or payments are in it ("Plans or
+  payments are in USD, so it stays as the second currency."). Clearing an unused second currency keeps the rate
+  rows. After a change of rates, recompute `Patient.total_remaining` (below).
+- **Patient totals** stay in the clinic's currency: `total_paid` = the sum of `base_amount`;
+  `total_remaining` = each plan's `remaining_amount` converted at **today's** rate. Recompute them when the
+  rates change, or at least nightly, so the "owes money" filter stays right.
+- **Cash Count**: `cash_payments` counts only Cash payments in the clinic's own currency; cash in the second
+  currency is shown apart on the day report and is not in the drawer count.
+- **Existing records**: a payment saved before this change has no `currency`, `plan_amount` or `base_amount`;
+  fill `plan_amount` and `base_amount` with `amount` in a patch (the front end falls back to `amount` too).
 
 ## 7. Error messages
 
@@ -389,10 +440,11 @@ Naming `TRT-.YYYY.-.#####`. Searched on `patient_name`, `treatment_type`, `tooth
 | `doctor_name` | Data, fetched | Server | |
 | `treatment_type` | Select: Filling, Root Canal, Crown, Bridge, Extraction, Implant, Cleaning, Whitening | Yes | |
 | `tooth_number` | Data | No | An FDI number as text (`"36"`, `"51"`); older free text like `"36, 37"` is still read. |
-| `total_cost` | Currency | Yes | 0 or more; cannot go below what was already paid. |
+| `currency` | Link Currency (or Data) | No | New (section 1). Empty: the clinic's own. Cannot change once the plan has payments. |
+| `total_cost` | Currency | Yes | In the plan's `currency`. 0 or more; cannot go below what was already paid. |
 | `status` | Select: Planned, In Progress, Completed, Cancelled | Yes | New plans are always sent as Planned. |
 | `diagnosis`, `treatment_notes` | Small Text | No | |
-| `paid_amount` | Currency | Server | Sum of the plan's payments. |
+| `paid_amount` | Currency | Server | Sum of the plan's payments' `plan_amount` (section 6, **Two currencies**). |
 | `remaining_amount` | Currency | Server | Stored: filtered (`> 0`) and sorted. 0 for a Cancelled plan. |
 | `lab_name` | Data | No | New (section 1). |
 | `lab_sent_date` | Date | No | New. Required by the Lab Work dialog when it saves. Filtered with `is set`. |
@@ -426,7 +478,11 @@ Naming `PAY-.YYYY.-.#####`. Searched on `patient_name`, `treatment_type`, `notes
 | `treatment_plan` | Link Treatment Plan | No | Empty for a general payment. |
 | `treatment_type` | Data, `fetch_from: treatment_plan.treatment_type` | Server | Stored (search, reports). |
 | `payment_date` | Date | Yes | |
-| `amount` | Currency | Yes | Above 0, and not more than the plan has left. |
+| `amount` | Currency | Yes | In the payment's `currency`. Above 0, and (converted) not more than the plan has left. |
+| `currency` | Link Currency (or Data) | No | New (section 1). Empty: the clinic's own. |
+| `exchange_rate` | Float | Server | New. The rate of the payment's day when two currencies meet (section 6). |
+| `plan_amount` | Currency | Server | New. `amount` in the plan's currency. Read on the receipt and the plan page. |
+| `base_amount` | Currency | Server | New. `amount` in the clinic's currency. Read by the dashboard and reports (revenue). |
 | `payment_method` | Select: Cash, Card, Bank Transfer | Yes | |
 | `notes` | Small Text | No | |
 
@@ -464,7 +520,9 @@ with `GET /api/resource/Clinic Permission/<user>`.
 | `logo` | Attach Image | No | A public file URL. |
 | `phone`, `email`, `tax_number` | Data | No | Printed on the letterhead. |
 | `address` | Small Text | No | |
-| `currency` | Link Currency (or Data) | No | ISO code; empty is treated as IQD. |
+| `currency` | Link Currency (or Data) | No | ISO code; empty is treated as IQD. The clinic's own currency: totals are kept in it. |
+| `second_currency` | Link Currency (or Data) | No | New (section 1). Empty: one currency only. |
+| `exchange_rates` | Table (**Clinic Exchange Rate**) | No | New (section 1). Rows: `rate_date` (Date), `rate` (Float). |
 | `phone_country_code` | Data | No | New (section 1). Digits only; empty means 964. |
 | `default_language` | Select: ar, en | No | New (section 1). Empty means Arabic. |
 | `arabic_digits` | Check | No | New (section 1). |

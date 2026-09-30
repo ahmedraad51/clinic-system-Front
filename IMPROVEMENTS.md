@@ -5,7 +5,7 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- **Next: Phase 4**, the features from the competitor study, in both languages: two currencies, expenses and
+- **Phase 4**, the features from the competitor study, in both languages. Done: two currencies. Next: expenses and
   profit, the waiting room, QR codes, the whole patient file in print, custom prescription paper, restoring deleted
   records, and installing the app.
 
@@ -15,6 +15,18 @@ Each finished item says what changed, when, and which commit holds it.
    competitor study), after the Arabic version, in both languages.
 
 ## Done
+
+- 2026-09-30 - **Dinars and dollars (Phase 4, item 1).** Settings has a new **Currencies** card: a second currency
+  (US dollars) and its exchange rates, each from a date on ("1 USD in IQD: 1,460 from 1 September"). A treatment
+  plan can be priced in dollars, and a payment can be taken in either currency. A dollar payment on a dinar plan (or
+  dinars on a dollar plan) uses the rate of the payment's day: the form shows "Rate on 26 Sep 2026: $1 = IQD 1,460"
+  and "Counts as IQD 146,000 on this plan", the payment keeps that rate for good, and the receipt and the receipt
+  slip print it. A payment can never go above what the plan has left, in either currency. Totals keep each currency
+  on its own ("IQD 250,000 + $300") on the payments list, the day report, statements and estimates; the dashboard and
+  Reports add everything up in dinars (dollar payments at their day's rate, and dollar balances at today's rate), and
+  Reports also says what came in per currency. The drawer count stays in dinars: dollars taken in cash that day are
+  shown apart. To try it: Ruqaya Adnan's implant is priced at $700, with $300 paid in dollars and IQD 148,000 in
+  dinars. **What to check:** add today's dollar rate in Settings, take a dollar payment, and look at the receipt.
 
 - 2026-09-30 - **A real X-ray section (Phase 3).** Each X-ray or photo now has a type (periapical, bitewing,
   panoramic, cephalometric, CBCT screenshot, intraoral photo, or other), the date it was taken, the teeth it shows and

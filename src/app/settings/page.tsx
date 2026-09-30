@@ -2,7 +2,7 @@
 
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import ToothLogo from "@/components/ToothLogo";
-import { Settings, Save, Sparkles, Trash2, Upload } from "lucide-react";
+import { Plus, Settings, Save, Sparkles, Trash2, Upload } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import {
@@ -24,9 +24,9 @@ import {
 import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
-import { errorMessage, updateDoc, uploadFile, fileHref } from "@/lib/frappe";
-import { isLang, label, LANGS, type Lang } from "@/i18n";
-import { currencyDecimals, cx } from "@/lib/format";
+import { errorMessage, getCount, updateDoc, uploadFile, fileHref } from "@/lib/frappe";
+import { isLang, label, LANGS, messages, type Lang } from "@/i18n";
+import { currencyDecimals, cx, formatDate, todayISO } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
 import { DEFAULT_THEME_COLOR, normalizeHex, readableBrand, THEME_PRESETS } from "@/lib/theme";
 import { CURRENCIES, TREATMENT_TYPES, WEEK_DAYS, type ClinicSettings } from "@/lib/types";
@@ -42,6 +42,10 @@ interface SettingsForm {
   address: string;
   tax_number: string;
   currency: string;
+  /** "" for one currency only. */
+  second_currency: string;
+  /** The second currency's rates as typed, in the order shown. */
+  exchange_rates: { rate_date: string; rate: string }[];
   phone_country_code: string;
   opening_time: string;
   closing_time: string;
@@ -67,6 +71,10 @@ function toForm(doc: ClinicSettings): SettingsForm {
     address: doc.address ?? "",
     tax_number: doc.tax_number ?? "",
     currency: doc.currency || "IQD",
+    second_currency: doc.second_currency && doc.second_currency !== (doc.currency || "IQD") ? doc.second_currency : "",
+    exchange_rates: [...(doc.exchange_rates ?? [])]
+      .sort((a, b) => String(a.rate_date).localeCompare(String(b.rate_date)))
+      .map((row) => ({ rate_date: String(row.rate_date || "").slice(0, 10), rate: String(row.rate ?? "") })),
     phone_country_code: doc.phone_country_code ?? "",
     opening_time: (doc.opening_time ?? "").slice(0, 5),
     closing_time: (doc.closing_time ?? "").slice(0, 5),
@@ -158,9 +166,33 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    // Rates: a date and an amount above zero each, one per date, and at least one for a second currency. Without a
+    // second currency the saved rates stay as they were (old payments were counted with them).
+    const rates = form.second_currency ? form.exchange_rates : baseline.exchange_rates;
+    const dates = rates.map((row) => row.rate_date);
+    if (
+      (form.second_currency && rates.length === 0) ||
+      rates.some((row) => !row.rate_date || !(Number(row.rate) > 0)) ||
+      new Set(dates).size !== dates.length
+    ) {
+      setError(t.settings.rateInvalid);
+      return;
+    }
     setSaving(true);
     setError("");
     try {
+      // A currency that plans or payments are already in cannot change under them.
+      const e = messages().errors.mock;
+      const inUse = async (code: string) =>
+        (await getCount("Treatment Plan", [["currency", "=", code]])) + (await getCount("Payment", [["currency", "=", code]])) > 0;
+      if (form.currency !== baseline.currency && ((await getCount("Treatment Plan")) > 0 || (await getCount("Payment")) > 0)) {
+        setError(e.mainInUse);
+        return;
+      }
+      if (baseline.second_currency && form.second_currency !== baseline.second_currency && (await inUse(baseline.second_currency))) {
+        setError(e.secondInUse(baseline.second_currency));
+        return;
+      }
       await updateDoc(SETTINGS, SETTINGS, {
         clinic_name: form.clinic_name.trim(),
         phone: form.phone,
@@ -168,6 +200,10 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
         address: form.address,
         tax_number: form.tax_number,
         currency: form.currency,
+        second_currency: form.second_currency,
+        exchange_rates: [...rates]
+          .sort((a, b) => a.rate_date.localeCompare(b.rate_date))
+          .map((row) => ({ rate_date: row.rate_date, rate: Number(row.rate) })),
         // Digits only; empty means the default, 964.
         phone_country_code: cleanCountryCode(form.phone_country_code, ""),
         opening_time: form.opening_time || null,
@@ -252,7 +288,18 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
             <TextInput name="tax_number" value={form.tax_number} onChange={handleChange} dir="ltr" />
           </Field>
           <Field label={t.settings.currency} hint={t.settings.currencyHint}>
-            <SelectInput name="currency" value={form.currency} onChange={handleChange}>
+            <SelectInput
+              name="currency"
+              value={form.currency}
+              // The second currency cannot be the clinic's own.
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  currency: event.target.value,
+                  second_currency: form.second_currency === event.target.value ? "" : form.second_currency,
+                })
+              }
+            >
               {currencies.map((code) => (
                 <option key={code} value={code}>
                   {code}
@@ -271,6 +318,87 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
               placeholder={DEFAULT_COUNTRY_CODE}
             />
           </Field>
+        </div>
+      </Card>
+
+      <Card title={t.settings.currencies}>
+        <div className="space-y-5">
+          <Field label={t.settings.secondCurrency} hint={t.settings.secondHint}>
+            <SelectInput
+              name="second_currency"
+              value={form.second_currency}
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  second_currency: event.target.value,
+                  // The first time, start with a row for today's rate.
+                  exchange_rates:
+                    event.target.value && form.exchange_rates.length === 0 ? [{ rate_date: todayISO(), rate: "" }] : form.exchange_rates,
+                })
+              }
+            >
+              <option value="">{t.settings.secondNone}</option>
+              {currencies
+                .filter((code) => code !== form.currency)
+                .map((code) => (
+                  <option key={code} value={code}>
+                    {t.money.names[code] ?? code}
+                  </option>
+                ))}
+            </SelectInput>
+          </Field>
+          {form.second_currency && (
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium text-gray-700">{t.settings.rates}</legend>
+              <p className="text-xs text-gray-500">{t.settings.ratesHint(form.second_currency, form.currency)}</p>
+              {form.exchange_rates.length === 0 && <p className="text-sm text-amber-700">{t.settings.noRates}</p>}
+              {form.exchange_rates.map((row, index) => (
+                <div key={index} className="flex flex-wrap items-end gap-3">
+                  <Field label={t.settings.rateFrom} className="w-44">
+                    <TextInput
+                      type="date"
+                      dir="ltr"
+                      value={row.rate_date}
+                      onChange={(event) =>
+                        setForm({
+                          ...form,
+                          exchange_rates: form.exchange_rates.map((other, i) => (i === index ? { ...other, rate_date: event.target.value } : other)),
+                        })
+                      }
+                    />
+                  </Field>
+                  <Field label={t.settings.rateValue(form.second_currency, form.currency)} className="w-44">
+                    <NumberInput
+                      // A rate is not an amount: it keeps its decimals (1,462.5) whatever the currency.
+                      value={row.rate}
+                      onChange={(event) =>
+                        setForm({
+                          ...form,
+                          exchange_rates: form.exchange_rates.map((other, i) => (i === index ? { ...other, rate: event.target.value } : other)),
+                        })
+                      }
+                    />
+                  </Field>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={Trash2}
+                    aria-label={t.settings.removeRate(row.rate_date ? formatDate(row.rate_date) : String(index + 1))}
+                    onClick={() => setForm({ ...form, exchange_rates: form.exchange_rates.filter((_, i) => i !== index) })}
+                    className="mb-1"
+                  />
+                </div>
+              ))}
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Plus}
+                onClick={() => setForm({ ...form, exchange_rates: [...form.exchange_rates, { rate_date: todayISO(), rate: "" }] })}
+              >
+                {t.settings.addRate}
+              </Button>
+            </fieldset>
+          )}
         </div>
       </Card>
 

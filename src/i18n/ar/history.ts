@@ -61,6 +61,7 @@ export const history: Messages["history"] = {
     "Treatment Plan": {
       treatment_type: "العلاج",
       tooth_number: "السن",
+      currency: "العملة",
       total_cost: "الكلفة الكلية",
       treatment_notes: "الملاحظات",
       lab_name: "المختبر",
@@ -72,6 +73,8 @@ export const history: Messages["history"] = {
       treatment_plan: "خطة العلاج",
       payment_date: "التاريخ",
       payment_method: "طريقة الدفع",
+      currency: "العملة",
+      exchange_rate: "سعر الصرف",
     },
   },
 };

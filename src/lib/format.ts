@@ -12,10 +12,11 @@ const WHOLE_UNIT_CURRENCIES = new Set(["IQD"]);
  * "IQD 1,250,000" and formatMoney(4500, "USD") → "$4,500"; on Arabic screens "1,250,000 د.ع". Digits are 0-9,
  * or ٠-٩ on Arabic screens when the clinic chose Arabic digits.
  */
-export function formatMoney(amount: number | string | null | undefined, currency?: string | null): string {
+export function formatMoney(amount: number | string | null | undefined, currency?: string | null, maxDecimals?: number): string {
   const value = Number(amount) || 0;
   const code = (currency || "IQD").toUpperCase();
-  const decimals = WHOLE_UNIT_CURRENCIES.has(code) ? 0 : 2;
+  // An exchange rate may have more decimals than the currency's amounts (1 IQD = $0.000685).
+  const decimals = maxDecimals ?? (WHOLE_UNIT_CURRENCIES.has(code) ? 0 : 2);
   if (currentLang() === "ar") {
     const symbol = messages().dates.currencySymbols[code] ?? code;
     return `${num(value, { minimumFractionDigits: 0, maximumFractionDigits: decimals })} ${symbol}`;
