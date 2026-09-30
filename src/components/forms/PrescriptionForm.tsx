@@ -7,6 +7,8 @@ import MedicalAlerts from "@/components/MedicalAlerts";
 import PrescriptionWarnings from "@/components/PrescriptionWarnings";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import LinkSelect from "@/components/ui/LinkSelect";
+import { useI18n } from "@/context/LanguageContext";
+import { label, messages } from "@/i18n";
 import { errorMessage, getList } from "@/lib/frappe";
 import { todayISO } from "@/lib/format";
 import { useDoctors, usePatientMedical } from "@/lib/hooks";
@@ -119,6 +121,8 @@ export default function PrescriptionForm({
   cancelHref: string;
   onSubmit: (data: PrescriptionFormData, medicines: DentalMedicine[]) => Promise<void>;
 }) {
+  const { t } = useI18n();
+  const f = t.prescriptions.form;
   const doctors = useDoctors();
   const [form, setForm] = useState<PrescriptionFormData>(initial);
   // The clinic's medicine list (inactive ones too, so an old prescription keeps its rows).
@@ -141,7 +145,7 @@ export default function PrescriptionForm({
         if (!cancelled) setMedicines(rows);
       } catch (err) {
         console.error(err);
-        if (!cancelled) setListError(errorMessage(err, "Could not load the medicine list."));
+        if (!cancelled) setListError(errorMessage(err, messages().prescriptions.form.listFailed));
       }
     };
     load();
@@ -187,11 +191,11 @@ export default function PrescriptionForm({
     event.preventDefault();
     const rows = form.medicines.filter((row) => row.medicine || row.dose || row.frequency || row.duration_days || row.instructions);
     if (rows.length === 0) {
-      setError("Add at least one medicine.");
+      setError(f.needOne);
       return;
     }
     if (rows.some((row) => !row.medicine)) {
-      setError("Choose a medicine for every row, or remove the empty rows.");
+      setError(f.chooseEvery);
       return;
     }
     setSaving(true);
@@ -201,7 +205,7 @@ export default function PrescriptionForm({
       setDone(true);
     } catch (err) {
       console.error(err);
-      setError(errorMessage(err, "Could not save the prescription. Please try again."));
+      setError(errorMessage(err, f.saveFailed));
     } finally {
       setSaving(false);
     }
@@ -223,14 +227,14 @@ export default function PrescriptionForm({
       <UnsavedChangesGuard when={dirty} />
       <Card>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Patient" required className="sm:col-span-2">
+          <Field label={t.common.patient} required className="sm:col-span-2">
             <LinkSelect
               doctype="Patient"
               value={form.patient}
               onChange={(patient) => setForm({ ...form, patient })}
               detailField="phone_number"
               initialLabel={patientLabel}
-              placeholder="Search by name or phone..."
+              placeholder={f.patientPlaceholder}
               required
             />
           </Field>
@@ -239,9 +243,9 @@ export default function PrescriptionForm({
               <MedicalAlerts patient={medical} />
             </div>
           )}
-          <Field label="Doctor" required>
+          <Field label={t.common.doctor} required>
             <SelectInput name="doctor" value={form.doctor} onChange={handleChange} required>
-              <option value="">Select Doctor</option>
+              <option value="">{f.selectDoctor}</option>
               {doctorMissing && <option value={form.doctor}>{doctorLabel || form.doctor}</option>}
               {doctors.map((doctor) => (
                 <option key={doctor.name} value={doctor.name}>
@@ -250,17 +254,17 @@ export default function PrescriptionForm({
               ))}
             </SelectInput>
           </Field>
-          <Field label="Date" required>
+          <Field label={t.common.date} required>
             <TextInput type="date" name="prescription_date" value={form.prescription_date} onChange={handleChange} required />
           </Field>
         </div>
       </Card>
 
       <Card
-        title="Medicines"
+        title={f.medicines}
         actions={
           <Button size="sm" variant="secondary" icon={Plus} onClick={() => setForm({ ...form, medicines: [...form.medicines, emptyRow()] })}>
-            Add medicine
+            {f.addMedicine}
           </Button>
         }
       >
@@ -268,46 +272,46 @@ export default function PrescriptionForm({
         <div className="space-y-4">
           {form.medicines.map((row, index) => (
             <fieldset key={row.key} className="rounded-xl border border-gray-200 p-4 grid grid-cols-1 sm:grid-cols-6 gap-3">
-              <legend className="sr-only">Medicine {index + 1}</legend>
-              <Field label="Medicine" className="sm:col-span-3">
+              <legend className="sr-only">{f.row(index + 1)}</legend>
+              <Field label={f.medicine} className="sm:col-span-3">
                 <SelectInput value={row.medicine} onChange={(event) => chooseMedicine(row, event.target.value)} disabled={medicines === null}>
-                  <option value="">{medicines === null ? "Loading..." : "Choose a medicine"}</option>
+                  <option value="">{medicines === null ? t.common.loading : f.chooseMedicine}</option>
                   {options(row.medicine).map((entry) => (
-                    <optgroup key={entry.group} label={entry.group}>
+                    <optgroup key={entry.group} label={label(t.enums.medicineGroup, entry.group)}>
                       {entry.items.map((medicine) => (
                         <option key={medicine.name} value={medicine.name}>
-                          {[medicineLabel(medicine), medicine.dosage_form].filter(Boolean).join(" · ")}
+                          {[medicineLabel(medicine), label(t.enums.medicineForm, medicine.dosage_form)].filter(Boolean).join(t.common.dot)}
                         </option>
                       ))}
                     </optgroup>
                   ))}
                 </SelectInput>
               </Field>
-              <Field label="Dose" className="sm:col-span-3">
-                <TextInput value={row.dose} onChange={(event) => updateRow(row.key, { dose: event.target.value })} placeholder="500 mg, 1 tablet, 10 ml" />
+              <Field label={f.dose} className="sm:col-span-3">
+                <TextInput value={row.dose} onChange={(event) => updateRow(row.key, { dose: event.target.value })} placeholder={f.dosePlaceholder} />
               </Field>
-              <Field label="How often" className="sm:col-span-2">
+              <Field label={f.howOften} className="sm:col-span-2">
                 <SelectInput value={row.frequency} onChange={(event) => updateRow(row.key, { frequency: event.target.value })}>
-                  <option value="">Choose</option>
+                  <option value="">{f.choose}</option>
                   {FREQUENCIES.map((option) => (
                     <option key={option.value} value={option.value}>
-                      {option.value}
+                      {label(t.enums.frequency, option.value)}
                     </option>
                   ))}
                 </SelectInput>
               </Field>
-              <Field label="Days">
+              <Field label={f.days}>
                 <NumberInput decimals={false} value={row.duration_days} onChange={(event) => updateRow(row.key, { duration_days: event.target.value })} />
               </Field>
-              <Field label="Instructions" className="sm:col-span-2">
-                <TextInput value={row.instructions} onChange={(event) => updateRow(row.key, { instructions: event.target.value })} placeholder="After food" />
+              <Field label={f.instructions} className="sm:col-span-2">
+                <TextInput value={row.instructions} onChange={(event) => updateRow(row.key, { instructions: event.target.value })} placeholder={f.instructionsPlaceholder} />
               </Field>
               <div className="flex items-end sm:col-span-1">
                 <Button
                   variant="ghost"
                   icon={Trash2}
                   onClick={() => removeRow(row.key)}
-                  aria-label={`Remove row ${index + 1}`}
+                  aria-label={f.removeRow(index + 1)}
                   className="text-red-600 hover:bg-red-50 px-3"
                 />
               </div>
@@ -320,7 +324,7 @@ export default function PrescriptionForm({
       </Card>
 
       <Card>
-        <Field label="Notes for the patient" hint="Printed under the medicines.">
+        <Field label={f.notes} hint={f.notesHint}>
           <TextArea name="notes" value={form.notes} onChange={handleChange} rows={2} />
         </Field>
       </Card>
@@ -332,7 +336,7 @@ export default function PrescriptionForm({
           {submitLabel}
         </Button>
         <LinkButton href={cancelHref} variant="secondary">
-          Cancel
+          {t.common.cancel}
         </LinkButton>
       </FormActions>
     </form>

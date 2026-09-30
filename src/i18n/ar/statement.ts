@@ -1,0 +1,27 @@
+import type { Messages } from "../en";
+
+export const statement: Messages["statement"] = {
+  title: "كشف حساب المريض",
+  kind: "كشف حساب",
+  backToPatients: "العودة إلى المرضى",
+  patient: "المريض",
+  phone: "الهاتف",
+  treatments: "العلاجات",
+  colTreatment: "العلاج",
+  colStatus: "الحالة",
+  colCost: "الكلفة",
+  colPaid: "المدفوع",
+  colLeft: "المتبقي",
+  noTreatments: "لا توجد علاجات.",
+  tooth: (tooth: string) => ` · السن ${tooth}`,
+  payments: "الدفعات",
+  colDate: "التاريخ",
+  colFor: "مقابل",
+  colMethod: "الطريقة",
+  colAmount: "المبلغ",
+  noPayments: "لا توجد دفعات.",
+  generalPayment: "دفعة عامة",
+  totalTreatments: "مجموع كلفة العلاجات",
+  totalPaid: "مجموع المدفوع",
+  balance: "المبلغ المتبقي",
+};

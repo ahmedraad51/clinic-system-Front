@@ -8,6 +8,7 @@
  * the read-only fields the server computes are rebuilt after every write.
  */
 
+import { messages } from "@/i18n";
 import type { DocValue } from "./types";
 import { addDays, addMonths, todayISO } from "./format";
 import { HISTORY_LIMIT, TRACKED_DOCTYPES } from "./history";
@@ -340,6 +341,8 @@ const clinicSettings: MockDoc[] = [
     enable_financial_reports: 1,
     working_days: "Saturday,Sunday,Monday,Tuesday,Wednesday,Thursday",
     phone_country_code: "964",
+    default_language: "ar",
+    arabic_digits: 0,
     // The usual price of each treatment, in Iraqi dinars.
     treatment_prices: [
       { treatment_type: "Filling", price: 40000 },
@@ -356,16 +359,28 @@ const clinicSettings: MockDoc[] = [
 
 const whatsappTemplates: MockDoc[] = [
   {
-    name: "WAT-00001", template_name: "Reminder - day before", trigger: "24 Hours Before", is_active: 1,
+    name: "WAT-00001", template_name: "Reminder - day before", trigger: "24 Hours Before", is_active: 1, language: "en",
     message: "Hello {{ patient_name }}, this is a reminder of your appointment at {{ clinic_name }} on {{ appointment_date }} at {{ appointment_time }} with {{ doctor_name }}. Reply to this message if you need to change it.",
   },
   {
-    name: "WAT-00002", template_name: "Reminder - same day", trigger: "2 Hours Before", is_active: 1,
+    name: "WAT-00002", template_name: "Reminder - same day", trigger: "2 Hours Before", is_active: 1, language: "en",
     message: "Hi {{ patient_name }}, we look forward to seeing you today at {{ appointment_time }}. {{ clinic_name }}",
   },
   {
-    name: "WAT-00003", template_name: "Follow-up after treatment", trigger: "Manual", is_active: 0,
+    name: "WAT-00003", template_name: "Follow-up after treatment", trigger: "Manual", is_active: 0, language: "en",
     message: "Hello {{ patient_name }}, how are you feeling after your visit? Call us if you have any pain or questions. {{ clinic_name }}",
+  },
+  {
+    name: "WAT-00004", template_name: "تذكير قبل يوم", trigger: "24 Hours Before", is_active: 1, language: "ar",
+    message: "مرحبًا {{ patient_name }}، نذكّركم بموعدكم في {{ clinic_name }} يوم {{ appointment_date }} الساعة {{ appointment_time }} مع {{ doctor_name }}. يرجى الرد على هذه الرسالة إذا أردتم تغيير الموعد.",
+  },
+  {
+    name: "WAT-00005", template_name: "تذكير في يوم الموعد", trigger: "2 Hours Before", is_active: 1, language: "ar",
+    message: "أهلًا {{ patient_name }}، بانتظاركم اليوم الساعة {{ appointment_time }}. {{ clinic_name }}",
+  },
+  {
+    name: "WAT-00006", template_name: "متابعة بعد العلاج", trigger: "Manual", is_active: 0, language: "ar",
+    message: "مرحبًا {{ patient_name }}، كيف حالكم بعد الزيارة؟ اتصلوا بنا إذا شعرتم بأي ألم أو كان لديكم أي سؤال. {{ clinic_name }}",
   },
 ];
 
@@ -393,16 +408,16 @@ const M = {
 };
 
 const medicines: MockDoc[] = [
-  { name: M.amoxicillin, medicine_name: "Amoxicillin", strength: "500 mg", dosage_form: "Capsule", medicine_group: "Antibiotic", default_dose: "500 mg", default_frequency: "Three times a day", default_duration_days: 5, default_instructions: "After food", allergy_words: "penicillin, amoxicillin, amoxil, augmentin", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "Under 12: 25-50 mg/kg a day in 3 doses (suspension 250 mg/5 ml).", is_active: 1 },
-  { name: M.augmentin, medicine_name: "Amoxicillin + clavulanic acid", strength: "625 mg", dosage_form: "Tablet", medicine_group: "Antibiotic", default_dose: "625 mg", default_frequency: "Three times a day", default_duration_days: 5, default_instructions: "After food", allergy_words: "penicillin, amoxicillin, augmentin, clavulanate", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "Under 12: use the suspension, by weight.", is_active: 1 },
-  { name: M.metronidazole, medicine_name: "Metronidazole", strength: "500 mg", dosage_form: "Tablet", medicine_group: "Antibiotic", default_dose: "500 mg", default_frequency: "Three times a day", default_duration_days: 5, default_instructions: "After food. No alcohol during the course and for 2 days after.", allergy_words: "metronidazole, flagyl", is_nsaid: 0, avoid_in_pregnancy: 1, max_daily_mg: 0, child_note: "Under 12: 7.5 mg/kg per dose, 3 times a day.", is_active: 1 },
-  { name: M.clindamycin, medicine_name: "Clindamycin", strength: "300 mg", dosage_form: "Capsule", medicine_group: "Antibiotic", default_dose: "300 mg", default_frequency: "Four times a day", default_duration_days: 5, default_instructions: "With a full glass of water", allergy_words: "clindamycin, lincomycin", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "Under 12: 10-20 mg/kg a day in 3-4 doses.", is_active: 1 },
-  { name: M.azithromycin, medicine_name: "Azithromycin", strength: "500 mg", dosage_form: "Tablet", medicine_group: "Antibiotic", default_dose: "500 mg", default_frequency: "Once a day", default_duration_days: 3, default_instructions: "One hour before food", allergy_words: "azithromycin, erythromycin, macrolide", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "Under 12: 10 mg/kg once a day (suspension 200 mg/5 ml).", is_active: 1 },
-  { name: M.ibuprofen, medicine_name: "Ibuprofen", strength: "400 mg", dosage_form: "Tablet", medicine_group: "Painkiller", default_dose: "400 mg", default_frequency: "Three times a day", default_duration_days: 3, default_instructions: "After food", allergy_words: "ibuprofen, brufen, nsaid, aspirin, diclofenac", is_nsaid: 1, avoid_in_pregnancy: 1, max_daily_mg: 2400, child_note: "Under 12: 5-10 mg/kg per dose, up to 3 times a day (suspension 100 mg/5 ml).", is_active: 1 },
-  { name: M.diclofenac, medicine_name: "Diclofenac", strength: "50 mg", dosage_form: "Tablet", medicine_group: "Painkiller", default_dose: "50 mg", default_frequency: "Three times a day", default_duration_days: 3, default_instructions: "After food", allergy_words: "diclofenac, voltaren, nsaid, aspirin, ibuprofen", is_nsaid: 1, avoid_in_pregnancy: 1, max_daily_mg: 150, child_note: "Not for children under 12.", is_active: 1 },
-  { name: M.paracetamol, medicine_name: "Paracetamol", strength: "500 mg", dosage_form: "Tablet", medicine_group: "Painkiller", default_dose: "500 mg", default_frequency: "Every 6 hours", default_duration_days: 3, default_instructions: "Up to 8 tablets a day", allergy_words: "paracetamol, acetaminophen, panadol", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 4000, child_note: "Under 12: 15 mg/kg per dose, up to 4 times a day (syrup 120 mg/5 ml).", is_active: 1 },
-  { name: M.chlorhexidine, medicine_name: "Chlorhexidine", strength: "0.12%", dosage_form: "Mouthwash", medicine_group: "Mouthwash", default_dose: "10 ml", default_frequency: "Twice a day", default_duration_days: 7, default_instructions: "Rinse for one minute and spit out. Nothing to eat or drink for 30 minutes after.", allergy_words: "chlorhexidine", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "Under 6: not recommended (may be swallowed).", is_active: 1 },
-  { name: M.nystatin, medicine_name: "Nystatin", strength: "100,000 IU/ml", dosage_form: "Suspension", medicine_group: "Antifungal", default_dose: "1 ml", default_frequency: "Four times a day", default_duration_days: 7, default_instructions: "Hold in the mouth for a minute, then swallow", allergy_words: "nystatin", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "", is_active: 1 },
+  { name: M.amoxicillin, medicine_name: "Amoxicillin", strength: "500 mg", dosage_form: "Capsule", medicine_group: "Antibiotic", default_dose: "500 mg", default_frequency: "Three times a day", default_duration_days: 5, default_instructions: "After food", allergy_words: "penicillin, amoxicillin, amoxil, augmentin, بنسلين, أموكسيسيلين, اموكسيسيلين, أوجمنتين", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "Under 12: 25-50 mg/kg a day in 3 doses (suspension 250 mg/5 ml).", is_active: 1 },
+  { name: M.augmentin, medicine_name: "Amoxicillin + clavulanic acid", strength: "625 mg", dosage_form: "Tablet", medicine_group: "Antibiotic", default_dose: "625 mg", default_frequency: "Three times a day", default_duration_days: 5, default_instructions: "After food", allergy_words: "penicillin, amoxicillin, augmentin, clavulanate, بنسلين, أموكسيسيلين, اموكسيسيلين, أوجمنتين", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "Under 12: use the suspension, by weight.", is_active: 1 },
+  { name: M.metronidazole, medicine_name: "Metronidazole", strength: "500 mg", dosage_form: "Tablet", medicine_group: "Antibiotic", default_dose: "500 mg", default_frequency: "Three times a day", default_duration_days: 5, default_instructions: "After food. No alcohol during the course and for 2 days after.", allergy_words: "metronidazole, flagyl, ميترونيدازول, فلاجيل", is_nsaid: 0, avoid_in_pregnancy: 1, max_daily_mg: 0, child_note: "Under 12: 7.5 mg/kg per dose, 3 times a day.", is_active: 1 },
+  { name: M.clindamycin, medicine_name: "Clindamycin", strength: "300 mg", dosage_form: "Capsule", medicine_group: "Antibiotic", default_dose: "300 mg", default_frequency: "Four times a day", default_duration_days: 5, default_instructions: "With a full glass of water", allergy_words: "clindamycin, lincomycin, كليندامايسين", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "Under 12: 10-20 mg/kg a day in 3-4 doses.", is_active: 1 },
+  { name: M.azithromycin, medicine_name: "Azithromycin", strength: "500 mg", dosage_form: "Tablet", medicine_group: "Antibiotic", default_dose: "500 mg", default_frequency: "Once a day", default_duration_days: 3, default_instructions: "One hour before food", allergy_words: "azithromycin, erythromycin, macrolide, أزيثرومايسين, ازيثرومايسين, إريثرومايسين", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "Under 12: 10 mg/kg once a day (suspension 200 mg/5 ml).", is_active: 1 },
+  { name: M.ibuprofen, medicine_name: "Ibuprofen", strength: "400 mg", dosage_form: "Tablet", medicine_group: "Painkiller", default_dose: "400 mg", default_frequency: "Three times a day", default_duration_days: 3, default_instructions: "After food", allergy_words: "ibuprofen, brufen, nsaid, aspirin, diclofenac, إيبوبروفين, بروفين, أسبرين, اسبرين, ديكلوفيناك", is_nsaid: 1, avoid_in_pregnancy: 1, max_daily_mg: 2400, child_note: "Under 12: 5-10 mg/kg per dose, up to 3 times a day (suspension 100 mg/5 ml).", is_active: 1 },
+  { name: M.diclofenac, medicine_name: "Diclofenac", strength: "50 mg", dosage_form: "Tablet", medicine_group: "Painkiller", default_dose: "50 mg", default_frequency: "Three times a day", default_duration_days: 3, default_instructions: "After food", allergy_words: "diclofenac, voltaren, nsaid, aspirin, ibuprofen, ديكلوفيناك, فولتارين, أسبرين, اسبرين, إيبوبروفين", is_nsaid: 1, avoid_in_pregnancy: 1, max_daily_mg: 150, child_note: "Not for children under 12.", is_active: 1 },
+  { name: M.paracetamol, medicine_name: "Paracetamol", strength: "500 mg", dosage_form: "Tablet", medicine_group: "Painkiller", default_dose: "500 mg", default_frequency: "Every 6 hours", default_duration_days: 3, default_instructions: "Up to 8 tablets a day", allergy_words: "paracetamol, acetaminophen, panadol, باراسيتامول, بنادول", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 4000, child_note: "Under 12: 15 mg/kg per dose, up to 4 times a day (syrup 120 mg/5 ml).", is_active: 1 },
+  { name: M.chlorhexidine, medicine_name: "Chlorhexidine", strength: "0.12%", dosage_form: "Mouthwash", medicine_group: "Mouthwash", default_dose: "10 ml", default_frequency: "Twice a day", default_duration_days: 7, default_instructions: "Rinse for one minute and spit out. Nothing to eat or drink for 30 minutes after.", allergy_words: "chlorhexidine, كلورهيكسيدين", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "Under 6: not recommended (may be swallowed).", is_active: 1 },
+  { name: M.nystatin, medicine_name: "Nystatin", strength: "100,000 IU/ml", dosage_form: "Suspension", medicine_group: "Antifungal", default_dose: "1 ml", default_frequency: "Four times a day", default_duration_days: 7, default_instructions: "Hold in the mouth for a minute, then swallow", allergy_words: "nystatin, نيستاتين", is_nsaid: 0, avoid_in_pregnancy: 0, max_daily_mg: 0, child_note: "", is_active: 1 },
 ];
 
 /* Prescriptions written at earlier visits. Each row keeps the medicine's name as it was when it was written. */
@@ -828,7 +843,7 @@ function normalize(doc: MockDoc): void {
 
 /** Mirrors Treatment Plan.validate(): paid can never go above the total cost. */
 function checkPayment(payment: MockDoc): void {
-  if (num(payment.amount) <= 0) throw new Error("Amount must be more than zero.");
+  if (num(payment.amount) <= 0) throw new Error(messages().errors.mock.amountAboveZero);
   if (!payment.treatment_plan) return;
   const plan = find("Treatment Plan", payment.treatment_plan);
   if (!plan) throw new Error("Treatment Plan " + payment.treatment_plan + " not found");
@@ -837,9 +852,7 @@ function checkPayment(payment: MockDoc): void {
     .reduce((sum, pay) => sum + num(pay.amount), 0);
   const paid = otherPayments + num(payment.amount);
   if (paid > num(plan.total_cost)) {
-    throw new Error(
-      `Paid amount (${paid}) cannot be more than the total cost (${num(plan.total_cost)}) of ${plan.name}.`,
-    );
+    throw new Error(messages().errors.mock.paidAboveCost(String(paid), String(num(plan.total_cost)), String(plan.name)));
   }
 }
 
@@ -848,10 +861,10 @@ function checkPayment(payment: MockDoc): void {
  * worked out by the server, a note when the cash is short or over, and who counted it.
  */
 function checkCashCount(count: MockDoc): void {
-  if (!count.count_date) throw new Error("Choose the day of the count.");
-  if (count.cash_counted === undefined || count.cash_counted === null || count.cash_counted === "") throw new Error("Enter the cash counted.");
+  if (!count.count_date) throw new Error(messages().errors.mock.countDay);
+  if (count.cash_counted === undefined || count.cash_counted === null || count.cash_counted === "") throw new Error(messages().errors.mock.countCash);
   const sameDay = store["Cash Count"].find((other) => other.count_date === count.count_date && other.name !== count.name);
-  if (sameDay) throw new Error(`The cash for ${count.count_date} was already counted (${sameDay.name}).`);
+  if (sameDay) throw new Error(messages().errors.mock.countTwice(String(count.count_date), String(sameDay.name)));
   const cash = store.Payment
     .filter((pay) => pay.payment_date === count.count_date && pay.payment_method === "Cash")
     .reduce((sum, pay) => sum + num(pay.amount), 0);
@@ -860,7 +873,7 @@ function checkCashCount(count: MockDoc): void {
   count.expected_cash = num(count.opening_float) + cash;
   count.difference = Math.round((num(count.cash_counted) - num(count.expected_cash)) * 100) / 100;
   if (Math.abs(num(count.difference)) >= 0.005 && !String(count.note ?? "").trim()) {
-    throw new Error("Write a note saying why the cash is short or over.");
+    throw new Error(messages().errors.mock.countNote);
   }
   const user = store.User.find((row) => row.name === count.counted_by);
   count.counted_by_name = user ? String(user.full_name || user.name) : String(count.counted_by ?? "");
@@ -893,7 +906,7 @@ function checkPlan(plan: MockDoc): void {
     .filter((pay) => pay.treatment_plan === plan.name)
     .reduce((sum, pay) => sum + num(pay.amount), 0);
   if (paid > num(plan.total_cost)) {
-    throw new Error(`Paid amount (${paid}) cannot be more than the total cost (${num(plan.total_cost)}).`);
+    throw new Error(messages().errors.mock.costBelowPaid(String(paid), String(num(plan.total_cost))));
   }
 }
 
@@ -903,7 +916,7 @@ function checkPlan(plan: MockDoc): void {
  */
 function failIfAsked(doctype: string) {
   const failing = typeof window === "undefined" ? undefined : (window as unknown as { __mockFail?: string[] }).__mockFail;
-  if (failing?.includes(doctype)) throw new Error("Cannot reach the server. Check the internet connection and try again.");
+  if (failing?.includes(doctype)) throw new Error(messages().errors.noConnection);
 }
 
 /**
@@ -1019,8 +1032,9 @@ export async function mockDeleteDoc(doctype: string, name: string): Promise<void
   for (const [linkedDoctype, field] of LINKED_FROM[doctype] ?? []) {
     const linked = collection(linkedDoctype).find((doc) => doc[field] === name);
     if (linked) {
+      const doctypes: Record<string, string> = messages().enums.doctype;
       throw new Error(
-        `Cannot delete ${doctype} ${name} because it is linked with ${linkedDoctype} ${linked.name}.`,
+        messages().errors.mock.linked(doctypes[doctype] ?? doctype, name, doctypes[linkedDoctype] ?? linkedDoctype, String(linked.name)),
       );
     }
   }
@@ -1057,10 +1071,10 @@ export async function mockGetDocInfo(
 export async function mockCall(method: string, args: Record<string, MockValue>): Promise<unknown> {
   await latency();
   if (method === "frappe.core.doctype.user.user.update_password") {
-    if (!args.new_password) throw new Error("New password is required.");
+    if (!args.new_password) throw new Error(messages().errors.mock.newPassword);
     return "ok";
   }
-  throw new Error(`The method ${method} is not available with dummy data.`);
+  throw new Error(messages().errors.mock.noMethod(method));
 }
 
 /** Reads a file into a data URL, which works as an image src in the browser. */
@@ -1068,7 +1082,7 @@ function readAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Could not read the file."));
+    reader.onerror = () => reject(new Error(messages().errors.mock.readFile));
     reader.readAsDataURL(file);
   });
 }

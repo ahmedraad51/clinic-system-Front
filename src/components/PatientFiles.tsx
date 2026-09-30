@@ -4,12 +4,14 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Camera, ExternalLink, FileText, ImageIcon, Trash2, Upload } from "lucide-react";
 import { Button, Card, EmptyState, PageLoading, ProgressBar } from "@/components/ui";
 import { ConfirmDialog, Modal } from "@/components/ui/Modal";
+import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
 import { attachFile, deleteDoc, errorMessage, fileHref, getList, type FileDoc } from "@/lib/frappe";
 import { formatDateTime } from "@/lib/format";
 
 /** Largest file accepted, to keep uploads quick on a clinic connection. */
-const MAX_BYTES = 10 * 1024 * 1024;
+const MAX_MB = 10;
+const MAX_BYTES = MAX_MB * 1024 * 1024;
 
 const isImage = (file: FileDoc) => /\.(png|jpe?g|gif|webp|bmp|heic)$/i.test(file.file_name) || file.file_url.startsWith("data:image/");
 
@@ -19,6 +21,8 @@ const isImage = (file: FileDoc) => /\.(png|jpe?g|gif|webp|bmp|heic)$/i.test(file
  * opens the camera.
  */
 export default function PatientFiles({ patient, canEdit }: { patient: string; canEdit: boolean }) {
+  const { t } = useI18n();
+  const tf = t.files;
   const toast = useToast();
   const uploadRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -57,7 +61,7 @@ export default function PatientFiles({ patient, canEdit }: { patient: string; ca
     event.target.value = "";
     if (chosen.length === 0) return;
     const tooBig = chosen.filter((file) => file.size > MAX_BYTES);
-    if (tooBig.length) toast.error(`${tooBig.map((f) => f.name).join(", ")}: larger than 10 MB, not added.`);
+    if (tooBig.length) toast.error(tf.tooBig(tooBig.map((f) => f.name).join(tf.separator), MAX_MB));
     const ok = chosen.filter((file) => file.size <= MAX_BYTES);
     if (ok.length === 0) return;
     const totalBytes = ok.reduce((sum, file) => sum + file.size, 0) || 1;
@@ -74,11 +78,11 @@ export default function PatientFiles({ patient, canEdit }: { patient: string; ca
         sentBytes += file.size;
         added += 1;
       }
-      toast.success(ok.length === 1 ? "File added." : `${ok.length} files added.`);
+      toast.success(tf.added(ok.length));
     } catch (err) {
-      const reason = errorMessage(err, "Could not add the file.");
+      const reason = errorMessage(err, tf.addFailed);
       // Files sent before the failure are saved; say which one was not.
-      toast.error(ok.length === 1 ? reason : `${added} of ${ok.length} files added. ${ok[added].name} was not added: ${reason}`);
+      toast.error(ok.length === 1 ? reason : tf.partlyAdded(added, ok.length, ok[added].name, reason));
     } finally {
       setUploading(false);
       setProgress(null);
@@ -91,12 +95,12 @@ export default function PatientFiles({ patient, canEdit }: { patient: string; ca
     setDeleting(true);
     try {
       await deleteDoc("File", removing.name);
-      toast.success("File deleted.");
+      toast.success(tf.deleted);
       setRemoving(null);
       setOpen(null);
       setVersion((v) => v + 1);
     } catch (err) {
-      toast.error(errorMessage(err, "Could not delete the file."));
+      toast.error(errorMessage(err, tf.deleteFailed));
     } finally {
       setDeleting(false);
     }
@@ -106,7 +110,7 @@ export default function PatientFiles({ patient, canEdit }: { patient: string; ca
 
   return (
     <Card
-      title="X-rays and Photos"
+      title={tf.title}
       icon={ImageIcon}
       actions={
         canEdit && (
@@ -114,10 +118,10 @@ export default function PatientFiles({ patient, canEdit }: { patient: string; ca
             <input ref={uploadRef} type="file" accept="image/*,application/pdf" multiple className="hidden" onChange={handleFiles} />
             <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFiles} />
             <Button size="sm" variant="secondary" icon={Camera} onClick={() => cameraRef.current?.click()} disabled={uploading}>
-              Take Photo
+              {tf.takePhoto}
             </Button>
             <Button size="sm" icon={Upload} onClick={() => uploadRef.current?.click()} loading={uploading}>
-              Add Files
+              {tf.addFiles}
             </Button>
           </>
         )
@@ -127,17 +131,14 @@ export default function PatientFiles({ patient, canEdit }: { patient: string; ca
         <div className="mb-4">
           <ProgressBar
             value={progress.percent}
-            label={progress.count > 1 ? `Uploading ${progress.index} of ${progress.count}: ${progress.name}` : `Uploading ${progress.name}`}
+            label={progress.count > 1 ? tf.uploadingOf(progress.index, progress.count, progress.name) : tf.uploading(progress.name)}
           />
         </div>
       )}
       {!rows ? (
         <PageLoading />
       ) : rows.length === 0 ? (
-        <EmptyState
-          icon={ImageIcon}
-          title="No X-rays or photos yet"
-          text={canEdit ? "Add X-rays, intra-oral photos or PDF reports. On a tablet, Take Photo opens the camera." : undefined}
+        <EmptyState icon={ImageIcon} title={tf.empty} text={canEdit ? tf.emptyText : undefined}
         />
       ) : (
         <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -175,7 +176,7 @@ export default function PatientFiles({ patient, canEdit }: { patient: string; ca
               // eslint-disable-next-line @next/next/no-img-element -- an uploaded patient file of unknown size
               <img src={fileHref(open.file_url)} alt={open.file_name} className="w-full max-h-[65vh] object-contain rounded-xl bg-gray-900" />
             ) : (
-              <p className="text-sm text-gray-600">This file opens in a new tab.</p>
+              <p className="text-sm text-gray-600">{tf.opensInTab}</p>
             )}
             <div className="flex flex-wrap items-center gap-2">
               <a
@@ -185,11 +186,11 @@ export default function PatientFiles({ patient, canEdit }: { patient: string; ca
                 className="inline-flex items-center gap-2 min-h-11 px-4 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 <ExternalLink size={16} />
-                Open in a new tab
+                {tf.openInTab}
               </a>
               {canEdit && (
                 <Button variant="ghost" icon={Trash2} onClick={() => setRemoving(open)} className="ms-auto text-red-600 hover:bg-red-50">
-                  Delete
+                  {tf.delete}
                 </Button>
               )}
             </div>
@@ -199,13 +200,14 @@ export default function PatientFiles({ patient, canEdit }: { patient: string; ca
 
       <ConfirmDialog
         open={removing !== null}
-        title="Delete this file?"
+        title={tf.deleteTitle}
         message={
           <p>
-            <strong>{removing?.file_name}</strong> will be removed from the patient for good.
+            <strong>{removing?.file_name}</strong>
+            {tf.deleteText}
           </p>
         }
-        confirmLabel="Delete File"
+        confirmLabel={tf.deleteConfirm}
         busy={deleting}
         onConfirm={handleDelete}
         onCancel={() => setRemoving(null)}

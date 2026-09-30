@@ -19,6 +19,8 @@ const DEFAULTS: ClinicSettings = {
 
 interface SettingsContextType {
   settings: ClinicSettings;
+  /** True once the clinic's settings have arrived (or failed to); until then `settings` holds the defaults. */
+  loaded: boolean;
   clinicName: string;
   currency: string;
   /** Country calling code as digits (Clinic Settings → phone_country_code, default "964"), for WhatsApp links. */
@@ -38,6 +40,7 @@ const SettingsContext = createContext<SettingsContextType | null>(null);
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const { user, loginCount } = useAuth();
   const [settings, setSettings] = useState<ClinicSettings>(DEFAULTS);
+  const [loaded, setLoaded] = useState(false);
   const [version, setVersion] = useState(0);
 
   useEffect(() => {
@@ -49,8 +52,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         setSettings({ ...DEFAULTS, ...doc });
         applyThemeColor(doc.theme_color);
+        setLoaded(true);
       } catch (err) {
         console.error("Could not load Clinic Settings", err);
+        if (!cancelled) setLoaded(true);
       }
     };
     load();
@@ -85,8 +90,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const money = useCallback((amount: number | string | null | undefined) => formatMoney(amount, currency), [currency]);
 
   const value = useMemo(
-    () => ({ settings, clinicName, currency, countryCode, prices, isOpenOn, money, refresh }),
-    [settings, clinicName, currency, countryCode, prices, isOpenOn, money, refresh],
+    () => ({ settings, loaded, clinicName, currency, countryCode, prices, isOpenOn, money, refresh }),
+    [settings, loaded, clinicName, currency, countryCode, prices, isOpenOn, money, refresh],
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

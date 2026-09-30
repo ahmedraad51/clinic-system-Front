@@ -1,5 +1,7 @@
 /** The end-of-day cash count: what should be in the drawer against what was counted. */
 
+import { messages } from "@/i18n";
+
 export type CashState = "matched" | "short" | "over";
 
 /** Differences smaller than half a fils/cent are rounding, not money. */
@@ -17,6 +19,7 @@ export function compareCash(expected: number, counted: number): { state: CashSta
 
 /** "Matched", "Short by IQD 10,000", "Over by IQD 5,000", with the money already formatted by the caller. */
 export function cashStateLabel(state: CashState, amount: string): string {
-  if (state === "matched") return "Matched";
-  return state === "short" ? `Short by ${amount}` : `Over by ${amount}`;
+  const t = messages().cash;
+  if (state === "matched") return t.matched;
+  return state === "short" ? t.shortBy(amount) : t.overBy(amount);
 }

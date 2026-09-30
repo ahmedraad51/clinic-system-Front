@@ -10,8 +10,10 @@ import {
   Card, ClearFiltersButton, ClickableRow, LinkButton, PageContainer, PageHeader, PageLoading, Pagination,
   SearchInput, SelectInput, Table, TableError, TableLoading, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
+import { label } from "@/i18n";
 import { getList, type FilterRow } from "@/lib/frappe";
 import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
 import { cx, display, formatShortDate, formatTime, todayISO } from "@/lib/format";
@@ -32,6 +34,8 @@ export default function PatientsPage() {
 }
 
 function PatientsList() {
+  const { t } = useI18n();
+  const p = t.patients;
   const { can } = useSession();
   const { money, settings, clinicName, countryCode } = useSettings();
   const [search, setSearch] = useState("");
@@ -56,7 +60,7 @@ function PatientsList() {
   const columns = 2 + (showNext ? 1 : 0) + (showBalance ? 1 : 0);
 
   // The next booked visit of each patient on this page.
-  const pageKey = list.rows.map((p) => p.name).join("|");
+  const pageKey = list.rows.map((row) => row.name).join("|");
   const [next, setNext] = useState<{ key: string; byPatient: Record<string, Appointment> }>({ key: "", byPatient: {} });
   useEffect(() => {
     if (!showNext || !pageKey) return;
@@ -96,42 +100,42 @@ function PatientsList() {
   const reminder = (patient: Patient) =>
     whatsappLink(
       patient.phone_number,
-      `Hello ${patient.full_name}, this is a friendly reminder from ${clinicName} that ${money(patient.total_remaining)} is still to be paid for your treatment. You can pay at your next visit or call us to arrange it. Thank you!`,
+      p.balanceReminder(patient.full_name, clinicName, money(patient.total_remaining)),
       countryCode,
     );
 
   return (
     <PageContainer>
       <PageHeader
-        title="Patients"
-        subtitle="Search by name, phone number or patient ID."
+        title={p.title}
+        subtitle={p.subtitle}
         actions={
           can("add_patients") && (
             <LinkButton href="/patients/new" icon={UserPlus}>
-              Add Patient
+              {p.addPatient}
             </LinkButton>
           )
         }
       />
 
       <Toolbar>
-        <SearchInput value={search} onChange={setSearch} placeholder="Search patients..." />
+        <SearchInput value={search} onChange={setSearch} placeholder={p.searchPlaceholder} />
         {showBalance && (
           <SelectInput
             value={owing ? "owing" : ""}
             onChange={(e) => setOwing(e.target.value === "owing")}
             className="sm:w-44"
-            aria-label="Balance"
+            aria-label={p.balanceFilter}
           >
-            <option value="">All balances</option>
-            <option value="owing">Owes money</option>
+            <option value="">{p.allBalances}</option>
+            <option value="owing">{p.owesMoney}</option>
           </SelectInput>
         )}
-        <SelectInput value={gender} onChange={(e) => setGender(e.target.value)} className="sm:w-44" aria-label="Gender">
-          <option value="">All genders</option>
+        <SelectInput value={gender} onChange={(e) => setGender(e.target.value)} className="sm:w-44" aria-label={p.genderFilter}>
+          <option value="">{p.allGenders}</option>
           {GENDERS.map((g) => (
             <option key={g} value={g}>
-              {g}
+              {label(t.enums.gender, g)}
             </option>
           ))}
         </SelectInput>
@@ -141,10 +145,10 @@ function PatientsList() {
         <Table>
           <thead>
             <tr>
-              <Th>Name</Th>
-              <Th>Phone</Th>
-              {showNext && <Th>Next visit</Th>}
-              {showBalance && <Th className="text-end">Balance</Th>}
+              <Th>{p.name}</Th>
+              <Th>{p.phone}</Th>
+              {showNext && <Th>{p.nextVisit}</Th>}
+              {showBalance && <Th className="text-end">{p.balance}</Th>}
             </tr>
           </thead>
           <tbody>
@@ -156,11 +160,11 @@ function PatientsList() {
               <TableMessage icon={UserSearch} colSpan={columns}>
                 {filtered ? (
                   <>
-                    No patients match your search.
+                    {p.noMatch}
                     <ClearFiltersButton onClick={clearFilters} />
                   </>
                 ) : (
-                  "No patients yet."
+                  p.noPatients
                 )}
               </TableMessage>
             ) : (
@@ -174,26 +178,37 @@ function PatientsList() {
                           {patient.full_name}
                         </Link>
                         <span className="block text-xs text-gray-500">
-                          {[patient.name, patient.age ? `${patient.age} years` : "", patient.gender].filter(Boolean).join(" · ")}
+                          {[
+                            patient.name,
+                            patient.age ? t.common.years(Number(patient.age)) : "",
+                            label(t.enums.gender, patient.gender),
+                          ]
+                            .filter(Boolean)
+                            .join(t.common.dot)}
                         </span>
                         <MedicalChips patient={patient} />
                       </div>
                     </div>
                   </Td>
-                  <Td label="Phone" className="whitespace-nowrap">{display(patient.phone_number)}</Td>
+                  <Td label={p.phone} className="whitespace-nowrap">
+                    <span dir="ltr">{display(patient.phone_number)}</span>
+                  </Td>
                   {showNext && (
-                    <Td label="Next visit" className="whitespace-nowrap">
+                    <Td label={p.nextVisit} className="whitespace-nowrap">
                       {nextFor(patient.name) ? (
                         <Link href={appointmentHref(nextFor(patient.name)!.name)} className="text-gray-700 hover:text-primary-600">
-                          {formatShortDate(nextFor(patient.name)!.appointment_date)}, {formatTime(nextFor(patient.name)!.appointment_time)}
+                          {t.dates.dateTime(
+                            formatShortDate(nextFor(patient.name)!.appointment_date),
+                            formatTime(nextFor(patient.name)!.appointment_time),
+                          )}
                         </Link>
                       ) : (
-                        <span className="text-gray-500">Not booked</span>
+                        <span className="text-gray-500">{p.notBooked}</span>
                       )}
                     </Td>
                   )}
                   {showBalance && (
-                    <Td label="Balance" className="text-end whitespace-nowrap">
+                    <Td label={p.balance} className="text-end whitespace-nowrap">
                       {Number(patient.total_remaining) > 0 ? (
                         <span className="inline-flex items-center gap-2">
                           <span className="font-medium text-red-600">{money(patient.total_remaining)}</span>
@@ -202,11 +217,11 @@ function PatientsList() {
                               href={reminder(patient)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              title="Send a WhatsApp reminder about the balance"
+                              title={p.remindTitle}
                               className="inline-flex items-center gap-1 min-h-9 pointer-coarse:min-h-11 px-2.5 rounded-lg bg-green-50 border border-green-200 text-xs font-medium text-green-800 hover:bg-green-100"
                             >
                               <MessageCircle size={13} />
-                              Remind
+                              {p.remind}
                             </a>
                           )}
                         </span>
@@ -228,15 +243,16 @@ function PatientsList() {
 
 /** Small markers under a patient's name for their medical alerts, full text on hover. */
 function MedicalChips({ patient }: { patient: Patient }) {
+  const { t } = useI18n();
   const flags = medicalFlags(patient);
   if (flags.length === 0) return null;
-  const short: Record<string, string> = { heart: "Heart / BP" };
+  const short: Record<string, string> = { heart: t.medical.heartShort };
   return (
     <span className="mt-1 flex flex-wrap gap-1">
       {flags.map((flag) => (
         <span
           key={flag.kind}
-          title={`${flag.label}: ${flag.detail}`}
+          title={`${flag.label}${t.medical.detailSeparator}${flag.detail}`}
           className={cx(
             "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap",
             flag.severity === "high" ? "bg-red-50 text-red-700" : "bg-yellow-50 text-yellow-800",

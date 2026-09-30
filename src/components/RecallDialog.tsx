@@ -3,10 +3,11 @@
 import { useState, type FormEvent } from "react";
 import { Alert, Button, Field, SelectInput, TextInput } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
+import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
 import { errorMessage, updateDoc } from "@/lib/frappe";
 import { formatDate } from "@/lib/format";
-import { RECALL_CHOICES, recallChoiceOf, recallDateFrom, recallUpdate } from "@/lib/recall";
+import { recallChoiceOf, recallChoices, recallDateFrom, recallUpdate } from "@/lib/recall";
 import type { Patient } from "@/lib/types";
 
 /**
@@ -25,6 +26,7 @@ export default function RecallDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useI18n();
   const toast = useToast();
   const [choice, setChoice] = useState(() => recallChoiceOf(patient));
   const [date, setDate] = useState(() => patient.next_recall_date || recallDateFrom(from, recallChoiceOf(patient)));
@@ -40,7 +42,7 @@ export default function RecallDialog({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (needsDate && !date) {
-      setError("Choose the date of the next check-up.");
+      setError(t.recall.chooseDate);
       return;
     }
     setSaving(true);
@@ -48,23 +50,23 @@ export default function RecallDialog({
     try {
       await updateDoc("Patient", patient.name, recallUpdate(choice, date));
       toast.success(
-        choice === "none" ? "No recall for this patient." : needsDate ? `Next check-up: ${formatDate(date)}.` : "Check-up set to the usual rule.",
+        choice === "none" ? t.recall.savedNone : needsDate ? t.recall.savedDate(formatDate(date)) : t.recall.savedUsual,
       );
       onSaved();
       onClose();
     } catch (err) {
-      setError(errorMessage(err, "Could not save the check-up."));
+      setError(errorMessage(err, t.recall.saveFailed));
       setSaving(false);
     }
   };
 
   return (
-    <Modal open title="Next check-up" onClose={onClose}>
+    <Modal open title={t.recall.dialogTitle} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <p className="text-sm text-gray-600">When should {patient.full_name} come back for a check-up?</p>
-        <Field label="Check-up">
+        <p className="text-sm text-gray-600">{t.recall.dialogQuestion(patient.full_name)}</p>
+        <Field label={t.recall.checkUp}>
           <SelectInput value={choice} onChange={(event) => choose(event.target.value)}>
-            {RECALL_CHOICES.map((option) => (
+            {recallChoices().map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -72,29 +74,19 @@ export default function RecallDialog({
           </SelectInput>
         </Field>
         {needsDate && (
-          <Field
-            label="Next check-up on"
-            hint={`Counted from ${formatDate(from)}. After each completed visit it moves on by the same interval.`}
-          >
+          <Field label={t.recall.nextOn} hint={t.recall.countedFrom(formatDate(from))}>
             <TextInput type="date" value={date} onChange={(event) => setDate(event.target.value)} required />
           </Field>
         )}
-        {choice === "none" && (
-          <p className="text-sm text-gray-600">The patient will not appear on the Recall list.</p>
-        )}
-        {choice === "" && (
-          <p className="text-sm text-gray-600">
-            The patient appears on the Recall list when there has been no visit for the period chosen there (6 months
-            on the dashboard).
-          </p>
-        )}
+        {choice === "none" && <p className="text-sm text-gray-600">{t.recall.noneHint}</p>}
+        {choice === "" && <p className="text-sm text-gray-600">{t.recall.usualHint}</p>}
         {error && <Alert tone="red">{error}</Alert>}
         <div className="flex flex-wrap gap-2 pt-2">
           <Button type="submit" loading={saving}>
-            Save
+            {t.common.save}
           </Button>
           <Button variant="secondary" onClick={onClose} disabled={saving}>
-            Cancel
+            {t.common.cancel}
           </Button>
         </div>
       </form>

@@ -7,9 +7,9 @@ import { FIXED_NOW } from "./fixtures";
  * or with `navigate()` below, which uses the app's own router (no reload).
  */
 
-/** Waits until no "Loading..." spinner is left on the page. */
+/** Waits until no "Loading..." spinner is left on the page (in English or Arabic). */
 export async function waitForData(page: Page) {
-  await expect(page.getByText("Loading...", { exact: true })).toHaveCount(0, { timeout: 15_000 });
+  await expect(page.getByText(/^(Loading\.\.\.|جارٍ التحميل\.\.\.)$/)).toHaveCount(0, { timeout: 15_000 });
 }
 
 /** Client-side navigation, the same as clicking a link. Keeps the dummy data in memory. */

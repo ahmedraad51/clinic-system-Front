@@ -9,7 +9,9 @@ import LinkSelect from "@/components/ui/LinkSelect";
 import { errorMessage } from "@/lib/frappe";
 import { currencyDecimals } from "@/lib/format";
 import { useDoctors, usePatientMedical } from "@/lib/hooks";
+import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
+import { label, messages } from "@/i18n";
 import {
   CHILD_LOWER_TEETH, CHILD_UPPER_TEETH, LOWER_TEETH, TREATMENT_STATUSES, TREATMENT_TYPES, UPPER_TEETH, type TreatmentPlan,
 } from "@/lib/types";
@@ -53,17 +55,17 @@ export function treatmentPayload(form: TreatmentFormData) {
   return { ...form, doctor: form.doctor || null, total_cost: Number(form.total_cost) || 0 };
 }
 
-/** Quadrants in FDI order, for the tooth dropdown. */
+/** Quadrants in FDI order, for the tooth dropdown. `key` names the group in t.treatmentForm.quadrants. */
 const QUADRANTS = [
-  { label: "Upper right", teeth: UPPER_TEETH.slice(0, 8) },
-  { label: "Upper left", teeth: UPPER_TEETH.slice(8) },
-  { label: "Lower left", teeth: LOWER_TEETH.slice(8) },
-  { label: "Lower right", teeth: LOWER_TEETH.slice(0, 8) },
-  { label: "Child upper right", teeth: CHILD_UPPER_TEETH.slice(0, 5) },
-  { label: "Child upper left", teeth: CHILD_UPPER_TEETH.slice(5) },
-  { label: "Child lower left", teeth: CHILD_LOWER_TEETH.slice(5) },
-  { label: "Child lower right", teeth: CHILD_LOWER_TEETH.slice(0, 5) },
-];
+  { key: "upperRight", teeth: UPPER_TEETH.slice(0, 8) },
+  { key: "upperLeft", teeth: UPPER_TEETH.slice(8) },
+  { key: "lowerLeft", teeth: LOWER_TEETH.slice(8) },
+  { key: "lowerRight", teeth: LOWER_TEETH.slice(0, 8) },
+  { key: "childUpperRight", teeth: CHILD_UPPER_TEETH.slice(0, 5) },
+  { key: "childUpperLeft", teeth: CHILD_UPPER_TEETH.slice(5) },
+  { key: "childLowerLeft", teeth: CHILD_LOWER_TEETH.slice(5) },
+  { key: "childLowerRight", teeth: CHILD_LOWER_TEETH.slice(0, 5) },
+] as const;
 const ALL_TEETH = new Set<string>(QUADRANTS.flatMap((quadrant) => quadrant.teeth.map(String)));
 
 type InputEvent = ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
@@ -85,6 +87,7 @@ export default function TreatmentForm({
   cancelHref: string;
   onSubmit: (data: TreatmentFormData) => Promise<void>;
 }) {
+  const { t } = useI18n();
   const { currency, prices, money } = useSettings();
   const doctors = useDoctors();
   const [form, setForm] = useState<TreatmentFormData>(initial);
@@ -115,7 +118,7 @@ export default function TreatmentForm({
     event.preventDefault();
     const cost = Number(form.total_cost);
     if (form.total_cost === "" || !Number.isFinite(cost) || cost < 0) {
-      setCostError("Enter the total cost as a number.");
+      setCostError(messages().treatmentForm.costInvalid);
       focusField(event.currentTarget, "total_cost");
       return;
     }
@@ -126,7 +129,7 @@ export default function TreatmentForm({
       setDone(true);
     } catch (err) {
       console.error(err);
-      setError(errorMessage(err, "Could not save the treatment plan. Please try again."));
+      setError(errorMessage(err, messages().treatmentForm.saveFailed));
     } finally {
       setSaving(false);
     }
@@ -143,14 +146,14 @@ export default function TreatmentForm({
       <UnsavedChangesGuard when={dirty} />
       <Card>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Patient" required className="sm:col-span-2">
+          <Field label={t.common.patient} required className="sm:col-span-2">
             <LinkSelect
               doctype="Patient"
               value={form.patient}
               onChange={(patient) => setForm({ ...form, patient })}
               detailField="phone_number"
               initialLabel={patientLabel}
-              placeholder="Search by name or phone..."
+              placeholder={t.treatmentForm.searchPatient}
               required
             />
           </Field>
@@ -159,9 +162,9 @@ export default function TreatmentForm({
               <MedicalAlerts patient={medical} />
             </div>
           )}
-          <Field label="Doctor">
+          <Field label={t.common.doctor}>
             <SelectInput name="doctor" value={form.doctor} onChange={handleChange}>
-              <option value="">Select Doctor</option>
+              <option value="">{t.treatmentForm.selectDoctor}</option>
               {doctorMissing && <option value={form.doctor}>{doctorLabel || form.doctor}</option>}
               {doctors.map((doctor) => (
                 <option key={doctor.name} value={doctor.name}>
@@ -170,22 +173,22 @@ export default function TreatmentForm({
               ))}
             </SelectInput>
           </Field>
-          <Field label="Treatment Type" required>
+          <Field label={t.treatmentForm.treatmentType} required>
             <SelectInput name="treatment_type" value={form.treatment_type} onChange={handleChange} required>
-              <option value="">Select Type</option>
+              <option value="">{t.treatmentForm.selectType}</option>
               {TREATMENT_TYPES.map((type) => (
                 <option key={type} value={type}>
-                  {type}
+                  {label(t.enums.treatmentType, type)}
                 </option>
               ))}
             </SelectInput>
           </Field>
-          <Field label="Tooth" hint="FDI number. Leave empty for whole-mouth work such as cleaning.">
+          <Field label={t.treatmentForm.tooth} hint={t.treatmentForm.toothHint}>
             <SelectInput name="tooth_number" value={form.tooth_number} onChange={handleChange}>
-              <option value="">Not tooth-specific</option>
+              <option value="">{t.treatmentForm.notToothSpecific}</option>
               {customTooth && <option value={form.tooth_number}>{form.tooth_number}</option>}
               {QUADRANTS.map((quadrant) => (
-                <optgroup key={quadrant.label} label={quadrant.label}>
+                <optgroup key={quadrant.key} label={t.treatmentForm.quadrants[quadrant.key]}>
                   {quadrant.teeth.map((tooth) => (
                     <option key={tooth} value={String(tooth)}>
                       {tooth}
@@ -196,10 +199,10 @@ export default function TreatmentForm({
             </SelectInput>
           </Field>
           <Field
-            label={`Total Cost (${currency})`}
+            label={t.treatmentForm.totalCost(t.dates.currencySymbols[currency] ?? currency)}
             required
             error={costError}
-            hint={listPrice ? `Usual price for ${form.treatment_type.toLowerCase()}: ${money(listPrice)}` : undefined}
+            hint={listPrice ? t.treatmentForm.usualPrice(label(t.enums.treatmentType, form.treatment_type), money(listPrice)) : undefined}
           >
             <NumberInput
               name="total_cost"
@@ -211,20 +214,20 @@ export default function TreatmentForm({
             />
           </Field>
           {showStatus && (
-            <Field label="Status">
+            <Field label={t.common.status}>
               <SelectInput name="status" value={form.status} onChange={handleChange}>
                 {TREATMENT_STATUSES.map((status) => (
                   <option key={status} value={status}>
-                    {status}
+                    {label(t.enums.treatmentStatus, status)}
                   </option>
                 ))}
               </SelectInput>
             </Field>
           )}
-          <Field label="Diagnosis" className="sm:col-span-2">
+          <Field label={t.treatmentForm.diagnosis} className="sm:col-span-2">
             <TextArea name="diagnosis" value={form.diagnosis} onChange={handleChange} rows={2} />
           </Field>
-          <Field label="Treatment Notes" className="sm:col-span-2">
+          <Field label={t.treatmentForm.treatmentNotes} className="sm:col-span-2">
             <TextArea name="treatment_notes" value={form.treatment_notes} onChange={handleChange} />
           </Field>
         </div>
@@ -237,7 +240,7 @@ export default function TreatmentForm({
           {submitLabel}
         </Button>
         <LinkButton href={cancelHref} variant="secondary">
-          Cancel
+          {t.common.cancel}
         </LinkButton>
       </FormActions>
     </form>

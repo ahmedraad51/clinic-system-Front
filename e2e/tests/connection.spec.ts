@@ -5,13 +5,13 @@ import api, {
   isRetriableReadError,
   isServerDown,
   login,
-  LOGIN_NOT_KEPT_MESSAGE,
+  loginNotKeptMessage,
   onSessionEnded,
   onSessionRestored,
-  PASSWORD_RESET_MESSAGE,
-  SESSION_ENDED_MESSAGE,
+  passwordResetMessage,
+  sessionEndedMessage,
   SessionEndedError,
-  TWO_FACTOR_MESSAGE,
+  twoFactorMessage,
   withReadRetry,
 } from "../../src/lib/frappe";
 import { loginHref, safeNextPath } from "../../src/lib/links";
@@ -80,7 +80,7 @@ test("an ended login is reported once, and not as missing permission", async () 
       expect(result.status).toBe("rejected");
       const reason = (result as PromiseRejectedResult).reason;
       expect(reason).toBeInstanceOf(SessionEndedError);
-      expect(errorMessage(reason)).toBe(SESSION_ENDED_MESSAGE);
+      expect(errorMessage(reason)).toBe(sessionEndedMessage());
     }
     // One question to the server and one notice, for three failed calls.
     expect(probes).toBe(1);
@@ -144,7 +144,7 @@ test("login checks that the browser kept the session", async () => {
   });
   try {
     // The cookie was not kept: Frappe still sees a guest.
-    await expect(login("dalia", "secret")).rejects.toThrow(LOGIN_NOT_KEPT_MESSAGE);
+    await expect(login("dalia", "secret")).rejects.toThrow(loginNotKeptMessage());
     // It was kept: the user ID comes from Frappe, not from what was typed.
     loggedIn = "dalia@dentclinic.test";
     await expect(login("dalia", "secret")).resolves.toBe("dalia@dentclinic.test");
@@ -173,9 +173,9 @@ test("a login check that fails for another reason is explained as it is", async 
     const error = await login("dalia", "secret").catch((err: unknown) => err);
     expect(errorMessage(error)).toBe("The clinic server is not answering. Please try again in a moment.");
     answer = "twoFactor";
-    await expect(login("dalia", "secret")).rejects.toThrow(TWO_FACTOR_MESSAGE);
+    await expect(login("dalia", "secret")).rejects.toThrow(twoFactorMessage());
     answer = "passwordReset";
-    await expect(login("dalia", "secret")).rejects.toThrow(PASSWORD_RESET_MESSAGE);
+    await expect(login("dalia", "secret")).rejects.toThrow(passwordResetMessage());
   } finally {
     restore();
   }

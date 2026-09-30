@@ -1,0 +1,34 @@
+import { num, plural } from "../runtime";
+
+/** The shared building blocks (src/components/ui): loading, errors, paging, dialogs, pickers. */
+export const ui = {
+  loading: "Loading...",
+  tryAgain: "Try Again",
+  clearFilters: "Clear Filters",
+  clearSearch: "Clear search",
+  clear: "Clear",
+  close: "Close",
+  confirm: "Confirm",
+  cancel: "Cancel",
+  previousPage: "Previous page",
+  nextPage: "Next page",
+  records: (n: number) => plural(n, { one: "# record", other: "# records" }),
+  /** "21–40 of 57" */
+  range: (from: number, to: number, total: number) => `${num(from)}–${num(to)} of ${num(total)}`,
+  pageOf: (page: number, pages: number) => `Page ${num(page)} of ${num(pages)}`,
+  noAccessTitle: "You do not have access to this page",
+  noAccessText: "Ask a clinic manager to turn on the permission for you under Users.",
+  goToDashboard: "Go to Dashboard",
+  /** `what` is the record type, e.g. "Patient". */
+  notFound: (what: string) => `${what} not found`,
+  couldNotOpen: (what: string) => `Could not open this ${what.toLowerCase()}`,
+  notFoundText: "It may have been deleted, or the link is wrong.",
+  searchPlaceholder: "Search...",
+  searching: "Searching...",
+  noMatches: "No matches",
+  nothingYet: "Nothing to show yet.",
+  required: "Required",
+  listLoadFailed: "Could not load the list.",
+  closeMessage: "Close message",
+  nobodyLoggedIn: "Nobody is logged in.",
+};

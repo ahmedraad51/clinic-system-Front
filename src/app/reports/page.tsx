@@ -8,21 +8,17 @@ import {
   Button, Card, EmptyState, LoadError, PageContainer, PageHeader, PageLoading, SelectInput, StatCard,
   StatusBadge, Table, TableMessage, Td, TextInput, Th, Toolbar,
 } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
+import { label, messages, num } from "@/i18n";
 import { errorMessage, getList, type FilterRow } from "@/lib/frappe";
 import { addDays, downloadCsv, formatDate, formatMonth, monthStart, todayISO } from "@/lib/format";
 import { patientHref, paymentHref, treatmentHref } from "@/lib/links";
 import type { Appointment, Payment, TreatmentPlan } from "@/lib/types";
 
-const RANGES = [
-  { value: "this_month", label: "This month" },
-  { value: "last_month", label: "Last month" },
-  { value: "last_3_months", label: "Last 3 months" },
-  { value: "this_year", label: "This year" },
-  { value: "all", label: "All time" },
-  { value: "custom", label: "Custom dates" },
-] as const;
-type Range = (typeof RANGES)[number]["value"];
+/** The period picker; the labels are t.reports.ranges[value]. */
+const RANGES = ["this_month", "last_month", "last_3_months", "this_year", "all", "custom"] as const;
+type Range = (typeof RANGES)[number];
 
 /** [from, to] as ISO dates; empty strings mean no limit. */
 function rangeDates(range: Range, customFrom: string, customTo: string): [string, string] {
@@ -68,6 +64,8 @@ export default function ReportsPage() {
 }
 
 function Reports() {
+  const { t } = useI18n();
+  const r = t.reports;
   const { settings, money } = useSettings();
   const [range, setRange] = useState<Range>("this_month");
   const [customFrom, setCustomFrom] = useState("");
@@ -116,7 +114,7 @@ function Reports() {
         }
       } catch (err) {
         console.error(err);
-        if (!cancelled) setFailed(errorMessage(err, "Could not load the reports."));
+        if (!cancelled) setFailed(errorMessage(err, messages().reports.loadFailed));
       }
     };
     load();
@@ -131,8 +129,8 @@ function Reports() {
         <Card>
           <EmptyState
             icon={TrendingUp}
-            title="Financial reports are turned off"
-            text="A manager can turn them on again under Settings."
+            title={r.offTitle}
+            text={r.offText}
           />
         </Card>
       </PageContainer>
@@ -147,7 +145,7 @@ function Reports() {
   if (!data)
     return failed ? (
       <PageContainer>
-        <PageHeader title="Reports" />
+        <PageHeader title={r.shortTitle} />
         <LoadError message={failed} onRetry={retry} />
       </PageContainer>
     ) : (
@@ -158,13 +156,18 @@ function Reports() {
   const payments = data.payments;
   const revenue = payments.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
   const outstandingTotal = data.outstanding.reduce((sum, row) => sum + (Number(row.remaining_amount) || 0), 0);
-  const byType = groupSum(payments, (row) => row.treatment_type || "No treatment plan").sort((a, b) => b[1] - a[1]);
-  const byMethod = groupSum(payments, (row) => row.payment_method || "Other").sort((a, b) => b[1] - a[1]);
+  // Grouped by the label shown, so saved English values appear in the screen's language.
+  const byType = groupSum(payments, (row) =>
+    row.treatment_type ? label(t.enums.treatmentType, row.treatment_type) : r.noPlan,
+  ).sort((a, b) => b[1] - a[1]);
+  const byMethod = groupSum(payments, (row) =>
+    row.payment_method ? label(t.enums.paymentMethod, row.payment_method) : r.otherMethod,
+  ).sort((a, b) => b[1] - a[1]);
   const byMonth = groupSum(payments, (row) => (row.payment_date || "").slice(0, 7))
     .sort((a, b) => (a[0] < b[0] ? 1 : -1))
     .map(([month, total]): [string, number] => [formatMonth(month), total]);
   const byDoctor = groupSum(payments, (row) =>
-    row.treatment_plan ? data.planDoctors[row.treatment_plan] || "No doctor on the plan" : "General payments",
+    row.treatment_plan ? data.planDoctors[row.treatment_plan] || r.noDoctor : r.generalPayments,
   ).sort((a, b) => b[1] - a[1]);
   const outcome = (status: string) => data.appointments.filter((a) => a.status === status).length;
   const completed = outcome("Completed");
@@ -172,96 +175,103 @@ function Reports() {
   const cancelledVisits = outcome("Cancelled");
   const stillOpen = outcome("Scheduled") + outcome("Confirmed");
   const noShowRate = completed + noShows > 0 ? Math.round((noShows / (completed + noShows)) * 100) : null;
-  const rangeLabel = from || to ? `${from ? formatDate(from) : "the start"} to ${to ? formatDate(to) : "today"}` : "all time";
+  const rangeLabel =
+    from || to ? r.rangeText(from ? formatDate(from) : r.theStart, to ? formatDate(to) : r.today) : r.allTime;
 
   const exportPayments = () =>
     downloadCsv(
       `payments-${from || "start"}-to-${to || "today"}.csv`,
-      ["Payment", "Date", "Patient", "Treatment", "Method", "Amount"],
+      r.csvPayments,
       payments.map((row) => [
-        row.name, row.payment_date, row.patient_name || row.patient, row.treatment_type || "", row.payment_method, Number(row.amount) || 0,
+        row.name,
+        row.payment_date,
+        row.patient_name || row.patient,
+        label(t.enums.treatmentType, row.treatment_type),
+        label(t.enums.paymentMethod, row.payment_method),
+        Number(row.amount) || 0,
       ]),
     );
 
   const exportOutstanding = () =>
     downloadCsv(
       `outstanding-${todayISO()}.csv`,
-      ["Plan", "Patient", "Treatment", "Tooth", "Status", "Total Cost", "Paid", "Remaining"],
+      r.csvOutstanding,
       data.outstanding.map((row) => [
-        row.name, row.patient_name || row.patient, row.treatment_type, row.tooth_number || "", row.status,
+        row.name, row.patient_name || row.patient, label(t.enums.treatmentType, row.treatment_type), row.tooth_number || "",
+        label(t.enums.treatmentStatus, row.status),
         Number(row.total_cost) || 0, Number(row.paid_amount) || 0, Number(row.remaining_amount) || 0,
       ]),
     );
 
   return (
     <PageContainer>
-      <PageHeader title="Financial Reports" subtitle={`Payments from ${rangeLabel}. Outstanding balances are always as of today.`} />
+      <PageHeader title={r.title} subtitle={r.subtitle(rangeLabel)} />
 
       <Toolbar>
-        <SelectInput value={range} onChange={(e) => setRange(e.target.value as Range)} className="sm:w-48" aria-label="Period">
-          {RANGES.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
+        <SelectInput value={range} onChange={(e) => setRange(e.target.value as Range)} className="sm:w-48" aria-label={r.period}>
+          {RANGES.map((value) => (
+            <option key={value} value={value}>
+              {r.ranges[value]}
             </option>
           ))}
         </SelectInput>
         {range === "custom" && (
           <div className="flex items-center gap-2">
-            <TextInput type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} aria-label="From date" className="sm:w-40" />
-            <span className="text-gray-500 text-sm">to</span>
-            <TextInput type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} aria-label="To date" className="sm:w-40" />
+            <TextInput type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} aria-label={r.fromDate} className="sm:w-40" />
+            <span className="text-gray-500 text-sm">{r.to}</span>
+            <TextInput type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} aria-label={r.toDate} className="sm:w-40" />
           </div>
         )}
       </Toolbar>
 
       <div className={stale ? "opacity-60 transition-opacity space-y-6" : "space-y-6"}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Revenue" value={money(revenue)} icon={TrendingUp} tone="primary" />
-          <StatCard title="Payments" value={payments.length} icon={CreditCard} tone="purple" />
+          <StatCard title={r.revenue} value={money(revenue)} icon={TrendingUp} tone="primary" />
+          <StatCard title={r.payments} value={num(payments.length)} icon={CreditCard} tone="purple" />
           <StatCard
-            title="Average payment"
+            title={r.average}
             value={money(payments.length ? revenue / payments.length : 0)}
             icon={Receipt}
             tone="green"
           />
-          <StatCard title="Outstanding" value={money(outstandingTotal)} icon={AlertCircle} tone="red" hint="All open plans" />
+          <StatCard title={r.outstanding} value={money(outstandingTotal)} icon={AlertCircle} tone="red" hint={r.outstandingHint} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card title="Revenue by Treatment">
-            <Bars rows={byType} money={money} empty="No payments in this period." />
+          <Card title={r.byTreatment}>
+            <Bars rows={byType} money={money} empty={r.noPayments} />
           </Card>
-          <Card title="Revenue by Method">
-            <Bars rows={byMethod} money={money} empty="No payments in this period." />
+          <Card title={r.byMethod}>
+            <Bars rows={byMethod} money={money} empty={r.noPayments} />
           </Card>
-          <Card title="Revenue by Month">
-            <Bars rows={byMonth} money={money} empty="No payments in this period." />
+          <Card title={r.byMonth}>
+            <Bars rows={byMonth} money={money} empty={r.noPayments} />
           </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card title="Revenue by Doctor">
-            <Bars rows={byDoctor} money={money} empty="No payments in this period." />
+          <Card title={r.byDoctor}>
+            <Bars rows={byDoctor} money={money} empty={r.noPayments} />
           </Card>
-          <Card title="Appointments">
+          <Card title={r.appointments}>
             {data.appointments.length === 0 ? (
-              <p className="text-sm text-gray-500">No appointments in this period.</p>
+              <p className="text-sm text-gray-500">{r.noAppointments}</p>
             ) : (
               <div className="space-y-4">
                 <div className="flex items-baseline gap-2">
                   <span className={noShowRate !== null && noShowRate >= 15 ? "text-3xl font-bold text-red-600" : "text-3xl font-bold text-gray-800"}>
-                    {noShowRate === null ? "—" : `${noShowRate}%`}
+                    {noShowRate === null ? t.common.dash : r.rate(noShowRate)}
                   </span>
-                  <span className="text-sm text-gray-500">no-show rate (no-shows out of visits that were due)</span>
+                  <span className="text-sm text-gray-500">{r.rateText}</span>
                 </div>
                 <Bars
                   rows={[
-                    ["Completed", completed],
-                    ["No show", noShows],
-                    ["Cancelled", cancelledVisits],
-                    ["Still open (not marked)", stillOpen],
+                    [r.completed, completed],
+                    [r.noShow, noShows],
+                    [r.cancelled, cancelledVisits],
+                    [r.stillOpen, stillOpen],
                   ]}
-                  money={(n) => String(n)}
+                  money={(n) => num(n)}
                   empty=""
                 />
               </div>
@@ -270,12 +280,12 @@ function Reports() {
         </div>
 
         <Card
-          title="Payments in this Period"
+          title={r.latestTitle}
           flush
           actions={
             payments.length > 0 && (
               <Button size="sm" variant="secondary" icon={Download} onClick={exportPayments}>
-                Export CSV
+                {r.exportCsv}
               </Button>
             )
           }
@@ -283,16 +293,16 @@ function Reports() {
           <Table>
             <thead>
               <tr>
-                <Th>Date</Th>
-                <Th>Patient</Th>
-                <Th>Treatment</Th>
-                <Th>Method</Th>
-                <Th className="text-end">Amount</Th>
+                <Th>{r.colDate}</Th>
+                <Th>{r.colPatient}</Th>
+                <Th>{r.colTreatment}</Th>
+                <Th>{r.colMethod}</Th>
+                <Th className="text-end">{r.colAmount}</Th>
               </tr>
             </thead>
             <tbody>
               {payments.length === 0 ? (
-                <TableMessage colSpan={5}>No payments in this period.</TableMessage>
+                <TableMessage colSpan={5}>{r.noPayments}</TableMessage>
               ) : (
                 payments.slice(0, 10).map((row) => (
                   <tr key={row.name} className="hover:bg-gray-50">
@@ -301,35 +311,33 @@ function Reports() {
                         {formatDate(row.payment_date)}
                       </Link>
                     </Td>
-                    <Td label="Patient">
+                    <Td label={r.colPatient}>
                       <Link href={patientHref(row.patient)} className="text-gray-700 hover:text-primary-600">
                         {row.patient_name || row.patient}
                       </Link>
                     </Td>
-                    <Td label="Treatment">{row.treatment_type || "—"}</Td>
-                    <Td label="Method">
+                    <Td label={r.colTreatment}>{row.treatment_type ? label(t.enums.treatmentType, row.treatment_type) : t.common.dash}</Td>
+                    <Td label={r.colMethod}>
                       <StatusBadge kind="method" status={row.payment_method} />
                     </Td>
-                    <Td label="Amount" className="text-end font-medium text-green-600 whitespace-nowrap">{money(row.amount)}</Td>
+                    <Td label={r.colAmount} className="text-end font-medium text-green-600 whitespace-nowrap">{money(row.amount)}</Td>
                   </tr>
                 ))
               )}
             </tbody>
           </Table>
           {payments.length > 10 && (
-            <p className="px-5 py-3 text-xs text-gray-500">
-              Showing the latest 10 of {payments.length}. Export CSV for the full list.
-            </p>
+            <p className="px-5 py-3 text-xs text-gray-500">{r.showingLatest(10, payments.length)}</p>
           )}
         </Card>
 
         <Card
-          title="Outstanding Balances"
+          title={r.outstandingTitle}
           flush
           actions={
             data.outstanding.length > 0 && (
               <Button size="sm" variant="secondary" icon={Download} onClick={exportOutstanding}>
-                Export CSV
+                {r.exportCsv}
               </Button>
             )
           }
@@ -337,17 +345,17 @@ function Reports() {
           <Table>
             <thead>
               <tr>
-                <Th>Patient</Th>
-                <Th>Treatment</Th>
-                <Th>Status</Th>
-                <Th className="text-end">Total Cost</Th>
-                <Th className="text-end">Paid</Th>
-                <Th className="text-end">Remaining</Th>
+                <Th>{r.colPatient}</Th>
+                <Th>{r.colTreatment}</Th>
+                <Th>{r.colStatus}</Th>
+                <Th className="text-end">{r.colTotalCost}</Th>
+                <Th className="text-end">{r.colPaid}</Th>
+                <Th className="text-end">{r.colRemaining}</Th>
               </tr>
             </thead>
             <tbody>
               {data.outstanding.length === 0 ? (
-                <TableMessage colSpan={6}>No outstanding balances.</TableMessage>
+                <TableMessage colSpan={6}>{r.noOutstanding}</TableMessage>
               ) : (
                 data.outstanding.map((row) => (
                   <tr key={row.name} className="hover:bg-gray-50">
@@ -356,18 +364,18 @@ function Reports() {
                         {row.patient_name || row.patient}
                       </Link>
                     </Td>
-                    <Td label="Treatment">
+                    <Td label={r.colTreatment}>
                       <Link href={treatmentHref(row.name)} className="text-gray-700 hover:text-primary-600">
-                        {row.treatment_type}
+                        {label(t.enums.treatmentType, row.treatment_type)}
                         {row.tooth_number ? ` · ${row.tooth_number}` : ""}
                       </Link>
                     </Td>
-                    <Td label="Status">
+                    <Td label={r.colStatus}>
                       <StatusBadge kind="treatment" status={row.status} />
                     </Td>
-                    <Td label="Total Cost" className="text-end whitespace-nowrap">{money(row.total_cost)}</Td>
-                    <Td label="Paid" className="text-end whitespace-nowrap text-green-600">{money(row.paid_amount)}</Td>
-                    <Td label="Remaining" className="text-end whitespace-nowrap font-semibold text-red-600">{money(row.remaining_amount)}</Td>
+                    <Td label={r.colTotalCost} className="text-end whitespace-nowrap">{money(row.total_cost)}</Td>
+                    <Td label={r.colPaid} className="text-end whitespace-nowrap text-green-600">{money(row.paid_amount)}</Td>
+                    <Td label={r.colRemaining} className="text-end whitespace-nowrap font-semibold text-red-600">{money(row.remaining_amount)}</Td>
                   </tr>
                 ))
               )}
@@ -375,12 +383,12 @@ function Reports() {
             {data.outstanding.length > 0 && (
               <tfoot>
                 <tr>
-                  <Td className="font-semibold text-gray-800">Total</Td>
+                  <Td className="font-semibold text-gray-800">{r.total}</Td>
                   <Td />
                   <Td />
                   <Td />
                   <Td />
-                  <Td label="Remaining" className="text-end whitespace-nowrap font-bold text-red-600">{money(outstandingTotal)}</Td>
+                  <Td label={r.colRemaining} className="text-end whitespace-nowrap font-bold text-red-600">{money(outstandingTotal)}</Td>
                 </tr>
               </tfoot>
             )}
@@ -405,10 +413,10 @@ function Bars({
   const max = Math.max(...rows.map(([, amount]) => amount));
   return (
     <div className="space-y-3">
-      {rows.map(([label, amount]) => (
-        <div key={label}>
+      {rows.map(([name, amount]) => (
+        <div key={name}>
           <div className="flex justify-between gap-3 text-sm mb-1">
-            <span className="text-gray-600 font-medium truncate">{label}</span>
+            <span className="text-gray-600 font-medium truncate">{name}</span>
             <span className="text-gray-800 font-semibold whitespace-nowrap">{money(amount)}</span>
           </div>
           <div className="w-full bg-gray-100 rounded-full h-2">

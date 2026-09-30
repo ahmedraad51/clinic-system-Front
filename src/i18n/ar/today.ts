@@ -1,0 +1,58 @@
+import type { Messages } from "../en";
+import { num, plural } from "../runtime";
+
+export const today: Messages["today"] = {
+  title: "اليوم",
+  titleMine: "يومي",
+  whose: "مرضى من",
+  dayReport: "تقرير اليوم",
+  walkIn: "مراجع بدون موعد",
+  loadFailed: "تعذّر تحميل مواعيد اليوم.",
+  statusFailed: "تعذّر تغيير الحالة.",
+  statusChanged: (patient: string, status: string) => `${patient}: ${status}.`,
+  counts: {
+    toCome: "لم يحضروا بعد",
+    late: "متأخرون",
+    completed: "تمّت",
+    noShow: "لم يحضروا",
+  },
+  noneMine: "ليس لديك مرضى اليوم",
+  none: "لا توجد مواعيد اليوم",
+  noneText: "يمكن حجز المراجعين بدون موعد من الزر في الأعلى.",
+  openWeek: "عرض الأسبوع",
+  groupSummary: (toCome: number, total: number) =>
+    `${plural(toCome, { zero: "لم يبقَ أحد", one: "بقي موعد واحد", two: "بقي موعدان", few: "بقيت # مواعيد", many: "بقي # موعدًا", other: "بقي # موعد" })} · ${plural(total, { zero: "لا مواعيد اليوم", one: "موعد واحد اليوم", two: "موعدان اليوم", few: "# مواعيد اليوم", many: "# موعدًا اليوم", other: "# موعد اليوم" })}`,
+  minutesLate: (n: number) =>
+    plural(n, { one: "متأخر دقيقة واحدة", two: "متأخر دقيقتين", few: "متأخر # دقائق", many: "متأخر # دقيقة", other: "متأخر # دقيقة" }),
+  appointment: "موعد",
+  owes: (amount: string) => `عليه ${amount}`,
+  confirm: "تأكيد",
+  completed: "تمّ",
+  noShow: "لم يحضر",
+  cancelled: "ملغى",
+  undo: "تراجع",
+  addPayment: "إضافة دفعة",
+  remindersTitle: (toSend: number) => `تذكيرات الغد (للإرسال: ${num(toSend)})`,
+  defaultMessage: "الرسالة الافتراضية",
+  defaultReminder:
+    "مرحبًا {{ patient_name }}، نذكّركم بموعدكم في {{ clinic_name }} يوم {{ appointment_date }} الساعة {{ appointment_time }}.",
+  reminderOpened: "فُتح التذكير",
+  sendReminder: "إرسال تذكير",
+  noPhone: "لا يوجد رقم هاتف",
+  labTitle: (n: number) => `أعمال مختبر مستحقة (${num(n)})`,
+  labHint: "تأكد من عودتها قبل حضور المريض",
+  tooth: (tooth: string) => `السن ${tooth}`,
+  labDue: (date: string) => `موعد الاستلام ${date}`,
+  noDueDate: "بلا موعد استلام",
+  labState: {
+    none: "لم تُرسل",
+    at_lab: "في المختبر",
+    late: "متأخرة من المختبر",
+    received: "عادت من المختبر",
+  },
+  earlierTitle: (n: number) => `مواعيد سابقة لم تُغلق (${num(n)})`,
+  earlierHint: "سجّل ما حدث لتبقى السجلات صحيحة",
+  flagDetail: (flag: string, detail: string) => `${flag}: ${detail}`,
+  listSeparator: "، ",
+  dateTime:(date: string, time: string) => `${date}، ${time}`,
+};

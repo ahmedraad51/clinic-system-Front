@@ -3,6 +3,7 @@
  * save of a doctype with "Track Changes" on, and `frappe.desk.form.load.getdoc` returns the latest ones with the
  * document (see getDocHistory() in frappe.ts). This file turns them into readable lines.
  */
+import { label, localDigits, messages, type Messages } from "@/i18n";
 import { formatDate, formatTime } from "./format";
 import type { DocValue } from "./types";
 
@@ -72,25 +73,6 @@ export function parseDocHistory(
   return { createdBy, createdByName: createdBy ? nameOf(createdBy) : "", createdAt: doc?.creation ?? "", entries };
 }
 
-/** Field labels in the words the screens use. Fields not listed get their name with spaces. */
-const LABELS: Record<string, Record<string, string>> = {
-  Patient: {
-    full_name: "Name", date_of_birth: "Date of birth", phone_number: "Phone", secondary_phone: "Second phone",
-    current_medications: "Current medications", chronic_diseases: "Chronic diseases", medical_history: "Medical history",
-    dental_chart: "Dental chart", next_recall_date: "Next check-up", recall_interval_months: "Check-up every (months)",
-    no_recall: "No recall",
-  },
-  Appointment: {
-    appointment_date: "Date", appointment_time: "Time", duration_minutes: "Length (minutes)", reason_for_visit: "Reason",
-  },
-  "Treatment Plan": {
-    treatment_type: "Treatment", tooth_number: "Tooth", total_cost: "Total cost", treatment_notes: "Notes",
-    lab_name: "Lab", lab_sent_date: "Sent to the lab", lab_due_date: "Due back from the lab",
-    lab_received_date: "Back from the lab",
-  },
-  Payment: { treatment_plan: "Treatment plan", payment_date: "Date", payment_method: "Method" },
-};
-
 /** Fields the server works out or copies from another record: their changes follow from the ones shown. */
 const HIDDEN = new Set([
   "name", "owner", "creation", "modified", "modified_by", "idx", "docstatus",
@@ -102,6 +84,19 @@ const HIDDEN_FOR: Record<string, string[]> = { Payment: ["treatment_type"] };
 
 const MONEY_FIELDS = new Set(["amount", "total_cost"]);
 const CHECK_FIELDS = new Set(["no_recall", "is_active", "enabled"]);
+/** Fields that hold a fixed value saved in English: shown with its label in the current language. */
+const ENUM_FIELDS: Record<string, keyof Messages["enums"]> = {
+  gender: "gender",
+  payment_method: "paymentMethod",
+  treatment_type: "treatmentType",
+  // A Payment's plan is shown by its treatment type (readableChanges); an ID is left as it is.
+  treatment_plan: "treatmentType",
+};
+const STATUS_ENUMS: Record<string, keyof Messages["enums"]> = {
+  Appointment: "appointmentStatus",
+  "Treatment Plan": "treatmentStatus",
+  "Treatment Session": "sessionStatus",
+};
 /** Too long or not text: say it changed, without the values. */
 const WITHOUT_VALUES = new Set(["dental_chart"]);
 
@@ -126,19 +121,24 @@ export function readableChanges(doctype: string, changes: HistoryChange[]): Hist
   return changes
     .filter((change) => isShownChange(doctype, change.field))
     .map((change) => {
-      const label = labels[change.field] ? byField.get(labels[change.field]) : undefined;
-      if (!label) return change;
+      const named = labels[change.field] ? byField.get(labels[change.field]) : undefined;
+      if (!named) return change;
       return {
         field: change.field,
-        from: isEmptyValue(label.from) ? change.from : label.from,
-        to: isEmptyValue(label.to) ? change.to : label.to,
+        from: isEmptyValue(named.from) ? change.from : named.from,
+        to: isEmptyValue(named.to) ? change.to : named.to,
       };
     });
 }
 
+/**
+ * A field's name in the words the screens use (the translations: history.fieldsFor, then history.fields). Fields
+ * not listed get their name with spaces.
+ */
 export function fieldLabel(doctype: string, field: string): string {
-  const label = LABELS[doctype]?.[field];
-  if (label) return label;
+  const t = messages().history;
+  const name = t.fieldsFor[doctype]?.[field] ?? t.fields[field];
+  if (name) return name;
   const words = field.replace(/_/g, " ");
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
@@ -173,18 +173,28 @@ function isYes(value: DocValue): boolean {
 }
 
 /**
- * One value the way the screens show it: money, yes/no, times and ISO dates are formatted; a line break that
- * Frappe wrote as "<br>" becomes a real one; anything else (a date in the site's own format, "20-08-2026") is
- * shown as it came. "—" for empty.
+ * One value the way the screens show it, in the current language: money, yes/no, times and ISO dates are
+ * formatted, fixed values (a status, a payment method …) get their label, and numbers follow the digit setting; a
+ * line break that Frappe wrote as "<br>" becomes a real one; anything else (a date in the site's own format,
+ * "20-08-2026") is shown as it came. "—" for empty. `doctype` picks the right status labels.
  */
-export function historyValue(field: string, value: DocValue, money: (amount: number | string) => string): string {
-  if (isEmptyValue(value)) return "—";
+export function historyValue(
+  field: string,
+  value: DocValue,
+  money: (amount: number | string) => string,
+  doctype?: string,
+): string {
+  const t = messages();
+  if (isEmptyValue(value)) return t.common.dash;
   if (MONEY_FIELDS.has(field)) {
     const amount = numberOf(value);
     return amount === null ? String(value) : money(amount);
   }
-  if (CHECK_FIELDS.has(field)) return isYes(value) ? "Yes" : "No";
+  if (CHECK_FIELDS.has(field)) return isYes(value) ? t.common.yes : t.common.no;
   if (typeof value === "object") return JSON.stringify(value);
+  if (typeof value === "number") return localDigits(String(value));
+  const list = field === "status" && doctype ? STATUS_ENUMS[doctype] : ENUM_FIELDS[field];
+  if (list) return label(t.enums[list] as Record<string, string>, String(value));
   const text = String(value).replace(/<br\s*\/?>/gi, "\n");
   if (field.endsWith("_time")) return formatTime(text);
   if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return formatDate(text);

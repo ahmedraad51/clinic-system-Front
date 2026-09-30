@@ -19,9 +19,11 @@ import {
   PageContainer, PageHeader, PageLoading, RecordLoading, StatusBadge, Table, Tabs, Td, Th, type Hue,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
+import { label, messages } from "@/i18n";
 import { deleteDoc, errorMessage, getList, updateDoc, type FilterRow } from "@/lib/frappe";
 import { addMonths, display, formatDate, formatMonth, formatTime, todayISO } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
@@ -52,6 +54,8 @@ export default function PatientDetailPage() {
 const isBooked = (a: Appointment) => a.status === "Scheduled" || a.status === "Confirmed";
 
 function PatientDetail() {
+  const { t } = useI18n();
+  const p = t.patients;
   const params = useParams();
   const router = useRouter();
   const toast = useToast();
@@ -120,7 +124,7 @@ function PatientDetail() {
         }
       } catch (err) {
         console.error(err);
-        if (!cancelled) setRelatedError(errorMessage(err, "Could not load this patient's visits and payments."));
+        if (!cancelled) setRelatedError(errorMessage(err, messages().patients.relatedLoadFailed));
       }
     };
     load();
@@ -130,7 +134,7 @@ function PatientDetail() {
   }, [id, showAppointments, showTreatments, showPayments, relatedVersion]);
 
   if (loading) return <RecordLoading />;
-  if (notFound || !patient) return <NotFoundCard error={error} what="Patient" backHref="/patients" backLabel="Back to Patients" />;
+  if (notFound || !patient) return <NotFoundCard error={error} what={p.what} backHref="/patients" backLabel={p.backToPatients} />;
 
   const data = related && related.id === id ? related : null;
   const relatedWaiting = relatedError ? (
@@ -152,10 +156,10 @@ function PatientDetail() {
     setDeleting(true);
     try {
       await deleteDoc("Patient", id);
-      toast.success(`${patient.full_name} was deleted.`);
+      toast.success(p.deleted(patient.full_name));
       router.push("/patients");
     } catch (err) {
-      toast.error(errorMessage(err, "Could not delete the patient."));
+      toast.error(errorMessage(err, p.deleteFailed));
       setDeleting(false);
       setConfirmDelete(false);
     }
@@ -164,10 +168,10 @@ function PatientDetail() {
   const saveChart = async (chart: DentalChartData) => {
     try {
       await updateDoc("Patient", id, { dental_chart: JSON.stringify(chart) });
-      toast.success("Dental chart saved.");
+      toast.success(p.chartSaved);
       reload();
     } catch (err) {
-      toast.error(errorMessage(err, "Could not save the dental chart."));
+      toast.error(errorMessage(err, p.chartSaveFailed));
       throw err;
     }
   };
@@ -180,17 +184,18 @@ function PatientDetail() {
   const nextVisit = [...(data?.appointments ?? [])].reverse().find((a) => a.appointment_date >= today && isBooked(a));
 
   const tabs: Array<{ key: TabKey; label: string; count?: number }> = [
-    { key: "overview", label: "Overview" },
-    ...(showAppointments ? [{ key: "appointments" as const, label: "Appointments", count: data?.appointments.length }] : []),
-    ...(showTreatments ? [{ key: "treatments" as const, label: "Treatment Plans", count: data?.plans.length }] : []),
-    ...(showTreatments ? [{ key: "prescriptions" as const, label: "Prescriptions", count: data?.prescriptions.length }] : []),
-    ...(showPayments ? [{ key: "payments" as const, label: "Payments", count: data?.payments.length }] : []),
-    { key: "chart", label: "Dental Chart" },
-    { key: "files", label: "X-rays & Photos" },
-    { key: "history", label: "History" },
+    { key: "overview", label: p.tabs.overview },
+    ...(showAppointments ? [{ key: "appointments" as const, label: p.tabs.appointments, count: data?.appointments.length }] : []),
+    ...(showTreatments ? [{ key: "treatments" as const, label: p.tabs.treatments, count: data?.plans.length }] : []),
+    ...(showTreatments ? [{ key: "prescriptions" as const, label: p.tabs.prescriptions, count: data?.prescriptions.length }] : []),
+    ...(showPayments ? [{ key: "payments" as const, label: p.tabs.payments, count: data?.payments.length }] : []),
+    { key: "chart", label: p.tabs.chart },
+    { key: "files", label: p.tabs.files },
+    { key: "history", label: p.tabs.history },
   ];
 
-  const subtitle = [patient.age ? `${patient.age} years` : "", patient.gender, patient.name].filter(Boolean).join(" · ");
+  const ageText = patient.age ? t.common.years(Number(patient.age)) : "";
+  const subtitle = [ageText, label(t.enums.gender, patient.gender), patient.name].filter(Boolean).join(t.common.dot);
   const whatsapp = whatsappNumber(patient.phone_number, countryCode);
   const remaining = Number(patient.total_remaining) || 0;
 
@@ -200,22 +205,22 @@ function PatientDetail() {
         title={patient.full_name}
         subtitle={subtitle}
         avatar={<Avatar name={patient.full_name} gender={patient.gender} age={patient.age} size={64} />}
-        back={{ href: "/patients", label: "Patients" }}
+        back={{ href: "/patients", label: p.title }}
         actions={
           <>
             {can("add_appointments") && (
               <LinkButton href={`/appointments/new?patient=${encodeURIComponent(id)}`} icon={CalendarDays}>
-                New Appointment
+                {p.newAppointment}
               </LinkButton>
             )}
             {can("add_treatments") && (
               <LinkButton href={`/treatments/new?patient=${encodeURIComponent(id)}`} variant="secondary" icon={Plus}>
-                New Treatment
+                {p.newTreatment}
               </LinkButton>
             )}
             {can("edit_patients") && (
               <LinkButton href={`${patientHref(id)}/edit`} variant="secondary" icon={Pencil}>
-                Edit
+                {p.edit}
               </LinkButton>
             )}
             {can("delete_patients") && (
@@ -223,8 +228,8 @@ function PatientDetail() {
                 variant="ghost"
                 icon={Trash2}
                 onClick={() => setConfirmDelete(true)}
-                aria-label="Delete patient"
-                title="Delete patient"
+                aria-label={p.deletePatient}
+                title={p.deletePatient}
                 className="text-red-600 hover:bg-red-50 px-3"
               />
             )}
@@ -243,7 +248,7 @@ function PatientDetail() {
               className="inline-flex items-center gap-2 min-h-11 px-4 rounded-xl bg-gray-50 border border-gray-200 text-sm font-medium text-gray-800 hover:bg-gray-100"
             >
               <Phone size={16} className="text-primary-600" />
-              {patient.phone_number}
+              <span dir="ltr">{patient.phone_number}</span>
             </a>
           )}
           {whatsapp && (
@@ -254,7 +259,7 @@ function PatientDetail() {
               className="inline-flex items-center gap-2 min-h-11 px-4 rounded-xl bg-green-50 border border-green-200 text-sm font-medium text-green-800 hover:bg-green-100"
             >
               <MessageCircle size={16} />
-              WhatsApp
+              {p.whatsapp}
             </a>
           )}
           {patient.secondary_phone && (
@@ -263,60 +268,64 @@ function PatientDetail() {
               className="inline-flex items-center gap-2 min-h-11 px-4 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-700 hover:bg-gray-100"
             >
               <Phone size={16} className="text-gray-500" />
-              {patient.secondary_phone}
+              <span dir="ltr">{patient.secondary_phone}</span>
             </a>
           )}
         </div>
 
         <dl className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-x-6 gap-y-4 mt-5 pt-5 border-t border-gray-100">
           {showAppointments && (
-            <Fact icon={History} hue="appointments" label="Last visit">
+            <Fact icon={History} hue="appointments" label={p.lastVisit}>
               {lastVisit ? (
                 <Link href={appointmentHref(lastVisit.name)} className="hover:text-primary-600">
                   {formatDate(lastVisit.appointment_date)}
                   <span className="block text-xs font-normal text-gray-500">{lastVisit.reason_for_visit || lastVisit.doctor_name}</span>
                 </Link>
               ) : data ? (
-                <span className="text-gray-500">None yet</span>
+                <span className="text-gray-500">{p.noneYet}</span>
               ) : (
                 "…"
               )}
             </Fact>
           )}
           {showAppointments && (
-            <Fact icon={CalendarClock} hue="appointments" label="Next appointment">
+            <Fact icon={CalendarClock} hue="appointments" label={p.nextAppointment}>
               {nextVisit ? (
                 <Link href={appointmentHref(nextVisit.name)} className="hover:text-primary-600">
-                  {nextVisit.appointment_date === today ? "Today" : formatDate(nextVisit.appointment_date)},{" "}
-                  {formatTime(nextVisit.appointment_time)}
+                  {t.dates.dateTime(
+                    nextVisit.appointment_date === today ? p.today : formatDate(nextVisit.appointment_date),
+                    formatTime(nextVisit.appointment_time),
+                  )}
                   <span className="block text-xs font-normal text-gray-500">{nextVisit.doctor_name}</span>
                 </Link>
               ) : data ? (
-                <span className="text-gray-500">Not booked</span>
+                <span className="text-gray-500">{p.notBooked}</span>
               ) : (
                 "…"
               )}
             </Fact>
           )}
-          <Fact icon={BellRing} hue="patients" label="Next check-up">
+          <Fact icon={BellRing} hue="patients" label={p.nextCheckUp}>
             {Number(patient.no_recall) === 1 ? (
-              <span className="text-gray-500">No recall</span>
+              <span className="text-gray-500">{p.noRecall}</span>
             ) : patient.next_recall_date ? (
               <>
                 <span className={patient.next_recall_date <= today ? "text-red-600" : undefined}>
                   {formatDate(patient.next_recall_date)}
-                  {patient.next_recall_date <= today && " (due)"}
+                  {patient.next_recall_date <= today && p.due}
                 </span>
                 {Number(patient.recall_interval_months) > 0 && (
-                  <span className="block text-xs font-normal text-gray-500">Every {patient.recall_interval_months} months</span>
+                  <span className="block text-xs font-normal text-gray-500">
+                    {t.recall.choiceEvery(Number(patient.recall_interval_months))}
+                  </span>
                 )}
               </>
             ) : (
               <>
-                <span className="text-gray-500">Usual rule</span>
+                <span className="text-gray-500">{p.usualRule}</span>
                 {lastVisit && (
                   <span className="block text-xs font-normal text-gray-500">
-                    About {formatDate(addMonths(lastVisit.appointment_date, DEFAULT_RECALL_MONTHS))}
+                    {p.about(formatDate(addMonths(lastVisit.appointment_date, DEFAULT_RECALL_MONTHS)))}
                   </span>
                 )}
               </>
@@ -327,26 +336,26 @@ function PatientDetail() {
                 onClick={() => setEditingRecall(true)}
                 className="block text-xs font-medium text-primary-700 hover:underline pointer-coarse:min-h-11"
               >
-                Change
-                <span className="sr-only"> the next check-up</span>
+                {p.change}
+                <span className="sr-only">{p.changeCheckUp}</span>
               </button>
             )}
           </Fact>
           {showPayments && (
-            <Fact icon={Wallet} hue={remaining > 0 ? "red" : "money"} label="Balance to pay">
+            <Fact icon={Wallet} hue={remaining > 0 ? "red" : "money"} label={p.balanceToPay}>
               <span className={remaining > 0 ? "text-red-600" : "text-gray-500"}>{money(remaining)}</span>
               {remaining > 0 && can("add_payments") && (
                 <Link
                   href={`/payments/new?patient=${encodeURIComponent(id)}`}
                   className="block text-xs font-medium text-primary-700 hover:underline"
                 >
-                  Add payment
+                  {p.addPayment}
                 </Link>
               )}
             </Fact>
           )}
           {showPayments && (
-            <Fact icon={CreditCard} hue="money" label="Paid so far">
+            <Fact icon={CreditCard} hue="money" label={p.paidSoFar}>
               {money(patient.total_paid)}
             </Fact>
           )}
@@ -357,29 +366,33 @@ function PatientDetail() {
 
       {tab === "overview" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <Card title="Timeline" icon={History} section="patients" className="lg:col-span-2">
+          <Card title={p.timeline} icon={History} section="patients" className="lg:col-span-2">
             {!data ? relatedWaiting : <Timeline data={data} today={today} money={money} />}
           </Card>
           <div className="space-y-6">
-            <Card title="Contact and Basic Information" icon={IdCard} section="patients">
+            <Card title={p.contactCard} icon={IdCard} section="patients">
               <DetailList>
-                <DetailRow label="Patient ID">{patient.name}</DetailRow>
-                <DetailRow label="Gender">{patient.gender}</DetailRow>
-                <DetailRow label="Date of Birth">{patient.date_of_birth ? formatDate(patient.date_of_birth) : ""}</DetailRow>
-                <DetailRow label="Age">{patient.age ? `${patient.age} years` : ""}</DetailRow>
-                <DetailRow label="Phone">{patient.phone_number}</DetailRow>
-                <DetailRow label="Secondary Phone">{patient.secondary_phone}</DetailRow>
-                <DetailRow label="Email">{patient.email}</DetailRow>
-                <DetailRow label="Address">{patient.address}</DetailRow>
+                <DetailRow label={p.patientId}>
+                  <span dir="ltr">{patient.name}</span>
+                </DetailRow>
+                <DetailRow label={p.gender}>{label(t.enums.gender, patient.gender)}</DetailRow>
+                <DetailRow label={p.dateOfBirth}>{patient.date_of_birth ? formatDate(patient.date_of_birth) : ""}</DetailRow>
+                <DetailRow label={p.age}>{ageText}</DetailRow>
+                <DetailRow label={p.phone}>{patient.phone_number ? <span dir="ltr">{patient.phone_number}</span> : ""}</DetailRow>
+                <DetailRow label={p.secondaryPhone}>
+                  {patient.secondary_phone ? <span dir="ltr">{patient.secondary_phone}</span> : ""}
+                </DetailRow>
+                <DetailRow label={p.email}>{patient.email ? <span dir="ltr">{patient.email}</span> : ""}</DetailRow>
+                <DetailRow label={p.address}>{patient.address}</DetailRow>
               </DetailList>
             </Card>
-            <Card title="Medical Information" icon={HeartPulse} section="red">
+            <Card title={p.medicalCard} icon={HeartPulse} section="red">
               <DetailList>
-                <DetailRow label="Allergies">{patient.allergies}</DetailRow>
-                <DetailRow label="Current Medications">{patient.current_medications}</DetailRow>
-                <DetailRow label="Chronic Diseases">{patient.chronic_diseases}</DetailRow>
-                <DetailRow label="Medical History">{patient.medical_history}</DetailRow>
-                <DetailRow label="Notes">{patient.notes}</DetailRow>
+                <DetailRow label={p.allergies}>{patient.allergies}</DetailRow>
+                <DetailRow label={p.currentMedications}>{patient.current_medications}</DetailRow>
+                <DetailRow label={p.chronicDiseases}>{patient.chronic_diseases}</DetailRow>
+                <DetailRow label={p.medicalHistory}>{patient.medical_history}</DetailRow>
+                <DetailRow label={p.notes}>{patient.notes}</DetailRow>
               </DetailList>
             </Card>
           </div>
@@ -393,11 +406,11 @@ function PatientDetail() {
           ) : data.appointments.length === 0 ? (
             <EmptyState
               icon={Calendar}
-              title="No appointments yet"
+              title={p.noAppointments}
               action={
                 can("add_appointments") && (
                   <LinkButton href={`/appointments/new?patient=${encodeURIComponent(id)}`} icon={Plus}>
-                    New Appointment
+                    {p.newAppointment}
                   </LinkButton>
                 )
               }
@@ -406,11 +419,11 @@ function PatientDetail() {
             <Table>
               <thead>
                 <tr>
-                  <Th>Date</Th>
-                  <Th>Time</Th>
-                  <Th>Doctor</Th>
-                  <Th>Reason</Th>
-                  <Th>Status</Th>
+                  <Th>{p.date}</Th>
+                  <Th>{p.time}</Th>
+                  <Th>{p.doctor}</Th>
+                  <Th>{p.reason}</Th>
+                  <Th>{p.status}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -421,10 +434,10 @@ function PatientDetail() {
                         {formatDate(a.appointment_date)}
                       </Link>
                     </Td>
-                    <Td label="Time" className="whitespace-nowrap">{formatTime(a.appointment_time)}</Td>
-                    <Td label="Doctor">{display(a.doctor_name)}</Td>
-                    <Td label="Reason">{display(a.reason_for_visit)}</Td>
-                    <Td label="Status">
+                    <Td label={p.time} className="whitespace-nowrap">{formatTime(a.appointment_time)}</Td>
+                    <Td label={p.doctor}>{display(a.doctor_name)}</Td>
+                    <Td label={p.reason}>{display(a.reason_for_visit)}</Td>
+                    <Td label={p.status}>
                       <StatusBadge kind="appointment" status={a.status} />
                     </Td>
                   </ClickableRow>
@@ -438,7 +451,7 @@ function PatientDetail() {
       {tab === "treatments" && data?.plans.some((plan) => plan.status === "Planned" || plan.status === "In Progress") && (
         <div className="flex justify-end -mt-2">
           <LinkButton href={`${patientHref(id)}/estimate`} variant="secondary" size="sm" icon={Printer}>
-            Print estimate
+            {p.printEstimate}
           </LinkButton>
         </div>
       )}
@@ -450,11 +463,11 @@ function PatientDetail() {
           ) : data.plans.length === 0 ? (
             <EmptyState
               icon={Stethoscope}
-              title="No treatment plans yet"
+              title={p.noPlans}
               action={
                 can("add_treatments") && (
                   <LinkButton href={`/treatments/new?patient=${encodeURIComponent(id)}`} icon={Plus}>
-                    New Treatment
+                    {p.newTreatment}
                   </LinkButton>
                 )
               }
@@ -463,12 +476,12 @@ function PatientDetail() {
             <Table>
               <thead>
                 <tr>
-                  <Th>Treatment</Th>
-                  <Th>Tooth</Th>
-                  <Th>Doctor</Th>
-                  <Th>Status</Th>
-                  <Th className="text-end">Cost</Th>
-                  <Th className="text-end">Remaining</Th>
+                  <Th>{p.treatment}</Th>
+                  <Th>{p.tooth}</Th>
+                  <Th>{p.doctor}</Th>
+                  <Th>{p.status}</Th>
+                  <Th className="text-end">{p.cost}</Th>
+                  <Th className="text-end">{p.remaining}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -476,16 +489,16 @@ function PatientDetail() {
                   <ClickableRow key={plan.name} href={treatmentHref(plan.name)}>
                     <Td>
                       <Link href={treatmentHref(plan.name)} className="font-medium text-gray-800 hover:text-primary-600">
-                        {plan.treatment_type}
+                        {label(t.enums.treatmentType, plan.treatment_type)}
                       </Link>
                     </Td>
-                    <Td label="Tooth">{display(plan.tooth_number)}</Td>
-                    <Td label="Doctor">{display(plan.doctor_name)}</Td>
-                    <Td label="Status">
+                    <Td label={p.tooth}>{display(plan.tooth_number)}</Td>
+                    <Td label={p.doctor}>{display(plan.doctor_name)}</Td>
+                    <Td label={p.status}>
                       <StatusBadge kind="treatment" status={plan.status} />
                     </Td>
-                    <Td label="Cost" className="text-end whitespace-nowrap">{money(plan.total_cost)}</Td>
-                    <Td label="Remaining" className="text-end whitespace-nowrap">
+                    <Td label={p.cost} className="text-end whitespace-nowrap">{money(plan.total_cost)}</Td>
+                    <Td label={p.remaining} className="text-end whitespace-nowrap">
                       <span className={Number(plan.remaining_amount) > 0 ? "font-medium text-red-600" : "text-gray-500"}>
                         {money(plan.remaining_amount)}
                       </span>
@@ -501,7 +514,7 @@ function PatientDetail() {
       {tab === "prescriptions" && can("add_treatments") && (
         <div className="flex justify-end -mt-2">
           <LinkButton href={`/prescriptions/new?patient=${encodeURIComponent(id)}`} variant="secondary" size="sm" icon={Plus}>
-            New Prescription
+            {p.newPrescription}
           </LinkButton>
         </div>
       )}
@@ -513,12 +526,12 @@ function PatientDetail() {
           ) : data.prescriptions.length === 0 ? (
             <EmptyState
               icon={Pill}
-              title="No prescriptions yet"
-              text="Write one from a visit, or here."
+              title={p.noPrescriptions}
+              text={p.noPrescriptionsText}
               action={
                 can("add_treatments") && (
                   <LinkButton href={`/prescriptions/new?patient=${encodeURIComponent(id)}`} icon={Plus}>
-                    New Prescription
+                    {p.newPrescription}
                   </LinkButton>
                 )
               }
@@ -527,9 +540,9 @@ function PatientDetail() {
             <Table>
               <thead>
                 <tr>
-                  <Th>Date</Th>
-                  <Th>Medicines</Th>
-                  <Th>Doctor</Th>
+                  <Th>{p.date}</Th>
+                  <Th>{p.medicines}</Th>
+                  <Th>{p.doctor}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -540,8 +553,8 @@ function PatientDetail() {
                         {formatDate(rx.prescription_date)}
                       </Link>
                     </Td>
-                    <Td label="Medicines">{display(rx.summary)}</Td>
-                    <Td label="Doctor">{display(rx.doctor_name)}</Td>
+                    <Td label={p.medicines}>{display(rx.summary)}</Td>
+                    <Td label={p.doctor}>{display(rx.doctor_name)}</Td>
                   </ClickableRow>
                 ))}
               </tbody>
@@ -553,7 +566,7 @@ function PatientDetail() {
       {tab === "payments" && (
         <div className="flex justify-end -mt-2">
           <LinkButton href={`${patientHref(id)}/statement`} variant="secondary" size="sm" icon={Printer}>
-            Print statement
+            {p.printStatement}
           </LinkButton>
         </div>
       )}
@@ -565,11 +578,11 @@ function PatientDetail() {
           ) : data.payments.length === 0 ? (
             <EmptyState
               icon={CreditCard}
-              title="No payments yet"
+              title={p.noPayments}
               action={
                 can("add_payments") && (
                   <LinkButton href={`/payments/new?patient=${encodeURIComponent(id)}`} icon={Plus}>
-                    Add Payment
+                    {p.addPaymentButton}
                   </LinkButton>
                 )
               }
@@ -578,10 +591,10 @@ function PatientDetail() {
             <Table>
               <thead>
                 <tr>
-                  <Th>Date</Th>
-                  <Th>Treatment</Th>
-                  <Th>Method</Th>
-                  <Th className="text-end">Amount</Th>
+                  <Th>{p.date}</Th>
+                  <Th>{p.treatment}</Th>
+                  <Th>{p.method}</Th>
+                  <Th className="text-end">{p.amount}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -592,11 +605,11 @@ function PatientDetail() {
                         {formatDate(pay.payment_date)}
                       </Link>
                     </Td>
-                    <Td label="Treatment">{display(pay.treatment_type)}</Td>
-                    <Td label="Method">
+                    <Td label={p.treatment}>{display(label(t.enums.treatmentType, pay.treatment_type))}</Td>
+                    <Td label={p.method}>
                       <StatusBadge kind="method" status={pay.payment_method} />
                     </Td>
-                    <Td label="Amount" className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount)}</Td>
+                    <Td label={p.amount} className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount)}</Td>
                   </ClickableRow>
                 ))}
               </tbody>
@@ -637,14 +650,14 @@ function PatientDetail() {
 
       <ConfirmDialog
         open={confirmDelete}
-        title="Delete this patient?"
+        title={p.deleteTitle}
         message={
           <p>
-            <strong>{patient.full_name}</strong> will be removed for good. A patient who already has appointments,
-            treatment plans or payments cannot be deleted.
+            <strong>{patient.full_name}</strong>
+            {p.deleteText}
           </p>
         }
-        confirmLabel="Delete Patient"
+        confirmLabel={p.deleteConfirm}
         busy={deleting}
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
@@ -681,6 +694,8 @@ interface TimelineItem {
 
 /** Visits, treatment sessions and payments in one list, newest first, with upcoming ones on top. */
 function Timeline({ data, today, money }: { data: Related; today: string; money: (amount: number) => string }) {
+  const { t } = useI18n();
+  const tp = t.patients;
   const plans = new Map(data.plans.map((plan) => [plan.name, plan]));
   const items: TimelineItem[] = [
     ...data.appointments.map((a): TimelineItem => ({
@@ -689,22 +704,23 @@ function Timeline({ data, today, money }: { data: Related; today: string; money:
       time: a.appointment_time,
       icon: a.status === "Completed" ? CalendarCheck : Calendar,
       hue: "appointments",
-      title: a.reason_for_visit || "Appointment",
-      detail: [formatTime(a.appointment_time), a.doctor_name].filter(Boolean).join(" · "),
+      title: a.reason_for_visit || tp.appointment,
+      detail: [formatTime(a.appointment_time), a.doctor_name].filter(Boolean).join(t.common.dot),
       href: appointmentHref(a.name),
       badge: <StatusBadge kind="appointment" status={a.status} />,
     })),
     ...data.sessions.map((s): TimelineItem => {
       const plan = plans.get(s.treatment_plan);
-      const what = plan ? `${plan.treatment_type}${plan.tooth_number ? ` · tooth ${plan.tooth_number}` : ""}` : "Treatment";
+      const type = plan ? label(t.enums.treatmentType, plan.treatment_type) : "";
+      const what = plan ? (plan.tooth_number ? tp.withTooth(type, plan.tooth_number) : type) : tp.treatmentWord;
       return {
         key: s.name,
         date: s.session_date,
         time: s.session_time,
         icon: ClipboardList,
         hue: "treatments",
-        title: `${what} session`,
-        detail: [s.notes, s.doctor_name].filter(Boolean).join(" · "),
+        title: tp.session(what),
+        detail: [s.notes, s.doctor_name].filter(Boolean).join(t.common.dot),
         href: treatmentHref(s.treatment_plan),
         badge: <StatusBadge kind="session" status={s.status} />,
       };
@@ -714,33 +730,38 @@ function Timeline({ data, today, money }: { data: Related; today: string; money:
       date: p.payment_date,
       icon: CreditCard,
       hue: "money",
-      title: `Paid ${money(Number(p.amount) || 0)}`,
-      detail: [p.payment_method, p.treatment_type].filter(Boolean).join(" · "),
+      title: tp.paid(money(Number(p.amount) || 0)),
+      detail: [label(t.enums.paymentMethod, p.payment_method), label(t.enums.treatmentType, p.treatment_type)]
+        .filter(Boolean)
+        .join(t.common.dot),
       href: paymentHref(p.name),
     })),
   ].sort((x, y) => (y.date + (y.time ?? "")).localeCompare(x.date + (x.time ?? "")));
 
   if (items.length === 0) {
-    return <EmptyState icon={History} title="Nothing yet" text="Visits, treatment sessions and payments will show here." />;
+    return <EmptyState icon={History} title={tp.nothingYet} text={tp.nothingYetText} />;
   }
 
-  // Group: upcoming first, then by month.
-  const groups: Array<{ label: string; items: TimelineItem[] }> = [];
+  // Group: upcoming first, then by month. `key` is "upcoming", "today" or the month (YYYY-MM).
+  const groups: Array<{ key: string; label: string; items: TimelineItem[] }> = [];
   items.forEach((item) => {
-    const label = item.date > today ? "Upcoming" : item.date === today ? "Today" : formatMonth(item.date.slice(0, 7));
+    const key = item.date > today ? "upcoming" : item.date === today ? "today" : item.date.slice(0, 7);
     const last = groups[groups.length - 1];
-    if (last && last.label === label) last.items.push(item);
-    else groups.push({ label, items: [item] });
+    if (last && last.key === key) last.items.push(item);
+    else {
+      const heading = key === "upcoming" ? tp.upcoming : key === "today" ? tp.today : formatMonth(key);
+      groups.push({ key, label: heading, items: [item] });
+    }
   });
   // Upcoming is sorted newest first; show the soonest first instead.
   groups.forEach((group) => {
-    if (group.label === "Upcoming") group.items.reverse();
+    if (group.key === "upcoming") group.items.reverse();
   });
 
   return (
     <div className="space-y-5">
       {groups.map((group) => (
-        <section key={group.label}>
+        <section key={group.key}>
           <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">{group.label}</h3>
           <ol className="relative border-s-2 border-gray-100 ms-4 space-y-1">
             {group.items.map((item) => (

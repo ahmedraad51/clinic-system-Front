@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { MessageCircle } from "lucide-react";
 import { Alert, Button, Field, SelectInput, TextArea } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
+import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
+import { currentLang, isLang } from "@/i18n";
 import { getList } from "@/lib/frappe";
-import { formatDate, formatTime } from "@/lib/format";
-import { fillTemplate, whatsappLink } from "@/lib/whatsapp";
+import { fillAppointmentMessage, pickTemplate, whatsappLink, type AppointmentFacts } from "@/lib/whatsapp";
 import type { Appointment, WhatsAppTemplate } from "@/lib/types";
 
 /**
@@ -24,35 +25,39 @@ export default function SendWhatsAppDialog({
   phone: string;
   onClose: () => void;
 }) {
+  const { t, lang } = useI18n();
   const { clinicName, countryCode } = useSettings();
   const [templates, setTemplates] = useState<WhatsAppTemplate[] | null>(null);
   const [chosen, setChosen] = useState("");
   const [text, setText] = useState("");
 
-  // What the placeholders become, as a string so the effect below can depend on it.
+  // What the placeholders are filled from, as a string so the effect below can depend on it. The date and time are
+  // written in each template's own language when it is filled.
   const valuesKey = JSON.stringify({
     patient_name: appointment.patient_name || appointment.patient,
-    appointment_date: formatDate(appointment.appointment_date),
-    appointment_time: formatTime(appointment.appointment_time),
+    appointment_date: appointment.appointment_date,
+    appointment_time: appointment.appointment_time,
     doctor_name: appointment.doctor_name || "",
     clinic_name: clinicName,
-  });
-  const values = JSON.parse(valuesKey) as Record<string, string>;
+  } satisfies AppointmentFacts);
+  const values = JSON.parse(valuesKey) as AppointmentFacts;
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        const rows = await getList<WhatsAppTemplate>("WhatsApp Template", ["name", "template_name", "trigger", "message", "is_active"], {
-          filters: [["is_active", "=", 1]],
-          orderBy: "template_name asc",
-          limit: 0,
-        });
+        const rows = await getList<WhatsAppTemplate>(
+          "WhatsApp Template",
+          ["name", "template_name", "trigger", "message", "is_active", "language"],
+          { filters: [["is_active", "=", 1]], orderBy: "template_name asc", limit: 0 },
+        );
         if (cancelled) return;
         setTemplates(rows);
-        if (rows[0]) {
-          setChosen(rows[0].name);
-          setText(fillTemplate(rows[0].message, JSON.parse(valuesKey)));
+        // A message sent by hand: a Manual template (in the screen's language first), else any in that language.
+        const best = pickTemplate(rows, "Manual", currentLang());
+        if (best) {
+          setChosen(best.name);
+          setText(fillAppointmentMessage(best.message, best.language, currentLang(), JSON.parse(valuesKey) as AppointmentFacts));
         }
       } catch (err) {
         console.error(err);
@@ -67,35 +72,50 @@ export default function SendWhatsAppDialog({
 
   const link = whatsappLink(phone, text.trim(), countryCode);
 
+  // Templates in the screen's language first, then those for any language, then the others (stable, so by name within each).
+  const rank = (template: WhatsAppTemplate) => (template.language === lang ? 0 : template.language ? 2 : 1);
+  const ordered = [...(templates ?? [])].sort((a, b) => rank(a) - rank(b));
+
   return (
-    <Modal open title="Send on WhatsApp" onClose={onClose}>
+    <Modal open title={t.sendWhatsapp.title} onClose={onClose}>
       <div className="space-y-4">
         {templates === null ? (
-          <p className="text-sm text-gray-500">Loading...</p>
+          <p className="text-sm text-gray-500">{t.common.loading}</p>
         ) : (
           <>
             {templates.length > 0 && (
-              <Field label="Template">
+              <Field label={t.sendWhatsapp.template}>
                 <SelectInput
                   value={chosen}
                   onChange={(event) => {
                     setChosen(event.target.value);
-                    const template = templates.find((t) => t.name === event.target.value);
-                    setText(template ? fillTemplate(template.message, values) : "");
+                    const template = templates.find((row) => row.name === event.target.value);
+                    setText(template ? fillAppointmentMessage(template.message, template.language, lang, values) : "");
                   }}
                 >
-                  {templates.map((t) => (
-                    <option key={t.name} value={t.name}>
-                      {t.template_name}
+                  {ordered.map((row) => (
+                    <option key={row.name} value={row.name}>
+                      {isLang(row.language) && row.language !== lang
+                        ? t.sendWhatsapp.otherLanguage(row.template_name, t.enums.language[row.language])
+                        : row.template_name}
                     </option>
                   ))}
                 </SelectInput>
               </Field>
             )}
-            <Field label="Message" hint={`To ${phone}. You can change the text before sending.`}>
-              <TextArea rows={5} value={text} onChange={(event) => setText(event.target.value)} />
+            <Field
+              label={t.sendWhatsapp.message}
+              hint={
+                <>
+                  {t.sendWhatsapp.hintBefore}
+                  <span dir="ltr">{phone}</span>
+                  {t.sendWhatsapp.hintAfter}
+                </>
+              }
+            >
+              <TextArea rows={5} value={text} onChange={(event) => setText(event.target.value)} dir="auto" />
             </Field>
-            {!link && <Alert tone="yellow">This patient has no phone number WhatsApp can use.</Alert>}
+            {!link && <Alert tone="yellow">{t.sendWhatsapp.noPhone}</Alert>}
             <div className="flex flex-wrap gap-2 pt-1">
               {link && (
                 <a
@@ -106,11 +126,11 @@ export default function SendWhatsAppDialog({
                   className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-xl bg-green-600 text-white text-sm font-medium shadow-sm hover:bg-green-700"
                 >
                   <MessageCircle size={16} />
-                  Open WhatsApp
+                  {t.sendWhatsapp.open}
                 </a>
               )}
               <Button variant="secondary" onClick={onClose}>
-                Cancel
+                {t.common.cancel}
               </Button>
             </div>
           </>

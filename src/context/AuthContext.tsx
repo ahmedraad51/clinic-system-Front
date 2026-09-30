@@ -1,5 +1,6 @@
 "use client";
 
+import { messages } from "@/i18n";
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, ReactNode } from "react";
 import { login as frappeLogin, logout as frappeLogout, onSessionEnded, onSessionRestored, setSessionUser } from "@/lib/frappe";
 
@@ -134,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const relogin = async (pwd: string) => {
-    if (!savedUser) throw new Error("Nobody is logged in.");
+    if (!savedUser) throw new Error(messages().ui.nobodyLoggedIn);
     await login(savedUser, pwd, localStorage.getItem(SESSION_ONLY_KEY) !== "1");
   };
 

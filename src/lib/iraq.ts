@@ -1,6 +1,9 @@
+import { currentLang } from "@/i18n";
+
 /**
- * The governorates of Iraq, offered as suggestions in the patient's Address box. The English name is what is
- * typed into the address; the Arabic name is shown beside it in the suggestion list.
+ * The governorates of Iraq, offered as suggestions in the patient's Address box. On an English screen the English
+ * name is what is typed into the address and the Arabic name is shown beside it; on an Arabic screen the other
+ * way round (see governorateSuggestions()).
  */
 export const IRAQ_GOVERNORATES: ReadonlyArray<{ name: string; arabic: string }> = [
   { name: "Baghdad", arabic: "بغداد" },
@@ -23,3 +26,9 @@ export const IRAQ_GOVERNORATES: ReadonlyArray<{ name: string; arabic: string }> 
   { name: "Dhi Qar", arabic: "ذي قار" },
   { name: "Maysan", arabic: "ميسان" },
 ];
+
+/** The Address box suggestions in the current language: `value` goes into the box, `hint` is shown beside it. */
+export function governorateSuggestions(): Array<{ value: string; hint: string }> {
+  const arabic = currentLang() === "ar";
+  return IRAQ_GOVERNORATES.map((place) => (arabic ? { value: place.arabic, hint: place.name } : { value: place.name, hint: place.arabic }));
+}

@@ -6,6 +6,7 @@ import AppointmentForm, {
   appointmentPayload, appointmentToForm, type AppointmentFormData,
 } from "@/components/forms/AppointmentForm";
 import { NotFoundCard, PageContainer, PageHeader, PageLoading } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
 import { updateDoc } from "@/lib/frappe";
 import { useDocument } from "@/lib/hooks";
@@ -24,30 +25,33 @@ function EditAppointment() {
   const params = useParams();
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
   const id = routeId(params.id);
   const { doc: appointment, loading, notFound, error } = useDocument<Appointment>("Appointment", id);
 
   if (loading) return <PageLoading />;
   if (notFound || !appointment) {
-    return <NotFoundCard error={error} what="Appointment" backHref="/appointments" backLabel="Back to Appointments" />;
+    return (
+      <NotFoundCard error={error} what={t.enums.doctype.Appointment} backHref="/appointments" backLabel={t.appointments.backToList} />
+    );
   }
 
   const handleSubmit = async (data: AppointmentFormData) => {
     await updateDoc("Appointment", id, appointmentPayload(data));
-    toast.success("Appointment saved.");
+    toast.success(t.appointments.saved);
     router.push(appointmentHref(id));
   };
 
   return (
     <PageContainer narrow>
-      <PageHeader title="Edit Appointment" subtitle={id} back={{ href: appointmentHref(id), label: "Appointment" }} />
+      <PageHeader title={t.appointments.editTitle} subtitle={id} back={{ href: appointmentHref(id), label: t.appointments.appointment }} />
       <AppointmentForm
         initial={appointmentToForm(appointment)}
         currentName={id}
         patientLabel={appointment.patient_name}
         doctorLabel={appointment.doctor_name}
         showStatus
-        submitLabel="Save Changes"
+        submitLabel={t.common.saveChanges}
         cancelHref={appointmentHref(id)}
         onSubmit={handleSubmit}
       />

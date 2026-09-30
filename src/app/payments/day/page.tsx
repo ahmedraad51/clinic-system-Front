@@ -10,7 +10,9 @@ import RequirePermission from "@/components/Guard";
 import {
   Button, Card, EmptyState, Field, LoadError, PageContainer, PageHeader, PageLoading, StatusBadge, Table, Td, TextInput, Th,
 } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
+import { label, messages } from "@/i18n";
 import { errorMessage, getList } from "@/lib/frappe";
 import { formatDate, formatLongDate, todayISO } from "@/lib/format";
 import { patientHref, paymentHref } from "@/lib/links";
@@ -33,6 +35,8 @@ export default function DayReportPage() {
 function DayReport() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useI18n();
+  const c = t.cash;
   const { money } = useSettings();
   const param = searchParams.get("date") || "";
   const date = /^\d{4}-\d{2}-\d{2}$/.test(param) ? param : todayISO();
@@ -53,7 +57,7 @@ function DayReport() {
         if (!cancelled) setResult({ date, version, rows, error: "" });
       } catch (err) {
         console.error(err);
-        if (!cancelled) setResult({ date, version, rows: [], error: errorMessage(err, "Could not load the payments.") });
+        if (!cancelled) setResult({ date, version, rows: [], error: errorMessage(err, messages().cash.loadFailed) });
       }
     };
     load();
@@ -73,18 +77,18 @@ function DayReport() {
   return (
     <PageContainer narrow>
       <PageHeader
-        title="End-of-Day Report"
+        title={c.title}
         subtitle={formatLongDate(date)}
-        back={{ href: "/payments", label: "Payments" }}
+        back={{ href: "/payments", label: t.payments.title }}
         actions={
           <Button icon={Printer} onClick={() => window.print()} disabled={!ready || Boolean(ready.error)}>
-            Print
+            {t.common.print}
           </Button>
         }
       />
 
       <div className="print:hidden">
-        <Field label="Day" className="max-w-xs">
+        <Field label={c.day} className="max-w-xs">
           <TextInput
             type="date"
             value={date}
@@ -98,7 +102,7 @@ function DayReport() {
 
 
       <Card className="print:shadow-none print:border-0">
-        <ClinicLetterhead kind="End-of-day report" reference={formatDate(date)} />
+        <ClinicLetterhead kind={c.kind} reference={formatDate(date)} />
 
         {!ready ? (
           <PageLoading />
@@ -112,30 +116,30 @@ function DayReport() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {byMethod.map((row) => (
                 <div key={row.method} className="rounded-xl border border-gray-100 px-4 py-3">
-                  <p className="text-xs text-gray-500">{row.method}</p>
+                  <p className="text-xs text-gray-500">{label(t.enums.paymentMethod, row.method)}</p>
                   <p className="text-lg font-bold text-gray-800">{money(row.total)}</p>
-                  <p className="text-xs text-gray-500">{row.count === 1 ? "1 payment" : `${row.count} payments`}</p>
+                  <p className="text-xs text-gray-500">{c.payments(row.count)}</p>
                 </div>
               ))}
               <div className="rounded-xl bg-primary-50 px-4 py-3 print:bg-white print:border print:border-gray-300">
-                <p className="text-xs text-primary-800">Total</p>
+                <p className="text-xs text-primary-800">{c.total}</p>
                 <p className="text-lg font-bold text-primary-900">{money(total)}</p>
-                <p className="text-xs text-primary-800">{rows.length === 1 ? "1 payment" : `${rows.length} payments`}</p>
+                <p className="text-xs text-primary-800">{c.payments(rows.length)}</p>
               </div>
             </div>
 
             {rows.length === 0 ? (
-              <EmptyState icon={Receipt} title="No payments on this day" />
+              <EmptyState icon={Receipt} title={c.noPayments} />
             ) : (
               <div className="-mx-5 sm:-mx-6 border-t border-gray-100">
                 <Table>
                   <thead>
                     <tr>
-                      <Th>Patient</Th>
-                      <Th>For</Th>
-                      <Th>Method</Th>
-                      <Th>Receipt</Th>
-                      <Th className="text-end">Amount</Th>
+                      <Th>{c.colPatient}</Th>
+                      <Th>{c.colFor}</Th>
+                      <Th>{c.colMethod}</Th>
+                      <Th>{c.colReceipt}</Th>
+                      <Th className="text-end">{c.colAmount}</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -146,16 +150,18 @@ function DayReport() {
                             {row.patient_name || row.patient}
                           </Link>
                         </Td>
-                        <Td label="For">{row.treatment_type || "General payment"}</Td>
-                        <Td label="Method">
+                        <Td label={c.colFor}>
+                          {row.treatment_type ? label(t.enums.treatmentType, row.treatment_type) : c.generalPayment}
+                        </Td>
+                        <Td label={c.colMethod}>
                           <StatusBadge kind="method" status={row.payment_method} />
                         </Td>
-                        <Td label="Receipt">
+                        <Td label={c.colReceipt}>
                           <Link href={paymentHref(row.name)} className="text-gray-500 hover:text-primary-600">
                             {row.name}
                           </Link>
                         </Td>
-                        <Td label="Amount" className="text-end whitespace-nowrap font-medium text-gray-800">
+                        <Td label={c.colAmount} className="text-end whitespace-nowrap font-medium text-gray-800">
                           {money(row.amount)}
                         </Td>
                       </tr>
@@ -172,14 +178,14 @@ function DayReport() {
             />
 
             <div className="pt-8 grid grid-cols-2 gap-10 text-xs text-gray-500">
-              <div className="border-t border-gray-300 pt-2">Counted by</div>
-              <div className="border-t border-gray-300 pt-2">Checked by</div>
+              <div className="border-t border-gray-300 pt-2">{c.countedBy}</div>
+              <div className="border-t border-gray-300 pt-2">{c.checkedBy}</div>
             </div>
           </div>
         )}
       </Card>
 
-      <Card title="Recent cash counts" flush className="print:hidden">
+      <Card title={c.recentTitle} flush className="print:hidden">
         <RecentCashCounts refresh={countsSaved} />
       </Card>
     </PageContainer>

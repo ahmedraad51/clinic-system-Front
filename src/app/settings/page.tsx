@@ -21,9 +21,11 @@ import {
   TextInput,
   Toggle,
 } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { errorMessage, updateDoc, uploadFile, fileHref } from "@/lib/frappe";
+import { isLang, label, LANGS, type Lang } from "@/i18n";
 import { currencyDecimals, cx } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
 import { DEFAULT_THEME_COLOR, normalizeHex, readableBrand, THEME_PRESETS } from "@/lib/theme";
@@ -50,6 +52,9 @@ interface SettingsForm {
   enable_whatsapp: boolean;
   enable_patient_portal: boolean;
   enable_financial_reports: boolean;
+  /** The language the app opens in; nothing saved counts as Arabic. */
+  default_language: Lang;
+  arabic_digits: boolean;
   /** Treatment type → price as typed; empty means no usual price. */
   prices: Record<string, string>;
 }
@@ -76,6 +81,8 @@ function toForm(doc: ClinicSettings): SettingsForm {
     enable_whatsapp: Number(doc.enable_whatsapp) === 1,
     enable_patient_portal: Number(doc.enable_patient_portal) === 1,
     enable_financial_reports: Number(doc.enable_financial_reports) === 1,
+    default_language: isLang(doc.default_language) ? doc.default_language : "ar",
+    arabic_digits: Number(doc.arabic_digits) === 1,
     prices: Object.fromEntries((doc.treatment_prices ?? []).map((row) => [row.treatment_type, String(row.price ?? "")])),
   };
 }
@@ -89,16 +96,17 @@ export default function SettingsPage() {
 }
 
 function SettingsView() {
+  const { t } = useI18n();
   const { doc, loading, error, reload } = useDocument<ClinicSettings>(SETTINGS, SETTINGS);
 
   if (loading) return <PageLoading />;
   return (
     <PageContainer narrow>
-      <PageHeader title="Settings" subtitle="Clinic details, currency, working hours and features." />
+      <PageHeader title={t.settings.title} subtitle={t.settings.subtitle} />
       {doc ? (
         <SettingsFormView initial={doc} onSaved={reload} />
       ) : (
-        <Alert tone="red" title="Could not load the settings">
+        <Alert tone="red" title={t.settings.loadFailed}>
           {error}
         </Alert>
       )}
@@ -107,6 +115,7 @@ function SettingsView() {
 }
 
 function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSaved: () => void }) {
+  const { t } = useI18n();
   const { refresh } = useSettings();
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -127,11 +136,11 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
     event.target.value = "";
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast.error("Please choose an image file.");
+      toast.error(t.settings.notImage);
       return;
     }
     if (file.size > MAX_LOGO_BYTES) {
-      toast.error("The logo must be smaller than 2 MB.");
+      toast.error(t.settings.logoTooBig(MAX_LOGO_BYTES / (1024 * 1024)));
       return;
     }
     setUploading(true);
@@ -139,9 +148,9 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
     try {
       const url = await uploadFile(file, { onProgress: (fraction) => setLogoProgress(fraction * 100) });
       setForm((prev) => ({ ...prev, logo: url }));
-      toast.info("Logo uploaded. Press Save Settings to keep it.");
+      toast.info(t.settings.logoUploaded);
     } catch (err) {
-      toast.error(errorMessage(err, "Could not upload the logo."));
+      toast.error(errorMessage(err, t.settings.logoUploadFailed));
     } finally {
       setUploading(false);
     }
@@ -169,20 +178,23 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
         enable_whatsapp: form.enable_whatsapp ? 1 : 0,
         enable_patient_portal: form.enable_patient_portal ? 1 : 0,
         enable_financial_reports: form.enable_financial_reports ? 1 : 0,
+        default_language: form.default_language,
+        arabic_digits: form.arabic_digits ? 1 : 0,
         // Types from the list first, then any other type an older price list still holds.
-        treatment_prices: [...TREATMENT_TYPES, ...Object.keys(form.prices).filter((t) => !(TREATMENT_TYPES as readonly string[]).includes(t))]
+        treatment_prices: [...TREATMENT_TYPES, ...Object.keys(form.prices).filter((type) => !(TREATMENT_TYPES as readonly string[]).includes(type))]
           .filter((type) => Number(form.prices[type]) > 0)
           .map((type) => ({ treatment_type: type, price: Number(form.prices[type]) })),
       });
-      toast.success("Settings saved.");
+      toast.success(t.settings.saved);
       // Show the country code as it was saved ("00964" → "964").
       const saved = { ...form, phone_country_code: cleanCountryCode(form.phone_country_code, "") };
       setForm(saved);
       setBaseline(saved);
+      // The whole app follows the new settings at once (currency, language, digits).
       refresh();
       onSaved();
     } catch (err) {
-      setError(errorMessage(err, "Could not save the settings."));
+      setError(errorMessage(err, t.settings.saveFailed));
     } finally {
       setSaving(false);
     }
@@ -196,50 +208,50 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <UnsavedChangesGuard when={JSON.stringify(form) !== JSON.stringify(baseline)} />
-      <Card title="Clinic">
+      <Card title={t.settings.clinic}>
         <div className="flex items-center gap-4 mb-5">
           {form.logo ? (
             // eslint-disable-next-line @next/next/no-img-element -- the logo is an uploaded file of unknown size
-            <img src={fileHref(form.logo)} alt="Clinic logo" className="w-16 h-16 rounded-2xl object-contain bg-gray-50 border border-gray-100" />
+            <img src={fileHref(form.logo)} alt={t.settings.logoAlt} className="w-16 h-16 rounded-2xl object-contain bg-gray-50 border border-gray-100" />
           ) : (
             <span className="w-16 h-16 rounded-2xl bg-primary-600 flex items-center justify-center text-white">
               <ToothLogo size={30} />
             </span>
           )}
           <div className="flex flex-wrap gap-2">
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleLogo} />
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleLogo} aria-label={t.settings.logoFile} />
             <Button variant="secondary" size="sm" icon={Upload} loading={uploading} onClick={() => fileRef.current?.click()}>
-              Upload Logo
+              {t.settings.uploadLogo}
             </Button>
             {form.logo && (
               <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setForm({ ...form, logo: "" })}>
-                Remove
+                {t.settings.remove}
               </Button>
             )}
             {uploading && (
               <div className="basis-full max-w-60">
-                <ProgressBar value={logoProgress} label="Uploading logo" />
+                <ProgressBar value={logoProgress} label={t.settings.uploadingLogo} />
               </div>
             )}
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Clinic Name" required className="sm:col-span-2">
+          <Field label={t.settings.clinicName} required className="sm:col-span-2">
             <TextInput name="clinic_name" value={form.clinic_name} onChange={handleChange} required />
           </Field>
-          <Field label="Phone">
+          <Field label={t.settings.phone}>
             <PhoneInput name="phone" value={form.phone} onChange={handleChange} />
           </Field>
-          <Field label="Email">
-            <TextInput type="email" name="email" value={form.email} onChange={handleChange} />
+          <Field label={t.settings.email}>
+            <TextInput type="email" name="email" value={form.email} onChange={handleChange} dir="ltr" />
           </Field>
-          <Field label="Address" className="sm:col-span-2">
+          <Field label={t.settings.address} className="sm:col-span-2">
             <TextInput name="address" value={form.address} onChange={handleChange} />
           </Field>
-          <Field label="Tax Number" hint="Printed on payment receipts.">
-            <TextInput name="tax_number" value={form.tax_number} onChange={handleChange} />
+          <Field label={t.settings.taxNumber} hint={t.settings.taxNumberHint}>
+            <TextInput name="tax_number" value={form.tax_number} onChange={handleChange} dir="ltr" />
           </Field>
-          <Field label="Currency" hint="Used for every amount in the app.">
+          <Field label={t.settings.currency} hint={t.settings.currencyHint}>
             <SelectInput name="currency" value={form.currency} onChange={handleChange}>
               {currencies.map((code) => (
                 <option key={code} value={code}>
@@ -248,12 +260,13 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
               ))}
             </SelectInput>
           </Field>
-          <Field label="Phone Country Code" hint={`Added to local numbers such as 0770 in WhatsApp links. Empty means ${DEFAULT_COUNTRY_CODE} (Iraq).`}>
+          <Field label={t.settings.countryCode} hint={t.settings.countryCodeHint(DEFAULT_COUNTRY_CODE)}>
             <TextInput
               name="phone_country_code"
               value={form.phone_country_code}
               onChange={handleChange}
               inputMode="numeric"
+              dir="ltr"
               maxLength={5}
               placeholder={DEFAULT_COUNTRY_CODE}
             />
@@ -261,21 +274,45 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
         </div>
       </Card>
 
-      <Card title="Working Hours">
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Opening Time">
-            <TextInput type="time" name="opening_time" value={form.opening_time} onChange={handleChange} />
+      <Card title={t.settings.language}>
+        <div className="space-y-5">
+          <Field label={t.settings.defaultLanguage} hint={t.settings.defaultLanguageHint}>
+            <SelectInput
+              name="default_language"
+              value={form.default_language}
+              onChange={(event) => setForm({ ...form, default_language: isLang(event.target.value) ? event.target.value : "ar" })}
+            >
+              {LANGS.map((lang) => (
+                <option key={lang} value={lang}>
+                  {label(t.enums.language, lang)}
+                </option>
+              ))}
+            </SelectInput>
           </Field>
-          <Field label="Closing Time">
-            <TextInput type="time" name="closing_time" value={form.closing_time} onChange={handleChange} />
+          <Toggle
+            checked={form.arabic_digits}
+            onChange={(value) => setForm({ ...form, arabic_digits: value })}
+            label={t.settings.arabicDigits}
+            description={t.settings.arabicDigitsHint}
+          />
+        </div>
+      </Card>
+
+      <Card title={t.settings.workingHours}>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label={t.settings.openingTime}>
+            <TextInput type="time" name="opening_time" value={form.opening_time} onChange={handleChange} dir="ltr" />
+          </Field>
+          <Field label={t.settings.closingTime}>
+            <TextInput type="time" name="closing_time" value={form.closing_time} onChange={handleChange} dir="ltr" />
           </Field>
         </div>
-        <p className="text-xs text-gray-500 mt-3">Shown as a hint when booking an appointment.</p>
+        <p className="text-xs text-gray-500 mt-3">{t.settings.hoursHint}</p>
         <div className="mt-5">
-          <p className="text-sm font-medium text-gray-700">Open on</p>
-          <p className="text-xs text-gray-500 mb-2">Closed days are shaded in the calendar, and booking on them asks first.</p>
+          <p className="text-sm font-medium text-gray-700">{t.settings.openOn}</p>
+          <p className="text-xs text-gray-500 mb-2">{t.settings.openOnHint}</p>
           <div className="flex flex-wrap gap-2">
-            {WEEK_DAYS.map((day) => {
+            {WEEK_DAYS.map((day, index) => {
               const on = form.working_days.includes(day);
               return (
                 <button
@@ -293,7 +330,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
                     on ? "bg-primary-600 border-primary-600 text-white" : "bg-white border-gray-200 text-gray-600 hover:border-primary-300",
                   )}
                 >
-                  {day.slice(0, 3)}
+                  {t.dates.daysShort[index]}
                 </button>
               );
             })}
@@ -301,14 +338,11 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
         </div>
       </Card>
 
-      <Card title="Price List">
-        <p className="text-sm text-gray-500 mb-4">
-          The usual price of each treatment. It is filled in when a treatment plan is created and can still be
-          changed there. Leave a price empty to type it every time.
-        </p>
+      <Card title={t.settings.priceList}>
+        <p className="text-sm text-gray-500 mb-4">{t.settings.priceListHint}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {TREATMENT_TYPES.map((type) => (
-            <Field key={type} label={`${type} (${form.currency})`}>
+            <Field key={type} label={t.settings.priceLabel(label(t.enums.treatmentType, type), form.currency)}>
               <NumberInput
                 decimals={currencyDecimals(form.currency) > 0}
                 value={form.prices[type] ?? ""}
@@ -319,25 +353,25 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
         </div>
       </Card>
 
-      <Card title="Features">
+      <Card title={t.settings.features}>
         <div className="space-y-5">
           <Toggle
             checked={form.enable_whatsapp}
             onChange={(value) => setForm({ ...form, enable_whatsapp: value })}
-            label="WhatsApp reminders"
-            description="Send appointment reminders with the templates on the WhatsApp page."
+            label={t.settings.whatsapp}
+            description={t.settings.whatsappHint}
           />
           <Toggle
             checked={form.enable_financial_reports}
             onChange={(value) => setForm({ ...form, enable_financial_reports: value })}
-            label="Financial reports"
-            description="Show the Reports page to users who have the View Reports permission."
+            label={t.settings.reports}
+            description={t.settings.reportsHint}
           />
           <Toggle
             checked={form.enable_patient_portal}
             onChange={(value) => setForm({ ...form, enable_patient_portal: value })}
-            label="Patient portal"
-            description="Saved for the back end. The front end has no patient portal screens yet."
+            label={t.settings.portal}
+            description={t.settings.portalHint}
           />
           <ThemeColorPicker value={form.theme_color} onChange={(theme_color) => setForm({ ...form, theme_color })} />
         </div>
@@ -347,7 +381,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
 
       <FormActions>
         <Button type="submit" icon={Save} loading={saving} disabled={uploading}>
-          Save Settings
+          {t.settings.saveSettings}
         </Button>
       </FormActions>
     </form>
@@ -358,22 +392,21 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
  * The clinic colour: the default indigo, a few calm presets, or any colour. Shows a sample of how buttons will look.
  */
 function ThemeColorPicker({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const { t } = useI18n();
   const chosen = normalizeHex(value);
   const current = chosen ?? DEFAULT_THEME_COLOR;
   const used = readableBrand(current);
   return (
     <div className="pt-1">
-      <p className="text-sm font-medium text-gray-800">Theme colour</p>
-      <p className="text-xs text-gray-500 mt-0.5">
-        Buttons, links and highlights use this colour. The first choice is the default indigo.
-      </p>
+      <p className="text-sm font-medium text-gray-800">{t.settings.themeColour}</p>
+      <p className="text-xs text-gray-500 mt-0.5">{t.settings.themeHint}</p>
       <div className="flex flex-wrap items-center gap-2 mt-3">
         <button
           type="button"
           onClick={() => onChange("")}
-          aria-label="Default colour"
+          aria-label={t.settings.defaultColour}
           aria-pressed={!chosen}
-          title="Default colour"
+          title={t.settings.defaultColour}
           className={cx(
             "relative w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11 rounded-full border-2 transition",
             !chosen ? "border-gray-800 scale-110" : "border-white shadow-sm hover:scale-105",
@@ -387,9 +420,9 @@ function ThemeColorPicker({ value, onChange }: { value: string; onChange: (value
             key={preset.value}
             type="button"
             onClick={() => onChange(preset.value)}
-            aria-label={preset.label}
+            aria-label={t.settings.themeNames[preset.key]}
             aria-pressed={chosen === preset.value}
-            title={preset.label}
+            title={t.settings.themeNames[preset.key]}
             className={cx(
               "w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11 rounded-full border-2 transition",
               chosen === preset.value ? "border-gray-800 scale-110" : "border-white shadow-sm hover:scale-105",
@@ -402,18 +435,18 @@ function ThemeColorPicker({ value, onChange }: { value: string; onChange: (value
             type="color"
             value={current}
             onChange={(event) => onChange(event.target.value)}
-            aria-label="Choose any colour"
+            aria-label={t.settings.anyColour}
             className="h-9 w-12 pointer-coarse:h-11 pointer-coarse:w-14 rounded-lg border border-gray-200 bg-white p-1 cursor-pointer"
           />
-          Other
+          {t.settings.other}
         </label>
       </div>
       <div className="flex flex-wrap items-center gap-3 mt-3">
         <span className="px-4 py-2 rounded-xl text-sm font-medium text-white shadow-sm" style={{ backgroundColor: used }}>
-          Sample button
+          {t.settings.sampleButton}
         </span>
         {used !== current && (
-          <span className="text-xs text-gray-500">Made a little darker so white text on it stays easy to read.</span>
+          <span className="text-xs text-gray-500">{t.settings.darkened}</span>
         )}
       </div>
     </div>

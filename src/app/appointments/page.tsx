@@ -11,8 +11,10 @@ import {
   Pagination, SearchInput, Segmented, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage,
   Td, TextInput, Th, Toolbar,
 } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
+import { label } from "@/i18n";
 import type { FilterRow } from "@/lib/frappe";
 import { addDays, display, formatDate, formatLongDate, formatTime, todayISO, weekStart } from "@/lib/format";
 import { searchFilters, useDebounced, useDoctorList, usePagedList } from "@/lib/hooks";
@@ -21,20 +23,16 @@ import { APPOINTMENT_STATUSES, type Appointment } from "@/lib/types";
 
 type View = CalendarView | "list";
 
+/** The views; their names come from t.appointments.views. */
 const VIEWS = [
-  { value: "day" as const, label: "Day", icon: CalendarDays },
-  { value: "week" as const, label: "Week", icon: CalendarRange },
-  { value: "list" as const, label: "List", icon: List },
+  { value: "day" as const, icon: CalendarDays },
+  { value: "week" as const, icon: CalendarRange },
+  { value: "list" as const, icon: List },
 ];
 
-const WHEN_OPTIONS = [
-  { value: "all", label: "All dates" },
-  { value: "today", label: "Today" },
-  { value: "tomorrow", label: "Tomorrow" },
-  { value: "upcoming", label: "Upcoming" },
-  { value: "past", label: "Past" },
-] as const;
-type When = (typeof WHEN_OPTIONS)[number]["value"];
+/** The date filter of the list; the names come from t.appointments.when. */
+const WHEN_OPTIONS = ["all", "today", "tomorrow", "upcoming", "past"] as const;
+type When = (typeof WHEN_OPTIONS)[number];
 
 const isDate = (value: string | null): value is string => Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
 
@@ -72,6 +70,7 @@ export default function AppointmentsPage() {
 function Appointments() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useI18n();
   const { can, doctor: myDoctor } = useSession();
   const { settings, isOpenOn } = useSettings();
   const { doctors, loading: doctorsLoading } = useDoctorList();
@@ -97,61 +96,63 @@ function Appointments() {
 
   const step = view === "week" ? 7 : 1;
   const first = view === "week" ? weekStart(day) : day;
-  const heading = view === "week" ? `${formatDate(first)} – ${formatDate(addDays(first, 6))}` : formatLongDate(day);
+  const heading = view === "week" ? t.appointments.weekRange(formatDate(first), formatDate(addDays(first, 6))) : formatLongDate(day);
+  const views = VIEWS.map((option) => ({ ...option, label: t.appointments.views[option.value] }));
   const newParams = new URLSearchParams(view === "list" ? {} : { date: day, ...(doctor ? { doctor } : {}) });
   const newHref = `/appointments/new${newParams.size ? `?${newParams.toString()}` : ""}`;
 
   return (
     <PageContainer>
       <PageHeader
-        title="Appointments"
-        subtitle={view === "list" ? "The appointment book as a list. Click a row to open it." : heading}
+        title={t.appointments.title}
+        subtitle={view === "list" ? t.appointments.listSubtitle : heading}
         actions={
           can("add_appointments") && (
             <LinkButton href={newHref} icon={Plus}>
-              New Appointment
+              {t.appointments.newAppointment}
             </LinkButton>
           )
         }
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Segmented label="View" options={VIEWS} value={view} onChange={(next) => update({ view: next })} />
+        <Segmented label={t.appointments.view} options={views} value={view} onChange={(next) => update({ view: next })} />
         {view !== "list" && (
           <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="secondary"
               icon={ChevronLeft}
               onClick={() => update({ day: addDays(day, -step) })}
-              aria-label={view === "week" ? "Previous week" : "Previous day"}
+              aria-label={view === "week" ? t.appointments.previousWeek : t.appointments.previousDay}
               className="px-3 rtl:[&>svg]:rotate-180"
             />
             <Button variant="secondary" onClick={() => update({ day: "" })} disabled={day === todayISO()}>
-              Today
+              {t.common.today}
             </Button>
             <Button
               variant="secondary"
               icon={ChevronRight}
               onClick={() => update({ day: addDays(day, step) })}
-              aria-label={view === "week" ? "Next week" : "Next day"}
+              aria-label={view === "week" ? t.appointments.nextWeek : t.appointments.nextDay}
               className="px-3 rtl:[&>svg]:rotate-180"
             />
             <TextInput
               type="date"
+              dir="ltr"
               value={day}
               onChange={(event) => {
                 if (isDate(event.target.value)) update({ day: event.target.value });
               }}
-              aria-label="Go to date"
+              aria-label={t.appointments.goToDate}
               className="sm:w-auto flex-1 sm:flex-none min-w-0"
             />
             <SelectInput
               value={doctor}
               onChange={(event) => update({ doctor: event.target.value || (myDoctor ? "all" : "") })}
-              aria-label="Doctor"
+              aria-label={t.common.doctor}
               className="sm:w-auto sm:max-w-[15rem]"
             >
-              <option value="">All doctors</option>
+              <option value="">{t.appointments.allDoctors}</option>
               {doctors.map((d) => (
                 <option key={d.name} value={d.name}>
                   {d.full_name}
@@ -184,11 +185,12 @@ function Appointments() {
 
 function AppointmentsList() {
   const searchParams = useSearchParams();
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [when, setWhen] = useState<When>(() => {
     const fromUrl = searchParams.get("date");
-    return WHEN_OPTIONS.some((option) => option.value === fromUrl) ? (fromUrl as When) : "all";
+    return WHEN_OPTIONS.some((option) => option === fromUrl) ? (fromUrl as When) : "all";
   });
   const debounced = useDebounced(search);
 
@@ -212,19 +214,19 @@ function AppointmentsList() {
   return (
     <>
       <Toolbar>
-        <SearchInput value={search} onChange={setSearch} placeholder="Search by patient, doctor or reason..." />
-        <SelectInput value={when} onChange={(e) => setWhen(e.target.value as When)} className="sm:w-40" aria-label="Date">
+        <SearchInput value={search} onChange={setSearch} placeholder={t.appointments.searchPlaceholder} />
+        <SelectInput value={when} onChange={(e) => setWhen(e.target.value as When)} className="sm:w-40" aria-label={t.common.date}>
           {WHEN_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
+            <option key={option} value={option}>
+              {t.appointments.when[option]}
             </option>
           ))}
         </SelectInput>
-        <SelectInput value={status} onChange={(e) => setStatus(e.target.value)} className="sm:w-40" aria-label="Status">
-          <option value="">All statuses</option>
+        <SelectInput value={status} onChange={(e) => setStatus(e.target.value)} className="sm:w-40" aria-label={t.common.status}>
+          <option value="">{t.appointments.allStatuses}</option>
           {APPOINTMENT_STATUSES.map((s) => (
             <option key={s} value={s}>
-              {s}
+              {label(t.enums.appointmentStatus, s)}
             </option>
           ))}
         </SelectInput>
@@ -234,12 +236,12 @@ function AppointmentsList() {
         <Table>
           <thead>
             <tr>
-              <Th>Date</Th>
-              <Th>Time</Th>
-              <Th>Patient</Th>
-              <Th>Doctor</Th>
-              <Th>Reason</Th>
-              <Th>Status</Th>
+              <Th>{t.common.date}</Th>
+              <Th>{t.common.time}</Th>
+              <Th>{t.common.patient}</Th>
+              <Th>{t.common.doctor}</Th>
+              <Th>{t.appointments.reason}</Th>
+              <Th>{t.common.status}</Th>
             </tr>
           </thead>
           <tbody>
@@ -251,11 +253,11 @@ function AppointmentsList() {
               <TableMessage icon={CalendarX} colSpan={6}>
                 {filtered ? (
                   <>
-                    No appointments match these filters.
+                    {t.appointments.noMatch}
                     <ClearFiltersButton onClick={clearFilters} />
                   </>
                 ) : (
-                  "No appointments yet."
+                  t.appointments.noneYet
                 )}
               </TableMessage>
             ) : (
@@ -266,15 +268,15 @@ function AppointmentsList() {
                       {formatDate(a.appointment_date)}
                     </Link>
                   </Td>
-                  <Td label="Time" className="whitespace-nowrap">{formatTime(a.appointment_time)}</Td>
-                  <Td label="Patient">
+                  <Td label={t.common.time} className="whitespace-nowrap">{formatTime(a.appointment_time)}</Td>
+                  <Td label={t.common.patient}>
                     <Link href={patientHref(a.patient)} className="text-gray-700 hover:text-primary-600">
                       {a.patient_name || a.patient}
                     </Link>
                   </Td>
-                  <Td label="Doctor">{display(a.doctor_name)}</Td>
-                  <Td label="Reason" className="max-w-[240px] truncate">{display(a.reason_for_visit)}</Td>
-                  <Td label="Status">
+                  <Td label={t.common.doctor}>{display(a.doctor_name)}</Td>
+                  <Td label={t.appointments.reason} className="max-w-[240px] truncate">{display(a.reason_for_visit)}</Td>
+                  <Td label={t.common.status}>
                     <StatusBadge kind="appointment" status={a.status} />
                   </Td>
                 </ClickableRow>

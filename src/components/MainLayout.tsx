@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { messages } from "@/i18n";
 import { PageLoading } from "@/components/ui";
 import { loginHref } from "@/lib/links";
 import SessionEndedNotice from "./SessionEndedNotice";
@@ -37,7 +38,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:start-3 focus:z-[70] focus:rounded-xl focus:bg-white focus:px-4 focus:py-3 focus:text-sm focus:font-medium focus:text-primary-700 focus:shadow-lg"
       >
-        Skip to content
+        {messages().nav.skipToContent}
       </a>
       <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} />
       <div className="lg:ps-64 flex flex-col min-h-screen print:ps-0">

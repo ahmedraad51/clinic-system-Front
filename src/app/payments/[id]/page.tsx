@@ -10,9 +10,11 @@ import { MessageCircle, Pencil, Printer, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import { Button, Card, LinkButton, NotFoundCard, PageContainer, PageHeader, RecordLoading } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
+import { label } from "@/i18n";
 import { deleteDoc, errorMessage, getDoc, getList } from "@/lib/frappe";
 import { formatDate } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
@@ -32,6 +34,7 @@ function PaymentDetail() {
   const params = useParams();
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
   const { can, displayName } = useSession();
   const { money, settings, clinicName, countryCode } = useSettings();
   const id = routeId(params.id);
@@ -98,20 +101,37 @@ function PaymentDetail() {
   }, [id, planId, paidOn]);
 
   if (loading) return <RecordLoading />;
-  if (notFound || !payment) return <NotFoundCard error={error} what="Payment" backHref="/payments" backLabel="Back to Payments" />;
+  if (notFound || !payment)
+    return (
+      <NotFoundCard
+        error={error}
+        what={label(t.enums.doctype, "Payment")}
+        backHref="/payments"
+        backLabel={t.payments.backToList}
+      />
+    );
 
+  const p = t.payments;
+  const r = t.receipt;
   const canChange = can("add_payments");
   const contact = patientInfo?.id === payment.patient ? patientInfo.row : null;
   const left = Number(contact?.total_remaining) || 0;
+  const treatmentName = payment.treatment_type ? label(t.enums.treatmentType, payment.treatment_type) : "";
+  const methodName = label(t.enums.paymentMethod, payment.payment_method);
   const receiptLink =
     settings.enable_whatsapp !== 0 && contact
       ? whatsappLink(
           contact.phone_number,
           [
-            `Hello ${payment.patient_name || payment.patient}, thank you for your payment of ${money(payment.amount)} on ${formatDate(payment.payment_date)}` +
-              `${payment.treatment_type ? ` for ${payment.treatment_type.toLowerCase()}` : ""} at ${clinicName}.`,
-            `Receipt: ${id} (${payment.payment_method}).`,
-            left > 0 ? `Still to pay: ${money(left)}.` : "Nothing is left to pay. Thank you!",
+            p.whatsappThanks(
+              payment.patient_name || payment.patient,
+              money(payment.amount),
+              formatDate(payment.payment_date),
+              treatmentName,
+              clinicName,
+            ),
+            p.whatsappReceipt(id, methodName),
+            left > 0 ? p.whatsappLeft(money(left)) : p.whatsappNothingLeft,
           ].join(" "),
           countryCode,
         )
@@ -127,10 +147,10 @@ function PaymentDetail() {
     receiptNo: id,
     date: formatDate(payment.payment_date),
     patient: payment.patient_name || payment.patient,
-    forWhat: payment.treatment_plan ? payment.treatment_type || "Treatment" : "General payment",
-    method: payment.payment_method,
+    forWhat: payment.treatment_plan ? treatmentName || r.treatment : r.generalPayment,
+    method: methodName,
     amount: money(payment.amount),
-    balance: balance && balance.left !== null ? { label: "Left on this treatment", amount: money(balance.left) } : undefined,
+    balance: balance && balance.left !== null ? { label: r.slip.leftOnTreatment, amount: money(balance.left) } : undefined,
     notes: payment.notes || undefined,
     printedBy: displayName,
   };
@@ -139,10 +159,10 @@ function PaymentDetail() {
     setDeleting(true);
     try {
       await deleteDoc("Payment", id);
-      toast.success("Payment deleted.");
+      toast.success(p.deleted);
       router.push("/payments");
     } catch (err) {
-      toast.error(errorMessage(err, "Could not delete the payment."));
+      toast.error(errorMessage(err, p.deleteFailed));
       setDeleting(false);
       setConfirmDelete(false);
     }
@@ -151,13 +171,13 @@ function PaymentDetail() {
   return (
     <PageContainer narrow>
       <PageHeader
-        title="Payment Receipt"
+        title={p.receiptTitle}
         subtitle={id}
-        back={{ href: "/payments", label: "Payments" }}
+        back={{ href: "/payments", label: p.title }}
         actions={
           <>
             <Button variant="secondary" icon={Printer} onClick={() => window.print()}>
-              Print
+              {t.common.print}
             </Button>
             {receiptLink && (
               <a
@@ -167,12 +187,12 @@ function PaymentDetail() {
                 className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-xl border border-green-200 bg-green-50 text-sm font-medium text-green-800 hover:bg-green-100"
               >
                 <MessageCircle size={16} />
-                WhatsApp
+                {p.whatsapp}
               </a>
             )}
             {canChange && (
               <LinkButton href={`${paymentHref(id)}/edit`} icon={Pencil}>
-                Edit
+                {t.common.edit}
               </LinkButton>
             )}
             {canChange && (
@@ -180,8 +200,8 @@ function PaymentDetail() {
                 variant="ghost"
                 icon={Trash2}
                 onClick={() => setConfirmDelete(true)}
-                aria-label="Delete payment"
-                title="Delete payment"
+                aria-label={p.deleteLabel}
+                title={p.deleteLabel}
                 className="text-red-600 hover:bg-red-50 px-3"
               />
             )}
@@ -190,11 +210,11 @@ function PaymentDetail() {
       />
 
       <Card className="print:shadow-none print:border-0">
-        <ClinicLetterhead kind="Receipt" reference={id} date={formatDate(payment.payment_date)} />
+        <ClinicLetterhead kind={r.kind} reference={id} date={formatDate(payment.payment_date)} />
 
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 py-5">
           <div>
-            <dt className="text-xs text-gray-500">Received from</dt>
+            <dt className="text-xs text-gray-500">{r.receivedFrom}</dt>
             <dd className="text-sm font-medium text-gray-800 mt-0.5">
               <Link href={patientHref(payment.patient)} className="hover:text-primary-600">
                 {payment.patient_name || payment.patient}
@@ -202,35 +222,35 @@ function PaymentDetail() {
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-gray-500">For</dt>
+            <dt className="text-xs text-gray-500">{r.for}</dt>
             <dd className="text-sm font-medium text-gray-800 mt-0.5">
               {payment.treatment_plan ? (
                 <Link href={treatmentHref(payment.treatment_plan)} className="hover:text-primary-600">
-                  {payment.treatment_type || "Treatment"} ({payment.treatment_plan})
+                  {treatmentName || r.treatment} ({payment.treatment_plan})
                 </Link>
               ) : (
-                "General payment"
+                r.generalPayment
               )}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-gray-500">Payment method</dt>
-            <dd className="text-sm font-medium text-gray-800 mt-0.5">{payment.payment_method}</dd>
+            <dt className="text-xs text-gray-500">{r.paymentMethod}</dt>
+            <dd className="text-sm font-medium text-gray-800 mt-0.5">{methodName}</dd>
           </div>
           <div>
-            <dt className="text-xs text-gray-500">Date</dt>
+            <dt className="text-xs text-gray-500">{r.date}</dt>
             <dd className="text-sm font-medium text-gray-800 mt-0.5">{formatDate(payment.payment_date)}</dd>
           </div>
           {payment.notes && (
             <div className="sm:col-span-2">
-              <dt className="text-xs text-gray-500">Notes</dt>
+              <dt className="text-xs text-gray-500">{r.notes}</dt>
               <dd className="text-sm text-gray-700 mt-0.5 whitespace-pre-line">{payment.notes}</dd>
             </div>
           )}
         </dl>
 
         <div className="flex items-center justify-between rounded-xl bg-green-50 px-5 py-4">
-          <span className="text-sm font-medium text-green-800">Amount paid</span>
+          <span className="text-sm font-medium text-green-800">{r.amountPaid}</span>
           <span className="text-2xl font-bold text-green-700">{money(payment.amount)}</span>
         </div>
 
@@ -241,14 +261,15 @@ function PaymentDetail() {
 
       <ConfirmDialog
         open={confirmDelete}
-        title="Delete this payment?"
+        title={p.deleteTitle}
         message={
           <p>
-            The payment of <strong>{money(payment.amount)}</strong> will be removed and the plan balance will go back up
-            by the same amount.
+            {p.deleteBefore}
+            <strong>{money(payment.amount)}</strong>
+            {p.deleteAfter}
           </p>
         }
-        confirmLabel="Delete Payment"
+        confirmLabel={p.deleteConfirm}
         busy={deleting}
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}

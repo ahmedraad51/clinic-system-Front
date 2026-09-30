@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { messages, num } from "@/i18n";
 import { cx } from "@/lib/format";
 
 /**
@@ -22,9 +23,9 @@ export interface ChartPoint {
 export function BarChart({
   data,
   label,
-  format = (value) => String(value),
+  format = (value) => num(value),
   highlight,
-  empty = "Nothing to show yet.",
+  empty = messages().ui.nothingYet,
 }: {
   data: ChartPoint[];
   /** What the chart shows, e.g. "Revenue, last 6 months". */
@@ -82,8 +83,8 @@ export function DonutChart({
   data,
   label,
   centerLabel,
-  format = (value) => String(value),
-  empty = "Nothing to show yet.",
+  format = (value) => num(value),
+  empty = messages().ui.nothingYet,
 }: {
   data: ChartPoint[];
   label: string;

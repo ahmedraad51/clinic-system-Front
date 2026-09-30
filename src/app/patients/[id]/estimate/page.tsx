@@ -8,7 +8,9 @@ import RequirePermission from "@/components/Guard";
 import {
   Button, Card, EmptyState, NotFoundCard, PageContainer, PageHeader, PageLoading, Table, Td, Th,
 } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
+import { label } from "@/i18n";
 import { getList } from "@/lib/frappe";
 import { display, formatDate, todayISO } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
@@ -31,6 +33,7 @@ export default function EstimatePage() {
  * already paid and what is left, on the clinic letterhead, with lines to sign.
  */
 function Estimate() {
+  const { t } = useI18n();
   const params = useParams();
   const id = routeId(params.id);
   const { money } = useSettings();
@@ -58,7 +61,9 @@ function Estimate() {
   }, [id]);
 
   if (loading) return <PageLoading />;
-  if (notFound || !patient) return <NotFoundCard error={error} what="Patient" backHref="/patients" backLabel="Back to Patients" />;
+  if (notFound || !patient) {
+    return <NotFoundCard error={error} what={t.estimate.patientWhat} backHref="/patients" backLabel={t.estimate.backToPatients} />;
+  }
 
   const rows = plans?.id === id ? plans.rows : null;
   const sum = (key: "total_cost" | "paid_amount" | "remaining_amount") =>
@@ -68,57 +73,59 @@ function Estimate() {
   return (
     <PageContainer narrow>
       <PageHeader
-        title="Treatment Estimate"
+        title={t.estimate.title}
         subtitle={patient.full_name}
         back={{ href: patientHref(id), label: patient.full_name }}
         actions={
           <Button icon={Printer} onClick={() => window.print()} disabled={!rows || rows.length === 0}>
-            Print
+            {t.common.print}
           </Button>
         }
       />
 
       <Card className="print:shadow-none print:border-0">
-        <ClinicLetterhead kind="Treatment estimate" reference={patient.name} date={formatDate(today)} />
+        <ClinicLetterhead kind={t.estimate.letterheadKind} reference={patient.name} date={formatDate(today)} />
 
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 py-5">
           <div>
-            <dt className="text-xs text-gray-500">Patient</dt>
+            <dt className="text-xs text-gray-500">{t.common.patient}</dt>
             <dd className="text-sm font-medium text-gray-800 mt-0.5">{patient.full_name}</dd>
           </div>
           <div>
-            <dt className="text-xs text-gray-500">Phone</dt>
-            <dd className="text-sm font-medium text-gray-800 mt-0.5">{display(patient.phone_number)}</dd>
+            <dt className="text-xs text-gray-500">{t.common.phone}</dt>
+            <dd className="text-sm font-medium text-gray-800 mt-0.5">
+              <span dir="ltr">{display(patient.phone_number)}</span>
+            </dd>
           </div>
         </dl>
 
         {!rows ? (
           <PageLoading />
         ) : rows.length === 0 ? (
-          <EmptyState icon={ClipboardList} title="No open treatment plans" text="Plans that are Planned or In Progress appear here." />
+          <EmptyState icon={ClipboardList} title={t.estimate.noPlansTitle} text={t.estimate.noPlansText} />
         ) : (
           <>
             <div className="-mx-5 sm:-mx-6 border-t border-gray-100">
               <Table>
                 <thead>
                   <tr>
-                    <Th>Treatment</Th>
-                    <Th>Tooth</Th>
-                    <Th>Doctor</Th>
-                    <Th className="text-end">Cost</Th>
-                    <Th className="text-end">Paid</Th>
-                    <Th className="text-end">To pay</Th>
+                    <Th>{t.estimate.treatment}</Th>
+                    <Th>{t.estimate.tooth}</Th>
+                    <Th>{t.common.doctor}</Th>
+                    <Th className="text-end">{t.estimate.cost}</Th>
+                    <Th className="text-end">{t.estimate.paid}</Th>
+                    <Th className="text-end">{t.estimate.toPay}</Th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((plan) => (
                     <tr key={plan.name}>
-                      <Td className="font-medium text-gray-800">{plan.treatment_type}</Td>
-                      <Td label="Tooth">{display(plan.tooth_number)}</Td>
-                      <Td label="Doctor">{display(plan.doctor_name)}</Td>
-                      <Td label="Cost" className="text-end whitespace-nowrap">{money(plan.total_cost)}</Td>
-                      <Td label="Paid" className="text-end whitespace-nowrap">{money(plan.paid_amount)}</Td>
-                      <Td label="To pay" className="text-end whitespace-nowrap font-medium text-gray-800">
+                      <Td className="font-medium text-gray-800">{label(t.enums.treatmentType, plan.treatment_type)}</Td>
+                      <Td label={t.estimate.tooth}>{display(plan.tooth_number)}</Td>
+                      <Td label={t.common.doctor}>{display(plan.doctor_name)}</Td>
+                      <Td label={t.estimate.cost} className="text-end whitespace-nowrap">{money(plan.total_cost)}</Td>
+                      <Td label={t.estimate.paid} className="text-end whitespace-nowrap">{money(plan.paid_amount)}</Td>
+                      <Td label={t.estimate.toPay} className="text-end whitespace-nowrap font-medium text-gray-800">
                         {money(plan.remaining_amount)}
                       </Td>
                     </tr>
@@ -129,27 +136,24 @@ function Estimate() {
 
             <div className="mt-5 ms-auto max-w-xs space-y-1.5 text-sm">
               <div className="flex justify-between gap-4">
-                <span className="text-gray-500">Total cost</span>
+                <span className="text-gray-500">{t.estimate.totalCost}</span>
                 <span className="text-gray-800">{money(sum("total_cost"))}</span>
               </div>
               <div className="flex justify-between gap-4">
-                <span className="text-gray-500">Already paid</span>
+                <span className="text-gray-500">{t.estimate.alreadyPaid}</span>
                 <span className="text-gray-800">{money(sum("paid_amount"))}</span>
               </div>
               <div className="flex justify-between gap-4 rounded-xl bg-primary-50 px-3 py-2 print:bg-white print:border print:border-gray-300">
-                <span className="font-semibold text-primary-900">Left to pay</span>
+                <span className="font-semibold text-primary-900">{t.estimate.leftToPay}</span>
                 <span className="font-bold text-primary-900">{money(sum("remaining_amount"))}</span>
               </div>
             </div>
 
-            <p className="mt-6 text-xs text-gray-500">
-              This estimate is valid for {VALID_DAYS} days from {formatDate(today)}. The final cost may change if the
-              treatment plan changes after examination.
-            </p>
+            <p className="mt-6 text-xs text-gray-500">{t.estimate.validity(VALID_DAYS, formatDate(today))}</p>
 
             <div className="mt-12 grid grid-cols-2 gap-10 text-xs text-gray-500">
-              <div className="border-t border-gray-300 pt-2">Patient signature</div>
-              <div className="border-t border-gray-300 pt-2">Doctor signature</div>
+              <div className="border-t border-gray-300 pt-2">{t.estimate.patientSignature}</div>
+              <div className="border-t border-gray-300 pt-2">{t.estimate.doctorSignature}</div>
             </div>
           </>
         )}

@@ -74,6 +74,10 @@ own `fetch`. That is what makes the dummy-data switch a one-line change.
 
 ## Screens
 
+**Arabic and English.** The app opens in Arabic, right to left, with an Arabic / English switch in the menu (each
+user's choice is remembered) and a default language in Settings. Pictures of the Arabic screens at desktop, tablet
+and phone size are in [docs/arabic](docs/arabic/README.md).
+
 **New look.** The clinic chose the "Midnight" design: a dark menu, a colour for each part of the clinic, drawn
 avatars and dashboard charts. The pictures below are retaken as the new look reaches every screen.
 
@@ -313,6 +317,7 @@ npx playwright install chromium   # once, before the first test run
 npm run test:e2e          # browser tests (builds, then serves on port 3100)
 npm run screenshots       # every page at desktop, tablet and phone size, into screenshots/
 npm run screenshots:readme   # the pictures in this README, into docs/screenshots/
+npm run screenshots:arabic   # the main screens in Arabic at three sizes, into docs/arabic/
 ```
 
 The browser tests walk through the daily work: adding a patient, booking an appointment (and the

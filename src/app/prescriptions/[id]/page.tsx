@@ -9,8 +9,10 @@ import RequirePermission from "@/components/Guard";
 import PrescriptionWarnings from "@/components/PrescriptionWarnings";
 import { Button, Card, LinkButton, NotFoundCard, PageContainer, PageHeader, RecordLoading } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useToast } from "@/context/ToastContext";
+import { label } from "@/i18n";
 import { deleteDoc, errorMessage, getList } from "@/lib/frappe";
 import { display, formatDate, formatTime } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
@@ -38,6 +40,8 @@ interface Checked {
  * warnings for this patient (never printed).
  */
 function PrescriptionDetail() {
+  const { t } = useI18n();
+  const p = t.prescriptions;
   const params = useParams();
   const router = useRouter();
   const toast = useToast();
@@ -100,21 +104,23 @@ function PrescriptionDetail() {
   }, [appointmentId]);
 
   if (loading) return <RecordLoading />;
-  if (notFound || !doc) return <NotFoundCard error={error} what="Prescription" backHref="/patients" backLabel="Back to Patients" />;
+  if (notFound || !doc) {
+    return <NotFoundCard error={error} what={label(t.enums.doctype, "Prescription")} backHref="/patients" backLabel={p.backToPatients} />;
+  }
 
   const canWrite = can("add_treatments");
   const ready = checked?.key === `${patientId}|${medicineIds}` ? checked : null;
   const warnings = ready ? prescriptionWarnings(ready.patient, doc.medicines ?? [], new Map(ready.medicines.map((m) => [m.name, m]))) : [];
-  const patientLine = [ready?.patient?.age ? `${ready.patient.age} years` : "", doc.patient].filter(Boolean).join(" · ");
+  const age = Number(ready?.patient?.age) || 0;
 
   const handleDelete = async () => {
     setDeleting(true);
     try {
       await deleteDoc("Prescription", id);
-      toast.success("Prescription deleted.");
+      toast.success(p.deleted);
       router.push(patientHref(doc.patient));
     } catch (err) {
-      toast.error(errorMessage(err, "Could not delete the prescription."));
+      toast.error(errorMessage(err, p.deleteFailed));
       setDeleting(false);
       setConfirmDelete(false);
     }
@@ -123,17 +129,23 @@ function PrescriptionDetail() {
   return (
     <PageContainer narrow>
       <PageHeader
-        title="Prescription"
-        subtitle={`${doc.patient_name || doc.patient} · ${id}`}
-        back={{ href: patientHref(doc.patient), label: doc.patient_name || "Patient" }}
+        title={p.title}
+        subtitle={
+          <>
+            {doc.patient_name || doc.patient}
+            {t.common.dot}
+            <span dir="ltr">{id}</span>
+          </>
+        }
+        back={{ href: patientHref(doc.patient), label: doc.patient_name || p.backPatient }}
         actions={
           <>
             <Button variant="secondary" icon={Printer} onClick={() => window.print()}>
-              Print
+              {t.common.print}
             </Button>
             {canWrite && (
               <LinkButton href={`${prescriptionHref(id)}/edit`} icon={Pencil}>
-                Edit
+                {t.common.edit}
               </LinkButton>
             )}
             {canWrite && (
@@ -141,8 +153,8 @@ function PrescriptionDetail() {
                 variant="ghost"
                 icon={Trash2}
                 onClick={() => setConfirmDelete(true)}
-                aria-label="Delete prescription"
-                title="Delete prescription"
+                aria-label={p.deleteLabel}
+                title={p.deleteLabel}
                 className="text-red-600 hover:bg-red-50 px-3"
               />
             )}
@@ -153,29 +165,37 @@ function PrescriptionDetail() {
       {ready && <PrescriptionWarnings warnings={warnings} quiet />}
 
       <Card className="print:shadow-none print:border-0">
-        <ClinicLetterhead kind="Prescription" reference={id} date={formatDate(doc.prescription_date)} />
+        <ClinicLetterhead kind={p.letterhead} reference={<span dir="ltr">{id}</span>} date={formatDate(doc.prescription_date)} />
 
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 py-5">
           <div>
-            <dt className="text-xs text-gray-500">Patient</dt>
+            <dt className="text-xs text-gray-500">{t.common.patient}</dt>
             <dd className="text-sm font-medium text-gray-800 mt-0.5">
               <Link href={patientHref(doc.patient)} className="hover:text-primary-600">
                 {doc.patient_name || doc.patient}
               </Link>
-              {patientLine && <span className="block text-xs font-normal text-gray-500">{patientLine}</span>}
+              <span className="block text-xs font-normal text-gray-500">
+                {age > 0 && (
+                  <>
+                    {t.common.years(age)}
+                    {t.common.dot}
+                  </>
+                )}
+                <span dir="ltr">{doc.patient}</span>
+              </span>
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-gray-500">Doctor</dt>
+            <dt className="text-xs text-gray-500">{t.common.doctor}</dt>
             <dd className="text-sm font-medium text-gray-800 mt-0.5">{display(doc.doctor_name || doc.doctor)}</dd>
           </div>
           {doc.appointment && (
             <div className="col-span-2 print:hidden">
-              <dt className="text-xs text-gray-500">Visit</dt>
+              <dt className="text-xs text-gray-500">{p.visit}</dt>
               <dd className="text-sm font-medium text-gray-800 mt-0.5">
                 <Link href={appointmentHref(doc.appointment)} className="text-primary-600 hover:underline">
                   {visit?.name === doc.appointment
-                    ? `${formatDate(visit.appointment_date)}, ${formatTime(visit.appointment_time)}`
+                    ? p.visitWhen(formatDate(visit.appointment_date), formatTime(visit.appointment_time))
                     : doc.appointment}
                 </Link>
               </dd>
@@ -186,16 +206,18 @@ function PrescriptionDetail() {
         <div className="border-t border-gray-100 pt-4">
           <p className="flex items-center gap-2 text-sm font-semibold text-gray-800">
             <Pill size={16} className="text-primary-600 print:hidden" aria-hidden="true" />
-            Rx
+            {p.rx}
           </p>
           <ol className="mt-3 space-y-3">
             {(doc.medicines ?? []).map((row, index) => (
               <li key={`${row.medicine}-${index}`} className="flex gap-3">
-                <span className="w-6 shrink-0 text-sm font-semibold text-gray-500">{index + 1}.</span>
+                <span className="w-6 shrink-0 text-sm font-semibold text-gray-500">{p.itemNumber(index + 1)}</span>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-gray-800">{row.medicine_name || row.medicine}</p>
                   <p className="text-sm text-gray-700">
-                    {[row.dose, row.frequency, row.duration_days ? `${row.duration_days} days` : ""].filter(Boolean).join(" · ")}
+                    {[row.dose, label(t.enums.frequency, row.frequency), row.duration_days ? p.days(Number(row.duration_days)) : ""]
+                      .filter(Boolean)
+                      .join(t.common.dot)}
                   </p>
                   {row.instructions && <p className="text-sm text-gray-500">{row.instructions}</p>}
                 </div>
@@ -213,7 +235,7 @@ function PrescriptionDetail() {
         <div className="mt-12 grid grid-cols-2 gap-10 text-xs text-gray-500">
           <div />
           <div className="border-t border-gray-300 pt-2">
-            Doctor&apos;s signature
+            {p.signature}
             {doc.doctor_name && <span className="block text-gray-700">{doc.doctor_name}</span>}
           </div>
         </div>
@@ -221,9 +243,9 @@ function PrescriptionDetail() {
 
       <ConfirmDialog
         open={confirmDelete}
-        title="Delete this prescription?"
-        message={<p>The prescription of {formatDate(doc.prescription_date)} will be removed for good.</p>}
-        confirmLabel="Delete Prescription"
+        title={p.deleteTitle}
+        message={<p>{p.deleteMessage(formatDate(doc.prescription_date))}</p>}
+        confirmLabel={p.deleteConfirm}
         busy={deleting}
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}

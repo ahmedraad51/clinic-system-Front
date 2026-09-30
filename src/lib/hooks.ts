@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { messages } from "@/i18n";
 import { getCount, getDoc, getList, errorMessage, isNotFound, type FilterRow } from "./frappe";
 import { MEDICAL_FIELDS, type MedicalFields } from "./medical";
 import { phoneSearchPattern, toLatinDigits } from "./phone";
@@ -89,7 +90,7 @@ export function usePagedList<T extends BaseDoc>(doctype: string, query: PagedQue
             requestKey: thisRequest,
             rows: prev?.rows ?? [],
             total: prev?.total ?? 0,
-            error: errorMessage(err, "Could not load the list."),
+            error: errorMessage(err, messages().ui.listLoadFailed),
           }));
         }
       }

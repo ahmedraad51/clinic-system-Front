@@ -4,7 +4,9 @@ import { useState, type FormEvent } from "react";
 import { FlaskConical, PackageCheck, Pencil } from "lucide-react";
 import { Alert, Badge, Button, Card, DetailList, DetailRow, Field, TextInput } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
+import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
+import { messages } from "@/i18n";
 import { errorMessage, updateDoc } from "@/lib/frappe";
 import { formatDate, todayISO } from "@/lib/format";
 import type { TreatmentPlan } from "@/lib/types";
@@ -18,11 +20,32 @@ export function labState(plan: Pick<TreatmentPlan, "lab_sent_date" | "lab_due_da
   return plan.lab_due_date && plan.lab_due_date < today ? "late" : "at_lab";
 }
 
-export const LAB_BADGES: Record<LabState, { tone: "gray" | "blue" | "red" | "green"; label: string }> = {
-  none: { tone: "gray", label: "Not sent" },
-  at_lab: { tone: "blue", label: "At the lab" },
-  late: { tone: "red", label: "Late from the lab" },
-  received: { tone: "green", label: "Back from the lab" },
+/** The badge of each state. `label` is read when it is shown, so it follows the current language. */
+export const LAB_BADGES: Record<LabState, { tone: "gray" | "blue" | "red" | "green"; readonly label: string }> = {
+  none: {
+    tone: "gray",
+    get label() {
+      return messages().lab.state.none;
+    },
+  },
+  at_lab: {
+    tone: "blue",
+    get label() {
+      return messages().lab.state.at_lab;
+    },
+  },
+  late: {
+    tone: "red",
+    get label() {
+      return messages().lab.state.late;
+    },
+  },
+  received: {
+    tone: "green",
+    get label() {
+      return messages().lab.state.received;
+    },
+  },
 };
 
 /**
@@ -30,6 +53,7 @@ export const LAB_BADGES: Record<LabState, { tone: "gray" | "blue" | "red" | "gre
  * due back, and when it came back. People who may edit treatments change it; "Received today" is one tap.
  */
 export default function LabWorkCard({ plan, canEdit, onSaved }: { plan: TreatmentPlan; canEdit: boolean; onSaved: () => void }) {
+  const { t } = useI18n();
   const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -40,10 +64,10 @@ export default function LabWorkCard({ plan, canEdit, onSaved }: { plan: Treatmen
     setSaving(true);
     try {
       await updateDoc("Treatment Plan", plan.name, { lab_received_date: todayISO() });
-      toast.success("Lab work marked as received.");
+      toast.success(messages().lab.markedReceived);
       onSaved();
     } catch (err) {
-      toast.error(errorMessage(err, "Could not save the lab work."));
+      toast.error(errorMessage(err, messages().lab.saveFailed));
     } finally {
       setSaving(false);
     }
@@ -54,8 +78,8 @@ export default function LabWorkCard({ plan, canEdit, onSaved }: { plan: Treatmen
       icon={FlaskConical}
       title={
         <span className="flex items-center gap-2">
-          Lab Work
-          <Badge tone={badge.tone}>{badge.label}</Badge>
+          {t.lab.title}
+          <Badge tone={badge.tone}>{t.lab.state[state]}</Badge>
         </span>
       }
       actions={
@@ -63,30 +87,30 @@ export default function LabWorkCard({ plan, canEdit, onSaved }: { plan: Treatmen
           <>
             {(state === "at_lab" || state === "late") && (
               <Button size="sm" variant="success" icon={PackageCheck} onClick={markReceived} loading={saving}>
-                Received today
+                {t.lab.receivedToday}
               </Button>
             )}
             <Button size="sm" variant="secondary" icon={Pencil} onClick={() => setEditing(true)}>
-              {state === "none" ? "Send to lab" : "Edit"}
+              {state === "none" ? t.lab.sendToLab : t.common.edit}
             </Button>
           </>
         )
       }
     >
       {state === "none" ? (
-        <p className="text-sm text-gray-500">Nothing sent to a lab for this plan yet.</p>
+        <p className="text-sm text-gray-500">{t.lab.nothingSent}</p>
       ) : (
         <DetailList>
-          <DetailRow label="Lab">{plan.lab_name}</DetailRow>
-          <DetailRow label="Sent">{plan.lab_sent_date ? formatDate(plan.lab_sent_date) : ""}</DetailRow>
-          <DetailRow label="Due back">
+          <DetailRow label={t.lab.lab}>{plan.lab_name}</DetailRow>
+          <DetailRow label={t.lab.sent}>{plan.lab_sent_date ? formatDate(plan.lab_sent_date) : ""}</DetailRow>
+          <DetailRow label={t.lab.dueBack}>
             {plan.lab_due_date ? (
               <span className={state === "late" ? "font-semibold text-red-600" : undefined}>{formatDate(plan.lab_due_date)}</span>
             ) : (
               ""
             )}
           </DetailRow>
-          <DetailRow label="Received">{plan.lab_received_date ? formatDate(plan.lab_received_date) : ""}</DetailRow>
+          <DetailRow label={t.lab.received}>{plan.lab_received_date ? formatDate(plan.lab_received_date) : ""}</DetailRow>
         </DetailList>
       )}
       {editing && <LabDialog plan={plan} onClose={() => setEditing(false)} onSaved={() => { setEditing(false); onSaved(); }} />}
@@ -95,6 +119,7 @@ export default function LabWorkCard({ plan, canEdit, onSaved }: { plan: Treatmen
 }
 
 function LabDialog({ plan, onClose, onSaved }: { plan: TreatmentPlan; onClose: () => void; onSaved: () => void }) {
+  const { t } = useI18n();
   const toast = useToast();
   const [form, setForm] = useState({
     lab_name: plan.lab_name ?? "",
@@ -108,7 +133,7 @@ function LabDialog({ plan, onClose, onSaved }: { plan: TreatmentPlan; onClose: (
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (form.lab_due_date && form.lab_sent_date && form.lab_due_date < form.lab_sent_date) {
-      setError("The date due back cannot be before the date it was sent.");
+      setError(messages().lab.dueBeforeSent);
       return;
     }
     setSaving(true);
@@ -120,38 +145,38 @@ function LabDialog({ plan, onClose, onSaved }: { plan: TreatmentPlan; onClose: (
         lab_due_date: form.lab_due_date || null,
         lab_received_date: form.lab_received_date || null,
       });
-      toast.success("Lab work saved.");
+      toast.success(messages().lab.saved);
       onSaved();
     } catch (err) {
-      setError(errorMessage(err, "Could not save the lab work."));
+      setError(errorMessage(err, messages().lab.saveFailed));
       setSaving(false);
     }
   };
 
   return (
-    <Modal open title="Lab Work" onClose={onClose}>
+    <Modal open title={t.lab.title} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Field label="Lab">
-          <TextInput value={form.lab_name} onChange={(e) => setForm({ ...form, lab_name: e.target.value })} placeholder="e.g. Al-Mansour Dental Lab" />
+        <Field label={t.lab.lab}>
+          <TextInput value={form.lab_name} onChange={(e) => setForm({ ...form, lab_name: e.target.value })} placeholder={t.lab.labPlaceholder} />
         </Field>
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Sent" required>
+          <Field label={t.lab.sent} required>
             <TextInput type="date" value={form.lab_sent_date} onChange={(e) => setForm({ ...form, lab_sent_date: e.target.value })} required />
           </Field>
-          <Field label="Due back">
+          <Field label={t.lab.dueBack}>
             <TextInput type="date" value={form.lab_due_date} onChange={(e) => setForm({ ...form, lab_due_date: e.target.value })} />
           </Field>
         </div>
-        <Field label="Received" hint="Leave empty until the work comes back.">
+        <Field label={t.lab.received} hint={t.lab.receivedHint}>
           <TextInput type="date" value={form.lab_received_date} onChange={(e) => setForm({ ...form, lab_received_date: e.target.value })} />
         </Field>
         {error && <Alert tone="red">{error}</Alert>}
         <div className="flex flex-wrap gap-2 pt-2">
           <Button type="submit" loading={saving}>
-            Save
+            {t.common.save}
           </Button>
           <Button variant="secondary" onClick={onClose} disabled={saving}>
-            Cancel
+            {t.common.cancel}
           </Button>
         </div>
       </form>

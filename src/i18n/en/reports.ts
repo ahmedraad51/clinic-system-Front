@@ -1,0 +1,76 @@
+import { num } from "../runtime";
+
+/** The financial reports page (/reports). */
+export const reports = {
+  /** The period picker. */
+  ranges: {
+    this_month: "This month",
+    last_month: "Last month",
+    last_3_months: "Last 3 months",
+    this_year: "This year",
+    all: "All time",
+    custom: "Custom dates",
+  },
+  period: "Period",
+  fromDate: "From date",
+  toDate: "To date",
+  /** Between the two date boxes. */
+  to: "to",
+  loadFailed: "Could not load the reports.",
+  offTitle: "Financial reports are turned off",
+  offText: "A manager can turn them on again under Settings.",
+  /** The page title while the report could not load. */
+  shortTitle: "Reports",
+  title: "Financial Reports",
+  /** `range` is rangeText() or allTime. */
+  subtitle: (range: string) => `Payments from ${range}. Outstanding balances are always as of today.`,
+  rangeText: (from: string, to: string) => `${from} to ${to}`,
+  theStart: "the start",
+  today: "today",
+  allTime: "all time",
+
+  revenue: "Revenue",
+  payments: "Payments",
+  average: "Average payment",
+  outstanding: "Outstanding",
+  outstandingHint: "All open plans",
+  byTreatment: "Revenue by Treatment",
+  byMethod: "Revenue by Method",
+  byMonth: "Revenue by Month",
+  byDoctor: "Revenue by Doctor",
+  noPayments: "No payments in this period.",
+  noPlan: "No treatment plan",
+  otherMethod: "Other",
+  noDoctor: "No doctor on the plan",
+  generalPayments: "General payments",
+
+  appointments: "Appointments",
+  noAppointments: "No appointments in this period.",
+  /** "12%" */
+  rate: (percent: number) => `${num(percent)}%`,
+  rateText: "no-show rate (no-shows out of visits that were due)",
+  completed: "Completed",
+  noShow: "No show",
+  cancelled: "Cancelled",
+  stillOpen: "Still open (not marked)",
+
+  latestTitle: "Payments in this Period",
+  exportCsv: "Export CSV",
+  colDate: "Date",
+  colPatient: "Patient",
+  colTreatment: "Treatment",
+  colMethod: "Method",
+  colAmount: "Amount",
+  colStatus: "Status",
+  colTotalCost: "Total Cost",
+  colPaid: "Paid",
+  colRemaining: "Remaining",
+  showingLatest: (shown: number, total: number) => `Showing the latest ${num(shown)} of ${num(total)}. Export CSV for the full list.`,
+  outstandingTitle: "Outstanding Balances",
+  noOutstanding: "No outstanding balances.",
+  total: "Total",
+
+  /** The CSV files: headers in the screen's language; amounts stay plain numbers. */
+  csvPayments: ["Payment", "Date", "Patient", "Treatment", "Method", "Amount"],
+  csvOutstanding: ["Plan", "Patient", "Treatment", "Tooth", "Status", "Total Cost", "Paid", "Remaining"],
+};

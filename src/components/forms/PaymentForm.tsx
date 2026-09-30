@@ -7,7 +7,9 @@ import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import LinkSelect from "@/components/ui/LinkSelect";
 import { errorMessage, getList } from "@/lib/frappe";
 import { currencyDecimals, todayISO } from "@/lib/format";
+import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
+import { label } from "@/i18n";
 import { PAYMENT_METHODS, type Payment, type TreatmentPlan } from "@/lib/types";
 
 export interface PaymentFormData {
@@ -58,6 +60,8 @@ export default function PaymentForm({
   cancelHref: string;
   onSubmit: (data: PaymentFormData) => Promise<void>;
 }) {
+  const { t } = useI18n();
+  const f = t.paymentForm;
   const { money, currency } = useSettings();
   // Editing keeps what was saved; only a new payment gets its plan picked automatically.
   const isNew = initial.amount === "";
@@ -117,9 +121,9 @@ export default function PaymentForm({
     event.preventDefault();
     const amount = Number(form.amount);
     const amountProblem = !(amount > 0)
-      ? "Enter an amount greater than zero."
+      ? f.amountZero
       : maxAmount !== undefined && amount > maxAmount
-        ? `This plan only has ${money(maxAmount)} left to pay.`
+        ? f.amountMax(money(maxAmount))
         : "";
     if (amountProblem) {
       setAmountError(amountProblem);
@@ -133,7 +137,7 @@ export default function PaymentForm({
       setDone(true);
     } catch (err) {
       console.error(err);
-      setError(errorMessage(err, "Could not save the payment. Please try again."));
+      setError(errorMessage(err, f.saveFailed));
     } finally {
       setSaving(false);
     }
@@ -146,21 +150,21 @@ export default function PaymentForm({
       <UnsavedChangesGuard when={dirty} />
       <Card>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Patient" required className="sm:col-span-2">
+          <Field label={f.patient} required className="sm:col-span-2">
             <LinkSelect
               doctype="Patient"
               value={form.patient}
               onChange={(patient) => setForm({ ...form, patient, treatment_plan: "" })}
               detailField="phone_number"
               initialLabel={patientLabel}
-              placeholder="Search by name or phone..."
+              placeholder={f.searchPatient}
               required
             />
           </Field>
           <Field
-            label="Treatment Plan"
+            label={f.plan}
             className="sm:col-span-2"
-            hint={form.patient && visiblePlans.length === 0 ? "This patient has no plans with a balance left." : undefined}
+            hint={form.patient && visiblePlans.length === 0 ? f.noPlansHint : undefined}
           >
             <SelectInput
               name="treatment_plan"
@@ -168,25 +172,25 @@ export default function PaymentForm({
               onChange={handleChange}
               disabled={!form.patient}
             >
-              <option value="">{form.patient ? "No plan (general payment)" : "Choose a patient first"}</option>
+              <option value="">{form.patient ? f.noPlan : f.choosePatient}</option>
               {visiblePlans.map((plan) => (
                 <option key={plan.name} value={plan.name}>
-                  {`${plan.treatment_type}${plan.tooth_number ? ` · tooth ${plan.tooth_number}` : ""} · ${money(plan.remaining_amount)} left`}
+                  {f.planOption(label(t.enums.treatmentType, plan.treatment_type), plan.tooth_number || "", money(plan.remaining_amount))}
                 </option>
               ))}
             </SelectInput>
           </Field>
-          <Field label="Date" required>
+          <Field label={f.date} required>
             <TextInput type="date" name="payment_date" value={form.payment_date} onChange={handleChange} required />
           </Field>
           <Field
-            label={`Amount (${currency})`}
+            label={f.amount(currency)}
             required
             error={amountError}
             hint={
               maxAmount !== undefined && maxAmount > 0 ? (
                 <span className="flex flex-wrap items-center gap-2">
-                  Up to {money(maxAmount)} for this plan.
+                  {f.upTo(money(maxAmount))}
                   {Number(form.amount) !== maxAmount && (
                     <button
                       type="button"
@@ -196,7 +200,7 @@ export default function PaymentForm({
                       }}
                       className="rounded-lg border border-primary-200 bg-primary-50 px-2 py-0.5 pointer-coarse:min-h-11 pointer-coarse:px-3 text-xs font-medium text-primary-700 hover:bg-primary-100"
                     >
-                      Pay full balance
+                      {f.payFull}
                     </button>
                   )}
                 </span>
@@ -212,16 +216,16 @@ export default function PaymentForm({
               aria-invalid={amountError ? true : undefined}
             />
           </Field>
-          <Field label="Payment Method" required>
+          <Field label={f.method} required>
             <SelectInput name="payment_method" value={form.payment_method} onChange={handleChange} required>
               {PAYMENT_METHODS.map((method) => (
                 <option key={method} value={method}>
-                  {method}
+                  {label(t.enums.paymentMethod, method)}
                 </option>
               ))}
             </SelectInput>
           </Field>
-          <Field label="Notes" className="sm:col-span-2">
+          <Field label={f.notes} className="sm:col-span-2">
             <TextArea name="notes" value={form.notes} onChange={handleChange} />
           </Field>
         </div>
@@ -234,7 +238,7 @@ export default function PaymentForm({
           {submitLabel}
         </Button>
         <LinkButton href={cancelHref} variant="secondary">
-          Cancel
+          {t.common.cancel}
         </LinkButton>
       </FormActions>
     </form>

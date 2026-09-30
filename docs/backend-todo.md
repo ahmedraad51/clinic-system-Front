@@ -28,6 +28,9 @@ Sections 1 and 2 explain what is new or still to confirm.
 | Patient | `recall_interval_months` | Int | How often the dentist wants the patient back: 3, 6, 9 or 12; 0 when not chosen. |
 | Patient | `no_recall` | Check | 1 when the dentist said the patient needs no recall (moved away, treated elsewhere). The front end then sends `recall_interval_months = 0` and `next_recall_date = null`. |
 | Doctor | `gender` | Select: Female, Male (empty allowed) | Picks the drawn avatar (a man or a woman in a white coat) when there is no photo. |
+| Clinic Settings | `default_language` | Select: ar, en (empty allowed) | The clinic's language for users who did not choose one. Empty means Arabic. |
+| Clinic Settings | `arabic_digits` | Check, default 0 | 1: Arabic screens write numbers ٠-٩ instead of 0-9. |
+| WhatsApp Template | `language` | Select: ar, en (empty allowed) | The language the message is written in; empty means any. The front end picks the template in the language of the screen, then one with no language. The reminder job should do the same with the clinic's default language (or the patient's, if a patient language is added later). |
 | Doctor | `photo` | Attach Image | The doctor's photo, uploaded on `/doctors` with `upload_file` (a public file) and shown in round avatars: lists, the calendar, the Today board. Every clinic role must be able to read it with the Doctor list. |
 
 **Recall rule for `Appointment.on_update`.** When an appointment becomes Completed and its patient has
@@ -415,6 +418,7 @@ The name is the email address. Created on `/users`; only `enabled` and `roles` a
 | `new_password` | Password | Yes | On create only, at least 8 characters. |
 | `send_welcome_email` | Check | No | Always sent as 0. |
 | `gender`, `user_image` | Frappe's own User fields | No | Read only, for the avatar in the menu, the top bar and the users list. Every user must be able to read their own. |
+| `language` | Frappe's own User field (Link Language) | No | The language the user chose with the Arabic / English switch in the menu: the front end sends `PUT /api/resource/User/<own id>` with `{ "language": "ar" }` or `"en"`. **Every user must be able to change their own `language`** (and nothing else on their User record through this call). Make sure the Language records `ar` and `en` exist. Frappe then also answers error messages in that language where it has translations. |
 
 ### Clinic Permission
 
@@ -436,6 +440,8 @@ with `GET /api/resource/Clinic Permission/<user>`.
 | `address` | Small Text | No | |
 | `currency` | Link Currency (or Data) | No | ISO code; empty is treated as IQD. |
 | `phone_country_code` | Data | No | New (section 1). Digits only; empty means 964. |
+| `default_language` | Select: ar, en | No | New (section 1). Empty means Arabic. |
+| `arabic_digits` | Check | No | New (section 1). |
 | `opening_time`, `closing_time` | Time | No | |
 | `working_days` | Data | No | Day names, comma-separated (section 2). Empty means open every day. |
 | `theme_color` | Color | No | A hex colour. Empty means the front end's default indigo; the front end sends `""` for that. |
@@ -453,6 +459,7 @@ Naming `WAT-.#####`.
 | `trigger` | Select: 24 Hours Before, 2 Hours Before, Manual | Yes | |
 | `message` | Text | Yes | With the placeholders in section 2. |
 | `is_active` | Check | No | |
+| `language` | Select: ar, en | No | New (section 1). Empty means any language. |
 
 ### WhatsApp Log (read only for the front end)
 

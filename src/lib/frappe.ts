@@ -1,3 +1,4 @@
+import { messages } from "@/i18n";
 import axios, { type AxiosRequestConfig } from "axios";
 import type { BaseDoc, Doc, DocValue } from "./types";
 import { parseDocHistory, type DocHistory, type RawDocInfo } from "./history";
@@ -65,12 +66,13 @@ const resource = (doctype: string, name?: string) =>
    burst of failed requests, and only call it "session ended" when the answer is Guest.
    ------------------------------------------------------------------------------------------------------ */
 
-export const SESSION_ENDED_MESSAGE = "Your session has ended. Please log in again.";
+/** "Your session has ended. Please log in again." in the current language. */
+export const sessionEndedMessage = () => messages().errors.sessionEnded;
 
 /** Thrown instead of the 401/403 when the login has ended. errorMessage() shows its sentence. */
 export class SessionEndedError extends Error {
   constructor() {
-    super(SESSION_ENDED_MESSAGE);
+    super(sessionEndedMessage());
     this.name = "SessionEndedError";
   }
 }
@@ -189,10 +191,9 @@ export const initAuth = () => {
   }
 };
 
-export const LOGIN_NOT_KEPT_MESSAGE =
-  "You were logged in, but the browser did not keep the login. Ask whoever set up the system to check that the app reaches the server through its own address (FRAPPE_URL).";
-export const TWO_FACTOR_MESSAGE = "This account uses two-step login, which the app does not support yet. Ask an administrator.";
-export const PASSWORD_RESET_MESSAGE = "Your password has to be changed before you can log in. Ask an administrator to reset it.";
+export const loginNotKeptMessage = () => messages().errors.loginNotKept;
+export const twoFactorMessage = () => messages().errors.twoFactor;
+export const passwordResetMessage = () => messages().errors.passwordReset;
 
 /**
  * Logs in and returns the user ID Frappe knows (an email, or "Administrator"), which may differ from what
@@ -207,17 +208,17 @@ export const login = async (usr: string, pwd: string): Promise<string> => {
     localStorage.setItem("csrf_token", csrf);
   }
   // Two-factor login answers with a verification step instead of a session.
-  if (res.data?.verification || res.data?.tmp_id) throw new Error(TWO_FACTOR_MESSAGE);
+  if (res.data?.verification || res.data?.tmp_id) throw new Error(twoFactorMessage());
   // An expired password answers with a link to the password page instead of a session.
   if (res.data?.message === "Password Reset" || String(res.data?.redirect_to ?? "").includes("update-password"))
-    throw new Error(PASSWORD_RESET_MESSAGE);
+    throw new Error(passwordResetMessage());
   const user = await getLoggedUser().catch((err: unknown) => {
     // Refused means Frappe sees a guest; any other failure (timeout, server down) is explained as it is.
     const status = axios.isAxiosError(err) ? err.response?.status : undefined;
     if (status === 401 || status === 403) return null;
     throw err;
   });
-  if (!user) throw new Error(LOGIN_NOT_KEPT_MESSAGE);
+  if (!user) throw new Error(loginNotKeptMessage());
   sessionEndReported = false;
   return user;
 };
@@ -437,14 +438,15 @@ const stripTags = (text: string) => text.replace(/<[^>]*>/g, "").trim();
 function plainMessage(text: string): string {
   const clean = stripTags(text);
   const duplicate = clean.match(/Duplicate entry '([^']*)'/i);
-  if (duplicate) return `${duplicate[1] ? `"${duplicate[1]}"` : "This value"} is already used by another record.`;
+  if (duplicate) return messages().errors.duplicate(duplicate[1]);
   const tooLong = clean.match(/Data too long for column '([^']*)'/i);
-  if (tooLong) return `Too much text for ${tooLong[1].replace(/_/g, " ")}. Please shorten it.`;
+  if (tooLong) return messages().errors.tooLong(tooLong[1].replace(/_/g, " "));
   return clean;
 }
 
 /** Turns a failed request into a sentence people can read, using Frappe's own message when there is one. */
-export function errorMessage(err: unknown, fallback = "Something went wrong. Please try again."): string {
+export function errorMessage(err: unknown, fallback = messages().errors.generic): string {
+  const e = messages().errors;
   if (axios.isAxiosError(err)) {
     const data = err.response?.data as
       | { _server_messages?: string; exception?: string; message?: unknown }
@@ -463,23 +465,23 @@ export function errorMessage(err: unknown, fallback = "Something went wrong. Ple
       return plainMessage(rest.join(":") || data.exception);
     }
     if (typeof data?.message === "string") return plainMessage(data.message);
-    if (err.response?.status === 403) return "You do not have permission to do this.";
+    if (err.response?.status === 403) return e.noPermission;
     if (isServerDown(err)) {
       // A gateway timeout can come after the server has already saved.
       return (err.config?.method ?? "get").toLowerCase() === "get"
-        ? "The clinic server is not answering. Please try again in a moment."
-        : "The clinic server did not answer. It may still have been saved, so check before trying again.";
+        ? e.serverDownRead
+        : e.serverDownSave;
     }
     if ((err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") && err.config?.url?.includes("upload_file")) {
-      return `The upload took more than ${UPLOAD_TIMEOUT_MS / 60_000} minutes and was stopped. Check the internet connection, or try a smaller file.`;
+      return e.uploadTimeout(UPLOAD_TIMEOUT_MS / 60_000);
     }
     if (err.code === "ECONNABORTED" || err.code === "ETIMEDOUT") {
       // A save that timed out may still have gone through on the server.
       return (err.config?.method ?? "get").toLowerCase() === "get"
-        ? "The server took too long to answer. Please try again."
-        : "The server took too long to answer. It may still have been saved, so check before trying again.";
+        ? e.timeoutRead
+        : e.timeoutSave;
     }
-    if (!err.response) return "Cannot reach the server. Check the internet connection and try again.";
+    if (!err.response) return e.noConnection;
   }
   if (err instanceof Error && err.message) return err.message;
   return fallback;

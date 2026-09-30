@@ -6,6 +6,7 @@
  * never is. Everyone else is due when no completed visit falls within the chosen period. Nobody with a visit
  * booked from today on is due.
  */
+import { messages } from "@/i18n";
 import { addMonths } from "./format";
 import type { Appointment, Patient } from "./types";
 
@@ -75,11 +76,24 @@ export function recallChoiceOf(patient: Partial<Pick<Patient, "recall_interval_m
   return months > 0 ? String(months) : "";
 }
 
-/** The options for a recall select, in order. */
-export const RECALL_CHOICES: Array<{ value: RecallChoice; label: string }> = [
-  { value: "", label: "Not set (the usual check-up rule)" },
-  ...RECALL_PERIODS.map((m) => ({ value: String(m), label: `Every ${m} months` })),
-  { value: "none", label: "No recall" },
+/** The options for a recall select, in order, with labels in the current language. Call it while drawing. */
+export function recallChoices(): Array<{ value: RecallChoice; label: string }> {
+  const t = messages().recall;
+  return [
+    { value: "", label: t.choiceUsual },
+    ...RECALL_PERIODS.map((m) => ({ value: String(m), label: t.choiceEvery(m) })),
+    { value: "none", label: t.choiceNone },
+  ];
+}
+
+/**
+ * The same options as recallChoices(), kept for older callers: each label is read in the current language when
+ * it is used. Prefer recallChoices().
+ */
+export const RECALL_CHOICES: ReadonlyArray<{ readonly value: RecallChoice; readonly label: string }> = [
+  { value: "", get label() { return messages().recall.choiceUsual; } },
+  ...RECALL_PERIODS.map((m) => ({ value: String(m), get label() { return messages().recall.choiceEvery(m); } })),
+  { value: "none", get label() { return messages().recall.choiceNone; } },
 ];
 
 /**

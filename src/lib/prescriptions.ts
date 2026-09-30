@@ -3,11 +3,16 @@
  * The warnings come from what is already on the patient record (allergies, medicines, pregnancy, age) and from
  * a few flags on each medicine. They never stop a prescription from being saved: the dentist decides.
  */
-import { isBlankMedical } from "./format";
+import { messages } from "@/i18n";
+import { isBlankMedicalText } from "./medical";
 import { medicalFlags, type MedicalFields } from "./medical";
+import { toLatinDigits } from "./phone";
 import type { DentalMedicine, Patient, PrescriptionMedicine } from "./types";
 
-/** How often a medicine is taken, and how many times a day that is (0 when it cannot be counted). */
+/**
+ * How often a medicine is taken, and how many times a day that is (0 when it cannot be counted). The value is
+ * saved in English on each prescription row; show it with label(t.enums.frequency, value).
+ */
 export const FREQUENCIES: Array<{ value: string; perDay: number }> = [
   { value: "Once a day", perDay: 1 },
   { value: "Twice a day", perDay: 2 },
@@ -58,17 +63,28 @@ export function timesPerDay(frequency: string | null | undefined): number {
 /**
  * The milligrams in one dose: "500 mg" → 500, "1 g" → 1000, and "2 tablets" → 2 × the medicine's strength when
  * the strength is in mg. Null when it cannot be worked out ("10 ml", "1 tablet" of a 0.12% mouthwash).
+ * Arabic digits and the usual Arabic units are read too ("٥٠٠ ملغ", "2 حبة").
  */
 export function doseMg(dose: string | null | undefined, strength?: string | null): number | null {
-  const text = (dose ?? "").trim().toLowerCase();
-  const direct = /^(\d+(?:\.\d+)?)\s*(mg|g)\b/.exec(text);
-  if (direct) return Number(direct[1]) * (direct[2] === "g" ? 1000 : 1);
-  const count = /^(\d+(?:\.\d+)?)\s*(tablets?|tabs?|capsules?|caps?|sachets?)\b/.exec(text);
+  const text = toLatinDigits(dose).trim().toLowerCase();
+  const direct = MASS_DOSE.exec(text);
+  if (direct) return Number(direct[1]) * gramFactor(direct[2]);
+  const count = COUNT_DOSE.exec(text);
   if (!count) return null;
-  const perUnit = /^(\d+(?:\.\d+)?)\s*(mg|g)\b/.exec((strength ?? "").trim().toLowerCase());
+  const perUnit = MASS_DOSE.exec(toLatinDigits(strength).trim().toLowerCase());
   if (!perUnit) return null;
-  return Number(count[1]) * Number(perUnit[1]) * (perUnit[2] === "g" ? 1000 : 1);
+  return Number(count[1]) * Number(perUnit[1]) * gramFactor(perUnit[2]);
 }
+
+/** The unit must end there: "1 g" is grams, "1 gm" or "10 ml" is not read. */
+const UNIT_END = "(?![a-z\\u0621-\\u064a])";
+/** "500 mg", "1 g", "500 ملغ", "1 غم". */
+const MASS_DOSE = new RegExp(`^(\\d+(?:\\.\\d+)?)\\s*(mg|g|ملغم|ملغ|مغ|غرام|غم|غ)${UNIT_END}`);
+/** "2 tablets", "1 capsule", "2 حبة". */
+const COUNT_DOSE = new RegExp(
+  `^(\\d+(?:\\.\\d+)?)\\s*(tablets?|tabs?|capsules?|caps?|sachets?|حبات|حبة|أقراص|قرص|كبسولات|كبسولة|أكياس|كيس)${UNIT_END}`,
+);
+const gramFactor = (unit: string) => (unit === "g" || unit.startsWith("غ") ? 1000 : 1);
 
 export type WarningKind = "allergy" | "blood_thinner" | "pregnancy" | "child" | "max_dose" | "duplicate";
 
@@ -84,7 +100,7 @@ export interface PrescriptionWarning {
 /** The words of a medicine's `allergy_words` ("penicillin, amoxicillin"), lower-cased, without empties. */
 function allergyWords(medicine: DentalMedicine): string[] {
   return (medicine.allergy_words ?? "")
-    .split(/[,;]/)
+    .split(/[,;،؛]/)
     .map((word) => word.trim().toLowerCase())
     .filter(Boolean);
 }
@@ -105,10 +121,11 @@ export function prescriptionWarnings(
   const flags = medicalFlags(patient);
   const bloodThinner = flags.find((flag) => flag.kind === "blood_thinner");
   const pregnant = flags.some((flag) => flag.kind === "pregnancy");
-  const allergies = !isBlankMedical(patient?.allergies) ? String(patient?.allergies).toLowerCase() : "";
+  const allergies = !isBlankMedicalText(patient?.allergies) ? String(patient?.allergies).toLowerCase() : "";
   const age = Number(patient?.age) || 0;
   const warnings: PrescriptionWarning[] = [];
   const seen = new Set<string>();
+  const t = messages().prescriptions.warnings;
 
   rows.forEach((row) => {
     const medicine = row.medicine ? lookup(row.medicine) : undefined;
@@ -116,7 +133,7 @@ export function prescriptionWarnings(
     const label = medicineLabel(medicine);
 
     if (seen.has(medicine.name)) {
-      warnings.push({ kind: "duplicate", severity: "medium", medicine: label, text: `${label} is listed twice.` });
+      warnings.push({ kind: "duplicate", severity: "medium", medicine: label, text: t.duplicate(label) });
     }
     seen.add(medicine.name);
 
@@ -127,7 +144,7 @@ export function prescriptionWarnings(
           kind: "allergy",
           severity: "high",
           medicine: label,
-          text: `${label}: the patient's allergies say "${hit}". Choose another medicine.`,
+          text: t.allergy(label, hit),
         });
       }
     }
@@ -136,7 +153,7 @@ export function prescriptionWarnings(
         kind: "blood_thinner",
         severity: "high",
         medicine: label,
-        text: `${label} is an NSAID and the patient takes a blood thinner (${bloodThinner.detail}): a higher risk of bleeding. Paracetamol is the usual choice.`,
+        text: t.bloodThinner(label, bloodThinner.detail),
       });
     }
     if (pregnant && Number(medicine.avoid_in_pregnancy) === 1) {
@@ -144,7 +161,7 @@ export function prescriptionWarnings(
         kind: "pregnancy",
         severity: "high",
         medicine: label,
-        text: `${label}: the patient may be pregnant. Check that it is safe, or choose another medicine.`,
+        text: t.pregnancy(label),
       });
     }
     if (age > 0 && age < CHILD_AGE) {
@@ -152,7 +169,7 @@ export function prescriptionWarnings(
         kind: "child",
         severity: "medium",
         medicine: label,
-        text: `${label}: the patient is ${age}. ${medicine.child_note?.trim() || "Check the dose for a child, by weight."}`,
+        text: t.child(label, age, medicine.child_note?.trim() || t.childDefault),
       });
     }
     const max = Number(medicine.max_daily_mg) || 0;
@@ -163,7 +180,7 @@ export function prescriptionWarnings(
         kind: "max_dose",
         severity: "medium",
         medicine: label,
-        text: `${label}: ${perDose * perDay} mg a day is above the usual maximum of ${max} mg a day.`,
+        text: t.maxDose(label, perDose * perDay, max),
       });
     }
   });

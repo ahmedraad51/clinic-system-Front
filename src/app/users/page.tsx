@@ -12,7 +12,9 @@ import {
   Toggle, Toolbar,
 } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
+import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
+import { label } from "@/i18n";
 import { createDoc, errorMessage, type FilterRow } from "@/lib/frappe";
 import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
 import { userHref } from "@/lib/links";
@@ -28,7 +30,11 @@ export default function UsersPage() {
 
 const HIDDEN_USERS: FilterRow = ["name", "not in", ["Administrator", "Guest"]];
 
+/** The shortest password Frappe accepts for a new user. */
+const MIN_PASSWORD = 8;
+
 function UsersList() {
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [showAdd, setShowAdd] = useState(false);
@@ -48,21 +54,21 @@ function UsersList() {
   return (
     <PageContainer>
       <PageHeader
-        title="Users"
-        subtitle="Staff accounts and what each person is allowed to do."
+        title={t.users.title}
+        subtitle={t.users.subtitle}
         actions={
           <Button icon={UserPlus} onClick={() => setShowAdd(true)}>
-            Add User
+            {t.users.addUser}
           </Button>
         }
       />
 
       <Toolbar>
-        <SearchInput value={search} onChange={setSearch} placeholder="Search by name or email..." />
-        <SelectInput value={status} onChange={(e) => setStatus(e.target.value)} className="sm:w-40" aria-label="Status">
-          <option value="">All users</option>
-          <option value="active">Active</option>
-          <option value="disabled">Disabled</option>
+        <SearchInput value={search} onChange={setSearch} placeholder={t.users.searchPlaceholder} />
+        <SelectInput value={status} onChange={(e) => setStatus(e.target.value)} className="sm:w-40" aria-label={t.users.statusFilter}>
+          <option value="">{t.users.allUsers}</option>
+          <option value="active">{t.users.active}</option>
+          <option value="disabled">{t.users.disabled}</option>
         </SelectInput>
       </Toolbar>
 
@@ -70,9 +76,9 @@ function UsersList() {
         <Table>
           <thead>
             <tr>
-              <Th>Name</Th>
-              <Th>Email</Th>
-              <Th>Status</Th>
+              <Th>{t.users.name}</Th>
+              <Th>{t.users.email}</Th>
+              <Th>{t.users.status}</Th>
               <Th />
             </tr>
           </thead>
@@ -85,11 +91,11 @@ function UsersList() {
               <TableMessage icon={UserSearch} colSpan={4}>
                 {debounced.trim() || status ? (
                   <>
-                    No users match.
+                    {t.users.noneMatch}
                     <ClearFiltersButton onClick={clearFilters} />
                   </>
                 ) : (
-                  "No users yet."
+                  t.users.noneYet
                 )}
               </TableMessage>
             ) : (
@@ -101,13 +107,15 @@ function UsersList() {
                       <span className="font-medium text-gray-800">{u.full_name || u.name}</span>
                     </span>
                   </Td>
-                  <Td label="Email">{u.email}</Td>
-                  <Td label="Status">
+                  <Td label={t.users.email}>
+                    <span dir="ltr">{u.email}</span>
+                  </Td>
+                  <Td label={t.users.status}>
                     <StatusBadge kind="user" status={u.enabled ? "Active" : "Disabled"} />
                   </Td>
                   <Td className="text-end">
                     <Link href={userHref(u.name)} className="inline-flex items-center gap-1 text-primary-600 hover:underline text-sm">
-                      <Shield size={14} /> Permissions
+                      <Shield size={14} /> {t.users.permissionsLink}
                     </Link>
                   </Td>
                 </ClickableRow>
@@ -124,6 +132,7 @@ function UsersList() {
 }
 
 function AddUserModal({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n();
   const router = useRouter();
   const toast = useToast();
   const [form, setForm] = useState({ first_name: "", email: "", password: "", role: "Clinic Receptionist" as ClinicRole });
@@ -145,7 +154,7 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
         roles: [{ role: form.role }],
       });
     } catch (err) {
-      setError(errorMessage(err, "Could not create the user."));
+      setError(errorMessage(err, t.users.createFailed));
       setSaving(false);
       return;
     }
@@ -156,37 +165,37 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
       try {
         await createDoc("Clinic Permission", { user: created.name, ...flags });
       } catch (err) {
-        toast.error(errorMessage(err, "The user was created, but their permissions could not be saved."));
+        toast.error(errorMessage(err, t.users.permissionsNotSaved));
       }
     }
-    toast.success(`${form.first_name} was added.`);
+    toast.success(t.users.added(form.first_name));
     router.push(userHref(created.name));
   };
 
   return (
-    <Modal open title="Add User" onClose={onClose}>
+    <Modal open title={t.users.addUser} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Field label="Full Name" required>
+        <Field label={t.users.fullName} required>
           <TextInput value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} required />
         </Field>
-        <Field label="Email" required hint="They log in with this email.">
-          <TextInput type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+        <Field label={t.users.email} required hint={t.users.emailHint}>
+          <TextInput type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required dir="ltr" />
         </Field>
-        <Field label="Password" required hint="At least 8 characters.">
+        <Field label={t.users.password} required hint={t.users.passwordHint(MIN_PASSWORD)}>
           <TextInput
             type="password"
-            minLength={8}
+            minLength={MIN_PASSWORD}
             autoComplete="new-password"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             required
           />
         </Field>
-        <Field label="Role" required>
+        <Field label={t.users.role} required>
           <SelectInput value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as ClinicRole })}>
             {CLINIC_ROLES.map((role) => (
               <option key={role} value={role}>
-                {role}
+                {label(t.enums.role, role)}
               </option>
             ))}
           </SelectInput>
@@ -194,16 +203,16 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
         <Toggle
           checked={applyPreset}
           onChange={setApplyPreset}
-          label="Give the usual permissions for this role"
-          description="You can change them on the next page."
+          label={t.users.applyPreset}
+          description={t.users.applyPresetHint}
         />
         {error && <Alert tone="red">{error}</Alert>}
         <div className="flex gap-3 pt-2">
           <Button type="submit" loading={saving} className="flex-1">
-            Add User
+            {t.users.addUser}
           </Button>
           <Button variant="secondary" onClick={onClose} disabled={saving} className="flex-1">
-            Cancel
+            {t.users.cancel}
           </Button>
         </div>
       </form>

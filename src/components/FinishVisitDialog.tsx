@@ -4,11 +4,13 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Plus } from "lucide-react";
 import { Alert, Button, Field, LinkButton, SelectInput, TextArea, Toggle } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
+import { label } from "@/i18n";
 import { useToast } from "@/context/ToastContext";
 import { createDoc, errorMessage, getList, updateDoc } from "@/lib/frappe";
 import { formatDate } from "@/lib/format";
-import { RECALL_CHOICES, RECALL_PATIENT_FIELDS, recallChoiceOf, recallDateFrom, recallUpdate } from "@/lib/recall";
+import { RECALL_PATIENT_FIELDS, recallChoiceOf, recallChoices, recallDateFrom, recallUpdate } from "@/lib/recall";
 import type { Appointment, Patient, TreatmentPlan } from "@/lib/types";
 
 /**
@@ -23,6 +25,7 @@ export default function FinishVisitDialog({
   appointment: Pick<Appointment, "name" | "patient" | "patient_name" | "doctor" | "appointment_date" | "appointment_time">;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const toast = useToast();
   const { can } = useSession();
   const canRecall = can("edit_patients");
@@ -75,7 +78,12 @@ export default function FinishVisitDialog({
   }, [appointment.patient, appointment.doctor, canRecall]);
 
   const chosen = plans?.find((p) => p.name === plan);
-  const label = (p: TreatmentPlan) => `${p.treatment_type}${p.tooth_number ? ` · tooth ${p.tooth_number}` : ""} (${p.status})`;
+  const planLabel = (p: TreatmentPlan) =>
+    t.finishVisit.planLabel(
+      label(t.enums.treatmentType, p.treatment_type),
+      p.tooth_number ? String(p.tooth_number) : "",
+      label(t.enums.treatmentStatus, p.status),
+    );
   // An interval counts from this visit.
   const recallDate = recallDateFrom(appointment.appointment_date, recall);
   const recallChanged = recallBefore !== null && recall !== recallBefore;
@@ -100,68 +108,69 @@ export default function FinishVisitDialog({
         // Starting work moves a plan to In Progress; the dentist says when it is finished.
         const status = finished ? "Completed" : chosen.status === "Planned" ? "In Progress" : null;
         if (status) await updateDoc("Treatment Plan", chosen.name, { status });
-        done.push(finished ? `Visit saved and ${chosen.treatment_type} marked complete.` : "Visit notes saved to the treatment plan.");
+        done.push(
+          finished
+            ? t.finishVisit.sessionSaved(label(t.enums.treatmentType, chosen.treatment_type))
+            : t.finishVisit.notesSaved,
+        );
       }
       if (recallChanged) {
         await updateDoc("Patient", appointment.patient, recallUpdate(recall, recallDate));
         done.push(
           recall === "none"
-            ? "No recall for this patient."
+            ? t.finishVisit.noRecall
             : recallDate
-              ? `Next check-up: ${formatDate(recallDate)}.`
-              : "Check-up set to the usual rule.",
+              ? t.finishVisit.recallSet(formatDate(recallDate))
+              : t.finishVisit.usualRule,
         );
       }
       toast.success(done.join(" "));
       onClose();
     } catch (err) {
-      setError(errorMessage(err, "Could not save the visit."));
+      setError(errorMessage(err, t.finishVisit.saveFailed));
       setSaving(false);
     }
   };
 
   return (
-    <Modal open title="What was done in this visit?" onClose={onClose}>
+    <Modal open title={t.finishVisit.title} onClose={onClose}>
       {plans === null ? (
-        <p className="text-sm text-gray-500">Loading...</p>
+        <p className="text-sm text-gray-500">{t.common.loading}</p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           {plans.length === 0 ? (
             <div className="space-y-3">
-              <p className="text-sm text-gray-600">
-                {appointment.patient_name || appointment.patient} has no open treatment plan. Start one to keep track of
-                the work and its cost.
-              </p>
+              <p className="text-sm text-gray-600">{t.finishVisit.noPlan(appointment.patient_name || appointment.patient)}</p>
               <LinkButton href={`/treatments/new?patient=${encodeURIComponent(appointment.patient)}`} variant="secondary" icon={Plus}>
-                New Treatment Plan
+                {t.finishVisit.newPlan}
               </LinkButton>
             </div>
           ) : (
             <>
-              <Field label="Treatment plan">
+              <Field label={t.finishVisit.plan}>
                 <SelectInput value={plan} onChange={(event) => setPlan(event.target.value)}>
                   {plans.map((p) => (
                     <option key={p.name} value={p.name}>
-                      {label(p)}
+                      {planLabel(p)}
                     </option>
                   ))}
                 </SelectInput>
               </Field>
-              <Field label="What was done" hint="Saved as a completed session of this plan.">
+              <Field label={t.finishVisit.whatWasDone} hint={t.finishVisit.whatHint}>
                 <TextArea autoFocus value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} />
               </Field>
               <Toggle
                 checked={finished}
                 onChange={setFinished}
-                label="This treatment is now finished"
-                description="Marks the plan Completed."
+                label={t.finishVisit.finished}
+                description={t.finishVisit.finishedHint}
               />
             </>
           )}
           {recallBefore !== null && (
-            <Field label="Next check-up" hint={recallDate ? `On ${formatDate(recallDate)}, counted from this visit.` : undefined}>
+            <Field label={t.finishVisit.nextCheckup} hint={recallDate ? t.finishVisit.recallHint(formatDate(recallDate)) : undefined}>
               <SelectInput value={recall} onChange={(event) => setRecall(event.target.value)}>
-                {RECALL_CHOICES.map((option) => (
+                {recallChoices().map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -173,11 +182,11 @@ export default function FinishVisitDialog({
           <div className="flex flex-wrap gap-2 pt-2">
             {(plans.length > 0 || recallChanged) && (
               <Button type="submit" loading={saving}>
-                Save Visit
+                {t.finishVisit.saveVisit}
               </Button>
             )}
             <Button variant="secondary" onClick={onClose} disabled={saving}>
-              Skip
+              {t.finishVisit.skip}
             </Button>
           </div>
         </form>

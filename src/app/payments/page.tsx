@@ -8,8 +8,10 @@ import {
   Card, ClearFiltersButton, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination, SearchInput,
   SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, TextInput, Th, Toolbar,
 } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
+import { label } from "@/i18n";
 import { getList, type FilterRow } from "@/lib/frappe";
 import { display, formatDate } from "@/lib/format";
 import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
@@ -25,6 +27,8 @@ export default function PaymentsPage() {
 }
 
 function PaymentsList() {
+  const { t } = useI18n();
+  const p = t.payments;
   const { can } = useSession();
   const { money } = useSettings();
   const [search, setSearch] = useState("");
@@ -82,25 +86,25 @@ function PaymentsList() {
   return (
     <PageContainer>
       <PageHeader
-        title="Payments"
+        title={p.title}
         subtitle={
           sum ? (
             <>
-              {filtered ? "Total for these filters: " : "Total received: "}
+              {filtered ? p.totalFiltered : p.totalAll}
               <span className={sum.key === sumKey ? "font-semibold text-gray-800" : "text-gray-500"}>{money(sum.total)}</span>
             </>
           ) : (
-            "Every payment received, newest first."
+            p.subtitle
           )
         }
         actions={
           <>
             <LinkButton href="/payments/day" variant="secondary" icon={FileText}>
-              End-of-Day Report
+              {p.dayReport}
             </LinkButton>
             {can("add_payments") && (
               <LinkButton href="/payments/new" icon={Plus}>
-                Add Payment
+                {p.add}
               </LinkButton>
             )}
           </>
@@ -108,19 +112,19 @@ function PaymentsList() {
       />
 
       <Toolbar>
-        <SearchInput value={search} onChange={setSearch} placeholder="Search by patient, treatment or note..." />
-        <SelectInput value={method} onChange={(e) => setMethod(e.target.value)} className="sm:w-44" aria-label="Payment method">
-          <option value="">All methods</option>
+        <SearchInput value={search} onChange={setSearch} placeholder={p.searchPlaceholder} />
+        <SelectInput value={method} onChange={(e) => setMethod(e.target.value)} className="sm:w-44" aria-label={p.methodFilter}>
+          <option value="">{p.allMethods}</option>
           {PAYMENT_METHODS.map((m) => (
             <option key={m} value={m}>
-              {m}
+              {label(t.enums.paymentMethod, m)}
             </option>
           ))}
         </SelectInput>
         <div className="flex items-center gap-2 min-w-0">
-          <TextInput type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From date" className="min-w-0 flex-1 sm:flex-none sm:w-40" />
-          <span className="text-gray-500 text-sm">to</span>
-          <TextInput type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To date" className="min-w-0 flex-1 sm:flex-none sm:w-40" />
+          <TextInput type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label={p.fromDate} className="min-w-0 flex-1 sm:flex-none sm:w-40" />
+          <span className="text-gray-500 text-sm">{p.to}</span>
+          <TextInput type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label={p.toDate} className="min-w-0 flex-1 sm:flex-none sm:w-40" />
         </div>
       </Toolbar>
 
@@ -128,11 +132,11 @@ function PaymentsList() {
         <Table>
           <thead>
             <tr>
-              <Th>Date</Th>
-              <Th>Patient</Th>
-              <Th>Treatment</Th>
-              <Th>Method</Th>
-              <Th className="text-end">Amount</Th>
+              <Th>{p.colDate}</Th>
+              <Th>{p.colPatient}</Th>
+              <Th>{p.colTreatment}</Th>
+              <Th>{p.colMethod}</Th>
+              <Th className="text-end">{p.colAmount}</Th>
             </tr>
           </thead>
           <tbody>
@@ -144,11 +148,11 @@ function PaymentsList() {
               <TableMessage icon={Receipt} colSpan={5}>
                 {filtered ? (
                   <>
-                    No payments match these filters.
+                    {p.noMatch}
                     <ClearFiltersButton onClick={clearFilters} />
                   </>
                 ) : (
-                  "No payments yet."
+                  p.none
                 )}
               </TableMessage>
             ) : (
@@ -160,24 +164,24 @@ function PaymentsList() {
                     </Link>
                     <span className="block text-xs text-gray-500">{pay.name}</span>
                   </Td>
-                  <Td label="Patient">
+                  <Td label={p.colPatient}>
                     <Link href={patientHref(pay.patient)} className="text-gray-700 hover:text-primary-600">
                       {pay.patient_name || pay.patient}
                     </Link>
                   </Td>
-                  <Td label="Treatment">
+                  <Td label={p.colTreatment}>
                     {pay.treatment_plan ? (
                       <Link href={treatmentHref(pay.treatment_plan)} className="text-gray-700 hover:text-primary-600">
-                        {pay.treatment_type || pay.treatment_plan}
+                        {pay.treatment_type ? label(t.enums.treatmentType, pay.treatment_type) : pay.treatment_plan}
                       </Link>
                     ) : (
                       display("")
                     )}
                   </Td>
-                  <Td label="Method">
+                  <Td label={p.colMethod}>
                     <StatusBadge kind="method" status={pay.payment_method} />
                   </Td>
-                  <Td label="Amount" className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount)}</Td>
+                  <Td label={p.colAmount} className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount)}</Td>
                 </ClickableRow>
               ))
             )}

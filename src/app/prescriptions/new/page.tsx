@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import RequirePermission from "@/components/Guard";
 import PrescriptionForm, { emptyPrescription, prescriptionPayload, type PrescriptionFormData } from "@/components/forms/PrescriptionForm";
 import { PageContainer, PageHeader, PageLoading } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useToast } from "@/context/ToastContext";
 import { createDoc } from "@/lib/frappe";
@@ -23,6 +24,7 @@ export default function NewPrescriptionPage() {
 }
 
 function NewPrescription() {
+  const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
@@ -40,14 +42,17 @@ function NewPrescription() {
 
   const handleSubmit = async (data: PrescriptionFormData, medicines: DentalMedicine[]) => {
     const doc = await createDoc<Prescription>("Prescription", prescriptionPayload(data, medicines));
-    toast.success("Prescription saved.");
+    toast.success(t.prescriptions.saved);
     router.push(prescriptionHref(doc.name));
   };
 
   return (
     <PageContainer narrow>
-      <PageHeader title="New Prescription" back={{ href: backHref, label: appointment ? "Appointment" : "Patient" }} />
-      <PrescriptionForm initial={initial} submitLabel="Save Prescription" cancelHref={backHref} onSubmit={handleSubmit} />
+      <PageHeader
+        title={t.prescriptions.newTitle}
+        back={{ href: backHref, label: appointment ? t.prescriptions.backAppointment : t.prescriptions.backPatient }}
+      />
+      <PrescriptionForm initial={initial} submitLabel={t.prescriptions.saveButton} cancelHref={backHref} onSubmit={handleSubmit} />
     </PageContainer>
   );
 }

@@ -9,7 +9,9 @@ import {
   SearchInput, SelectInput, Table, TableError, TableLoading, TableMessage, Td, TextInput, Th, Toggle, Toolbar,
 } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
+import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
+import { label } from "@/i18n";
 import { createDoc, errorMessage, updateDoc, uploadFile, type FilterRow } from "@/lib/frappe";
 import { display, formatTime } from "@/lib/format";
 import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
@@ -29,6 +31,7 @@ export default function DoctorsPage() {
  * while Active is on. A doctor who leaves is switched off, never deleted, so old records keep their name.
  */
 function DoctorsList() {
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   // null = closed, "new" = adding, a Doctor = editing that one.
@@ -49,21 +52,21 @@ function DoctorsList() {
   return (
     <PageContainer>
       <PageHeader
-        title="Doctors"
-        subtitle="Who can be booked. Switch a doctor off instead of deleting them; their past records stay."
+        title={t.doctors.title}
+        subtitle={t.doctors.subtitle}
         actions={
           <Button icon={Plus} onClick={() => setEditing("new")}>
-            Add Doctor
+            {t.doctors.addDoctor}
           </Button>
         }
       />
 
       <Toolbar>
-        <SearchInput value={search} onChange={setSearch} placeholder="Search by name, specialization or phone..." />
-        <SelectInput value={status} onChange={(e) => setStatus(e.target.value)} className="sm:w-44" aria-label="Status">
-          <option value="">All doctors</option>
-          <option value="active">Active</option>
-          <option value="inactive">Not active</option>
+        <SearchInput value={search} onChange={setSearch} placeholder={t.doctors.searchPlaceholder} />
+        <SelectInput value={status} onChange={(e) => setStatus(e.target.value)} className="sm:w-44" aria-label={t.doctors.statusFilter}>
+          <option value="">{t.doctors.allDoctors}</option>
+          <option value="active">{t.doctors.active}</option>
+          <option value="inactive">{t.doctors.notActive}</option>
         </SelectInput>
       </Toolbar>
 
@@ -71,11 +74,11 @@ function DoctorsList() {
         <Table>
           <thead>
             <tr>
-              <Th>Name</Th>
-              <Th>Specialization</Th>
-              <Th>Phone</Th>
-              <Th>Working hours</Th>
-              <Th>Status</Th>
+              <Th>{t.doctors.name}</Th>
+              <Th>{t.doctors.specialization}</Th>
+              <Th>{t.doctors.phone}</Th>
+              <Th>{t.doctors.workingHours}</Th>
+              <Th>{t.doctors.status}</Th>
               <Th />
             </tr>
           </thead>
@@ -88,11 +91,11 @@ function DoctorsList() {
               <TableMessage icon={BriefcaseMedical} colSpan={6}>
                 {debounced || status ? (
                   <>
-                    No doctors match.
+                    {t.doctors.noneMatch}
                     <ClearFiltersButton onClick={clearFilters} />
                   </>
                 ) : (
-                  "No doctors yet. Add the first one."
+                  t.doctors.noneYet
                 )}
               </TableMessage>
             ) : (
@@ -109,25 +112,27 @@ function DoctorsList() {
                         >
                           {doctor.full_name}
                         </button>
-                        {doctor.email && <span className="block text-xs text-gray-500">{doctor.email}</span>}
+                        {doctor.email && <span className="block text-xs text-gray-500" dir="ltr">{doctor.email}</span>}
                       </div>
                     </div>
                   </Td>
-                  <Td label="Specialization">{display(doctor.specialization)}</Td>
-                  <Td label="Phone" className="whitespace-nowrap">{display(doctor.phone_number)}</Td>
-                  <Td label="Working hours" className="whitespace-nowrap">
-                    {doctor.start_time && doctor.end_time
-                      ? `${formatTime(doctor.start_time)} – ${formatTime(doctor.end_time)}`
-                      : <span className="text-gray-500">Clinic hours</span>}
+                  <Td label={t.doctors.specialization}>{display(label(t.enums.specialization, doctor.specialization))}</Td>
+                  <Td label={t.doctors.phone} className="whitespace-nowrap">
+                    <span dir="ltr">{display(doctor.phone_number)}</span>
                   </Td>
-                  <Td label="Status">
+                  <Td label={t.doctors.workingHours} className="whitespace-nowrap">
+                    {doctor.start_time && doctor.end_time
+                      ? t.doctors.hours(formatTime(doctor.start_time), formatTime(doctor.end_time))
+                      : <span className="text-gray-500">{t.doctors.clinicHours}</span>}
+                  </Td>
+                  <Td label={t.doctors.status}>
                     <Badge tone={Number(doctor.is_active) === 1 ? "green" : "gray"}>
-                      {Number(doctor.is_active) === 1 ? "Active" : "Not active"}
+                      {Number(doctor.is_active) === 1 ? t.doctors.active : t.doctors.notActive}
                     </Badge>
                   </Td>
                   <Td className="text-end">
                     <Button size="sm" variant="ghost" icon={Pencil} onClick={() => setEditing(doctor)}>
-                      Edit
+                      {t.doctors.edit}
                     </Button>
                   </Td>
                 </tr>
@@ -182,6 +187,7 @@ function toForm(doctor: Doctor | null): DoctorForm {
 }
 
 function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doctor | null; onClose: () => void; onSaved: () => void }) {
+  const { t } = useI18n();
   const toast = useToast();
   const [form, setForm] = useState<DoctorForm>(() => toForm(doctor));
   const [saving, setSaving] = useState(false);
@@ -199,11 +205,11 @@ function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doctor | null; onC
     event.target.value = "";
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setError("Please choose a photo (an image file).");
+      setError(t.doctors.photoNotImage);
       return;
     }
     if (file.size > MAX_PHOTO_BYTES) {
-      setError("The photo must be smaller than 5 MB.");
+      setError(t.doctors.photoTooBig(MAX_PHOTO_BYTES / (1024 * 1024)));
       return;
     }
     setError("");
@@ -212,7 +218,7 @@ function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doctor | null; onC
       const url = await uploadFile(file, { onProgress: (fraction) => setPhotoProgress(fraction * 100) });
       setForm((prev) => ({ ...prev, photo: url }));
     } catch (err) {
-      setError(errorMessage(err, "Could not upload the photo."));
+      setError(errorMessage(err, t.doctors.photoUploadFailed));
     } finally {
       setPhotoProgress(null);
     }
@@ -221,11 +227,11 @@ function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doctor | null; onC
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if ((form.start_time && !form.end_time) || (!form.start_time && form.end_time)) {
-      setError("Fill in both working hours, or leave both empty to use the clinic hours.");
+      setError(t.doctors.bothHours);
       return;
     }
     if (form.start_time && form.end_time && form.end_time <= form.start_time) {
-      setError("The end of the working day must be after the start.");
+      setError(t.doctors.endAfterStart);
       return;
     }
     setSaving(true);
@@ -243,26 +249,26 @@ function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doctor | null; onC
     try {
       if (doctor) {
         await updateDoc("Doctor", doctor.name, payload);
-        toast.success(`${payload.full_name} saved.`);
+        toast.success(t.doctors.saved(payload.full_name));
       } else {
         await createDoc("Doctor", payload);
-        toast.success(`${payload.full_name} was added.`);
+        toast.success(t.doctors.added(payload.full_name));
       }
       onSaved();
     } catch (err) {
-      setError(errorMessage(err, "Could not save the doctor."));
+      setError(errorMessage(err, t.doctors.saveFailed));
       setSaving(false);
     }
   };
 
   return (
-    <Modal open title={doctor ? "Edit Doctor" : "Add Doctor"} onClose={onClose}>
+    <Modal open title={doctor ? t.doctors.editDoctor : t.doctors.addDoctor} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* The photo shows in lists, the calendar and the Today board; without one a drawing is used. */}
         <div className="flex items-center gap-4">
-          <Avatar name={form.full_name || "New doctor"} gender={form.gender} photo={form.photo} role="doctor" size={72} />
+          <Avatar name={form.full_name || t.doctors.newDoctor} gender={form.gender} photo={form.photo} role="doctor" size={72} />
           <div className="flex flex-wrap items-center gap-2">
-            <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} aria-label="Doctor photo" />
+            <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} aria-label={t.doctors.photo} />
             <Button
               variant="secondary"
               size="sm"
@@ -270,72 +276,72 @@ function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doctor | null; onC
               loading={photoProgress !== null}
               onClick={() => photoRef.current?.click()}
             >
-              {form.photo ? "Change Photo" : "Upload Photo"}
+              {form.photo ? t.doctors.changePhoto : t.doctors.uploadPhoto}
             </Button>
             {form.photo && (
               <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setForm({ ...form, photo: "" })}>
-                Remove Photo
+                {t.doctors.removePhoto}
               </Button>
             )}
             {photoProgress !== null && (
               <div className="basis-full max-w-60">
-                <ProgressBar value={photoProgress} label="Uploading photo" />
+                <ProgressBar value={photoProgress} label={t.doctors.uploadingPhoto} />
               </div>
             )}
           </div>
         </div>
-        <Field label="Full Name" required hint='Shown everywhere, for example "Dr. Zainab Al-Hashimi".'>
+        <Field label={t.doctors.fullName} required hint={t.doctors.fullNameHint}>
           <TextInput name="full_name" value={form.full_name} onChange={handleChange} required autoComplete="off" />
         </Field>
-        <Field label="Specialization">
+        <Field label={t.doctors.specialization}>
           <SelectInput name="specialization" value={form.specialization} onChange={handleChange}>
             {form.specialization && !(DOCTOR_SPECIALIZATIONS as readonly string[]).includes(form.specialization) && (
               <option value={form.specialization}>{form.specialization}</option>
             )}
             {DOCTOR_SPECIALIZATIONS.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {label(t.enums.specialization, s)}
               </option>
             ))}
           </SelectInput>
         </Field>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Gender" hint="Picks the drawing when there is no photo.">
+          <Field label={t.doctors.gender} hint={t.doctors.genderHint}>
             <SelectInput name="gender" value={form.gender} onChange={handleChange}>
-              <option value="">Not set</option>
-              <option value="Female">Female</option>
-              <option value="Male">Male</option>
+              <option value="">{t.doctors.notSet}</option>
+              <option value="Female">{label(t.enums.gender, "Female")}</option>
+              <option value="Male">{label(t.enums.gender, "Male")}</option>
             </SelectInput>
           </Field>
           <div className="max-sm:hidden" />
-          <Field label="Phone">
+          <Field label={t.doctors.phone}>
             <PhoneInput name="phone_number" value={form.phone_number} onChange={handleChange} />
           </Field>
-          <Field label="Email">
-            <TextInput type="email" name="email" value={form.email} onChange={handleChange} />
+          <Field label={t.doctors.email}>
+            <TextInput type="email" name="email" value={form.email} onChange={handleChange} dir="ltr" />
           </Field>
-          <Field label="Starts work at" hint="Empty: the clinic hours.">
-            <TextInput type="time" name="start_time" value={form.start_time} onChange={handleChange} />
+          <Field label={t.doctors.startsAt} hint={t.doctors.startsAtHint}>
+            <TextInput type="time" name="start_time" value={form.start_time} onChange={handleChange} dir="ltr" />
           </Field>
-          <Field label="Finishes at">
-            <TextInput type="time" name="end_time" value={form.end_time} onChange={handleChange} />
+          <Field label={t.doctors.finishesAt}>
+            <TextInput type="time" name="end_time" value={form.end_time} onChange={handleChange} dir="ltr" />
           </Field>
         </div>
         <Toggle
           checked={form.is_active}
           onChange={(is_active) => setForm({ ...form, is_active })}
-          label="Active"
-          description="Only active doctors can be booked and show in the calendar."
+          label={t.doctors.active}
+          description={t.doctors.activeHint}
         />
 
         {error && <Alert tone="red">{error}</Alert>}
 
         <div className="flex flex-wrap gap-2 pt-2">
           <Button type="submit" loading={saving} disabled={photoProgress !== null}>
-            {doctor ? "Save Doctor" : "Add Doctor"}
+            {doctor ? t.doctors.saveDoctor : t.doctors.addDoctor}
           </Button>
           <Button variant="secondary" onClick={onClose} disabled={saving}>
-            Cancel
+            {t.doctors.cancel}
           </Button>
         </div>
       </form>

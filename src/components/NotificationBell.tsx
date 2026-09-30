@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Bell, RotateCcw } from "lucide-react";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
+import { num } from "@/i18n";
 import { getList, type FilterRow } from "@/lib/frappe";
 import { formatTime, todayISO } from "@/lib/format";
 import { appointmentHref } from "@/lib/links";
@@ -15,6 +17,7 @@ import type { Appointment } from "@/lib/types";
  * and each time it opens.
  */
 export default function NotificationBell() {
+  const { t } = useI18n();
   const { doctor } = useSession();
   const mine = doctor?.name ?? "";
   const [open, setOpen] = useState(false);
@@ -24,7 +27,7 @@ export default function NotificationBell() {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    const timer = setInterval(() => setTick((t) => t + 1), 5 * 60 * 1000);
+    const timer = setInterval(() => setTick((n) => n + 1), 5 * 60 * 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -61,7 +64,7 @@ export default function NotificationBell() {
   }, [tick, mine]);
 
   const toggle = () => {
-    if (!open) setTick((t) => t + 1);
+    if (!open) setTick((n) => n + 1);
     setOpen(!open);
   };
 
@@ -71,13 +74,13 @@ export default function NotificationBell() {
         type="button"
         onClick={toggle}
         aria-expanded={open}
-        aria-label={failed ? "Today's appointments could not be loaded" : `Today's appointments: ${items.length}`}
+        aria-label={failed ? t.notifications.loadFailedLabel : t.notifications.countLabel(items.length)}
         className="relative w-11 h-11 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition"
       >
         <Bell size={18} />
         {items.length > 0 && (
           <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center">
-            {items.length}
+            {num(items.length)}
           </span>
         )}
       </button>
@@ -87,18 +90,18 @@ export default function NotificationBell() {
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden="true" />
           <div className="absolute end-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-lg border border-gray-100">
             <div className="px-4 py-3 border-b border-gray-100">
-              <p className="text-sm font-semibold text-gray-800">Today</p>
-              <p className="text-xs text-gray-500">{mine ? "Your patients still to come" : "Appointments still to come"}</p>
+              <p className="text-sm font-semibold text-gray-800">{t.common.today}</p>
+              <p className="text-xs text-gray-500">{mine ? t.notifications.mine : t.notifications.all}</p>
             </div>
             {failed ? (
               <div role="alert" className="px-4 py-5 flex flex-col items-center gap-3 text-sm text-center text-red-700">
-                <p>Could not load today&apos;s appointments.</p>
-                <Button variant="secondary" size="sm" icon={RotateCcw} onClick={() => setTick((t) => t + 1)}>
-                  Try Again
+                <p>{t.notifications.loadFailed}</p>
+                <Button variant="secondary" size="sm" icon={RotateCcw} onClick={() => setTick((n) => n + 1)}>
+                  {t.ui.tryAgain}
                 </Button>
               </div>
             ) : items.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-center text-gray-500">Nothing left for today.</p>
+              <p className="px-4 py-6 text-sm text-center text-gray-500">{t.notifications.nothingLeft}</p>
             ) : (
               <ul className="max-h-80 overflow-y-auto py-1">
                 {items.map((item) => (
@@ -108,7 +111,7 @@ export default function NotificationBell() {
                       onClick={() => setOpen(false)}
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50"
                     >
-                      <span className="text-xs font-semibold text-primary-600 w-16 shrink-0">{formatTime(item.appointment_time)}</span>
+                      <span className="text-xs font-semibold text-primary-600 w-16 shrink-0 whitespace-nowrap">{formatTime(item.appointment_time)}</span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-medium text-gray-800 truncate">{item.patient_name || item.name}</span>
                         <span className="block text-xs text-gray-500 truncate">{item.doctor_name}</span>
@@ -124,7 +127,7 @@ export default function NotificationBell() {
               onClick={() => setOpen(false)}
               className="block px-4 py-2.5 text-sm text-center text-primary-600 font-medium border-t border-gray-100 hover:bg-gray-50 rounded-b-xl"
             >
-              View all of today
+              {t.notifications.viewAll}
             </Link>
           </div>
         </>

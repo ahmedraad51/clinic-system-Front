@@ -5,9 +5,11 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Avatar from "@/components/Avatar";
-import { Alert, CARD_CLASS, statusTone, type Tone } from "@/components/ui";
+import { Alert, CARD_CLASS, statusLabel, statusTone, type Tone } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
+import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
+import { messages, num } from "@/i18n";
 import { errorMessage, getList, updateDoc } from "@/lib/frappe";
 import { addDays, cx, formatDate, formatTime, fromMinutes, toMinutes, todayISO, weekdayShort, weekStart } from "@/lib/format";
 import { useMediaQuery } from "@/lib/hooks";
@@ -183,6 +185,8 @@ export default function AppointmentCalendar({
   /** Whether the clinic is open on a date; closed days are shaded. */
   isOpenOn?: (iso: string) => boolean;
 }) {
+  const { t } = useI18n();
+  const c = t.calendar;
   const toast = useToast();
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -218,7 +222,7 @@ export default function AppointmentCalendar({
         if (!cancelled) setResult({ key: rangeKey, rows, error: "" });
       } catch (err) {
         console.error(err);
-        if (!cancelled) setResult({ key: rangeKey, rows: [], error: errorMessage(err, "Could not load the appointments.") });
+        if (!cancelled) setResult({ key: rangeKey, rows: [], error: errorMessage(err, messages().calendar.loadFailed) });
       }
     };
     load();
@@ -271,7 +275,7 @@ export default function AppointmentCalendar({
         doctor: doctor.name,
         person: { gender: doctor.gender, photo: doctor.photo },
         title: doctor.full_name,
-        subtitle: booked === 0 ? "Free all day" : booked === 1 ? "1 appointment" : `${booked} appointments`,
+        subtitle: booked === 0 ? c.freeAllDay : c.count(booked),
         today: date === today,
         items,
         hours: doctorHours(doctor),
@@ -286,7 +290,7 @@ export default function AppointmentCalendar({
         date: day,
         doctor: doctorFilter || undefined,
         title: weekdayShort(day),
-        subtitle: String(Number(day.slice(8, 10))),
+        subtitle: num(Number(day.slice(8, 10))),
         today: day === today,
         items: rows.filter((a) => a.appointment_date === day),
         hours: doctorFilter ? doctorHours(doctors.find((d) => d.name === doctorFilter)) : undefined,
@@ -305,10 +309,14 @@ export default function AppointmentCalendar({
     scrolledFor.current = scrollKey;
     const box = scrollRef.current;
     box.scrollTo({ top: scrollTarget });
-    // On a narrow screen the week scrolls sideways; bring today's column into view.
+    // On a narrow screen the week scrolls sideways; bring today's column into view. Measured on screen and
+    // moved by the difference, so it works both left to right and right to left (where scrollLeft counts
+    // down from 0).
     const todayHeader = box.querySelector<HTMLElement>("[data-today='true']");
     if (view === "week" && todayHeader) {
-      box.scrollLeft = todayHeader.offsetLeft + todayHeader.offsetWidth / 2 - box.clientWidth / 2;
+      const column = todayHeader.getBoundingClientRect();
+      const frame = box.getBoundingClientRect();
+      box.scrollLeft += column.left + column.width / 2 - (frame.left + frame.width / 2);
     }
   }, [scrollKey, scrollTarget, view]);
 
@@ -328,7 +336,7 @@ export default function AppointmentCalendar({
     const under = document
       .elementsFromPoint(event.clientX, event.clientY)
       .find((el): el is HTMLElement => el instanceof HTMLElement && Boolean(el.dataset.column));
-    const column = under ? columns.find((c) => c.key === under.dataset.column) : undefined;
+    const column = under ? columns.find((col) => col.key === under.dataset.column) : undefined;
     let target: Drag["target"] = null;
     if (under && column) {
       const length = endOf(drag.appointment) - startOf(drag.appointment);
@@ -381,10 +389,10 @@ export default function AppointmentCalendar({
           ),
         },
       );
-      toast.success(`${a.patient_name || a.patient} moved to ${formatTime(time)}.`);
+      toast.success(c.moved(a.patient_name || a.patient, formatTime(time)));
       setPendingMove(null);
     } catch (err) {
-      toast.error(errorMessage(err, "Could not move the appointment."));
+      toast.error(errorMessage(err, c.moveFailed));
     } finally {
       setMoving(false);
     }
@@ -403,7 +411,7 @@ export default function AppointmentCalendar({
 
   // Narrow enough that a whole week fits beside the menu on a tablet.
   const single = view === "day" && narrow && columns.length > 1;
-  const busiest = Math.max(0, columns.findIndex((c) => c.items.length > 0));
+  const busiest = Math.max(0, columns.findIndex((col) => col.items.length > 0));
   const shownIndex = Math.min(phoneColumn ?? busiest, columns.length - 1);
   const shown = single ? [columns[shownIndex]] : columns;
   const minColumn = view === "day" ? (single ? "12rem" : "10.5rem") : "5.5rem";
@@ -421,17 +429,17 @@ export default function AppointmentCalendar({
   return (
     <div className="space-y-3">
       {result?.error && <Alert tone="red">{result.error}</Alert>}
-      {view === "day" && !isOpenOn(date) && <Alert tone="yellow">The clinic is closed on this day.</Alert>}
+      {view === "day" && !isOpenOn(date) && <Alert tone="yellow">{c.closedDay}</Alert>}
 
       <div className={cx("relative overflow-hidden", CARD_CLASS)}>
         {loading && (
           <div className="absolute top-3 end-3 z-50 rounded-full bg-white/90 px-3 py-1 text-xs text-gray-500 shadow-sm" role="status">
-            Loading...
+            {t.common.loading}
           </div>
         )}
         {columns.length === 0 ? (
           <p className="px-6 py-12 text-center text-sm text-gray-500">
-            {doctorsLoading ? "Loading..." : "There are no active doctors to show."}
+            {doctorsLoading ? t.common.loading : c.noDoctors}
           </p>
         ) : (
           <>
@@ -440,15 +448,13 @@ export default function AppointmentCalendar({
               <button
                 type="button"
                 onClick={() => setPhoneColumn((shownIndex - 1 + columns.length) % columns.length)}
-                aria-label="Previous doctor"
+                aria-label={c.previousDoctor}
                 className="w-11 h-11 flex items-center justify-center rounded-lg text-gray-600 hover:bg-white"
               >
                 <ChevronLeft size={20} className="rtl:rotate-180" />
               </button>
               <div className="flex flex-col items-center gap-1">
-                <p className="text-xs text-gray-500">
-                  Doctor {shownIndex + 1} of {columns.length}
-                </p>
+                <p className="text-xs text-gray-500">{c.doctorOf(shownIndex + 1, columns.length)}</p>
                 <div className="flex gap-1.5" aria-hidden="true">
                   {columns.map((column, index) => (
                     <span
@@ -461,7 +467,7 @@ export default function AppointmentCalendar({
               <button
                 type="button"
                 onClick={() => setPhoneColumn((shownIndex + 1) % columns.length)}
-                aria-label="Next doctor"
+                aria-label={c.nextDoctor}
                 className="w-11 h-11 flex items-center justify-center rounded-lg text-gray-600 hover:bg-white"
               >
                 <ChevronRight size={20} className="rtl:rotate-180" />
@@ -491,7 +497,7 @@ export default function AppointmentCalendar({
                       <p className="text-xs text-gray-500">{column.subtitle}</p>
                       {column.hours && (
                         <p className="text-xs text-gray-500">
-                          {formatTime(fromMinutes(column.hours.start))}–{formatTime(fromMinutes(column.hours.end))}
+                          {c.hoursRange(formatTime(fromMinutes(column.hours.start)), formatTime(fromMinutes(column.hours.end)))}
                         </p>
                       )}
                     </>
@@ -508,7 +514,7 @@ export default function AppointmentCalendar({
                       >
                         {column.subtitle}
                       </p>
-                      {column.closed && <p className="text-xs font-medium text-gray-500">Closed</p>}
+                      {column.closed && <p className="text-xs font-medium text-gray-500">{c.closed}</p>}
                     </>
                   )}
                 </div>
@@ -562,14 +568,16 @@ export default function AppointmentCalendar({
                         type="button"
                         tabIndex={-1}
                         onClick={() => book(column, m)}
-                        aria-label={`Book at ${formatTime(fromMinutes(m))}${view === "day" ? ` with ${column.title}` : ""}${
-                          column.hours && (m < column.hours.start || m >= column.hours.end) ? " (outside working hours)" : ""
-                        }`}
+                        aria-label={c.bookAt(
+                          formatTime(fromMinutes(m)),
+                          view === "day" ? column.title : "",
+                          Boolean(column.hours && (m < column.hours.start || m >= column.hours.end)),
+                        )}
                         className="group absolute inset-x-0 flex items-center px-2 hover:bg-primary-50 focus:outline-none"
                         style={{ top: (m - dayStart) * PX, height: SLOT * PX }}
                       >
-                        <span className="hidden group-hover:inline text-xs font-medium text-primary-700">
-                          + {formatTime(fromMinutes(m))}
+                        <span className="hidden group-hover:inline text-xs font-medium text-primary-700 whitespace-nowrap">
+                          {c.slotHint(formatTime(fromMinutes(m)))}
                         </span>
                       </button>
                     ))}
@@ -597,8 +605,8 @@ export default function AppointmentCalendar({
                           }
                         }}
                         draggable={false}
-                        aria-label={`${formatTime(a.appointment_time)}, ${who}${a.doctor_name ? `, ${a.doctor_name}` : ""}, ${a.status}`}
-                        title={`${formatTime(a.appointment_time)} · ${who}${a.reason_for_visit ? ` · ${a.reason_for_visit}` : ""} · ${a.status}`}
+                        aria-label={c.blockLabel(formatTime(a.appointment_time), who, a.doctor_name || "", statusLabel("appointment", a.status))}
+                        title={c.blockTitle(formatTime(a.appointment_time), who, a.reason_for_visit || "", statusLabel("appointment", a.status))}
                         className={cx(
                           "absolute z-10 overflow-hidden rounded-lg border-s-4 px-2 py-1 text-start shadow-sm transition hover:shadow-md hover:z-20",
                           "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
@@ -624,7 +632,7 @@ export default function AppointmentCalendar({
                             <p className={cx("text-xs font-semibold truncate leading-tight", faded && "line-through")}>{who}</p>
                             <p className="text-xs truncate leading-tight opacity-80 mt-0.5">
                               {formatTime(a.appointment_time)}
-                              {doctor ? ` · ${doctor}` : a.reason_for_visit ? ` · ${a.reason_for_visit}` : ""}
+                              {doctor ? `${t.common.dot}${doctor}` : a.reason_for_visit ? `${t.common.dot}${a.reason_for_visit}` : ""}
                             </p>
                           </>
                         )}
@@ -671,46 +679,46 @@ export default function AppointmentCalendar({
         {APPOINTMENT_STATUSES.map((status) => (
           <span key={status} className="inline-flex items-center gap-1.5">
             <span className={cx("w-2.5 h-2.5 rounded-full", DOT_TONES[statusTone("appointment", status)])} />
-            {status}
+            {statusLabel("appointment", status)}
           </span>
         ))}
         <span className="inline-flex items-center gap-1.5">
           <span className="w-4 border-t-2 border-red-500" />
-          Now
+          {c.now}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="w-4 h-3 rounded-sm border border-gray-200" style={OFF_HOURS} />
-          Doctor not working
+          {c.notWorking}
         </span>
-        {canBook && <span className="text-gray-500">Click an empty time to book it.</span>}
-        {canMove && <span className="text-gray-500">Drag an appointment to move it.</span>}
+        {canBook && <span className="text-gray-500">{c.clickToBook}</span>}
+        {canMove && <span className="text-gray-500">{c.dragToMove}</span>}
       </div>
 
       <ConfirmDialog
         open={pendingMove !== null}
-        title="Move this appointment?"
+        title={c.moveTitle}
         danger={false}
-        confirmLabel={pendingMove?.clash ? "Move anyway" : "Move"}
+        confirmLabel={pendingMove?.clash ? c.moveAnyway : c.move}
         busy={moving}
         message={
           pendingMove && (
             <div className="space-y-2">
               <p>
-                <strong>{pendingMove.appointment.patient_name || pendingMove.appointment.patient}</strong> from{" "}
-                {formatDate(pendingMove.appointment.appointment_date)} at {formatTime(pendingMove.appointment.appointment_time)}
-                {pendingMove.appointment.doctor_name ? ` with ${pendingMove.appointment.doctor_name}` : ""} to{" "}
-                <strong>
-                  {formatDate(pendingMove.date)} at {formatTime(fromMinutes(pendingMove.minutes))}
-                </strong>
+                <strong>{pendingMove.appointment.patient_name || pendingMove.appointment.patient}</strong>
+                {c.moveFrom(
+                  formatDate(pendingMove.appointment.appointment_date),
+                  formatTime(pendingMove.appointment.appointment_time),
+                  pendingMove.appointment.doctor_name || "",
+                )}
+                <strong>{c.moveTo(formatDate(pendingMove.date), formatTime(fromMinutes(pendingMove.minutes)))}</strong>
                 {pendingMove.doctor !== pendingMove.appointment.doctor
-                  ? ` with ${doctors.find((d) => d.name === pendingMove.doctor)?.full_name ?? pendingMove.doctor}`
+                  ? c.moveWith(doctors.find((d) => d.name === pendingMove.doctor)?.full_name ?? pendingMove.doctor)
                   : ""}
-                .
+                {c.moveEnd}
               </p>
               {pendingMove.clash && (
                 <p className="text-amber-700">
-                  This overlaps {pendingMove.clash.patient_name || "another appointment"} at{" "}
-                  {formatTime(pendingMove.clash.appointment_time)}.
+                  {c.overlaps(pendingMove.clash.patient_name || "", formatTime(pendingMove.clash.appointment_time))}
                 </p>
               )}
             </div>

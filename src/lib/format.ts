@@ -1,6 +1,5 @@
+import { currentLang, intlLocale, localDigits, messages, num } from "@/i18n";
 import { toLatinDigits } from "./phone";
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /**
  * Currencies shown without decimals. IQD has 3 decimal places on paper (fils) and browsers disagree about
@@ -10,12 +9,17 @@ const WHOLE_UNIT_CURRENCIES = new Set(["IQD"]);
 
 /**
  * Formats money in the clinic currency (IQD when none is given), e.g. formatMoney(1250000, "IQD") →
- * "IQD 1,250,000" and formatMoney(4500, "USD") → "$4,500". Digits are always 0-9.
+ * "IQD 1,250,000" and formatMoney(4500, "USD") → "$4,500"; on Arabic screens "1,250,000 د.ع". Digits are 0-9,
+ * or ٠-٩ on Arabic screens when the clinic chose Arabic digits.
  */
 export function formatMoney(amount: number | string | null | undefined, currency?: string | null): string {
   const value = Number(amount) || 0;
   const code = (currency || "IQD").toUpperCase();
   const decimals = WHOLE_UNIT_CURRENCIES.has(code) ? 0 : 2;
+  if (currentLang() === "ar") {
+    const symbol = messages().dates.currencySymbols[code] ?? code;
+    return `${num(value, { minimumFractionDigits: 0, maximumFractionDigits: decimals })} ${symbol}`;
+  }
   try {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -51,38 +55,42 @@ export function cleanNumberText(value: string, decimals = true): string {
   return kept.split(".").length > 2 ? kept.replace(/\./g, "") : kept;
 }
 
-/** "2026-09-08" → "8 Sep 2026". Works on the date part only, so time zones cannot shift the day. */
+const DATE_PARTS = /^(\d{4})-(\d{2})-(\d{2})/;
+
+/** "2026-09-08" → "8 Sep 2026" ("8 أيلول 2026"). Works on the date part only, so time zones cannot shift the day. */
 export function formatDate(value: string | null | undefined): string {
   if (!value) return "—";
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  const match = DATE_PARTS.exec(value);
   if (!match) return value;
   const [, year, month, day] = match;
-  return `${Number(day)} ${MONTHS[Number(month) - 1] ?? month} ${year}`;
+  const d = messages().dates;
+  return localDigits(d.date(String(Number(day)), d.monthsShort[Number(month) - 1] ?? month, year));
 }
 
 /** Like formatDate, but without the year when it is this year: "27 Sep" (or "3 Jan 2027"). */
 export function formatShortDate(value: string | null | undefined): string {
-  const full = formatDate(value);
-  const year = String(new Date().getFullYear());
-  return full.endsWith(" " + year) ? full.slice(0, -year.length - 1) : full;
+  const match = value ? DATE_PARTS.exec(value) : null;
+  if (!match || Number(match[1]) !== new Date().getFullYear()) return formatDate(value);
+  const d = messages().dates;
+  return localDigits(d.dayMonth(String(Number(match[3])), d.monthsShort[Number(match[2]) - 1] ?? match[2]));
 }
 
-/** "14:30:00" → "2:30 PM". */
+/** "14:30:00" → "2:30 PM" ("2:30 م"). */
 export function formatTime(value: string | null | undefined): string {
   if (!value) return "—";
   const match = /^(\d{1,2}):(\d{2})/.exec(value);
   if (!match) return value;
   const hours = Number(match[1]);
-  const suffix = hours >= 12 ? "PM" : "AM";
+  const d = messages().dates;
   const hour12 = hours % 12 === 0 ? 12 : hours % 12;
-  return `${hour12}:${match[2]} ${suffix}`;
+  return localDigits(d.time(String(hour12), match[2], hours >= 12 ? d.pm : d.am));
 }
 
 /** "2026-09-07 10:00:00" → "7 Sep 2026, 10:00 AM". */
 export function formatDateTime(value: string | null | undefined): string {
   if (!value) return "—";
   const [date, time] = value.split(/[ T]/);
-  return time ? `${formatDate(date)}, ${formatTime(time)}` : formatDate(date);
+  return time ? messages().dates.dateTime(formatDate(date), formatTime(time)) : formatDate(date);
 }
 
 /** "10:30" → 630. */
@@ -122,16 +130,21 @@ const localDate = (iso: string) => {
   return new Date(year, month - 1, day);
 };
 
-/** "2026-09-26" → "Saturday, 26 September 2026". */
+/** "2026-09-26" → "Saturday, 26 September 2026" ("السبت، 26 أيلول 2026"). */
 export function formatLongDate(iso: string): string {
-  return new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(
-    localDate(iso),
-  );
+  const date = localDate(iso);
+  const d = messages().dates;
+  return localDigits(d.longDate(d.daysLong[date.getDay()], String(date.getDate()), d.monthsLong[date.getMonth()], String(date.getFullYear())));
 }
 
-/** "2026-09-26" → "Sat". */
+/** "2026-09-26" → "Sat" ("سبت"). */
 export function weekdayShort(iso: string): string {
-  return new Intl.DateTimeFormat("en-GB", { weekday: "short" }).format(localDate(iso));
+  return messages().dates.daysShort[localDate(iso).getDay()];
+}
+
+/** "2026-09-26" → "Saturday" ("السبت"). */
+export function weekdayLong(iso: string): string {
+  return messages().dates.daysLong[localDate(iso).getDay()];
 }
 
 /** The day the calendar week starts on: 0 is Sunday (the working week in most of the region), 1 is Monday. */
@@ -158,15 +171,22 @@ export function monthStart(iso: string, offset = 0): string {
   return toISODate(new Date(year, month - 1 + offset, 1));
 }
 
-/** "2026-09" → "Sep 2026". */
+/** "2026-09" → "Sep 2026" ("أيلول 2026"). */
 export function formatMonth(yearMonth: string): string {
   const [year, month] = yearMonth.split("-");
-  return `${MONTHS[Number(month) - 1] ?? month} ${year}`;
+  const d = messages().dates;
+  return localDigits(d.monthYear(d.monthsShort[Number(month) - 1] ?? month, year));
 }
 
-/** A short number for charts: 450000 → "450K", 1250000 → "1.3M", 36 → "36". Latin digits. */
+/** "2026-09" → "Sep" ("أيلول"), for chart labels. */
+export function formatMonthName(yearMonth: string): string {
+  const month = Number(yearMonth.split("-")[1]);
+  return messages().dates.monthsShort[month - 1] ?? String(month);
+}
+
+/** A short number for charts: 450000 → "450K" ("450 ألف"), 1250000 → "1.3M", 36 → "36". */
 export function formatCompact(value: number): string {
-  return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(value || 0);
+  return new Intl.NumberFormat(intlLocale(), { notation: "compact", maximumFractionDigits: 1 }).format(value || 0);
 }
 
 /** Shows a dash for empty values. */

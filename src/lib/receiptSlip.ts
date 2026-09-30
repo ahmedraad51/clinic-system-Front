@@ -4,6 +4,8 @@
  * settings belong to the computer the printer is attached to, so they are kept in this browser.
  */
 
+import { currentLang, dirOf, messages } from "@/i18n";
+
 export type SlipTextSize = "small" | "normal" | "large";
 
 export interface SlipPaper {
@@ -108,28 +110,39 @@ const escapeHtml = (value: unknown) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
+/** System fonts only (the slip has no web fonts). Arabic: fonts every Windows computer has, with clear Arabic letters. */
+const SLIP_FONTS = {
+  ar: `Tahoma, Arial, "Segoe UI", sans-serif`,
+  en: `"Segoe UI", Tahoma, Arial, sans-serif`,
+} as const;
+
 /**
- * The slip as a complete HTML page. Every value is escaped; every size comes from `paper`. The page size itself
- * is set when printing (printHtml with `pageWidthMm`), once the slip's length is known.
+ * The slip as a complete HTML page, in the current language and direction. Every value is escaped; every size
+ * comes from `paper`. The page size itself is set when printing (printHtml with `pageWidthMm`), once the slip's
+ * length is known.
  */
 export function buildReceiptSlip(data: SlipData, paper: SlipPaper): string {
   const { widthMm, marginMm, textSize } = normalizeSlipPaper(paper);
+  const lang = currentLang();
+  const t = messages().receipt.printed;
   const scale = TEXT_SCALE[textSize];
   const px = (size: number) => `${Math.round(size * scale * 100) / 100}px`;
   const row = (label: string, value: string | undefined, className = "") =>
     value ? `<div class="row ${className}"><span>${escapeHtml(label)}</span><span class="value">${escapeHtml(value)}</span></div>` : "";
-  const line = (value: string | undefined, className = "small") => (value ? `<div class="${className}">${escapeHtml(value)}</div>` : "");
+  // `ltr` keeps a phone number such as "0770 123 4567" in its order inside a right-to-left slip.
+  const line = (value: string | undefined, className = "small", ltr = false) =>
+    value ? `<div class="${className}"${ltr ? ` dir="ltr"` : ""}>${escapeHtml(value)}</div>` : "";
 
   return `<!doctype html>
-<html lang="en" dir="ltr">
+<html lang="${lang}" dir="${dirOf(lang)}">
 <head>
 <meta charset="utf-8">
-<title>Receipt ${escapeHtml(data.receiptNo)}</title>
+<title>${escapeHtml(t.title(data.receiptNo))}</title>
 <style>
 @page { margin: 0; }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: #fff; color: #000; }
-body { width: ${widthMm}mm; font-family: "Segoe UI", Tahoma, Arial, sans-serif; font-size: ${px(12)}; line-height: 1.35; }
+body { width: ${widthMm}mm; font-family: ${SLIP_FONTS[lang]}; font-size: ${px(12)}; line-height: 1.35; }
 .slip { padding: ${marginMm + 1}mm ${marginMm}mm ${marginMm + 3}mm; }
 .center { text-align: center; }
 h1 { font-size: ${px(16)}; margin: 0 0 1mm; overflow-wrap: anywhere; }
@@ -147,22 +160,22 @@ hr { border: 0; border-top: 1px dashed #000; margin: 2.5mm 0; }
 <div class="center">
 <h1>${escapeHtml(data.clinicName)}</h1>
 ${line(data.clinicAddress)}
-${line(data.clinicPhone)}
-${line(data.taxNumber ? `Tax no. ${data.taxNumber}` : "")}
+${line(data.clinicPhone, "small", true)}
+${line(data.taxNumber ? t.taxNo(`\u2066${data.taxNumber}\u2069`) : "")}
 </div>
 <hr>
-<div class="center"><strong>RECEIPT</strong>${line(data.receiptNo)}${line(data.date)}</div>
+<div class="center"><strong>${escapeHtml(t.heading)}</strong>${line(data.receiptNo)}${line(data.date)}</div>
 <hr>
-${row("Patient", data.patient)}
-${row("For", data.forWhat)}
-${row("Method", data.method)}
+${row(t.patient, data.patient)}
+${row(t.for, data.forWhat)}
+${row(t.method, data.method)}
 <hr>
-${row("Paid", data.amount, "amount")}
+${row(t.paid, data.amount, "amount")}
 ${data.balance ? row(data.balance.label, data.balance.amount) : ""}
 ${data.notes ? `<div class="notes small">${escapeHtml(data.notes)}</div>` : ""}
 <hr>
-${data.printedAt ? `<div class="center small">Printed ${escapeHtml(data.printedAt)}${data.printedBy ? ` by ${escapeHtml(data.printedBy)}` : ""}</div>` : ""}
-<div class="center" style="margin-top: 2mm">Thank you</div>
+${data.printedAt ? `<div class="center small">${escapeHtml(t.printedAt(data.printedAt, data.printedBy ?? ""))}</div>` : ""}
+<div class="center" style="margin-top: 2mm">${escapeHtml(t.thanks)}</div>
 </div>
 </body>
 </html>`;
@@ -185,7 +198,7 @@ export function printHtml(html: string, options: { pageWidthMm?: number } = {}):
   frame.setAttribute("aria-hidden", "true");
   frame.setAttribute("data-print-frame", "");
   frame.tabIndex = -1;
-  frame.title = "Print";
+  frame.title = messages().common.print;
   frame.style.cssText = "position:fixed;inset-inline-end:0;bottom:0;width:0;height:0;border:0;opacity:0;";
   let removed = false;
   const remove = () => {

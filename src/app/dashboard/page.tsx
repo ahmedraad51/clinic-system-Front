@@ -13,10 +13,12 @@ import ToothMascot from "@/components/ToothMascot";
 import {
   ActionTile, Card, EmptyState, IconTile, LinkButton, LoadError, PageContainer, Segmented, StatCard, StatusBadge, type Hue,
 } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { errorMessage, getCount, getList, type FilterRow } from "@/lib/frappe";
-import { addDays, cx, formatCompact, formatDate, formatLongDate, formatMonth, formatTime, monthStart, todayISO } from "@/lib/format";
+import { label, messages, num } from "@/i18n";
+import { addDays, cx, formatCompact, formatDate, formatLongDate, formatMonth, formatMonthName, formatTime, monthStart, todayISO } from "@/lib/format";
 import { usePatientLooks, type PatientLook } from "@/lib/hooks";
 import { appointmentHref } from "@/lib/links";
 import { DEFAULT_RECALL_MONTHS, RECALL_APPOINTMENT_FIELDS, RECALL_PATIENT_FIELDS, dueForRecall } from "@/lib/recall";
@@ -60,17 +62,17 @@ export default function DashboardPage() {
 
 function greeting(): string {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
+  const t = messages().dashboard;
+  if (hour < 12) return t.goodMorning;
+  if (hour < 18) return t.goodAfternoon;
+  return t.goodEvening;
 }
 
 /** The last CHART_MONTHS months, oldest first: "2026-09" keys with "Sep" labels. */
 function chartMonths(today: string): Array<{ key: string; label: string; fullLabel: string }> {
   return Array.from({ length: CHART_MONTHS }, (_, i) => {
     const key = monthStart(today, i - (CHART_MONTHS - 1)).slice(0, 7);
-    const fullLabel = formatMonth(key);
-    return { key, label: fullLabel.slice(0, 3), fullLabel };
+    return { key, label: formatMonthName(key), fullLabel: formatMonth(key) };
   });
 }
 
@@ -86,15 +88,16 @@ function byMonth<T>(rows: T[], months: ReturnType<typeof chartMonths>, date: (ro
 
 /** Plans per treatment type, biggest first, the smallest types together as "Other". */
 function plansByType(plans: TreatmentPlan[]): ChartPoint[] {
+  const t = messages();
   const counts = new Map<string, number>();
   plans.forEach((plan) => {
-    const type = plan.treatment_type || "Other";
+    const type = plan.treatment_type || "";
     counts.set(type, (counts.get(type) ?? 0) + 1);
   });
   const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  const shown = sorted.slice(0, RING_SLICES).map(([label, value]) => ({ label, value }));
+  const shown = sorted.slice(0, RING_SLICES).map(([type, value]) => ({ label: label(t.enums.treatmentType, type) || t.dashboard.other, value }));
   const rest = sorted.slice(RING_SLICES).reduce((sum, [, value]) => sum + value, 0);
-  return rest > 0 ? [...shown, { label: "Other", value: rest }] : shown;
+  return rest > 0 ? [...shown, { label: t.dashboard.other, value: rest }] : shown;
 }
 
 function Dashboard() {
@@ -103,6 +106,7 @@ function Dashboard() {
   const [everyone, setEveryone] = useState(false);
   const mine = myDoctor && !everyone ? myDoctor.name : "";
   const { money, settings, currency } = useSettings();
+  const { t } = useI18n();
   const [data, setData] = useState<DashboardData | null>(null);
   // A failed load says so (with Try Again) instead of leaving the numbers loading or at zero.
   const [failed, setFailed] = useState("");
@@ -207,7 +211,7 @@ function Dashboard() {
         });
       } catch (err) {
         console.error(err);
-        if (!cancelled) setFailed(errorMessage(err, "Could not load the dashboard."));
+        if (!cancelled) setFailed(errorMessage(err, messages().dashboard.loadFailed));
       }
     };
     load();
@@ -221,19 +225,19 @@ function Dashboard() {
   const loadingValue = "…";
 
   const quickActions = [
-    can("add_appointments") && { href: "/appointments/new", label: "New Appointment", hint: "Book a visit", icon: CalendarDays, section: "appointments" as const },
-    can("add_patients") && { href: "/patients/new", label: "Add Patient", hint: "Register someone new", icon: UserPlus, section: "patients" as const },
-    can("add_treatments") && { href: "/treatments/new", label: "New Treatment", hint: "Start a treatment plan", icon: Stethoscope, section: "treatments" as const },
-    can("add_payments") && { href: "/payments/new", label: "Record Payment", hint: "Take a payment", icon: CreditCard, section: "money" as const },
+    can("add_appointments") && { href: "/appointments/new", ...t.dashboard.actions.newAppointment, icon: CalendarDays, section: "appointments" as const },
+    can("add_patients") && { href: "/patients/new", ...t.dashboard.actions.addPatient, icon: UserPlus, section: "patients" as const },
+    can("add_treatments") && { href: "/treatments/new", ...t.dashboard.actions.newTreatment, icon: Stethoscope, section: "treatments" as const },
+    can("add_payments") && { href: "/payments/new", ...t.dashboard.actions.recordPayment, icon: CreditCard, section: "money" as const },
   ].filter((action) => action !== false);
 
   const summary =
     seeAppointments && data
       ? data.today.length === 0
         ? mine
-          ? "You have no patients booked today."
-          : "No appointments booked today."
-        : `${data.today.length} ${data.today.length === 1 ? "appointment" : "appointments"} today, ${stillToCome} still to come.`
+          ? t.dashboard.noneTodayMine
+          : t.dashboard.noneToday
+        : t.dashboard.todaySummary(data.today.length, stillToCome)
       : undefined;
   // Money in charts is written short: "450K" (the currency is in the card's title).
   const short = (value: number) => formatCompact(value);
@@ -242,18 +246,18 @@ function Dashboard() {
   return (
     <PageContainer>
       <WelcomeBanner
-        title={`${greeting()}, ${displayName}`}
+        title={t.dashboard.greeting(greeting(), displayName)}
         date={formatLongDate(today)}
         summary={summary}
         actions={
           myDoctor && seeAppointments ? (
             <Segmented
-              label="Whose appointments"
+              label={t.dashboard.whose}
               value={everyone ? "everyone" : "mine"}
               onChange={(next) => setEveryone(next === "everyone")}
               options={[
-                { value: "mine", label: "My patients" },
-                { value: "everyone", label: "Everyone" },
+                { value: "mine", label: t.dashboard.mine },
+                { value: "everyone", label: t.dashboard.everyone },
               ]}
             />
           ) : undefined
@@ -264,7 +268,7 @@ function Dashboard() {
       {quickActions.length > 0 && (
         <section aria-labelledby="quick-actions">
           <h2 id="quick-actions" className="sr-only">
-            Quick Actions
+            {t.dashboard.quickActions}
           </h2>
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
             {quickActions.map((action, index) => (
@@ -298,9 +302,9 @@ function Dashboard() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {seeAppointments && (
               <StatCard
-                title={mine ? "My appointments today" : "Appointments today"}
-                value={data ? data.today.length : loadingValue}
-                hint={data ? `${stillToCome} still to come` : undefined}
+                title={mine ? t.dashboard.myAppointmentsToday : t.dashboard.appointmentsToday}
+                value={data ? num(data.today.length) : loadingValue}
+                hint={data ? t.dashboard.stillToCome(stillToCome) : undefined}
                 icon={Calendar}
                 section="appointments"
                 href="/today"
@@ -308,12 +312,12 @@ function Dashboard() {
               />
             )}
             {seePatients && (
-              <StatCard title="Patients" value={data ? data.patients : loadingValue} icon={Users} section="patients" href="/patients" order={1} />
+              <StatCard title={t.dashboard.patients} value={data ? num(data.patients) : loadingValue} icon={Users} section="patients" href="/patients" order={1} />
             )}
             {seeTreatments && (
               <StatCard
-                title="Active treatment plans"
-                value={data ? data.activePlans : loadingValue}
+                title={t.dashboard.activePlans}
+                value={data ? num(data.activePlans) : loadingValue}
                 icon={Stethoscope}
                 section="treatments"
                 href="/treatments"
@@ -322,9 +326,9 @@ function Dashboard() {
             )}
             {seeMoney && (
               <StatCard
-                title="Revenue this month"
+                title={t.dashboard.revenueThisMonth}
                 value={data ? money(data.monthRevenue) : loadingValue}
-                hint={data ? `${money(data.outstanding)} still owed` : undefined}
+                hint={data ? t.dashboard.stillOwed(money(data.outstanding)) : undefined}
                 icon={TrendingUp}
                 section="money"
                 href="/payments"
@@ -338,30 +342,30 @@ function Dashboard() {
           {seeAppointments && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card
-                title={mine ? "My patients today" : "Today"}
+                title={mine ? t.dashboard.myTodayCard : t.dashboard.todayCard}
                 icon={Calendar}
                 section="appointments"
                 flush
                 actions={
                   <Link href="/today" className="inline-flex items-center pointer-coarse:min-h-11 text-sm text-primary-600 hover:underline">
-                    View all
+                    {t.common.viewAll}
                   </Link>
                 }
               >
-                <AppointmentList rows={data?.today} looks={looks} empty="No appointments today." showDate={false} />
+                <AppointmentList rows={data?.today} looks={looks} empty={t.dashboard.noAppointmentsToday} showDate={false} />
               </Card>
               <Card
-                title={mine ? "My next 7 days" : "Next 7 days"}
+                title={mine ? t.dashboard.myNext7 : t.dashboard.next7}
                 icon={CalendarRange}
                 section="appointments"
                 flush
                 actions={
                   <Link href="/appointments?date=upcoming" className="inline-flex items-center pointer-coarse:min-h-11 text-sm text-primary-600 hover:underline">
-                    View all
+                    {t.common.viewAll}
                   </Link>
                 }
               >
-                <AppointmentList rows={data?.upcoming} looks={looks} empty="Nothing booked for the next 7 days." showDate />
+                <AppointmentList rows={data?.upcoming} looks={looks} empty={t.dashboard.nothingNext7} showDate />
               </Card>
             </div>
           )}
@@ -369,31 +373,31 @@ function Dashboard() {
           {data && showCharts && (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {data.revenueByMonth && (
-                <Card title={`Revenue, last ${CHART_MONTHS} months`} icon={TrendingUp} section="money">
+                <Card title={t.dashboard.revenueChart(CHART_MONTHS)} icon={TrendingUp} section="money">
                   <BarChart
-                    label={`Revenue in ${currency}, last ${CHART_MONTHS} months`}
+                    label={t.dashboard.revenueChartLabel(currency, CHART_MONTHS)}
                     data={data.revenueByMonth}
                     format={short}
                     highlight={CHART_MONTHS - 1}
-                    empty="No payments in the last six months."
+                    empty={t.dashboard.noRevenue}
                   />
-                  <p className="text-xs text-gray-500 mt-3">Amounts in {currency}. This month is the darker bar.</p>
+                  <p className="text-xs text-gray-500 mt-3">{t.dashboard.revenueNote(currency)}</p>
                 </Card>
               )}
               {data.visitsByMonth && (
-                <Card title={mine ? "My visits per month" : "Visits per month"} icon={CalendarDays} section="appointments">
+                <Card title={mine ? t.dashboard.myVisitsChart : t.dashboard.visitsChart} icon={CalendarDays} section="appointments">
                   <BarChart
-                    label={`Visits, last ${CHART_MONTHS} months`}
+                    label={t.dashboard.visitsChartLabel(CHART_MONTHS)}
                     data={data.visitsByMonth}
                     highlight={CHART_MONTHS - 1}
-                    empty="No visits in the last six months."
+                    empty={t.dashboard.noVisits}
                   />
-                  <p className="text-xs text-gray-500 mt-3">Completed and booked visits; cancelled ones and no-shows are left out.</p>
+                  <p className="text-xs text-gray-500 mt-3">{t.dashboard.visitsNote}</p>
                 </Card>
               )}
               {data.plansByType && (
-                <Card title="Treatments by type" icon={PieChart} section="treatments" className="md:col-span-2 xl:col-span-1">
-                  <DonutChart label="Treatment plans by type" data={data.plansByType} centerLabel="plans" empty="No treatment plans yet." />
+                <Card title={t.dashboard.typesChart} icon={PieChart} section="treatments" className="md:col-span-2 xl:col-span-1">
+                  <DonutChart label={t.dashboard.typesChartLabel} data={data.plansByType} centerLabel={t.dashboard.plans} empty={t.dashboard.noPlans} format={(value) => num(value)} />
                 </Card>
               )}
             </div>
@@ -405,8 +409,8 @@ function Dashboard() {
         <Card>
           <EmptyState
             icon={Wallet}
-            title="Nothing to show yet"
-            text="Your account has no permissions turned on. Ask a clinic manager to set them under Users."
+            title={t.dashboard.nothingTitle}
+            text={t.dashboard.nothingText}
           />
         </Card>
       )}
@@ -453,13 +457,14 @@ function AppointmentList({
   empty: string;
   showDate: boolean;
 }) {
-  if (!rows) return <p className="px-6 pb-6 text-sm text-gray-500">Loading...</p>;
+  const t = messages();
+  if (!rows) return <p className="px-6 pb-6 text-sm text-gray-500">{t.common.loading}</p>;
   if (rows.length === 0) {
     return (
       <div className="px-6 pb-6">
         <p className="text-sm text-gray-500">{empty}</p>
         <LinkButton href="/appointments/new" size="sm" variant="secondary" icon={Plus} className="mt-3">
-          New Appointment
+          {t.dashboard.newAppointment}
         </LinkButton>
       </div>
     );
@@ -503,25 +508,25 @@ function readRemindersOpened(): string[] {
 
 /** A short to-do list for the start of the day. Rows with nothing to do are left out. */
 function NeedsAttention({ attention }: { attention: DashboardData["attention"] }) {
-  const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+  const t = messages().dashboard.attention;
   const rows: Array<{ href: string; icon: typeof CalendarX; hue: Hue; text: string; hint: string } | null> = [
     attention.openPast
-      ? { href: "/today", icon: CalendarX, hue: "yellow", text: `${attention.openPast} past ${plural(attention.openPast, "appointment", "appointments")} to close`, hint: "Mark them Completed or No show" }
+      ? { href: "/today", icon: CalendarX, hue: "yellow", text: t.openPast(attention.openPast), hint: t.openPastHint }
       : null,
     attention.toRemind
-      ? { href: "/today", icon: MessageCircle, hue: "whatsapp", text: `${attention.toRemind} ${plural(attention.toRemind, "reminder", "reminders")} to send for tomorrow`, hint: "WhatsApp, one tap each" }
+      ? { href: "/today", icon: MessageCircle, hue: "whatsapp", text: t.toRemind(attention.toRemind), hint: t.toRemindHint }
       : null,
     attention.recallDue
-      ? { href: "/recall", icon: BellRing, hue: "patients", text: `${attention.recallDue} ${plural(attention.recallDue, "patient", "patients")} due for a check-up`, hint: "Check-up date reached or not seen for 6 months, nothing booked" }
+      ? { href: "/recall", icon: BellRing, hue: "patients", text: t.recallDue(attention.recallDue), hint: t.recallDueHint }
       : null,
     attention.owing
-      ? { href: "/patients?balance=owing", icon: Wallet, hue: "red", text: `${attention.owing} ${plural(attention.owing, "patient owes", "patients owe")} money`, hint: "See balances and send reminders" }
+      ? { href: "/patients?balance=owing", icon: Wallet, hue: "red", text: t.owing(attention.owing), hint: t.owingHint }
       : null,
   ];
   const shown = rows.filter((row) => row !== null);
   if (shown.length === 0) return null;
   return (
-    <Card title="Needs attention" flush>
+    <Card title={t.title} flush>
       <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-2 px-2 pb-2">
         {shown.map((row) => (
           <li key={row.text}>

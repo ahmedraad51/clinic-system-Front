@@ -166,6 +166,11 @@ body {
   font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Arabic screens: IBM Plex Sans Arabic (its Latin letters are used for names typed in English). */
+:root[lang="ar"] body {
+  font-family: var(--font-arabic), var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+}
+
 /* The page behind the cards. */
 .app-bg {
   background: var(--page-bg);

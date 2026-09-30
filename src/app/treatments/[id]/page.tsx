@@ -14,10 +14,12 @@ import {
   PageContainer, PageHeader, PageLoading, RecordLoading, ProgressBar, SelectInput, StatusBadge, Table, Td, TextArea, TextInput, Th,
 } from "@/components/ui";
 import { ConfirmDialog, Modal } from "@/components/ui/Modal";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { createDoc, deleteDoc, errorMessage, getList, updateDoc } from "@/lib/frappe";
+import { label, messages } from "@/i18n";
 import { cx, display, formatDate, formatTime, todayISO } from "@/lib/format";
 import { useDoctors, useDocument, usePatientChart, usePatientMedical } from "@/lib/hooks";
 import { patientHref, paymentHref, routeId } from "@/lib/links";
@@ -41,6 +43,7 @@ interface Related {
 }
 
 function TreatmentDetail() {
+  const { t } = useI18n();
   const params = useParams();
   const router = useRouter();
   const toast = useToast();
@@ -89,7 +92,7 @@ function TreatmentDetail() {
         }
       } catch (err) {
         console.error(err);
-        if (!cancelled) setRelatedError(errorMessage(err, "Could not load the sessions and payments of this plan."));
+        if (!cancelled) setRelatedError(errorMessage(err, messages().treatments.loadRelatedFailed));
       }
     };
     load();
@@ -100,7 +103,7 @@ function TreatmentDetail() {
 
   if (loading) return <RecordLoading />;
   if (notFound || !plan) {
-    return <NotFoundCard error={error} what="Treatment plan" backHref="/treatments" backLabel="Back to Treatment Plans" />;
+    return <NotFoundCard error={error} what={t.treatments.what} backHref="/treatments" backLabel={t.treatments.backToList} />;
   }
 
   const canEdit = can("edit_treatments");
@@ -128,10 +131,10 @@ function TreatmentDetail() {
     setUpdating(status);
     try {
       await updateDoc("Treatment Plan", id, { status });
-      toast.success(`Marked as ${status}.`);
+      toast.success(messages().treatments.markedAs(label(messages().enums.treatmentStatus, status)));
       reload();
     } catch (err) {
-      toast.error(errorMessage(err, "Could not change the status."));
+      toast.error(errorMessage(err, messages().treatments.statusFailed));
     } finally {
       setUpdating(null);
     }
@@ -141,21 +144,22 @@ function TreatmentDetail() {
     setDeleting(true);
     try {
       await deleteDoc("Treatment Plan", id);
-      toast.success("Treatment plan deleted.");
+      toast.success(messages().treatments.deleted);
       router.push("/treatments");
     } catch (err) {
-      toast.error(errorMessage(err, "Could not delete the treatment plan."));
+      toast.error(errorMessage(err, messages().treatments.deleteFailed));
       setDeleting(false);
       setConfirmDelete(false);
     }
   };
 
-  const title = plan.tooth_number ? `${plan.treatment_type} · Tooth ${plan.tooth_number}` : plan.treatment_type;
+  const typeLabel = label(t.enums.treatmentType, plan.treatment_type);
+  const title = plan.tooth_number ? t.treatments.titleWithTooth(typeLabel, plan.tooth_number) : typeLabel;
   // The next visit for this plan: patient, the plan's doctor and what it is for.
   const bookVisitHref = `/appointments/new?${new URLSearchParams({
     patient: plan.patient,
     ...(plan.doctor ? { doctor: plan.doctor } : {}),
-    reason: title.replace(" · Tooth ", " · tooth "),
+    reason: plan.tooth_number ? t.treatments.visitReason(typeLabel, plan.tooth_number) : typeLabel,
   }).toString()}`;
   const paymentHrefForPlan = `/payments/new?treatment=${encodeURIComponent(id)}&patient=${encodeURIComponent(plan.patient)}`;
 
@@ -163,19 +167,19 @@ function TreatmentDetail() {
     <PageContainer>
       <PageHeader
         title={title}
-        subtitle={`${plan.patient_name || plan.patient} · ${id}`}
+        subtitle={`${plan.patient_name || plan.patient}${t.common.dot}${id}`}
         badge={<StatusBadge kind="treatment" status={plan.status} />}
-        back={{ href: "/treatments", label: "Treatment Plans" }}
+        back={{ href: "/treatments", label: t.treatments.title }}
         actions={
           <>
             {can("add_payments") && remaining > 0 && (
               <LinkButton href={paymentHrefForPlan} variant="success" icon={CreditCard}>
-                Add Payment
+                {t.treatments.addPayment}
               </LinkButton>
             )}
             {canEdit && (
               <LinkButton href={`/treatments/${encodeURIComponent(id)}/edit`} icon={Pencil}>
-                Edit
+                {t.common.edit}
               </LinkButton>
             )}
             {canEdit && (
@@ -183,8 +187,8 @@ function TreatmentDetail() {
                 variant="ghost"
                 icon={Trash2}
                 onClick={() => setConfirmDelete(true)}
-                aria-label="Delete treatment plan"
-                title="Delete treatment plan"
+                aria-label={t.treatments.deletePlan}
+                title={t.treatments.deletePlan}
                 className="text-red-600 hover:bg-red-50 px-3"
               />
             )}
@@ -197,47 +201,47 @@ function TreatmentDetail() {
       <Card>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
           <div className="flex items-baseline justify-between gap-3 sm:block">
-            <p className="text-xs text-gray-500">Total Cost</p>
+            <p className="text-xs text-gray-500">{t.treatments.totalCost}</p>
             <p className="text-lg sm:text-2xl font-bold text-gray-800 sm:mt-1">{money(total)}</p>
           </div>
           <div className="flex items-baseline justify-between gap-3 sm:block">
-            <p className="text-xs text-gray-500">Paid</p>
+            <p className="text-xs text-gray-500">{t.treatments.paid}</p>
             <p data-testid="plan-paid" className="text-lg sm:text-2xl font-bold text-green-600 sm:mt-1">{money(paid)}</p>
           </div>
           <div className="flex items-baseline justify-between gap-3 sm:block">
-            <p className="text-xs text-gray-500">Remaining</p>
+            <p className="text-xs text-gray-500">{t.treatments.remaining}</p>
             <p data-testid="plan-remaining" className={cx("text-lg sm:text-2xl font-bold sm:mt-1", remaining > 0 ? "text-red-600" : "text-gray-500")}>
               {money(remaining)}
             </p>
           </div>
         </div>
         <div className="mt-5">
-          <ProgressBar value={percent} label="Paid" showLabel={false} tone="green" />
+          <ProgressBar value={percent} label={t.treatments.paid} showLabel={false} tone="green" />
           <p className="text-xs text-gray-500 mt-2">
-            {plan.status === "Cancelled" ? "Cancelled plans have nothing left to pay." : `${percent}% paid`}
+            {plan.status === "Cancelled" ? t.treatments.cancelledNothingLeft : t.treatments.paidPercent(percent)}
           </p>
         </div>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card title="Details" icon={ClipboardList}>
+        <Card title={t.common.details} icon={ClipboardList}>
           <DetailList>
-            <DetailRow label="Patient">
+            <DetailRow label={t.common.patient}>
               <Link href={patientHref(plan.patient)} className="text-primary-600 hover:underline">
                 {plan.patient_name || plan.patient}
               </Link>
             </DetailRow>
-            <DetailRow label="Doctor">{plan.doctor_name || plan.doctor}</DetailRow>
-            <DetailRow label="Treatment">{plan.treatment_type}</DetailRow>
-            <DetailRow label="Tooth">{plan.tooth_number}</DetailRow>
-            <DetailRow label="Diagnosis">{plan.diagnosis}</DetailRow>
-            <DetailRow label="Notes">{plan.treatment_notes}</DetailRow>
+            <DetailRow label={t.common.doctor}>{plan.doctor_name || plan.doctor}</DetailRow>
+            <DetailRow label={t.treatments.treatment}>{typeLabel}</DetailRow>
+            <DetailRow label={t.treatments.tooth}>{plan.tooth_number}</DetailRow>
+            <DetailRow label={t.treatments.diagnosis}>{plan.diagnosis}</DetailRow>
+            <DetailRow label={t.common.notes}>{plan.treatment_notes}</DetailRow>
           </DetailList>
         </Card>
 
         <div className="space-y-6">
           {canEdit && (
-            <Card title="Update Status" icon={ListChecks}>
+            <Card title={t.treatments.updateStatus} icon={ListChecks}>
               <div className="flex flex-wrap gap-2">
                 {TREATMENT_STATUSES.map((status) => {
                   const current = plan.status === status;
@@ -252,7 +256,7 @@ function TreatmentDetail() {
                         current ? "bg-primary-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50",
                       )}
                     >
-                      {updating === status ? "Saving..." : status}
+                      {updating === status ? t.common.saving : label(t.enums.treatmentStatus, status)}
                     </button>
                   );
                 })}
@@ -262,14 +266,14 @@ function TreatmentDetail() {
 
           {showPayments && (
             <Card
-              title="Payments"
+              title={t.treatments.payments}
               icon={CreditCard}
               flush
               actions={
                 can("add_payments") &&
                 remaining > 0 && (
                   <LinkButton href={paymentHrefForPlan} size="sm" variant="secondary" icon={Plus}>
-                    Add
+                    {t.common.add}
                   </LinkButton>
                 )
               }
@@ -277,7 +281,7 @@ function TreatmentDetail() {
               {!data ? (
                 relatedWaiting
               ) : data.payments.length === 0 ? (
-                <p className="px-6 pb-6 text-sm text-gray-500">No payments for this plan yet.</p>
+                <p className="px-6 pb-6 text-sm text-gray-500">{t.treatments.noPayments}</p>
               ) : (
                 // A list, not a table: this box is narrow beside the details on a tablet.
                 <ul className="divide-y divide-gray-100 border-t border-gray-100">
@@ -320,19 +324,19 @@ function TreatmentDetail() {
       )}
 
       <Card
-        title="Sessions"
+        title={t.treatments.sessions}
         icon={CalendarCheck}
         flush
         actions={
           <>
             {can("add_appointments") && (plan.status === "Planned" || plan.status === "In Progress") && (
               <LinkButton href={bookVisitHref} size="sm" variant="secondary" icon={CalendarPlus}>
-                Book Visit
+                {t.treatments.bookVisit}
               </LinkButton>
             )}
             {canEdit && (
               <Button size="sm" variant="secondary" icon={Plus} onClick={() => setSessionModal({ open: true, session: null })}>
-                Add Session
+                {t.treatments.addSession}
               </Button>
             )}
           </>
@@ -341,17 +345,17 @@ function TreatmentDetail() {
         {!data ? (
           relatedWaiting
         ) : data.sessions.length === 0 ? (
-          <EmptyState icon={ClipboardList} title="No sessions yet" text="Add a session for each visit where this treatment is worked on." />
+          <EmptyState icon={ClipboardList} title={t.treatments.noSessionsTitle} text={t.treatments.noSessionsText} />
         ) : (
           <div className={cx(refreshing && "opacity-60")}>
             <Table>
               <thead>
                 <tr>
-                  <Th>Date</Th>
-                  <Th>Time</Th>
-                  <Th>Doctor</Th>
-                  <Th>Status</Th>
-                  <Th>Notes</Th>
+                  <Th>{t.common.date}</Th>
+                  <Th>{t.common.time}</Th>
+                  <Th>{t.common.doctor}</Th>
+                  <Th>{t.common.status}</Th>
+                  <Th>{t.common.notes}</Th>
                   {canEdit && <Th />}
                 </tr>
               </thead>
@@ -359,16 +363,16 @@ function TreatmentDetail() {
                 {data.sessions.map((session) => (
                   <tr key={session.name} className="hover:bg-gray-50">
                     <Td className="whitespace-nowrap font-medium text-gray-800">{formatDate(session.session_date)}</Td>
-                    <Td label="Time" className="whitespace-nowrap">{formatTime(session.session_time)}</Td>
-                    <Td label="Doctor">{display(session.doctor_name)}</Td>
-                    <Td label="Status">
+                    <Td label={t.common.time} className="whitespace-nowrap">{formatTime(session.session_time)}</Td>
+                    <Td label={t.common.doctor}>{display(session.doctor_name)}</Td>
+                    <Td label={t.common.status}>
                       <StatusBadge kind="session" status={session.status} />
                     </Td>
-                    <Td label="Notes" className="max-w-[320px]">{display(session.notes)}</Td>
+                    <Td label={t.common.notes} className="max-w-[320px]">{display(session.notes)}</Td>
                     {canEdit && (
                       <Td className="text-end">
                         <Button size="sm" variant="ghost" icon={Pencil} onClick={() => setSessionModal({ open: true, session })}>
-                          Edit
+                          {t.common.edit}
                         </Button>
                       </Td>
                     )}
@@ -396,14 +400,9 @@ function TreatmentDetail() {
 
       <ConfirmDialog
         open={confirmDelete}
-        title="Delete this treatment plan?"
-        message={
-          <p>
-            This plan will be removed for good. A plan that already has payments or sessions cannot be deleted; set its
-            status to Cancelled instead.
-          </p>
-        }
-        confirmLabel="Delete Plan"
+        title={t.treatments.deleteTitle}
+        message={<p>{t.treatments.deleteMessage}</p>}
+        confirmLabel={t.treatments.deleteConfirm}
         busy={deleting}
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
@@ -432,6 +431,7 @@ function SessionModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useI18n();
   const toast = useToast();
   const doctors = useDoctors();
   const [form, setForm] = useState<SessionForm>({
@@ -464,14 +464,14 @@ function SessionModal({
     try {
       if (session) {
         await updateDoc("Treatment Session", session.name, payload);
-        toast.success("Session saved.");
+        toast.success(messages().treatments.sessionSaved);
       } else {
         await createDoc("Treatment Session", payload);
-        toast.success("Session added.");
+        toast.success(messages().treatments.sessionAdded);
       }
       onSaved();
     } catch (err) {
-      setError(errorMessage(err, "Could not save the session."));
+      setError(errorMessage(err, messages().treatments.sessionSaveFailed));
       setSaving(false);
     }
   };
@@ -486,10 +486,10 @@ function SessionModal({
     setDeleting(true);
     try {
       await deleteDoc("Treatment Session", session.name);
-      toast.success("Session deleted.");
+      toast.success(messages().treatments.sessionDeleted);
       onSaved();
     } catch (err) {
-      setError(errorMessage(err, "Could not delete the session."));
+      setError(errorMessage(err, messages().treatments.sessionDeleteFailed));
       setDeleting(false);
     }
   };
@@ -497,19 +497,19 @@ function SessionModal({
   const doctorMissing = form.doctor && !doctors.some((doctor) => doctor.name === form.doctor);
 
   return (
-    <Modal open title={session ? "Edit Session" : "Add Session"} onClose={onClose}>
+    <Modal open title={session ? t.treatments.editSession : t.treatments.addSession} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Date" required>
+          <Field label={t.common.date} required>
             <TextInput type="date" name="session_date" value={form.session_date} onChange={handleChange} required />
           </Field>
-          <Field label="Time">
-            <TextInput type="time" name="session_time" value={form.session_time} onChange={handleChange} />
+          <Field label={t.common.time}>
+            <TextInput type="time" name="session_time" value={form.session_time} onChange={handleChange} dir="ltr" />
           </Field>
         </div>
-        <Field label="Doctor">
+        <Field label={t.common.doctor}>
           <SelectInput name="doctor" value={form.doctor} onChange={handleChange}>
-            <option value="">Select Doctor</option>
+            <option value="">{t.treatments.selectDoctor}</option>
             {doctorMissing && <option value={form.doctor}>{session?.doctor_name || plan.doctor_name || form.doctor}</option>}
             {doctors.map((doctor) => (
               <option key={doctor.name} value={doctor.name}>
@@ -518,16 +518,16 @@ function SessionModal({
             ))}
           </SelectInput>
         </Field>
-        <Field label="Status">
+        <Field label={t.common.status}>
           <SelectInput name="status" value={form.status} onChange={handleChange}>
             {SESSION_STATUSES.map((status) => (
               <option key={status} value={status}>
-                {status}
+                {label(t.enums.sessionStatus, status)}
               </option>
             ))}
           </SelectInput>
         </Field>
-        <Field label="Notes" hint="What was done in this visit.">
+        <Field label={t.common.notes} hint={t.treatments.sessionNotesHint}>
           <TextArea name="notes" value={form.notes} onChange={handleChange} />
         </Field>
 
@@ -535,10 +535,10 @@ function SessionModal({
 
         <div className="flex flex-wrap items-center gap-2 pt-2">
           <Button type="submit" loading={saving} disabled={deleting}>
-            {session ? "Save Session" : "Add Session"}
+            {session ? t.treatments.saveSession : t.treatments.addSession}
           </Button>
           <Button variant="secondary" onClick={onClose} disabled={saving || deleting}>
-            Cancel
+            {t.common.cancel}
           </Button>
           {session && (
             <Button
@@ -549,7 +549,7 @@ function SessionModal({
               disabled={saving}
               className="ms-auto text-red-600 hover:bg-red-50"
             >
-              {confirmingDelete ? "Click again to delete" : "Delete"}
+              {confirmingDelete ? t.treatments.clickAgainToDelete : t.common.delete}
             </Button>
           )}
         </div>

@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState, ReactNode } from "react";
 import { Check, Info, X } from "lucide-react";
+import { messages } from "@/i18n";
 
 type ToastKind = "success" | "error" | "info";
 
@@ -74,7 +75,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               type="button"
               onClick={() => dismiss(toast.id)}
               className="shrink-0 opacity-80 hover:opacity-100"
-              aria-label="Close message"
+              aria-label={messages().ui.closeMessage}
             >
               <X size={16} />
             </button>

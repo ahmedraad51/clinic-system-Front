@@ -5,8 +5,8 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- **Arabic version (Phase 5), next.** Arabic as the default language, an Arabic / English switch in the menu,
-  right-to-left layout everywhere, and every text in translation files. Then Phases 2, 3 and 4.
+- **Next: Phases 2, 3 and 4**, in both languages: the new look on every screen with real charts on Reports, the
+  X-ray section, then the features from the competitor study.
 
 ## Backlog
 
@@ -15,6 +15,18 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Done
 
+- 2026-09-30 - **Arabic version.** The app now opens in Arabic, right to left, in a clear Arabic font (IBM Plex
+  Sans Arabic). An Arabic / English switch sits in the menu; each person's choice is kept on their account, and the
+  computer remembers it too. Settings has a new **Language** card: the clinic's **default language**, and **Arabic
+  digits** (٠-٩ instead of 0-9 on Arabic screens). Every screen, message, error, empty list, printout, receipt and
+  receipt slip is translated, in the dental words Iraqi dentists use (حشوة، علاج عصب، تاج، جسر، قلع، زرعة، تنظيف،
+  تبييض); FDI tooth numbers stay numbers, and the dental chart keeps the patient's right on the left. Dates use the
+  Iraqi month names (كانون الثاني، شباط … أيلول), times ص/م, and amounts "250,000 د.ع". WhatsApp templates now have
+  a language, and the dummy clinic has each one in Arabic and English; reminders use the one in the screen's
+  language. Medical alerts also understand notes typed in Arabic (حساسية، وارفارين، سكري، حامل …). Names and notes
+  stay in the language they were typed in. Pictures: [docs/arabic](docs/arabic/README.md). Every text now lives in
+  translation files, so each new text is added in both languages. No new package; your dev server does not need a
+  restart.
 - 2026-09-30 - **Design "Midnight" (option B) chosen and applied.** The other two options and the switch on My
   Profile are removed. The app is now indigo with a dark menu, glowing icon tiles, white cards with coloured
   edges, gradient buttons and pill-shaped tabs, in the Manrope font. Settings → Theme colour starts with

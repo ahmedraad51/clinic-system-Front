@@ -6,7 +6,9 @@ import {
   BellRing, CalendarDays, CalendarPlus, ClipboardCheck, CreditCard, Search, Stethoscope, User, UserPlus, type LucideIcon,
 } from "lucide-react";
 import { Spinner } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
+import type { Messages } from "@/i18n";
 import { getList } from "@/lib/frappe";
 import { cx } from "@/lib/format";
 import { searchFilters, useDebounced } from "@/lib/hooks";
@@ -19,36 +21,36 @@ import type { Patient, PermissionKey } from "@/lib/types";
  */
 
 interface Action {
-  label: string;
-  hint: string;
+  /** Its label, hint and search words in the translation files (nav.search.actions). */
+  key: keyof Messages["nav"]["search"]["actions"];
   href: string;
   icon: LucideIcon;
   permission?: PermissionKey;
-  /** Extra words that find it. */
-  words: string;
 }
 
 const ACTIONS: Action[] = [
-  { label: "New Appointment", hint: "Book a visit", href: "/appointments/new", icon: CalendarPlus, permission: "add_appointments", words: "book booking visit" },
-  { label: "Add Patient", hint: "Register a new patient", href: "/patients/new", icon: UserPlus, permission: "add_patients", words: "register new" },
-  { label: "Today", hint: "The front desk board", href: "/today", icon: ClipboardCheck, permission: "view_appointments", words: "board front desk" },
-  { label: "Appointment Calendar", hint: "Day and week view", href: "/appointments?view=day", icon: CalendarDays, permission: "view_appointments", words: "calendar schedule diary" },
-  { label: "New Treatment Plan", hint: "Plan work for a patient", href: "/treatments/new", icon: Stethoscope, permission: "add_treatments", words: "treatment plan" },
-  { label: "Recall List", hint: "Patients due for a check-up", href: "/recall", icon: BellRing, permission: "view_appointments", words: "recall check-up checkup due remind" },
-  { label: "Record Payment", hint: "Take a payment", href: "/payments/new", icon: CreditCard, permission: "add_payments", words: "pay money cash card receipt" },
+  { key: "newAppointment", href: "/appointments/new", icon: CalendarPlus, permission: "add_appointments" },
+  { key: "addPatient", href: "/patients/new", icon: UserPlus, permission: "add_patients" },
+  { key: "today", href: "/today", icon: ClipboardCheck, permission: "view_appointments" },
+  { key: "calendar", href: "/appointments?view=day", icon: CalendarDays, permission: "view_appointments" },
+  { key: "newTreatment", href: "/treatments/new", icon: Stethoscope, permission: "add_treatments" },
+  { key: "recall", href: "/recall", icon: BellRing, permission: "view_appointments" },
+  { key: "payment", href: "/payments/new", icon: CreditCard, permission: "add_payments" },
 ];
 
 interface Result {
   kind: "patient" | "action";
   key: string;
   label: string;
-  hint: string;
+  /** Parts of the second line (phone, age, ID), each shown with its own direction. */
+  hint: string[];
   href: string;
   icon: LucideIcon;
 }
 
 export default function GlobalSearch() {
   const [open, setOpen] = useState(false);
+  const { t } = useI18n();
 
   // Ctrl+K / ⌘K from anywhere.
   useEffect(() => {
@@ -67,7 +69,7 @@ export default function GlobalSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Search patients and actions"
+        aria-label={t.nav.search.button}
         aria-keyshortcuts="Control+K"
         className={cx(
           "flex items-center gap-2 h-11 rounded-xl bg-gray-50 text-gray-500 hover:bg-gray-100 transition",
@@ -75,9 +77,9 @@ export default function GlobalSearch() {
         )}
       >
         <Search size={18} className="shrink-0" />
-        <span className="hidden sm:inline text-sm">Search patients...</span>
+        <span className="hidden sm:inline text-sm">{t.nav.search.short}</span>
         <kbd className="hidden sm:inline ms-auto rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-xs font-sans text-gray-500">
-          Ctrl K
+          {t.nav.search.shortcut}
         </kbd>
       </button>
       {open && <SearchDialog onClose={() => setOpen(false)} />}
@@ -95,6 +97,8 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
   const [found, setFound] = useState<{ query: string; patients: Patient[] } | null>(null);
   const debounced = useDebounced(query.trim(), 200);
   const canSearch = can("view_patients");
+  const { t } = useI18n();
+  const s = t.nav.search;
 
   useEffect(() => {
     if (!debounced || !canSearch) return;
@@ -121,19 +125,19 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
   const needle = query.trim().toLowerCase();
   const patients = needle && found?.query === debounced ? found.patients : [];
   const searching = Boolean(needle && canSearch && (found?.query !== debounced || debounced !== query.trim()));
-  const actions = ACTIONS.filter((a) => !a.permission || can(a.permission)).filter(
-    (a) => !needle || `${a.label} ${a.hint} ${a.words}`.toLowerCase().includes(needle),
-  );
+  const actions = ACTIONS.filter((a) => !a.permission || can(a.permission))
+    .map((a) => ({ ...a, ...s.actions[a.key] }))
+    .filter((a) => !needle || `${a.label} ${a.hint} ${a.words}`.toLowerCase().includes(needle));
   const results: Result[] = [
     ...patients.map((p) => ({
       kind: "patient" as const,
       key: p.name,
       label: p.full_name,
-      hint: [p.phone_number, p.age ? `${p.age} years` : "", p.name].filter(Boolean).join(" · "),
+      hint: [p.phone_number, p.age ? t.common.years(p.age) : "", p.name].filter(Boolean),
       href: patientHref(p.name),
       icon: User,
     })),
-    ...actions.map((a) => ({ kind: "action" as const, key: a.href, label: a.label, hint: a.hint, href: a.href, icon: a.icon })),
+    ...actions.map((a) => ({ kind: "action" as const, key: a.href, label: a.label, hint: [a.hint], href: a.href, icon: a.icon })),
   ];
   const active = Math.min(highlight, Math.max(0, results.length - 1));
 
@@ -163,7 +167,7 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[10vh] print:hidden">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} aria-hidden="true" />
-      <div role="dialog" aria-modal="true" aria-label="Search" className="relative w-full max-w-xl bg-white rounded-2xl shadow-xl overflow-hidden">
+      <div role="dialog" aria-modal="true" aria-label={s.dialog} className="relative w-full max-w-xl bg-white rounded-2xl shadow-xl overflow-hidden">
         <div className="flex items-center gap-3 px-4 border-b border-gray-100">
           <Search size={20} className="text-gray-500 shrink-0" />
           <input
@@ -175,7 +179,7 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
               setHighlight(0);
             }}
             onKeyDown={onKeyDown}
-            placeholder={canSearch ? "Patient name, phone or ID, or an action..." : "Search actions..."}
+            placeholder={canSearch ? s.placeholder : s.placeholderActionsOnly}
             role="combobox"
             aria-expanded="true"
             aria-controls={listId}
@@ -189,13 +193,13 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
             onClick={onClose}
             className="shrink-0 rounded-md border border-gray-200 px-1.5 py-0.5 text-xs text-gray-500 hover:bg-gray-50"
           >
-            Esc
+            {s.esc}
           </button>
         </div>
 
-        <ul id={listId} role="listbox" aria-label="Results" className="max-h-[60vh] overflow-y-auto py-2">
+        <ul id={listId} role="listbox" aria-label={s.results} className="max-h-[60vh] overflow-y-auto py-2">
           {needle && canSearch && !searching && patients.length === 0 && (
-            <li className="px-4 py-3 text-sm text-gray-500">No patient matches &quot;{query.trim()}&quot;.</li>
+            <li className="px-4 py-3 text-sm text-gray-500">{s.noPatient(query.trim())}</li>
           )}
           {results.map((result, index) => {
             const Icon = result.icon;
@@ -203,7 +207,7 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
               <li key={`${result.kind}-${result.key}`}>
                 {(index === 0 && result.kind === "patient") || index === firstAction ? (
                   <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    {result.kind === "patient" ? "Patients" : "Actions"}
+                    {result.kind === "patient" ? s.patientsGroup : s.actionsGroup}
                   </p>
                 ) : null}
                 <div
@@ -227,7 +231,14 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
                   </span>
                   <span className="min-w-0">
                     <span className="block text-sm font-medium text-gray-800 truncate">{result.label}</span>
-                    <span className="block text-xs text-gray-500 truncate">{result.hint}</span>
+                    <span className="block text-xs text-gray-500 truncate">
+                      {result.hint.map((part, i) => (
+                        <span key={i}>
+                          {i > 0 && t.common.dot}
+                          <bdi>{part}</bdi>
+                        </span>
+                      ))}
+                    </span>
                   </span>
                 </div>
               </li>
@@ -235,7 +246,7 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
           })}
         </ul>
         <p className="hidden sm:block px-4 py-2 text-xs text-gray-500 border-t border-gray-100">
-          ↑ ↓ to move · Enter to open · Esc to close
+          {s.keys}
         </p>
       </div>
     </div>

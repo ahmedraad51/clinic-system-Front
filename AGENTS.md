@@ -30,7 +30,8 @@ accurate.
 | `npm run dev` | Works. Dev output goes to `.next/dev`, so `npm run build` can run while it is up. Changing `next.config.ts` restarts it, and the first page after that can take several minutes to compile. | |
 | `npm run build` | **Passes** (checked 2026-09-30): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-30). `npx tsc --noEmit` passes too. | |
-| Tests | **Playwright tests pass** (120 tests, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Languages | **Arabic (default, right to left) and English.** Every text is in `src/i18n/en/*.ts` and `src/i18n/ar/*.ts`; the switch is in the menu. See **Languages** below. **Every new text must be added in both languages.** | `src/i18n/`, `src/context/LanguageContext.tsx` |
+| Tests | **Playwright tests pass** (129 tests, 9 of them in Arabic, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -49,6 +50,7 @@ Both flags are set this way on purpose. Leave them alone unless the task is abou
 | `npm run test:e2e` | Playwright tests in `e2e/tests` (Chromium only). Builds, then serves the build on port **3100** (`E2E_PORT`), so it never clashes with `npm run dev` on 3000. `SKIP_BUILD=1` reuses the last build. Output goes to `test-results/` and `playwright-report/` (ignored by git). |
 | `npm run screenshots` | Full-page screenshots of every page at desktop 1440×900, tablet 1024×768 and phone 390×844, saved to `screenshots/<size>/<page>.png` (ignored by git). `PAGES=dashboard,patients` limits it; `SKIP_BUILD=1` works here too. |
 | `npm run screenshots:readme` | Retakes the pictures in `README.md` into `docs/screenshots/` (desktop, dummy data). Run it after a visible change and commit the images. `SKIP_BUILD=1` works here too |
+| `npm run screenshots:arabic` | The main screens in Arabic at desktop, tablet and phone size into `docs/arabic/<size>/<screen>.png` (dummy data, 26 September 2026). `SKIP_BUILD=1` works here too |
 
 The Frappe address comes from the `FRAPPE_URL` environment variable (for example in `.env.local`), default
 `http://dent_clinic.localhost:8000`. See `next.config.ts`.
@@ -90,7 +92,8 @@ src/lib/frappe.ts   the only module that touches data
   data in effects after mount. No Server Actions, no server-side data fetching, no `loading.tsx` or
   `error.tsx`, no `proxy.ts` (the Next 16 name for middleware).
 - **Provider tree** (in `layout.tsx`): `AuthProvider` → `SettingsProvider` → `SessionProvider` →
-  `ToastProvider` → `MainLayout` → page.
+  `LanguageProvider` → `ToastProvider` → `MainLayout` → page. `LanguageProvider` keys its children by the language,
+  so everything below is drawn again when it changes.
 - **Shell.** `MainLayout` draws the `Sidebar` (fixed `w-64`, a slide-in drawer below the `lg` breakpoint) and
   the `Topbar` (`h-16`) around `<main>`. On `/login` it renders the page with no shell. Both bars carry
   `print:hidden`, so a printed page is just the content (used by the payment receipt).
@@ -113,7 +116,7 @@ src/lib/frappe.ts   the only module that touches data
 ```
 src/
 ├── app/
-│   ├── layout.tsx                 root layout: font, metadata, providers, MainLayout
+│   ├── layout.tsx                 root layout: fonts (Manrope, IBM Plex Sans Arabic), boot scripts, providers, MainLayout
 │   ├── page.tsx                   redirect("/dashboard")
 │   ├── not-found.tsx              404 page
 │   ├── globals.css                Tailwind import, body colours, print background
@@ -167,8 +170,14 @@ src/
 ├── context/
 │   ├── AuthContext.tsx       who is logged in, the AUTH_DISABLED switch, useAuth()
 │   ├── SettingsContext.tsx   Clinic Settings (currency, clinic name, feature switches), useSettings()
+│   ├── LanguageContext.tsx   the language (Arabic or English), useI18n() → { t, lang, dir, setLang }
 │   ├── SessionContext.tsx    the user's profile, roles and permission flags, useSession()
 │   └── ToastContext.tsx      small corner messages, useToast()
+├── i18n/
+│   ├── runtime.ts            the language state, num(), plural(), label(), localDigits(), LANG_BOOT_SCRIPT
+│   ├── index.ts              messages(), messagesFor(); re-exports the runtime
+│   ├── en/                   the English texts, one file per area, and index.ts (Messages is their type)
+│   └── ar/                   the Arabic texts, the same files and keys
 └── lib/
     ├── frappe.ts             data access (real or mock), login/logout, CSRF, errorMessage()
     ├── mockData.ts           the in-memory dummy back end
@@ -249,8 +258,8 @@ on the form, and a click made while the save is still running is overridden by t
 | `/medicines` | `manage_users` | The medicine list (search, Active filter, paging); Add Medicine and Edit in a dialog: name, strength, form (`MEDICINE_FORMS`), group (`MEDICINE_GROUPS`), the usual dose / how often / days / instructions, and the warning flags (allergy words, daily maximum in mg, note for children, NSAID, avoid in pregnancy) and Active. No delete: switch Active off, so old prescriptions keep their rows |
 | `/users` | `manage_users` | Staff list (without Administrator and Guest), search, status filter, Add User dialog (can apply the role's usual permissions) |
 | `/users/[id]` | `manage_users` | Clinic role, enable/disable, the 14 permission switches with presets. `[id]` is `encodeURIComponent(btoa(user.name))` |
-| `/whatsapp` | `manage_users` | Templates (add, edit, delete, placeholders, live preview) and the message log (phone numbers shown with the middle hidden, `maskPhone()`; the full number is on the patient's page) |
-| `/settings` | `manage_users` | Clinic Settings: name, logo upload, contact, tax number, currency, working hours, feature switches, theme colour, **Phone Country Code** (`phone_country_code`, digits only, empty means 964; added to local numbers in WhatsApp links, `useSettings().countryCode`), **Price List** (a usual price per treatment type, saved in `treatment_prices`), and **Open on** day toggles saved as `working_days` (`useSettings().isOpenOn(iso)`; nothing set means open every day). Closed days are shaded "Closed" in the calendar, the day view shows a notice, and booking on one shows a note and asks "Book anyway?" |
+| `/whatsapp` | `manage_users` | Templates (add, edit, delete, placeholders, live preview) and the message log (phone numbers shown with the middle hidden, `maskPhone()`; the full number is on the patient's page) Each template has a **Language** (Arabic, English or any; `language`), shown on its card; reminders and the Send Message dialog prefer the screen's language (`pickTemplate`). |
+| `/settings` | `manage_users` | Clinic Settings: name, logo upload, contact, tax number, currency, working hours, feature switches, theme colour, **Phone Country Code** (`phone_country_code`, digits only, empty means 964; added to local numbers in WhatsApp links, `useSettings().countryCode`), **Price List** (a usual price per treatment type, saved in `treatment_prices`), and **Open on** day toggles saved as `working_days` (`useSettings().isOpenOn(iso)`; nothing set means open every day). Closed days are shaded "Closed" in the calendar, the day view shows a notice, and booking on one shows a note and asks "Book anyway?" The **Language** card: **Default language** (`default_language`, Arabic or English: the language of users who did not choose one) and **Arabic digits** (`arabic_digits`: Arabic screens write ٠-٩). |
 | `/profile` | none | My details (with `MyAvatar`), **Screen Size on This Computer** (80, 90, 100, 110 or 120 %: `saveZoom()` sets the root font size, and every size is in rem, so text and spacing scale together; kept in `localStorage.screen_zoom` and applied before the first paint by `ZOOM_BOOT_SCRIPT` in `layout.tsx`), what I can do, change password, and (login off only) Try Another User |
 
 Links use `<Link>` from `next/link`; buttons that navigate after an action use `router.push`. Table rows are
@@ -774,10 +783,57 @@ Updated on 2026-09-30.
 - **Totals are computed in the browser.** The dashboard's revenue and amount owed, the payments total and the
   reports load every matching row (`limit: 0`) and add them up. That is fine for one clinic for years, but a
   back-end report method would be faster later.
-- **No right-to-left layout yet.** The classes are ready (see Styling), but there is no Arabic text or `dir`
-  switch.
+- **Data stays in the language it was typed in.** Patient names, notes and medicine names in the dummy data are in
+  English letters, so Arabic screens show them as they are. Fixed values (statuses, types, methods) are saved in
+  English and only their labels are translated.
 - `enable_patient_portal` is saved but not used by the front end.
 - Deleting is blocked for records that others link to (Frappe's normal rule). Users are disabled, not deleted.
+
+---
+
+## Languages: `src/i18n`
+
+Arabic is the default language and reads right to left; English is the other. Everything a person reads comes
+from the translation files, never from text typed in a component.
+
+- **Files.** One pair per area: `src/i18n/en/<area>.ts` (`export const <area> = { … }`) and
+  `src/i18n/ar/<area>.ts` (`export const <area>: Messages["<area>"] = { … }`). `Messages` is the type of the
+  English object, so an Arabic text that is missing, or a function with other arguments, fails the type check.
+  Texts with values are functions: `` greeting: (hello: string, name: string) => `${hello}, ${name}` ``. Add a new
+  area to both `index.ts` files. Shared areas: `common` (save, cancel, years …), `nav` (menu, search), `enums`
+  (labels of saved values), `errors`, `dates` (month and day names), `ui` (the UI kit), `dashboard`.
+- **Reading texts.** In a component: `const { t } = useI18n();` then `t.patients.title`. In plain functions,
+  effects, callbacks and `lib/*.ts`: `messages()` from `@/i18n` (never put `t` in an effect's dependencies).
+  Module-level constants must not hold text; hold keys and look them up when drawing.
+- **Saved values stay English** (statuses, treatment types, payment methods, genders, specializations, medicine
+  forms and groups, frequencies, triggers, week days, roles). Show them with `label(t.enums.treatmentType, value)`;
+  `<StatusBadge>` and `statusLabel(kind, status)` do it for statuses. In a `<select>` the value stays English.
+- **Numbers.** `num(n)` writes a number in the current digits, `plural(n, forms)` a count with its noun (`#` is the
+  number). Arabic has six forms: `zero`, `one`, `two`, `few` (3-10), `many` (11-99), `other` (100+); English
+  `one` and `other`. Clinic Settings → **Arabic digits** (`arabic_digits`) makes Arabic screens write ٠-٩; inputs
+  still take and keep 0-9 (`cleanNumberText`), and phone numbers and record IDs stay 0-9.
+- **Dates and money** follow the language by themselves: `formatDate` ("8 أيلول 2026", the Iraqi month names),
+  `formatTime` ("10:00 ص"), `formatLongDate`, `formatMonth`, `weekdayShort`, `useSettings().money`
+  ("1,250,000 د.ع"), `formatCompact` ("450 ألف").
+- **Which language.** In order: the user's own choice (`User.language`, saved by the switch in the menu), the
+  language chosen on this computer (`localStorage.language_choice`), the clinic's default (Clinic Settings →
+  **Default language**, `default_language`), Arabic. `LANG_BOOT_SCRIPT` sets `lang` and `dir` on `<html>` from the
+  language shown last (`localStorage.language`) before the first paint.
+- **Right to left.** `<html dir="rtl">` in Arabic. Use logical classes only (`ms-`, `pe-`, `start-`, `text-end`,
+  `border-s` …), give sideways arrows `rtl:rotate-180`, and slide things in from the start side
+  (`-translate-x-full rtl:translate-x-full`). Phone numbers, record IDs, amounts and times in inputs, and the dental
+  chart's teeth (anatomical: the patient's right is always on the left) keep `dir="ltr"`.
+- **Fonts.** Manrope for English, IBM Plex Sans Arabic for Arabic (`next/font`, `--font-manrope` and
+  `--font-arabic`; `globals.css` picks by `lang`).
+- **WhatsApp templates** have a `language` (`ar`, `en` or empty): `pickTemplate(templates, trigger, lang)` in
+  `src/lib/whatsapp.ts` prefers the screen's language. The dummy data has each template in both languages.
+- **Tests.** The browser tests run in English: `e2e/fixtures.ts` sets the language chosen on the computer to `en`
+  (and `setLocale("en")` for helpers called outside the browser). A test in Arabic says `test.use({ lang: "ar" })`
+  (see `e2e/tests/arabic.spec.ts`). `waitForData()` understands both loading texts.
+- **Adding a text:** put it in the English file and the Arabic file of its area (clear Modern Standard Arabic as
+  Iraqi clinic staff use it; dental words: حشوة، علاج عصب، تاج، جسر، قلع، زرعة، تنظيف، تبييض; FDI tooth numbers stay
+  numbers), then read it with `t` or `messages()`. Never change an English text that a test looks for without
+  updating the test.
 
 ---
 

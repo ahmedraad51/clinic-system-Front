@@ -12,8 +12,10 @@ import RequirePermission from "@/components/Guard";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
   Button, Card, DetailList, DetailRow, LinkButton, NotFoundCard, PageContainer, PageHeader, RecordLoading, StatusBadge,
+  statusLabel,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useToast } from "@/context/ToastContext";
 import { deleteDoc, errorMessage, getList, updateDoc } from "@/lib/frappe";
@@ -34,6 +36,7 @@ function AppointmentDetail() {
   const params = useParams();
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
   const { can } = useSession();
   const id = routeId(params.id);
   const { doc: appointment, loading, notFound, error, reload } = useDocument<Appointment>("Appointment", id);
@@ -94,7 +97,9 @@ function AppointmentDetail() {
 
   if (loading) return <RecordLoading />;
   if (notFound || !appointment) {
-    return <NotFoundCard error={error} what="Appointment" backHref="/appointments" backLabel="Back to Appointments" />;
+    return (
+      <NotFoundCard error={error} what={t.enums.doctype.Appointment} backHref="/appointments" backLabel={t.appointments.backToList} />
+    );
   }
 
   const canEdit = can("edit_appointments");
@@ -111,11 +116,11 @@ function AppointmentDetail() {
     setUpdating(status);
     try {
       await updateDoc("Appointment", id, { status });
-      toast.success(`Marked as ${status}.`);
+      toast.success(t.appointments.markedAs(statusLabel("appointment", status)));
       reload();
       if (status === "Completed" && can("edit_treatments")) setFinishing(true);
     } catch (err) {
-      toast.error(errorMessage(err, "Could not change the status."));
+      toast.error(errorMessage(err, t.appointments.statusFailed));
     } finally {
       setUpdating(null);
     }
@@ -125,10 +130,10 @@ function AppointmentDetail() {
     setDeleting(true);
     try {
       await deleteDoc("Appointment", id);
-      toast.success("Appointment deleted.");
+      toast.success(t.appointments.deleted);
       router.push("/appointments");
     } catch (err) {
-      toast.error(errorMessage(err, "Could not delete the appointment."));
+      toast.error(errorMessage(err, t.appointments.deleteFailed));
       setDeleting(false);
       setConfirmDelete(false);
     }
@@ -138,9 +143,9 @@ function AppointmentDetail() {
     <PageContainer narrow>
       <PageHeader
         title={appointment.patient_name || appointment.patient}
-        subtitle={`${formatDate(appointment.appointment_date)} at ${formatTime(appointment.appointment_time)} · ${id}`}
+        subtitle={t.appointments.subtitle(formatDate(appointment.appointment_date), formatTime(appointment.appointment_time), id)}
         badge={<StatusBadge kind="appointment" status={appointment.status} />}
-        back={{ href: "/appointments", label: "Appointments" }}
+        back={{ href: "/appointments", label: t.appointments.title }}
         actions={
           <>
             {can("add_treatments") && (
@@ -149,12 +154,12 @@ function AppointmentDetail() {
                 variant="secondary"
                 icon={Stethoscope}
               >
-                New Treatment
+                {t.appointments.newTreatment}
               </LinkButton>
             )}
             {canEdit && (
               <LinkButton href={`${appointmentHref(id)}/edit`} icon={Pencil}>
-                Edit
+                {t.common.edit}
               </LinkButton>
             )}
             {canEdit && (
@@ -162,8 +167,8 @@ function AppointmentDetail() {
                 variant="ghost"
                 icon={Trash2}
                 onClick={() => setConfirmDelete(true)}
-                aria-label="Delete appointment"
-                title="Delete appointment"
+                aria-label={t.appointments.deleteAppointment}
+                title={t.appointments.deleteAppointment}
                 className="text-red-600 hover:bg-red-50 px-3"
               />
             )}
@@ -174,33 +179,33 @@ function AppointmentDetail() {
       <MedicalAlerts patient={medical} />
 
       <Card
-        title="Details"
+        title={t.common.details}
         icon={ClipboardList}
         actions={
           <LinkButton href={`${appointmentHref(id)}/card`} variant="secondary" size="sm" icon={Printer}>
-            Print Card
+            {t.appointments.printCard}
           </LinkButton>
         }
       >
         <DetailList>
-          <DetailRow label="Patient">
+          <DetailRow label={t.common.patient}>
             <Link href={patientHref(appointment.patient)} className="text-primary-600 hover:underline">
               {appointment.patient_name || appointment.patient}
             </Link>
           </DetailRow>
-          <DetailRow label="Doctor">{appointment.doctor_name || appointment.doctor}</DetailRow>
-          <DetailRow label="Date">{formatDate(appointment.appointment_date)}</DetailRow>
-          <DetailRow label="Time">{formatTime(appointment.appointment_time)}</DetailRow>
-          <DetailRow label="Duration">
-            {appointment.duration_minutes ? `${appointment.duration_minutes} minutes` : ""}
+          <DetailRow label={t.common.doctor}>{appointment.doctor_name || appointment.doctor}</DetailRow>
+          <DetailRow label={t.common.date}>{formatDate(appointment.appointment_date)}</DetailRow>
+          <DetailRow label={t.common.time}>{formatTime(appointment.appointment_time)}</DetailRow>
+          <DetailRow label={t.appointments.duration}>
+            {appointment.duration_minutes ? t.appointmentForm.minutes(Number(appointment.duration_minutes)) : ""}
           </DetailRow>
-          <DetailRow label="Reason">{appointment.reason_for_visit}</DetailRow>
-          <DetailRow label="Notes">{appointment.notes}</DetailRow>
+          <DetailRow label={t.appointments.reason}>{appointment.reason_for_visit}</DetailRow>
+          <DetailRow label={t.common.notes}>{appointment.notes}</DetailRow>
         </DetailList>
       </Card>
 
       {canEdit && (
-        <Card title="Update Status" icon={ListChecks}>
+        <Card title={t.appointments.updateStatus} icon={ListChecks}>
           <div className="flex flex-wrap gap-2">
             {APPOINTMENT_STATUSES.map((status) => {
               const current = appointment.status === status;
@@ -215,7 +220,7 @@ function AppointmentDetail() {
                     current ? "bg-primary-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50",
                   )}
                 >
-                  {updating === status ? "Saving..." : status}
+                  {updating === status ? t.common.saving : statusLabel("appointment", status)}
                 </button>
               );
             })}
@@ -225,17 +230,17 @@ function AppointmentDetail() {
 
       {(messages.length > 0 || canMessage) && (
         <Card
-          title="WhatsApp Messages"
+          title={t.appointments.whatsappMessages}
           icon={MessageCircle}
           actions={
             canMessage && (
               <Button variant="secondary" size="sm" icon={MessageCircle} onClick={() => setMessaging(true)}>
-                Send Message
+                {t.appointments.sendMessage}
               </Button>
             )
           }
         >
-          {messages.length === 0 && <p className="text-sm text-gray-500">No messages for this appointment yet.</p>}
+          {messages.length === 0 && <p className="text-sm text-gray-500">{t.appointments.noMessages}</p>}
           <ul className="space-y-3">
             {messages.map((log) => (
               <li key={log.name} className="flex gap-3">
@@ -258,18 +263,18 @@ function AppointmentDetail() {
 
       {showPrescriptions && (
         <Card
-          title="Prescriptions"
+          title={t.appointments.prescriptions}
           icon={Pill}
           actions={
             can("add_treatments") && (
               <LinkButton href={newPrescriptionHref} variant="secondary" size="sm" icon={Pill}>
-                Write Prescription
+                {t.appointments.writePrescription}
               </LinkButton>
             )
           }
         >
           {written.length === 0 ? (
-            <p className="text-sm text-gray-500">No prescription written at this visit.</p>
+            <p className="text-sm text-gray-500">{t.appointments.noPrescription}</p>
           ) : (
             <ul className="divide-y divide-gray-100">
               {written.map((rx) => (
@@ -290,14 +295,9 @@ function AppointmentDetail() {
 
       <ConfirmDialog
         open={confirmDelete}
-        title="Delete this appointment?"
-        message={
-          <p>
-            The appointment on {formatDate(appointment.appointment_date)} at {formatTime(appointment.appointment_time)} will
-            be removed for good. To keep a record, set its status to Cancelled instead.
-          </p>
-        }
-        confirmLabel="Delete Appointment"
+        title={t.appointments.deleteTitle}
+        message={<p>{t.appointments.deleteText(formatDate(appointment.appointment_date), formatTime(appointment.appointment_time))}</p>}
+        confirmLabel={t.appointments.deleteConfirm}
         busy={deleting}
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}

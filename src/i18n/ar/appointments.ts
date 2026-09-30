@@ -1,0 +1,66 @@
+import type { Messages } from "../en";
+import { plural } from "../runtime";
+
+export const appointments: Messages["appointments"] = {
+  title: "المواعيد",
+  appointment: "الموعد",
+  newAppointment: "موعد جديد",
+  backToList: "العودة إلى المواعيد",
+
+  listSubtitle: "سجل المواعيد على شكل قائمة. اضغط على أي صف لفتحه.",
+  view: "طريقة العرض",
+  views: { day: "يوم", week: "أسبوع", list: "قائمة" },
+  previousDay: "اليوم السابق",
+  nextDay: "اليوم التالي",
+  previousWeek: "الأسبوع السابق",
+  nextWeek: "الأسبوع التالي",
+  goToDate: "الانتقال إلى تاريخ",
+  allDoctors: "كل الأطباء",
+  weekRange: (from: string, to: string) => `${from} – ${to}`,
+  when: { all: "كل التواريخ", today: "اليوم", tomorrow: "غدًا", upcoming: "القادمة", past: "السابقة" },
+  searchPlaceholder: "ابحث باسم المريض أو الطبيب أو سبب الزيارة...",
+  allStatuses: "كل الحالات",
+  reason: "سبب الزيارة",
+  noMatch: "لا توجد مواعيد تطابق هذا البحث.",
+  noneYet: "لا توجد مواعيد بعد.",
+
+  subtitle: (date: string, time: string, id: string) => `${date} الساعة ${time} · ${id}`,
+  newTreatment: "علاج جديد",
+  deleteAppointment: "حذف الموعد",
+  printCard: "طباعة البطاقة",
+  duration: "المدة",
+  updateStatus: "تغيير الحالة",
+  markedAs: (status: string) => `تم تغيير الحالة إلى: ${status}.`,
+  statusFailed: "تعذّر تغيير الحالة.",
+  deleted: "تم حذف الموعد.",
+  deleteFailed: "تعذّر حذف الموعد.",
+  whatsappMessages: "رسائل واتساب",
+  sendMessage: "إرسال رسالة",
+  noMessages: "لا توجد رسائل لهذا الموعد بعد.",
+  prescriptions: "الوصفات الطبية",
+  writePrescription: "كتابة وصفة طبية",
+  noPrescription: "لم تُكتب وصفة طبية في هذه الزيارة.",
+  deleteTitle: "حذف هذا الموعد؟",
+  deleteText: (date: string, time: string) =>
+    `سيُحذف موعد ${date} الساعة ${time} نهائيًا. للاحتفاظ بسجلّه، غيّر حالته إلى ملغى بدلًا من حذفه.`,
+  deleteConfirm: "حذف الموعد",
+
+  book: "حجز الموعد",
+  booked: "تم حجز الموعد.",
+  editTitle: "تعديل الموعد",
+  saved: "تم حفظ الموعد.",
+
+  card: {
+    title: "بطاقة الموعد",
+    subtitle: "اطبعها وسلّمها للمريض.",
+    yourNext: "موعدك القادم",
+    for: "المريض",
+    at: (time: string) => `الساعة ${time}`,
+    with: (doctor: string) => `مع ${doctor}`,
+    visit: "الزيارة: ",
+    arriveEarly: (minutes: number) =>
+      `يُرجى الحضور قبل الموعد بـ ${plural(minutes, { one: "دقيقة واحدة", two: "دقيقتين", few: "# دقائق", many: "# دقيقة", other: "# دقيقة" })}.`,
+    toChange: "لتغيير موعدك، اتصل على الرقم",
+    end: ".",
+  },
+};

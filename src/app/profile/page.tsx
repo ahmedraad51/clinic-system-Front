@@ -9,11 +9,16 @@ import {
   Alert, Badge, Button, Card, DetailList, DetailRow, Field, PageContainer, PageHeader, SelectInput, TextInput,
 } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useToast } from "@/context/ToastContext";
 import { changePassword, errorMessage, getList } from "@/lib/frappe";
+import { label } from "@/i18n";
 import { cx } from "@/lib/format";
 import { PERMISSION_GROUPS, type User } from "@/lib/types";
+
+/** The shortest new password Frappe accepts. */
+const MIN_PASSWORD = 8;
 
 export default function ProfilePage() {
   return (
@@ -24,31 +29,36 @@ export default function ProfilePage() {
 }
 
 function Profile() {
+  const { t } = useI18n();
   const { user, authDisabled } = useAuth();
   const { profile, roles, displayName, roleLabel, can, isSuperUser } = useSession();
 
   return (
     <PageContainer narrow>
-      <PageHeader title="My Profile" />
+      <PageHeader title={t.profile.title} />
 
       <Card>
         <div className="flex items-center gap-4">
           <MyAvatar size={56} />
           <div className="min-w-0">
             <p className="font-semibold text-gray-800 text-lg">{displayName}</p>
-            <p className="text-sm text-gray-500">{roleLabel}</p>
+            <p className="text-sm text-gray-500">{label(t.enums.role, roleLabel)}</p>
           </div>
         </div>
         <div className="mt-5">
           <DetailList>
-            <DetailRow label="Username">{user}</DetailRow>
-            <DetailRow label="Email">{profile?.email}</DetailRow>
-            <DetailRow label="Roles">
+            <DetailRow label={t.profile.username}>
+              <span dir="ltr">{user}</span>
+            </DetailRow>
+            <DetailRow label={t.profile.email}>
+              {profile?.email && <span dir="ltr">{profile.email}</span>}
+            </DetailRow>
+            <DetailRow label={t.profile.roles}>
               {roles.length > 0 ? (
                 <span className="flex flex-wrap gap-1.5">
                   {roles.map((role) => (
                     <Badge key={role} tone="primary">
-                      {role}
+                      {label(t.enums.role, role)}
                     </Badge>
                   ))}
                 </span>
@@ -62,23 +72,23 @@ function Profile() {
 
       <ScreenSizeCard />
 
-      <Card title="What I Can Do">
+      <Card title={t.profile.whatICanDo}>
         {isSuperUser && (
           <div className="mb-4">
-            <Alert tone="blue">You are a System Manager, so every permission is on.</Alert>
+            <Alert tone="blue">{t.profile.superUser}</Alert>
           </div>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {PERMISSION_GROUPS.map((group) => (
             <div key={group.group}>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{group.group}</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.enums.permissionGroup[group.group]}</p>
               <ul className="space-y-1.5">
                 {group.items.map((item) => {
-                  const on = can(item.key);
+                  const on = can(item);
                   return (
-                    <li key={item.key} className={cx("flex items-center gap-2 text-sm", on ? "text-gray-800" : "text-gray-500")}>
+                    <li key={item} className={cx("flex items-center gap-2 text-sm", on ? "text-gray-800" : "text-gray-500")}>
                       {on ? <Check size={15} className="text-green-600" /> : <X size={15} />}
-                      {item.label}
+                      {t.enums.permission[item]}
                     </li>
                   );
                 })}
@@ -95,6 +105,7 @@ function Profile() {
 }
 
 function ChangePasswordCard({ demo }: { demo: boolean }) {
+  const { t } = useI18n();
   const toast = useToast();
   const [form, setForm] = useState({ current: "", next: "", confirm: "" });
   const [saving, setSaving] = useState(false);
@@ -102,31 +113,31 @@ function ChangePasswordCard({ demo }: { demo: boolean }) {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (form.next.length < 8) {
-      setError("The new password must have at least 8 characters.");
+    if (form.next.length < MIN_PASSWORD) {
+      setError(t.profile.tooShort(MIN_PASSWORD));
       return;
     }
     if (form.next !== form.confirm) {
-      setError("The two new passwords are not the same.");
+      setError(t.profile.notSame);
       return;
     }
     setSaving(true);
     setError("");
     try {
       await changePassword(form.current, form.next);
-      toast.success(demo ? "Password changed (dummy data, nothing was really changed)." : "Password changed.");
+      toast.success(demo ? t.profile.changedDemo : t.profile.changed);
       setForm({ current: "", next: "", confirm: "" });
     } catch (err) {
-      setError(errorMessage(err, "Could not change the password."));
+      setError(errorMessage(err, t.profile.changeFailed));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Card title="Change Password">
+    <Card title={t.profile.changePassword}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Field label="Current Password" required>
+        <Field label={t.profile.currentPassword} required>
           <TextInput
             type="password"
             autoComplete="current-password"
@@ -136,7 +147,7 @@ function ChangePasswordCard({ demo }: { demo: boolean }) {
           />
         </Field>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="New Password" required hint="At least 8 characters.">
+          <Field label={t.profile.newPassword} required hint={t.profile.newPasswordHint(MIN_PASSWORD)}>
             <TextInput
               type="password"
               autoComplete="new-password"
@@ -145,7 +156,7 @@ function ChangePasswordCard({ demo }: { demo: boolean }) {
               required
             />
           </Field>
-          <Field label="Repeat New Password" required>
+          <Field label={t.profile.repeatPassword} required>
             <TextInput
               type="password"
               autoComplete="new-password"
@@ -157,7 +168,7 @@ function ChangePasswordCard({ demo }: { demo: boolean }) {
         </div>
         {error && <Alert tone="red">{error}</Alert>}
         <Button type="submit" icon={KeyRound} loading={saving}>
-          Change Password
+          {t.profile.changePassword}
         </Button>
       </form>
     </Card>
@@ -167,6 +178,7 @@ function ChangePasswordCard({ demo }: { demo: boolean }) {
 /** Only while login is off: act as another user to see what their permissions allow. */
 function DemoUserCard() {
   const { user, switchUser } = useAuth();
+  const { t } = useI18n();
   const toast = useToast();
   const [users, setUsers] = useState<User[]>([]);
 
@@ -200,20 +212,17 @@ function DemoUserCard() {
       title={
         <span className="flex items-center gap-2">
           <Users size={18} className="text-primary-600" />
-          Try Another User
+          {t.profile.tryAnotherUser}
         </span>
       }
     >
-      <p className="text-sm text-gray-500 mb-4">
-        Login is switched off while the app is being built. Pick a user to see the app with their permissions. This goes
-        away when login is turned on.
-      </p>
-      <Field label="View the app as">
+      <p className="text-sm text-gray-500 mb-4">{t.profile.tryAnotherUserText}</p>
+      <Field label={t.profile.viewAs}>
         <SelectInput
           value={user ?? ""}
           onChange={(e) => {
             switchUser(e.target.value);
-            toast.info("Now viewing the app as " + (users.find((u) => u.name === e.target.value)?.full_name || e.target.value));
+            toast.info(t.profile.nowViewingAs(users.find((u) => u.name === e.target.value)?.full_name || e.target.value));
           }}
         >
           {users.map((u) => (

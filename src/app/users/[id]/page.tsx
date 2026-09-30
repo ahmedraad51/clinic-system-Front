@@ -9,9 +9,11 @@ import {
   Alert, Badge, Button, Card, Field, NotFoundCard, PageContainer, PageHeader, PageLoading, SelectInput, Toggle,
 } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useToast } from "@/context/ToastContext";
 import { createDoc, errorMessage, getDoc, updateDoc } from "@/lib/frappe";
+import { label } from "@/i18n";
 import { cx } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
 import { userIdFromRoute } from "@/lib/links";
@@ -35,6 +37,7 @@ export default function UserDetailPage() {
 
 function UserDetail() {
   const params = useParams();
+  const { t } = useI18n();
   const toast = useToast();
   const { user: currentUser } = useAuth();
   const session = useSession();
@@ -65,7 +68,7 @@ function UserDetail() {
   }, [userId]);
 
   if (loading) return <PageLoading />;
-  if (notFound || !userData) return <NotFoundCard error={error} what="User" backHref="/users" backLabel="Back to Users" />;
+  if (notFound || !userData) return <NotFoundCard error={error} what={t.enums.doctype.User} backHref="/users" backLabel={t.users.backToUsers} />;
 
   const current = permState && permState.userId === userId ? permState : null;
   const roles = (userData.roles ?? []).map((row) => row.role);
@@ -92,10 +95,10 @@ function UserDetail() {
         await createDoc("Clinic Permission", body);
         setPermState({ ...current, exists: true });
       }
-      toast.success("Permissions saved.");
+      toast.success(t.users.permissionsSaved);
       if (isSelf) session.refresh();
     } catch (err) {
-      toast.error(errorMessage(err, "Could not save the permissions."));
+      toast.error(errorMessage(err, t.users.savePermissionsFailed));
     } finally {
       setSaving(false);
     }
@@ -109,7 +112,7 @@ function UserDetail() {
       reload();
       if (isSelf) session.refresh();
     } catch (err) {
-      toast.error(errorMessage(err, "Could not save the user."));
+      toast.error(errorMessage(err, t.users.saveUserFailed));
     } finally {
       setSavingUser(false);
     }
@@ -119,32 +122,36 @@ function UserDetail() {
     // Keep any non-clinic roles (like System Manager) and swap the clinic role.
     const others = roles.filter((r) => !CLINIC_ROLES.includes(r as ClinicRole));
     const next = role ? [...others, role] : others;
-    saveUser({ roles: next.map((r) => ({ role: r })) }, role ? `Role changed to ${role}.` : "Clinic role removed.");
+    saveUser({ roles: next.map((r) => ({ role: r })) }, role ? t.users.roleChanged(label(t.enums.role, role)) : t.users.roleRemoved);
   };
 
   return (
     <PageContainer narrow>
-      <PageHeader title="Manage User" back={{ href: "/users", label: "Users" }} />
+      <PageHeader title={t.users.manageUser} back={{ href: "/users", label: t.users.title }} />
 
       <Card>
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <Avatar name={userData.full_name || userData.name} gender={userData.gender} photo={userData.user_image} size={56} />
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-gray-800 text-lg">{userData.full_name || userData.name}</p>
-            <p className="text-gray-500 text-sm break-all">{userData.email}</p>
+            <p className="text-gray-500 text-sm break-all" dir="ltr">{userData.email}</p>
             <div className="flex flex-wrap gap-1.5 mt-2">
-              {roles.length === 0 ? <Badge>No roles</Badge> : roles.map((role) => <Badge key={role} tone="primary">{role}</Badge>)}
+              {roles.length === 0 ? (
+                <Badge>{t.users.noRoles}</Badge>
+              ) : (
+                roles.map((role) => <Badge key={role} tone="primary">{label(t.enums.role, role)}</Badge>)
+              )}
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-5 border-t border-gray-100">
-          <Field label="Clinic Role">
+          <Field label={t.users.clinicRole}>
             <SelectInput value={clinicRole} onChange={(e) => changeRole(e.target.value)} disabled={savingUser}>
-              <option value="">No clinic role</option>
+              <option value="">{t.users.noClinicRole}</option>
               {CLINIC_ROLES.map((role) => (
                 <option key={role} value={role}>
-                  {role}
+                  {label(t.enums.role, role)}
                 </option>
               ))}
             </SelectInput>
@@ -153,9 +160,9 @@ function UserDetail() {
             <Toggle
               checked={enabled}
               disabled={savingUser || isSelf}
-              onChange={(value) => saveUser({ enabled: value ? 1 : 0 }, value ? "User enabled." : "User disabled.")}
-              label={enabled ? "Account is active" : "Account is disabled"}
-              description={isSelf ? "You cannot disable your own account." : "Disabled users cannot log in."}
+              onChange={(value) => saveUser({ enabled: value ? 1 : 0 }, value ? t.users.userEnabled : t.users.userDisabled)}
+              label={enabled ? t.users.accountActive : t.users.accountDisabled}
+              description={isSelf ? t.users.cannotDisableSelf : t.users.disabledCannotLogIn}
             />
           </div>
         </div>
@@ -165,7 +172,7 @@ function UserDetail() {
         title={
           <span className="flex items-center gap-2">
             <Shield size={18} className="text-primary-600" />
-            Permissions
+            {t.users.permissions}
           </span>
         }
       >
@@ -174,49 +181,47 @@ function UserDetail() {
         ) : (
           <div className="space-y-6">
             {isSuper && (
-              <Alert tone="blue">
-                This user is a System Manager, so they can always do everything. These switches only matter if that role is removed.
-              </Alert>
+              <Alert tone="blue">{t.users.superUserNote}</Alert>
             )}
             {!current.exists && (
-              <Alert tone="yellow">This user has no permissions saved yet, so they cannot open any section.</Alert>
+              <Alert tone="yellow">{t.users.noPermissionsYet}</Alert>
             )}
 
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-gray-500 me-1">Start from:</span>
+              <span className="text-sm text-gray-500 me-1">{t.users.startFrom}</span>
               {CLINIC_ROLES.map((role) => (
                 <Button key={role} size="sm" variant="secondary" onClick={() => setPerms(fill(ROLE_PRESETS[role]))}>
-                  {role.replace("Clinic ", "")}
+                  {t.users.presetName[role]}
                 </Button>
               ))}
               <Button size="sm" variant="ghost" onClick={() => setPerms(fill(PERMISSION_KEYS))}>
-                Select all
+                {t.users.selectAll}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setPerms(fill([]))}>
-                Clear all
+                {t.users.clearAll}
               </Button>
             </div>
 
             {PERMISSION_GROUPS.map((group) => (
               <div key={group.group}>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{group.group}</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t.enums.permissionGroup[group.group]}</p>
                 <div className="flex flex-wrap gap-2">
                   {group.items.map((item) => {
-                    const on = current.perms[item.key];
+                    const on = current.perms[item];
                     return (
                       <button
-                        key={item.key}
+                        key={item}
                         type="button"
                         role="switch"
                         aria-checked={on}
-                        onClick={() => togglePerm(item.key)}
+                        onClick={() => togglePerm(item)}
                         className={cx(
                           "flex items-center gap-2 min-h-9 pointer-coarse:min-h-11 px-3 py-1.5 rounded-full text-sm font-medium border transition-all",
                           on ? "bg-primary-600 text-white border-primary-600" : "bg-white text-gray-600 border-gray-200 hover:border-primary-300",
                         )}
                       >
                         {on && <Check size={12} />}
-                        {item.label}
+                        {t.enums.permission[item]}
                       </button>
                     );
                   })}
@@ -226,10 +231,10 @@ function UserDetail() {
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
               <span className="text-sm text-gray-500">
-                {onCount} of {PERMISSION_KEYS.length} switched on
+                {t.users.switchedOn(onCount, PERMISSION_KEYS.length)}
               </span>
               <Button icon={Save} onClick={savePerms} loading={saving}>
-                Save Permissions
+                {t.users.savePermissions}
               </Button>
             </div>
           </div>

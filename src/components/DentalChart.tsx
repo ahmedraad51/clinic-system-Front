@@ -6,9 +6,10 @@ import { Check, Plus, Printer, RotateCcw, Save, Sparkles, X } from "lucide-react
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import ToothLogo from "@/components/ToothLogo";
 import { Alert, Button, CardIcon, LinkButton, Segmented, StatusBadge, TextArea } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
+import { label } from "@/i18n";
 import {
-  CONDITION_LABELS, FINDING_LABELS, LEGACY_LABELS, SURFACE_LABELS, cleanChart, describeTooth, isChildTooth,
-  isUpper, parseDentalChart, surfaceLayout, toothKind, toothName, type ToothKind,
+  cleanChart, describeTooth, isChildTooth, isUpper, parseDentalChart, surfaceLayout, toothKind, toothName, type ToothKind,
 } from "@/lib/dentalChart";
 import { cx } from "@/lib/format";
 import { treatmentHref } from "@/lib/links";
@@ -23,6 +24,10 @@ import {
  * underneath. Click a tooth to see it in the panel below; people who may edit the patient can mark
  * surfaces (caries, filling) and whole-tooth conditions, and write a note. Save Chart stores it all in
  * Patient.dental_chart (see DentalChartData in src/lib/types.ts).
+ *
+ * The teeth are drawn from the dentist's view (the patient's right on the left of the screen), so the rows of
+ * teeth and the surface squares are always left to right (dir="ltr"), also on an Arabic screen. The panel, the
+ * findings and the texts around them follow the page.
  */
 
 type Dentition = "adult" | "child";
@@ -160,6 +165,7 @@ export default function DentalChart({
   /** Where "Print" goes, e.g. /patients/<id>/chart. */
   printHref?: string;
 }) {
+  const { t } = useI18n();
   const [saved, setSaved] = useState<DentalChartData>(() => cleanChart(parseDentalChart(initialChart)));
   const [chart, setChart] = useState<DentalChartData>(saved);
   const [selected, setSelected] = useState<number | null>(initialTooth ?? null);
@@ -238,7 +244,7 @@ export default function DentalChart({
     const number = (
       <span className="flex items-center gap-0.5 text-xs font-semibold text-gray-600">
         {tooth}
-        {active && <span className="w-1.5 h-1.5 rounded-full bg-primary-500" title="Has an open treatment plan" />}
+        {active && <span className="w-1.5 h-1.5 rounded-full bg-primary-500" title={t.chart.openPlan} />}
       </span>
     );
     return (
@@ -248,7 +254,7 @@ export default function DentalChart({
         onClick={() => setSelected(selected === tooth ? null : tooth)}
         aria-pressed={selected === tooth}
         data-tooth={tooth}
-        aria-label={`Tooth ${tooth}, ${toothName(tooth)}${description ? `: ${description}` : ""}`}
+        aria-label={t.chart.toothButton(tooth, toothName(tooth), description)}
         title={`${tooth} · ${toothName(tooth)}${description ? ` · ${description}` : ""}`}
         className={cx(
           "flex flex-col items-center gap-1 w-10 xl:w-12 py-1.5 rounded-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
@@ -281,11 +287,12 @@ export default function DentalChart({
         <div className="flex items-start gap-2.5">
           <CardIcon icon={ToothLogo} />
           <div>
-            <h2 className="text-base font-semibold text-gray-800">Dental Chart</h2>
+            <h2 className="text-base font-semibold text-gray-800">{t.chart.title}</h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              {findings.length === 0 ? "No findings" : findings.length === 1 ? "1 tooth with findings" : `${findings.length} teeth with findings`}
+              {t.chart.findingsCount(findings.length)}
               <span className="print:hidden">
-                {" · "}click a tooth to {canEdit ? "mark it" : "see it"}
+                {t.common.dot}
+                {canEdit ? t.chart.clickToMark : t.chart.clickToSee}
               </span>
             </p>
           </div>
@@ -293,45 +300,46 @@ export default function DentalChart({
         <div className="flex flex-wrap items-center gap-2 print:hidden">
           {printHref && !dirty && (
             <LinkButton href={printHref} variant="secondary" icon={Printer}>
-              Print
+              {t.common.print}
             </LinkButton>
           )}
           <Segmented
-            label="Teeth"
+            label={t.chart.teeth}
             value={dentition}
             onChange={(next) => {
               setDentition(next);
               setSelected(null);
             }}
             options={[
-              { value: "adult", label: "Adult" },
-              { value: "child", label: "Child" },
+              { value: "adult", label: t.chart.adult },
+              { value: "child", label: t.chart.child },
             ]}
           />
           {canEdit && onSave && dirty && (
             <>
               <Button variant="secondary" icon={RotateCcw} onClick={() => setChart(saved)} disabled={saving}>
-                Undo
+                {t.chart.undo}
               </Button>
               <Button icon={Save} onClick={handleSave} loading={saving}>
-                Save Chart
+                {t.chart.saveChart}
               </Button>
             </>
           )}
         </div>
       </div>
 
-      <div ref={scrollRef} className="overflow-x-auto -mx-2 px-2">
+      {/* Anatomical: the patient's right stays on the left in every language. */}
+      <div ref={scrollRef} dir="ltr" className="overflow-x-auto -mx-2 px-2">
         <div className="w-max mx-auto">
           <div className="flex justify-between text-xs text-gray-500 px-1 mb-1">
-            <span>Patient&apos;s right</span>
-            <span className="font-medium text-gray-500">Upper jaw</span>
-            <span>Patient&apos;s left</span>
+            <span>{t.chart.patientsRight}</span>
+            <span className="font-medium text-gray-500">{t.chart.upperJaw}</span>
+            <span>{t.chart.patientsLeft}</span>
           </div>
-          <div className="flex justify-center">{upper.map((t, i) => column(t, true, i, upper.length))}</div>
+          <div className="flex justify-center">{upper.map((tooth, i) => column(tooth, true, i, upper.length))}</div>
           <div className="my-2 border-t-2 border-dashed border-gray-200" />
-          <div className="flex justify-center">{lower.map((t, i) => column(t, false, i, lower.length))}</div>
-          <p className="text-center text-xs font-medium text-gray-500 mt-1">Lower jaw</p>
+          <div className="flex justify-center">{lower.map((tooth, i) => column(tooth, false, i, lower.length))}</div>
+          <p className="text-center text-xs font-medium text-gray-500 mt-1">{t.chart.lowerJaw}</p>
         </div>
       </div>
 
@@ -355,9 +363,9 @@ export default function DentalChart({
       )}
 
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">Findings</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-2">{t.chart.findings}</h3>
         {findings.length === 0 ? (
-          <p className="text-sm text-gray-500">Nothing marked. All teeth are recorded as healthy.</p>
+          <p className="text-sm text-gray-500">{t.chart.nothingMarked}</p>
         ) : (
           <ul className="divide-y divide-gray-100 rounded-xl border border-gray-100">
             {findings.map((tooth) => {
@@ -373,7 +381,7 @@ export default function DentalChart({
                     className="w-full min-h-11 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-3 py-2 text-start text-sm hover:bg-gray-50"
                   >
                     <span className="font-semibold text-gray-800 w-6">{tooth}</span>
-                    <span className="text-gray-700">{describeTooth(current) || "Note only"}</span>
+                    <span className="text-gray-700">{describeTooth(current) || t.chart.noteOnly}</span>
                     {current.note && <span className="text-gray-500">· {current.note}</span>}
                   </button>
                 </li>
@@ -387,22 +395,23 @@ export default function DentalChart({
 }
 
 function Legend() {
-  const item = (swatch: string, label: string) => (
+  const { t } = useI18n();
+  const item = (swatch: string, text: string) => (
     <span className="inline-flex items-center gap-1.5">
       <span className={cx("w-3 h-3 rounded-sm border", swatch)} />
-      {label}
+      {text}
     </span>
   );
   return (
     <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs text-gray-500">
-      {item("bg-red-500 border-red-600", "Caries")}
-      {item("bg-sky-500 border-sky-600", "Filling")}
-      {item("bg-amber-200 border-amber-600", "Crown")}
-      {item("bg-white border-rose-500 border-2", "Root canal")}
-      {item("bg-gray-300 border-gray-500", "Implant")}
-      {item("bg-violet-400 border-violet-600", "Bridge")}
-      {item("bg-white border-gray-300 border-dashed", "Missing")}
-      {item("bg-white border-red-500 border-2", "To extract")}
+      {item("bg-red-500 border-red-600", t.chart.findingNames.caries)}
+      {item("bg-sky-500 border-sky-600", t.chart.findingNames.filling)}
+      {item("bg-amber-200 border-amber-600", t.chart.conditions.crown)}
+      {item("bg-white border-rose-500 border-2", t.chart.conditions.root_canal)}
+      {item("bg-gray-300 border-gray-500", t.chart.conditions.implant)}
+      {item("bg-violet-400 border-violet-600", t.chart.conditions.bridge)}
+      {item("bg-white border-gray-300 border-dashed", t.chart.conditions.missing)}
+      {item("bg-white border-red-500 border-2", t.chart.conditions.extract)}
     </div>
   );
 }
@@ -467,19 +476,20 @@ function ToothPanel({
     ["right", layout.right],
     ["center", "O"],
   ];
+  const { t } = useI18n();
   const description = describeTooth(record);
 
   return (
     <div className="rounded-2xl border border-primary-100 bg-primary-50/40 p-4 sm:p-5 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-lg font-bold text-gray-800">Tooth {tooth}</p>
+          <p className="text-lg font-bold text-gray-800">{t.chart.tooth(tooth)}</p>
           <p className="text-sm text-gray-500">{toothName(tooth)}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close tooth panel"
+          aria-label={t.chart.closePanel}
           className="w-11 h-11 -me-2 -mt-2 flex items-center justify-center rounded-lg text-gray-500 hover:bg-white hover:text-gray-700"
         >
           <X size={18} />
@@ -488,15 +498,15 @@ function ToothPanel({
 
       {record?.legacy && (
         <Alert tone="yellow">
-          The old chart marked this tooth as &quot;{LEGACY_LABELS[record.legacy]}&quot;.
-          {canEdit ? " Mark what it has below, or press Healthy to clear the old mark." : ""}
+          {t.chart.legacyNotice(t.chart.legacy[record.legacy])}
+          {canEdit ? ` ${t.chart.legacyEditHint}` : ""}
         </Alert>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-5">
-        {/* Surfaces */}
+        {/* Surfaces. Left and right are anatomical (mesial faces the midline), so the square stays left to right. */}
         <div className="flex flex-col items-center gap-3">
-          <div className="relative w-36 h-36" role="group" aria-label={`Surfaces of tooth ${tooth}`}>
+          <div dir="ltr" className="relative w-36 h-36" role="group" aria-label={t.chart.surfacesOf(tooth)}>
             {places.map(([place, surface]) => {
               const finding = record?.surfaces?.[surface];
               return (
@@ -505,7 +515,7 @@ function ToothPanel({
                   type="button"
                   disabled={!canEdit}
                   onClick={() => onSurface(surface)}
-                  aria-label={`${SURFACE_LABELS[surface]} surface: ${finding ? FINDING_LABELS[finding] : "healthy"}`}
+                  aria-label={t.chart.surfaceButton(t.chart.surfaces[surface], finding ? t.chart.findingNames[finding] : t.chart.healthySurface)}
                   className={cx(
                     "absolute inset-0 flex text-sm font-bold transition disabled:cursor-default focus:outline-none focus-visible:brightness-90",
                     LABEL_PLACES[place],
@@ -527,25 +537,25 @@ function ToothPanel({
           </div>
           {canEdit && (
             <Segmented
-              label="Mark surfaces as"
+              label={t.chart.markSurfacesAs}
               value={tool}
               onChange={onTool}
               options={[
-                { value: "caries", label: "Caries" },
-                { value: "filling", label: "Filling" },
-                { value: "clear", label: "Clear" },
+                { value: "caries", label: t.chart.findingNames.caries },
+                { value: "filling", label: t.chart.findingNames.filling },
+                { value: "clear", label: t.chart.clear },
               ]}
             />
           )}
           <p className="text-xs text-gray-500 text-center max-w-[15rem]">
-            {canEdit ? "Choose Caries, Filling or Clear, then tap the surfaces." : "M mesial · O occlusal · D distal · B buccal · L lingual"}
+            {canEdit ? t.chart.toolHint : t.chart.surfaceKey}
           </p>
         </div>
 
         {/* Whole tooth, note, plans */}
         <div className="space-y-4 min-w-0">
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">Whole tooth</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">{t.chart.wholeTooth}</p>
             {canEdit ? (
               <div className="flex flex-wrap gap-2">
                 {TOOTH_CONDITIONS.map((condition) => {
@@ -564,43 +574,43 @@ function ToothPanel({
                       )}
                     >
                       {on && <Check size={14} />}
-                      {CONDITION_LABELS[condition]}
+                      {t.chart.conditions[condition]}
                     </button>
                   );
                 })}
                 <Button variant="ghost" icon={Sparkles} onClick={onHealthy} className="text-green-700 hover:bg-green-50">
-                  Healthy
+                  {t.chart.healthy}
                 </Button>
               </div>
             ) : (
-              <p className="text-sm text-gray-700">{description || "Healthy"}</p>
+              <p className="text-sm text-gray-700">{description || t.chart.healthy}</p>
             )}
           </div>
 
           <label className="block">
-            <span className="block text-sm font-medium text-gray-700 mb-1.5">Note</span>
+            <span className="block text-sm font-medium text-gray-700 mb-1.5">{t.chart.note}</span>
             {canEdit ? (
               <TextArea
                 rows={2}
                 value={record?.note ?? ""}
                 onChange={(event) => onNote(event.target.value)}
-                placeholder="e.g. sensitive to cold, crack on the buccal cusp"
+                placeholder={t.chart.notePlaceholder}
               />
             ) : (
-              <span className="block text-sm text-gray-700">{record?.note || "—"}</span>
+              <span className="block text-sm text-gray-700">{record?.note || t.common.dash}</span>
             )}
           </label>
 
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">Treatment plans for this tooth</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">{t.chart.plansForTooth}</p>
             {plans.length === 0 ? (
-              <p className="text-sm text-gray-500">None yet.</p>
+              <p className="text-sm text-gray-500">{t.chart.noneYet}</p>
             ) : (
               <ul className="space-y-1.5">
                 {plans.map((plan) => (
                   <li key={plan.name} className="flex items-center gap-2 text-sm">
                     <Link href={treatmentHref(plan.name)} className="font-medium text-gray-800 hover:text-primary-600">
-                      {plan.treatment_type}
+                      {label(t.enums.treatmentType, plan.treatment_type)}
                     </Link>
                     <StatusBadge kind="treatment" status={plan.status} />
                   </li>
@@ -611,7 +621,7 @@ function ToothPanel({
 
           {newTreatmentHref && (
             <LinkButton href={newTreatmentHref} variant="secondary" icon={Plus}>
-              New treatment for this tooth
+              {t.chart.newTreatmentForTooth}
             </LinkButton>
           )}
         </div>

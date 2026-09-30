@@ -1,0 +1,48 @@
+import type { Messages } from "../en";
+
+export const payments: Messages["payments"] = {
+  title: "المدفوعات",
+  totalFiltered: "المجموع حسب هذه التصفية: ",
+  totalAll: "مجموع المبالغ المستلمة: ",
+  subtitle: "كل الدفعات المستلمة، الأحدث أولًا.",
+  dayReport: "تقرير نهاية اليوم",
+  add: "إضافة دفعة",
+  searchPlaceholder: "ابحث باسم المريض أو العلاج أو الملاحظة...",
+  methodFilter: "طريقة الدفع",
+  allMethods: "كل الطرق",
+  fromDate: "من تاريخ",
+  toDate: "إلى تاريخ",
+  to: "إلى",
+  colDate: "التاريخ",
+  colPatient: "المريض",
+  colTreatment: "العلاج",
+  colMethod: "الطريقة",
+  colAmount: "المبلغ",
+  noMatch: "لا توجد دفعات تطابق هذه التصفية.",
+  none: "لا توجد دفعات بعد.",
+  backToList: "العودة إلى المدفوعات",
+
+  newTitle: "دفعة جديدة",
+  backToPlan: "خطة العلاج",
+  savePayment: "حفظ الدفعة",
+  recorded: "تم تسجيل الدفعة.",
+  editTitle: "تعديل الدفعة",
+  backToPayment: "الدفعة",
+  saved: "تم حفظ الدفعة.",
+
+  receiptTitle: "وصل دفع",
+  whatsapp: "واتساب",
+  deleteLabel: "حذف الدفعة",
+  deleteTitle: "حذف هذه الدفعة؟",
+  deleteBefore: "ستُحذف الدفعة البالغة ",
+  deleteAfter: " ويزداد المبلغ المتبقي على خطة العلاج بالمقدار نفسه.",
+  deleteConfirm: "حذف الدفعة",
+  deleted: "تم حذف الدفعة.",
+  deleteFailed: "تعذّر حذف الدفعة.",
+
+  whatsappThanks: (patient: string, amount: string, date: string, forWhat: string, clinic: string) =>
+    `مرحبًا ${patient}، شكرًا لك على دفع ${amount} بتاريخ ${date}${forWhat ? ` مقابل ${forWhat}` : ""} في ${clinic}.`,
+  whatsappReceipt: (receiptNo: string, method: string) => `رقم الوصل: ${receiptNo} (${method}).`,
+  whatsappLeft: (amount: string) => `المبلغ المتبقي: ${amount}.`,
+  whatsappNothingLeft: "لا يوجد مبلغ متبقٍ. شكرًا لك!",
+};

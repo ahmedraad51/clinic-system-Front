@@ -7,8 +7,10 @@ import RequirePermission from "@/components/Guard";
 import {
   Card, LinkButton, PageContainer, PageHeader, SelectInput, Table, TableError, TableLoading, TableMessage, Td, Th,
 } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
+import { messages } from "@/i18n";
 import { errorMessage, getList } from "@/lib/frappe";
 import { formatDate, todayISO } from "@/lib/format";
 import { patientHref } from "@/lib/links";
@@ -33,6 +35,7 @@ export default function RecallPage() {
  * see docs/backend-todo.md for a faster server version later.
  */
 function Recall() {
+  const { t } = useI18n();
   const { can } = useSession();
   const { clinicName, countryCode } = useSettings();
   const [months, setMonths] = useState<number>(DEFAULT_RECALL_MONTHS);
@@ -57,7 +60,7 @@ function Recall() {
         }
       } catch (err) {
         console.error(err);
-        if (!cancelled) setError(errorMessage(err, "Could not load the recall list."));
+        if (!cancelled) setError(errorMessage(err, messages().recall.loadFailed));
       }
     };
     load();
@@ -70,24 +73,20 @@ function Recall() {
   const due = data ? dueForRecall(data.patients, data.appointments, today, months) : [];
 
   const whatsapp = (p: Patient) =>
-    whatsappLink(
-      p.phone_number,
-      `Hello ${p.full_name}, it is time for your dental check-up at ${clinicName}. Reply to this message and we will find a time that suits you.`,
-      countryCode,
-    );
+    whatsappLink(p.phone_number, t.recall.whatsappText(p.full_name, clinicName), countryCode);
 
   return (
     <PageContainer>
       <PageHeader
-        title="Recall"
-        subtitle="Patients due for a check-up and not booked: the date the dentist chose has come, or no visit for a while."
+        title={t.recall.title}
+        subtitle={t.recall.subtitle}
         actions={
           <label className="flex items-center gap-2 text-sm text-gray-600 whitespace-nowrap">
-            Not seen for
+            {t.recall.notSeenFor}
             <SelectInput value={String(months)} onChange={(e) => setMonths(Number(e.target.value))} className="w-auto">
               {RECALL_PERIODS.map((m) => (
                 <option key={m} value={m}>
-                  {m} months
+                  {t.common.months(m)}
                 </option>
               ))}
             </SelectInput>
@@ -99,10 +98,10 @@ function Recall() {
         <Table>
           <thead>
             <tr>
-              <Th>Patient</Th>
-              <Th>Check-up due</Th>
-              <Th>Last visit</Th>
-              <Th>Phone</Th>
+              <Th>{t.common.patient}</Th>
+              <Th>{t.recall.checkUpDue}</Th>
+              <Th>{t.recall.lastVisit}</Th>
+              <Th>{t.common.phone}</Th>
               <Th />
             </tr>
           </thead>
@@ -121,8 +120,7 @@ function Recall() {
               <TableLoading colSpan={5} />
             ) : due.length === 0 ? (
               <TableMessage icon={BellRing} colSpan={5}>
-                Nobody is due. Every patient was seen in the last {months} months, is not due yet by the dentist&apos;s
-                date, or has a visit booked.
+                {t.recall.nobodyDue(months)}
               </TableMessage>
             ) : (
               due.map(({ patient, lastVisit, dueDate, byDentist }) => {
@@ -133,29 +131,31 @@ function Recall() {
                       <Link href={patientHref(patient.name)} className="font-medium text-gray-800 hover:text-primary-600">
                         {patient.full_name}
                       </Link>
-                      {patient.age ? <span className="block text-xs text-gray-500">{patient.age} years</span> : null}
+                      {patient.age ? <span className="block text-xs text-gray-500">{t.common.years(Number(patient.age))}</span> : null}
                     </Td>
-                    <Td label="Check-up due" className="whitespace-nowrap">
-                      {dueDate ? formatDate(dueDate) : <span className="text-gray-500">Now</span>}
+                    <Td label={t.recall.checkUpDue} className="whitespace-nowrap">
+                      {dueDate ? formatDate(dueDate) : <span className="text-gray-500">{t.recall.now}</span>}
                       <span className="block text-xs text-gray-500">
                         {byDentist
-                          ? `Dentist${Number(patient.recall_interval_months) > 0 ? `: every ${patient.recall_interval_months} months` : ""}`
+                          ? Number(patient.recall_interval_months) > 0
+                            ? t.recall.dentistEvery(Number(patient.recall_interval_months))
+                            : t.recall.dentist
                           : lastVisit
-                            ? `${months} months after the last visit`
-                            : "Never seen"}
+                            ? t.recall.afterLastVisit(months)
+                            : t.recall.neverSeen}
                       </span>
                     </Td>
-                    <Td label="Last visit" className="whitespace-nowrap">
-                      {lastVisit ? formatDate(lastVisit) : <span className="text-gray-500">No visit yet</span>}
+                    <Td label={t.recall.lastVisit} className="whitespace-nowrap">
+                      {lastVisit ? formatDate(lastVisit) : <span className="text-gray-500">{t.recall.noVisitYet}</span>}
                     </Td>
-                    <Td label="Phone" className="whitespace-nowrap">
+                    <Td label={t.common.phone} className="whitespace-nowrap">
                       {patient.phone_number ? (
                         <a href={`tel:${patient.phone_number.replace(/\s/g, "")}`} className="inline-flex items-center gap-1.5 pointer-coarse:min-h-11 text-gray-700 hover:text-primary-600">
                           <Phone size={14} />
-                          {patient.phone_number}
+                          <span dir="ltr">{patient.phone_number}</span>
                         </a>
                       ) : (
-                        "—"
+                        t.common.dash
                       )}
                     </Td>
                     <Td className="text-end">
@@ -168,7 +168,7 @@ function Recall() {
                             className="inline-flex items-center gap-1.5 min-h-9 pointer-coarse:min-h-11 px-3 rounded-xl bg-green-50 border border-green-200 text-xs font-medium text-green-800 hover:bg-green-100"
                           >
                             <MessageCircle size={14} />
-                            WhatsApp
+                            {t.recall.whatsapp}
                           </a>
                         )}
                         {can("add_appointments") && (
@@ -178,7 +178,7 @@ function Recall() {
                             variant="secondary"
                             icon={CalendarPlus}
                           >
-                            Book
+                            {t.recall.book}
                           </LinkButton>
                         )}
                       </div>
@@ -190,7 +190,7 @@ function Recall() {
           </tbody>
         </Table>
         {data && due.length > 0 && (
-          <p className="px-5 py-3 text-xs text-gray-500">{due.length === 1 ? "1 patient due" : `${due.length} patients due`}</p>
+          <p className="px-5 py-3 text-xs text-gray-500">{t.recall.countDue(due.length)}</p>
         )}
       </Card>
     </PageContainer>

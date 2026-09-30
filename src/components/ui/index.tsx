@@ -19,7 +19,11 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from "react";
-import { AlertCircle, ArrowLeft, ChevronLeft, ChevronRight, Info, Lock, RotateCcw, Search, X, type LucideIcon } from "lucide-react";
+import {
+  AlertCircle, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Info, Lock, RotateCcw, Search, X,
+  type LucideIcon,
+} from "lucide-react";
+import { label, messages } from "@/i18n";
 import { cleanNumberText, cx } from "@/lib/format";
 import { toLatinDigits } from "@/lib/phone";
 
@@ -101,9 +105,25 @@ export function statusTone(kind: StatusKind, status?: string | null): Tone {
   return (status && tones[status]) || "gray";
 }
 
+/** Where each kind of status finds its translated labels. */
+const STATUS_LABELS: Record<StatusKind, () => Record<string, string>> = {
+  appointment: () => messages().enums.appointmentStatus,
+  treatment: () => messages().enums.treatmentStatus,
+  session: () => messages().enums.sessionStatus,
+  method: () => messages().enums.paymentMethod,
+  whatsapp: () => messages().enums.whatsappStatus,
+  trigger: () => messages().enums.whatsappTrigger,
+  user: () => messages().enums.userStatus,
+};
+
+/** A status in the current language, e.g. "Scheduled" → "محجوز". */
+export function statusLabel(kind: StatusKind, status?: string | null): string {
+  return label(STATUS_LABELS[kind](), status);
+}
+
 export function StatusBadge({ kind, status }: { kind: StatusKind; status?: string | null }) {
   if (!status) return null;
-  return <Badge tone={statusTone(kind, status)}>{status}</Badge>;
+  return <Badge tone={statusTone(kind, status)}>{statusLabel(kind, status)}</Badge>;
 }
 
 /* --------------------------------------------------------------- layout -- */
@@ -402,6 +422,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
 }
 
+/** Icons that point sideways: on a button they turn round in a right-to-left page, like the reading direction. */
+const SIDEWAYS_ICONS = new Set<LucideIcon>([ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight]);
+const iconClass = (Icon: LucideIcon) => (SIDEWAYS_ICONS.has(Icon) ? "rtl:rotate-180" : undefined);
+
 export function Button({
   variant = "primary",
   size = "md",
@@ -416,7 +440,7 @@ export function Button({
   const iconSize = size === "sm" ? 14 : 16;
   return (
     <button type={type} disabled={disabled || loading} className={buttonClass(variant, size, className)} {...rest}>
-      {loading ? <Spinner size={iconSize} /> : Icon ? <Icon size={iconSize} /> : null}
+      {loading ? <Spinner size={iconSize} /> : Icon ? <Icon size={iconSize} className={iconClass(Icon)} /> : null}
       {children}
     </button>
   );
@@ -439,7 +463,7 @@ export function LinkButton({
 }) {
   return (
     <Link href={href} className={buttonClass(variant, size, className)}>
-      {Icon && <Icon size={size === "sm" ? 14 : 16} />}
+      {Icon && <Icon size={size === "sm" ? 14 : 16} className={iconClass(Icon)} />}
       {children}
     </Link>
   );
@@ -651,7 +675,7 @@ export function SearchInput({
         <button
           type="button"
           onClick={() => onChange("")}
-          aria-label="Clear search"
+          aria-label={messages().ui.clearSearch}
           className="absolute end-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700"
         >
           <X size={16} />
@@ -797,7 +821,7 @@ export function TableLoading({ colSpan, rows = 5 }: { colSpan: number; rows?: nu
       {Array.from({ length: rows }, (_, row) => (
         <tr key={row} aria-hidden={row > 0 ? true : undefined}>
           <td colSpan={colSpan} className="px-5 py-4 border-b border-gray-50 max-sm:block">
-            {row === 0 && <span className="sr-only" role="status">Loading...</span>}
+            {row === 0 && <span className="sr-only" role="status">{messages().ui.loading}</span>}
             <div className="flex items-center gap-6 animate-pulse">
               <div className="h-4 w-1/4 rounded bg-gray-100" />
               <div className="h-4 w-1/6 rounded bg-gray-100 max-sm:hidden" />
@@ -823,7 +847,7 @@ export function TableError({ colSpan, message, onRetry }: { colSpan: number; mes
           <AlertCircle size={22} aria-hidden="true" />
           <p>{message}</p>
           <Button variant="secondary" size="sm" icon={RotateCcw} onClick={onRetry}>
-            Try Again
+            {messages().ui.tryAgain}
           </Button>
         </div>
       </td>
@@ -835,7 +859,7 @@ export function TableError({ colSpan, message, onRetry }: { colSpan: number; mes
 export function ClearFiltersButton({ onClick }: { onClick: () => void }) {
   return (
     <Button variant="secondary" size="sm" icon={X} onClick={onClick} className="mt-3">
-      Clear Filters
+      {messages().ui.clearFilters}
     </Button>
   );
 }
@@ -871,7 +895,7 @@ export function Pagination({
 }) {
   if (total === 0) return null;
   if (total <= pageSize) {
-    return <p className="px-5 py-3 text-xs text-gray-500">{total === 1 ? "1 record" : `${total} records`}</p>;
+    return <p className="px-5 py-3 text-xs text-gray-500">{messages().ui.records(total)}</p>;
   }
   const pages = Math.ceil(total / pageSize);
   const from = (page - 1) * pageSize + 1;
@@ -880,17 +904,13 @@ export function Pagination({
     "inline-flex items-center justify-center w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent";
   return (
     <div className="flex items-center justify-between gap-3 px-5 py-3 text-sm text-gray-500">
-      <span>
-        {from}–{to} of {total}
-      </span>
+      <span>{messages().ui.range(from, to, total)}</span>
       <div className="flex items-center gap-1">
-        <button type="button" className={arrow} disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page">
+        <button type="button" className={arrow} disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label={messages().ui.previousPage}>
           <ChevronLeft size={16} className="rtl:rotate-180" />
         </button>
-        <span className="px-2 whitespace-nowrap">
-          Page {page} of {pages}
-        </span>
-        <button type="button" className={arrow} disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label="Next page">
+        <span className="px-2 whitespace-nowrap">{messages().ui.pageOf(page, pages)}</span>
+        <button type="button" className={arrow} disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label={messages().ui.nextPage}>
           <ChevronRight size={16} className="rtl:rotate-180" />
         </button>
       </div>
@@ -907,7 +927,8 @@ export function DetailRow({ label, children }: { label: string; children?: React
     <div className="grid grid-cols-1 @xs:grid-cols-3 gap-1 @xs:gap-4 py-2.5 border-b border-gray-50 last:border-0">
       <dt className="text-sm text-gray-500 break-words">{label}</dt>
       <dd className="@xs:col-span-2 min-w-0 text-sm text-gray-800 whitespace-pre-line break-words">
-        {empty ? <span className="text-gray-300">—</span> : children}
+        {/* Typed text keeps its own direction (<bdi>): an English note on an Arabic screen ends with its full stop. */}
+        {empty ? <span className="text-gray-300">—</span> : typeof children === "string" ? <bdi>{children}</bdi> : children}
       </dd>
     </div>
   );
@@ -992,7 +1013,7 @@ export function LoadError({ message, onRetry }: { message: string; onRetry: () =
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <span>{message}</span>
         <Button variant="secondary" size="sm" icon={RotateCcw} onClick={onRetry}>
-          Try Again
+          {messages().ui.tryAgain}
         </Button>
       </div>
     </Alert>
@@ -1038,11 +1059,11 @@ export function ProgressBar({
   );
 }
 
-export function PageLoading({ label = "Loading..." }: { label?: string }) {
+export function PageLoading({ label: text = messages().ui.loading }: { label?: string }) {
   return (
     <div className="flex items-center justify-center gap-3 py-24 text-gray-500" role="status">
       <Spinner size={20} />
-      <span className="text-sm">{label}</span>
+      <span className="text-sm">{text}</span>
     </div>
   );
 }
@@ -1074,7 +1095,7 @@ export function RecordLoading() {
   return (
     <PageContainer>
       <div role="status" className="space-y-6">
-        <span className="sr-only">Loading...</span>
+        <span className="sr-only">{messages().ui.loading}</span>
         <div aria-hidden="true" className="space-y-6 animate-pulse motion-reduce:animate-none">
           <div className="space-y-3">
             <div className="h-3.5 w-24 rounded bg-gray-100" />
@@ -1150,9 +1171,9 @@ export function NoAccess() {
       <Card>
         <EmptyState
           icon={Lock}
-          title="You do not have access to this page"
-          text="Ask a clinic manager to turn on the permission for you under Users."
-          action={<LinkButton href="/dashboard" variant="secondary">Go to Dashboard</LinkButton>}
+          title={messages().ui.noAccessTitle}
+          text={messages().ui.noAccessText}
+          action={<LinkButton href="/dashboard" variant="secondary">{messages().ui.goToDashboard}</LinkButton>}
         />
       </Card>
     </PageContainer>
@@ -1177,8 +1198,8 @@ export function NotFoundCard({
       <Card>
         <EmptyState
           icon={error ? AlertCircle : Search}
-          title={error ? `Could not open this ${what.toLowerCase()}` : `${what} not found`}
-          text={error || "It may have been deleted, or the link is wrong."}
+          title={error ? messages().ui.couldNotOpen(what) : messages().ui.notFound(what)}
+          text={error || messages().ui.notFoundText}
           action={<LinkButton href={backHref} variant="secondary">{backLabel}</LinkButton>}
         />
       </Card>

@@ -235,6 +235,8 @@ export interface User extends BaseDoc {
   /** Frappe's own User fields, for the avatar: "Male" / "Female", and an uploaded photo. */
   gender?: string;
   user_image?: string;
+  /** Frappe's own User field: the language this user chose ("ar" or "en"). Empty: the clinic's default. */
+  language?: string;
 }
 
 /** One row of Clinic Settings → treatment_prices (a child table). */
@@ -263,6 +265,10 @@ export interface ClinicSettings extends BaseDoc {
   working_days?: string;
   /** Country calling code added to local numbers for WhatsApp links, digits only ("964" for Iraq). Empty means 964. */
   phone_country_code?: string;
+  /** The clinic's language for users who have not chosen one: "ar" (the default when empty) or "en". */
+  default_language?: string;
+  /** 1: Arabic screens write numbers ٠-٩ instead of 0-9. */
+  arabic_digits?: number;
 }
 
 export interface WhatsAppTemplate extends BaseDoc {
@@ -270,6 +276,8 @@ export interface WhatsAppTemplate extends BaseDoc {
   trigger: WhatsAppTrigger;
   message: string;
   is_active?: number;
+  /** The language the message is written in: "ar" or "en". Empty: any language. */
+  language?: string;
 }
 
 /** One day's cash count at the front desk (the end-of-day report). One per day. */
@@ -356,51 +364,19 @@ export interface WhatsAppLog extends BaseDoc {
 
 /* ---------------------------------------------------------- permissions -- */
 
+/** The permission switches by group. Their labels are in the translation files (enums.permission). */
 export const PERMISSION_GROUPS = [
-  {
-    group: "Patients",
-    items: [
-      { key: "view_patients", label: "View Patients" },
-      { key: "add_patients", label: "Add Patients" },
-      { key: "edit_patients", label: "Edit Patients" },
-      { key: "delete_patients", label: "Delete Patients" },
-    ],
-  },
-  {
-    group: "Appointments",
-    items: [
-      { key: "view_appointments", label: "View Appointments" },
-      { key: "add_appointments", label: "Add Appointments" },
-      { key: "edit_appointments", label: "Edit Appointments" },
-    ],
-  },
-  {
-    group: "Treatments",
-    items: [
-      { key: "view_treatments", label: "View Treatments" },
-      { key: "add_treatments", label: "Add Treatments" },
-      { key: "edit_treatments", label: "Edit Treatments" },
-    ],
-  },
-  {
-    group: "Finance",
-    items: [
-      { key: "view_payments", label: "View Payments" },
-      { key: "add_payments", label: "Add Payments" },
-      { key: "view_reports", label: "View Reports" },
-    ],
-  },
-  {
-    group: "System",
-    items: [{ key: "manage_users", label: "Manage Users" }],
-  },
+  { group: "patients", items: ["view_patients", "add_patients", "edit_patients", "delete_patients"] },
+  { group: "appointments", items: ["view_appointments", "add_appointments", "edit_appointments"] },
+  { group: "treatments", items: ["view_treatments", "add_treatments", "edit_treatments"] },
+  { group: "finance", items: ["view_payments", "add_payments", "view_reports"] },
+  { group: "system", items: ["manage_users"] },
 ] as const;
 
-export type PermissionKey = (typeof PERMISSION_GROUPS)[number]["items"][number]["key"];
+export type PermissionKey = (typeof PERMISSION_GROUPS)[number]["items"][number];
+export type PermissionGroupKey = (typeof PERMISSION_GROUPS)[number]["group"];
 
-export const PERMISSION_KEYS: PermissionKey[] = PERMISSION_GROUPS.flatMap((group) =>
-  group.items.map((item) => item.key),
-);
+export const PERMISSION_KEYS: PermissionKey[] = PERMISSION_GROUPS.flatMap((group) => [...group.items]);
 
 export type ClinicPermission = BaseDoc & { user: string } & Partial<Record<PermissionKey, number>>;
 

@@ -5,9 +5,11 @@ import Link from "next/link";
 import { Save } from "lucide-react";
 import { Alert, Badge, Button, Field, LoadError, NumberInput, PageLoading, Table, Td, TextArea, Th } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
+import { messages } from "@/i18n";
 import { cashStateLabel, compareCash, type CashState } from "@/lib/cashCount";
 import { createDoc, errorMessage, getList, updateDoc } from "@/lib/frappe";
 import { currencyDecimals, formatDate, formatDateTime } from "@/lib/format";
@@ -27,6 +29,8 @@ const TONE: Record<CashState, "green" | "red" | "yellow"> = { matched: "green", 
  */
 export function CashCountCard({ date, cashPayments, onSaved }: { date: string; cashPayments: number; onSaved?: () => void }) {
   const toast = useToast();
+  const { t } = useI18n();
+  const c = t.cash;
   const { user } = useAuth();
   const { can } = useSession();
   const { money, currency } = useSettings();
@@ -49,7 +53,7 @@ export function CashCountCard({ date, cashPayments, onSaved }: { date: string; c
         }
       } catch (err) {
         console.error(err);
-        if (!cancelled) setFailed(errorMessage(err, "Could not load the cash count."));
+        if (!cancelled) setFailed(errorMessage(err, messages().cash.countLoadFailed));
       }
     };
     load();
@@ -91,11 +95,11 @@ export function CashCountCard({ date, cashPayments, onSaved }: { date: string; c
 
   const handleSave = async () => {
     if (form.counted === "") {
-      setError("Enter the cash counted.");
+      setError(c.enterCounted);
       return;
     }
     if (needsNote && !form.note.trim()) {
-      setError("Write a note saying why the cash is short or over.");
+      setError(c.noteRequired);
       return;
     }
     setSaving(true);
@@ -117,11 +121,11 @@ export function CashCountCard({ date, cashPayments, onSaved }: { date: string; c
         : await createDoc<CashCount>("Cash Count", data);
       setSaved({ date, count });
       setDraft(null);
-      toast.success("Cash count saved.");
+      toast.success(c.countSaved);
       setVersion((v) => v + 1);
       onSaved?.();
     } catch (err) {
-      setError(errorMessage(err, "Could not save the cash count."));
+      setError(errorMessage(err, c.countSaveFailed));
     } finally {
       setSaving(false);
     }
@@ -136,51 +140,50 @@ export function CashCountCard({ date, cashPayments, onSaved }: { date: string; c
 
   return (
     <div className="rounded-xl border border-gray-200 px-4 py-4 text-sm space-y-3">
-      <p className="font-semibold text-gray-800">Cash in the drawer</p>
-      {row("Cash payments", money(cashPayments))}
+      <p className="font-semibold text-gray-800">{c.drawer}</p>
+      {row(c.cashPayments, money(cashPayments))}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print:hidden">
-        <Field label="Opening float" hint="Money put in the drawer this morning, for change.">
+        <Field label={c.openingFloat} hint={c.openingFloatHint}>
           <NumberInput decimals={decimals} value={form.float} onChange={(e) => change({ float: e.target.value })} disabled={!canSave} />
         </Field>
-        <Field label="Cash counted" hint="All the cash in the drawer now.">
+        <Field label={c.cashCounted} hint={c.cashCountedHint}>
           <NumberInput decimals={decimals} value={form.counted} onChange={(e) => change({ counted: e.target.value })} disabled={!canSave} />
         </Field>
       </div>
       {/* On paper the typed numbers are printed; empty ones become lines to fill in. */}
       <div className="hidden print:block space-y-3">
-        {row("Opening float", form.float === "" ? "________" : money(Number(form.float)))}
-        {row("Cash counted", form.counted === "" ? "________" : money(Number(form.counted)))}
+        {row(c.openingFloat, form.float === "" ? c.blank : money(Number(form.float)))}
+        {row(c.cashCounted, form.counted === "" ? c.blank : money(Number(form.counted)))}
       </div>
-      {row("Should be in the drawer", money(expected), true)}
+      {row(c.shouldBe, money(expected), true)}
       {result && (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-gray-600">Result</span>
+          <span className="text-gray-600">{c.result}</span>
           <Badge tone={TONE[result.state]}>{cashStateLabel(result.state, money(Math.abs(result.difference)))}</Badge>
         </div>
       )}
       {(needsNote || form.note) && (
         <>
-          <Field label="Note" required={needsNote} hint="What happened, for example change given twice." className="print:hidden">
+          <Field label={c.note} required={needsNote} hint={c.noteHint} className="print:hidden">
             <TextArea rows={2} value={form.note} onChange={(e) => change({ note: e.target.value })} disabled={!canSave} />
           </Field>
-          {form.note && <p className="hidden print:block text-gray-700">Note: {form.note}</p>}
+          {form.note && <p className="hidden print:block text-gray-700">{c.notePrinted(form.note)}</p>}
         </>
       )}
-      {paymentsChanged && (
-        <Alert tone="yellow">
-          Cash payments changed since the count was saved (then {money(current.cash_payments)}). Count again and save.
-        </Alert>
-      )}
+      {paymentsChanged && <Alert tone="yellow">{c.paymentsChanged(money(current.cash_payments))}</Alert>}
       {error && <Alert tone="red">{error}</Alert>}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-gray-500">
           {current
-            ? `Counted by ${current.counted_by_name || current.counted_by || "someone"}${current.counted_at ? `, ${formatDateTime(current.counted_at)}` : ""}`
-            : "Not counted yet."}
+            ? c.countedByLine(
+                current.counted_by_name || current.counted_by || c.someone,
+                current.counted_at ? formatDateTime(current.counted_at) : "",
+              )
+            : c.notCounted}
         </p>
         {canSave && (
           <Button icon={Save} size="sm" loading={saving} onClick={handleSave} className="print:hidden">
-            {current ? "Update Count" : "Save Count"}
+            {current ? c.updateCount : c.saveCount}
           </Button>
         )}
       </div>
@@ -190,6 +193,8 @@ export function CashCountCard({ date, cashPayments, onSaved }: { date: string; c
 
 /** The last cash counts, newest first, so a manager can look back. Each day opens its report. */
 export function RecentCashCounts({ refresh }: { refresh: number }) {
+  const { t } = useI18n();
+  const c = t.cash;
   const { money } = useSettings();
   const [rows, setRows] = useState<CashCount[] | null>(null);
   const [failed, setFailed] = useState("");
@@ -206,7 +211,7 @@ export function RecentCashCounts({ refresh }: { refresh: number }) {
         }
       } catch (err) {
         console.error(err);
-        if (!cancelled) setFailed(errorMessage(err, "Could not load the cash counts."));
+        if (!cancelled) setFailed(errorMessage(err, messages().cash.recentLoadFailed));
       }
     };
     load();
@@ -228,17 +233,17 @@ export function RecentCashCounts({ refresh }: { refresh: number }) {
       </div>
     );
   if (!rows) return <PageLoading />;
-  if (rows.length === 0) return <p className="px-5 pb-5 text-sm text-gray-500">No cash counts saved yet.</p>;
+  if (rows.length === 0) return <p className="px-5 pb-5 text-sm text-gray-500">{c.noCounts}</p>;
   return (
     <Table>
       <thead>
         <tr>
-          <Th>Day</Th>
-          <Th className="text-end">Should be</Th>
-          <Th className="text-end">Counted</Th>
-          <Th>Result</Th>
-          <Th>Note</Th>
-          <Th>Counted by</Th>
+          <Th>{c.colDay}</Th>
+          <Th className="text-end">{c.colShouldBe}</Th>
+          <Th className="text-end">{c.colCounted}</Th>
+          <Th>{c.colResult}</Th>
+          <Th>{c.colNote}</Th>
+          <Th>{c.colCountedBy}</Th>
         </tr>
       </thead>
       <tbody>
@@ -251,13 +256,13 @@ export function RecentCashCounts({ refresh }: { refresh: number }) {
                   {formatDate(count.count_date)}
                 </Link>
               </Td>
-              <Td label="Should be" className="text-end whitespace-nowrap">{money(count.expected_cash)}</Td>
-              <Td label="Counted" className="text-end whitespace-nowrap">{money(count.cash_counted)}</Td>
-              <Td label="Result">
+              <Td label={c.colShouldBe} className="text-end whitespace-nowrap">{money(count.expected_cash)}</Td>
+              <Td label={c.colCounted} className="text-end whitespace-nowrap">{money(count.cash_counted)}</Td>
+              <Td label={c.colResult}>
                 <Badge tone={TONE[result.state]}>{cashStateLabel(result.state, money(Math.abs(result.difference)))}</Badge>
               </Td>
-              <Td label="Note" className="min-w-56 max-sm:min-w-0">{count.note || null}</Td>
-              <Td label="Counted by" className="whitespace-nowrap">{count.counted_by_name || count.counted_by || ""}</Td>
+              <Td label={c.colNote} className="min-w-56 max-sm:min-w-0">{count.note || null}</Td>
+              <Td label={c.colCountedBy} className="whitespace-nowrap">{count.counted_by_name || count.counted_by || ""}</Td>
             </tr>
           );
         })}

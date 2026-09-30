@@ -4,7 +4,9 @@ import { useParams, useRouter } from "next/navigation";
 import RequirePermission from "@/components/Guard";
 import TreatmentForm, { treatmentPayload, treatmentToForm, type TreatmentFormData } from "@/components/forms/TreatmentForm";
 import { NotFoundCard, PageContainer, PageHeader, PageLoading } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
+import { messages } from "@/i18n";
 import { updateDoc } from "@/lib/frappe";
 import { useDocument } from "@/lib/hooks";
 import { routeId, treatmentHref } from "@/lib/links";
@@ -19,6 +21,7 @@ export default function EditTreatmentPage() {
 }
 
 function EditTreatment() {
+  const { t } = useI18n();
   const params = useParams();
   const router = useRouter();
   const toast = useToast();
@@ -27,24 +30,24 @@ function EditTreatment() {
 
   if (loading) return <PageLoading />;
   if (notFound || !plan) {
-    return <NotFoundCard error={error} what="Treatment plan" backHref="/treatments" backLabel="Back to Treatment Plans" />;
+    return <NotFoundCard error={error} what={t.treatments.what} backHref="/treatments" backLabel={t.treatments.backToList} />;
   }
 
   const handleSubmit = async (data: TreatmentFormData) => {
     await updateDoc("Treatment Plan", id, treatmentPayload(data));
-    toast.success("Treatment plan saved.");
+    toast.success(messages().treatments.saved);
     router.push(treatmentHref(id));
   };
 
   return (
     <PageContainer narrow>
-      <PageHeader title="Edit Treatment Plan" subtitle={id} back={{ href: treatmentHref(id), label: "Treatment plan" }} />
+      <PageHeader title={t.treatments.editTitle} subtitle={id} back={{ href: treatmentHref(id), label: t.treatments.what }} />
       <TreatmentForm
         initial={treatmentToForm(plan)}
         patientLabel={plan.patient_name}
         doctorLabel={plan.doctor_name}
         showStatus
-        submitLabel="Save Changes"
+        submitLabel={t.common.saveChanges}
         cancelHref={treatmentHref(id)}
         onSubmit={handleSubmit}
       />

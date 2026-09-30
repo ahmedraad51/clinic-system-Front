@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import RequirePermission from "@/components/Guard";
 import PaymentForm, { emptyPayment, paymentPayload, type PaymentFormData } from "@/components/forms/PaymentForm";
 import { PageContainer, PageHeader, PageLoading } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
 import { createDoc } from "@/lib/frappe";
 import { paymentHref, treatmentHref } from "@/lib/links";
@@ -25,6 +26,7 @@ function NewPayment() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
+  const { t } = useI18n();
   const plan = searchParams.get("treatment") || "";
   const initial: PaymentFormData = {
     ...emptyPayment(),
@@ -35,17 +37,17 @@ function NewPayment() {
 
   const handleSubmit = async (data: PaymentFormData) => {
     const payment = await createDoc<Payment>("Payment", paymentPayload(data));
-    toast.success("Payment recorded.");
+    toast.success(t.payments.recorded);
     router.push(paymentHref(payment.name));
   };
 
   return (
     <PageContainer narrow>
       <PageHeader
-        title="New Payment"
-        back={{ href: backHref, label: plan ? "Treatment plan" : "Payments" }}
+        title={t.payments.newTitle}
+        back={{ href: backHref, label: plan ? t.payments.backToPlan : t.payments.title }}
       />
-      <PaymentForm initial={initial} submitLabel="Save Payment" cancelHref={backHref} onSubmit={handleSubmit} />
+      <PaymentForm initial={initial} submitLabel={t.payments.savePayment} cancelHref={backHref} onSubmit={handleSubmit} />
     </PageContainer>
   );
 }

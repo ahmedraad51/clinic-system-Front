@@ -1,0 +1,77 @@
+import { num } from "../runtime";
+
+/** The Settings page (/settings): Clinic Settings. */
+export const settings = {
+  title: "Settings",
+  subtitle: "Clinic details, currency, working hours and features.",
+  loadFailed: "Could not load the settings",
+  notImage: "Please choose an image file.",
+  logoTooBig: (mb: number) => `The logo must be smaller than ${num(mb)} MB.`,
+  logoUploaded: "Logo uploaded. Press Save Settings to keep it.",
+  logoUploadFailed: "Could not upload the logo.",
+  saved: "Settings saved.",
+  saveFailed: "Could not save the settings.",
+  // Clinic
+  clinic: "Clinic",
+  logoAlt: "Clinic logo",
+  logoFile: "Clinic logo file",
+  uploadLogo: "Upload Logo",
+  remove: "Remove",
+  uploadingLogo: "Uploading logo",
+  clinicName: "Clinic Name",
+  phone: "Phone",
+  email: "Email",
+  address: "Address",
+  taxNumber: "Tax Number",
+  taxNumberHint: "Printed on payment receipts.",
+  currency: "Currency",
+  currencyHint: "Used for every amount in the app.",
+  countryCode: "Phone Country Code",
+  countryCodeHint: (code: string) =>
+    `Added to local numbers such as 0770 in WhatsApp links. Empty means ${code} (Iraq).`,
+  // Language
+  language: "Language",
+  defaultLanguage: "Default language",
+  defaultLanguageHint: "The language the app opens in. Each person can still switch it for themselves.",
+  arabicDigits: "Arabic digits",
+  arabicDigitsHint: "Arabic screens show numbers as ٠-٩ instead of 0-9.",
+  // Working hours
+  workingHours: "Working Hours",
+  openingTime: "Opening Time",
+  closingTime: "Closing Time",
+  hoursHint: "Shown as a hint when booking an appointment.",
+  openOn: "Open on",
+  openOnHint: "Closed days are shaded in the calendar, and booking on them asks first.",
+  // Price list
+  priceList: "Price List",
+  priceListHint:
+    "The usual price of each treatment. It is filled in when a treatment plan is created and can still be changed there. Leave a price empty to type it every time.",
+  /** "Crown (IQD)" */
+  priceLabel: (type: string, currency: string) => `${type} (${currency})`,
+  // Features
+  features: "Features",
+  whatsapp: "WhatsApp reminders",
+  whatsappHint: "Send appointment reminders with the templates on the WhatsApp page.",
+  reports: "Financial reports",
+  reportsHint: "Show the Reports page to users who have the View Reports permission.",
+  portal: "Patient portal",
+  portalHint: "Saved for the back end. The front end has no patient portal screens yet.",
+  saveSettings: "Save Settings",
+  // Theme colour
+  themeColour: "Theme colour",
+  themeHint: "Buttons, links and highlights use this colour. The first choice is the default indigo.",
+  defaultColour: "Default colour",
+  /** The ready-made colours (THEME_PRESETS in src/lib/theme.ts). */
+  themeNames: {
+    teal: "Teal",
+    sky: "Sky",
+    blue: "Blue",
+    green: "Green",
+    rose: "Rose",
+    purple: "Purple",
+  },
+  anyColour: "Choose any colour",
+  other: "Other",
+  sampleButton: "Sample button",
+  darkened: "Made a little darker so white text on it stays easy to read.",
+};

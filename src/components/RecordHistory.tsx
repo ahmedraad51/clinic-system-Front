@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { History } from "lucide-react";
 import { Button, Card, LoadError, Spinner } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
+import { messages } from "@/i18n";
 import { errorMessage, getDocHistory } from "@/lib/frappe";
 import { cx, formatDateTime } from "@/lib/format";
 import {
@@ -25,6 +27,7 @@ export default function RecordHistory({
   changedAt?: string;
   startOpen?: boolean;
 }) {
+  const { t } = useI18n();
   const { money } = useSettings();
   const [open, setOpen] = useState(startOpen);
   const [history, setHistory] = useState<{ key: string; data: DocHistory } | null>(null);
@@ -44,7 +47,7 @@ export default function RecordHistory({
         }
       } catch (err) {
         console.error(err);
-        if (!cancelled) setError(errorMessage(err, "Could not load the history."));
+        if (!cancelled) setError(errorMessage(err, messages().history.loadFailed));
       }
     };
     load();
@@ -60,7 +63,7 @@ export default function RecordHistory({
     .filter((entry) => entry.changes.length > 0);
 
   const body = !open ? (
-    <p className="text-sm text-gray-500">Who added this record, and who changed what and when.</p>
+    <p className="text-sm text-gray-500">{t.history.intro}</p>
   ) : error ? (
     <LoadError
       message={error}
@@ -72,7 +75,7 @@ export default function RecordHistory({
   ) : !data ? (
     <p role="status" className="flex items-center gap-2 text-sm text-gray-500">
       <Spinner size={16} />
-      Loading...
+      {t.history.loading}
     </p>
   ) : (
     <ol className="relative ms-1.5 border-s border-gray-200 space-y-5">
@@ -80,7 +83,10 @@ export default function RecordHistory({
         <li key={entry.name} className="relative ps-5">
           <span className="absolute -start-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary-300" aria-hidden="true" />
           <p className="text-sm font-medium text-gray-800 break-words">
-            {entry.userName} <span className="font-normal text-gray-500">changed it · {formatDateTime(entry.at.slice(0, 19))}</span>
+            {entry.userName} <span className="font-normal text-gray-500">
+              {t.history.changedIt}
+              {t.history.at(formatDateTime(entry.at.slice(0, 19)))}
+            </span>
           </p>
           <ul className="mt-1 space-y-0.5">
             {entry.changes.map((change) => (
@@ -88,14 +94,14 @@ export default function RecordHistory({
                 <span className="text-gray-500">{fieldLabel(doctype, change.field)}:</span>{" "}
                 {showsValues(change.field) ? (
                   <>
-                    <span className={cx("text-gray-500", !isEmptyValue(change.from) && "line-through decoration-gray-300")}>
-                      {historyValue(change.field, change.from, money)}
-                    </span>
-                    {" → "}
-                    {historyValue(change.field, change.to, money)}
+                    <bdi className={cx("text-gray-500", !isEmptyValue(change.from) && "line-through decoration-gray-300")}>
+                      {historyValue(change.field, change.from, money, doctype)}
+                    </bdi>
+                    {t.history.arrow}
+                    <bdi>{historyValue(change.field, change.to, money, doctype)}</bdi>
                   </>
                 ) : (
-                  "updated"
+                  t.history.updated
                 )}
               </li>
             ))}
@@ -105,20 +111,21 @@ export default function RecordHistory({
       {data.entries.length >= HISTORY_LIMIT && (
         <li className="ps-5 text-xs text-gray-500">
           {entries.length === 0
-            ? `Nothing to show in the last ${HISTORY_LIMIT} saves (they only updated totals); earlier changes are not shown.`
-            : `Only the last ${HISTORY_LIMIT} saves are looked at; earlier changes are not shown.`}
+            ? t.history.nothingInLast(HISTORY_LIMIT)
+            : t.history.onlyLast(HISTORY_LIMIT)}
         </li>
       )}
       <li className="relative ps-5">
         <span className="absolute -start-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-gray-300" aria-hidden="true" />
         <p className="text-sm font-medium text-gray-800 break-words">
-          {data.createdByName || "Someone"}{" "}
+          {data.createdByName || t.history.someone}{" "}
           <span className="font-normal text-gray-500">
-            added it{data.createdAt ? ` · ${formatDateTime(data.createdAt.slice(0, 19))}` : ""}
+            {t.history.addedIt}
+            {data.createdAt ? t.history.at(formatDateTime(data.createdAt.slice(0, 19))) : ""}
           </span>
         </p>
         {entries.length === 0 && data.entries.length < HISTORY_LIMIT && (
-          <p className="text-sm text-gray-500 mt-1">No changes since then.</p>
+          <p className="text-sm text-gray-500 mt-1">{t.history.noChanges}</p>
         )}
       </li>
     </ol>
@@ -126,12 +133,12 @@ export default function RecordHistory({
 
   const showButton = !open && (
     <Button size="sm" variant="secondary" icon={History} onClick={() => setOpen(true)}>
-      Show History
+      {t.history.showHistory}
     </Button>
   );
 
   return (
-    <Card title="History" icon={History} actions={showButton} className="print:hidden">
+    <Card title={t.history.title} icon={History} actions={showButton} className="print:hidden">
       {body}
     </Card>
   );

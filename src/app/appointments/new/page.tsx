@@ -7,6 +7,7 @@ import AppointmentForm, {
   EMPTY_APPOINTMENT, appointmentPayload, type AppointmentFormData,
 } from "@/components/forms/AppointmentForm";
 import { PageContainer, PageHeader, PageLoading } from "@/components/ui";
+import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
 import { createDoc } from "@/lib/frappe";
 import { appointmentHref } from "@/lib/links";
@@ -26,6 +27,7 @@ function NewAppointment() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
+  const { t } = useI18n();
   const initial: AppointmentFormData = {
     ...EMPTY_APPOINTMENT,
     patient: searchParams.get("patient") || "",
@@ -41,16 +43,16 @@ function NewAppointment() {
 
   const handleSubmit = async (data: AppointmentFormData) => {
     const appointment = await createDoc<Appointment>("Appointment", appointmentPayload(data));
-    toast.success("Appointment booked.");
+    toast.success(t.appointments.booked);
     router.push(appointmentHref(appointment.name));
   };
 
   return (
     <PageContainer narrow>
-      <PageHeader title="New Appointment" back={{ href: backHref, label: "Appointments" }} />
+      <PageHeader title={t.appointments.newAppointment} back={{ href: backHref, label: t.appointments.title }} />
       <AppointmentForm
         initial={initial}
-        submitLabel="Book Appointment"
+        submitLabel={t.appointments.book}
         cancelHref={backHref}
         onSubmit={handleSubmit}
       />

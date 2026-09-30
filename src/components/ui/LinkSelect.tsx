@@ -1,5 +1,6 @@
 "use client";
 
+import { messages } from "@/i18n";
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { ChevronDown, X } from "lucide-react";
 import { getList, type FilterRow } from "@/lib/frappe";
@@ -33,7 +34,7 @@ export default function LinkSelect({
   labelField = "full_name",
   detailField,
   initialLabel,
-  placeholder = "Search...",
+  placeholder = messages().ui.searchPlaceholder,
   required = false,
   disabled = false,
   filters,
@@ -191,7 +192,7 @@ export default function LinkSelect({
                 type="button"
                 onClick={() => onChange("")}
                 className="p-1 rounded hover:bg-gray-100 hover:text-gray-700"
-                aria-label="Clear"
+                aria-label={messages().ui.clear}
               >
                 <X size={14} />
               </button>
@@ -218,7 +219,7 @@ export default function LinkSelect({
           className="absolute z-30 mt-1 w-full max-h-64 overflow-auto rounded-xl border border-gray-100 bg-white shadow-lg py-1"
         >
           {options.length === 0 ? (
-            <li className="px-3.5 py-2.5 text-sm text-gray-500">{searching ? "Searching..." : "No matches"}</li>
+            <li className="px-3.5 py-2.5 text-sm text-gray-500">{searching ? messages().ui.searching : messages().ui.noMatches}</li>
           ) : (
             options.map((option, index) => (
               <li key={option.name} role="option" aria-selected={option.name === value}>
@@ -232,7 +233,11 @@ export default function LinkSelect({
                   )}
                 >
                   <span className="block font-medium">{option.label}</span>
-                  {option.detail && <span className="block text-xs text-gray-500">{option.detail}</span>}
+                  {option.detail && (
+                    <span className="block text-xs text-gray-500">
+                      <bdi>{option.detail}</bdi>
+                    </span>
+                  )}
                 </button>
               </li>
             ))

@@ -5,7 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import ToothLogo from "@/components/ToothLogo";
 import { Alert, Button, Field, PageLoading, TextInput, Toggle } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
-import { errorMessage, SESSION_ENDED_MESSAGE } from "@/lib/frappe";
+import { useI18n } from "@/context/LanguageContext";
+import { LANG_NAMES, LANGS } from "@/i18n";
+import { cx } from "@/lib/format";
+import { errorMessage, sessionEndedMessage } from "@/lib/frappe";
 import { safeNextPath } from "@/lib/links";
 
 /**
@@ -22,6 +25,7 @@ export default function LoginPage() {
 
 function LoginForm() {
   const { login, user, isLoading, sessionEnded } = useAuth();
+  const { t, lang, setLang } = useI18n();
   const router = useRouter();
   const params = useSearchParams();
   // The page to return to (MainLayout adds ?next=), checked so it cannot lead off the site.
@@ -46,7 +50,7 @@ function LoginForm() {
       await login(usr.trim(), pwd, remember);
       router.replace(next);
     } catch (err) {
-      setError(errorMessage(err, "Invalid username or password."));
+      setError(errorMessage(err, t.login.failed));
       setLoading(false);
     }
   };
@@ -54,32 +58,51 @@ function LoginForm() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 w-full max-w-md">
+        {/* Nobody is known yet, so the choice is kept on this computer. */}
+        <div role="group" aria-label={t.nav.language} className="flex justify-end gap-1 -mt-2 mb-2">
+          {LANGS.map((option) => (
+            <button
+              key={option}
+              type="button"
+              lang={option}
+              aria-pressed={lang === option}
+              onClick={() => setLang(option)}
+              className={cx(
+                "min-h-9 pointer-coarse:min-h-11 px-3 rounded-lg text-sm font-medium transition",
+                lang === option ? "bg-primary-50 text-primary-700" : "text-gray-500 hover:bg-gray-100",
+              )}
+            >
+              {LANG_NAMES[option]}
+            </button>
+          ))}
+        </div>
         <div className="text-center mb-8">
           <span className="mx-auto w-12 h-12 bg-primary-600 rounded-2xl flex items-center justify-center text-white">
             <ToothLogo size={26} />
           </span>
-          <h1 className="text-2xl font-bold text-gray-800 mt-4">DentClinic</h1>
-          <p className="text-gray-500 text-sm mt-1">Log in to the clinic management system</p>
+          <h1 className="text-2xl font-bold text-gray-800 mt-4">{t.common.appName}</h1>
+          <p className="text-gray-500 text-sm mt-1">{t.login.subtitle}</p>
         </div>
 
         {ended && !error && (
           <div className="mb-4">
-            <Alert tone="yellow">{SESSION_ENDED_MESSAGE}</Alert>
+            <Alert tone="yellow">{sessionEndedMessage()}</Alert>
           </div>
         )}
 
         <form onSubmit={handleLogin} className="space-y-4">
-          <Field label="Email or Username">
+          <Field label={t.login.username}>
             <TextInput
               type="text"
               autoComplete="username"
               value={usr}
               onChange={(e) => setUsr(e.target.value)}
-              placeholder="name@clinic.com"
+              placeholder={t.login.usernamePlaceholder}
+              dir="ltr"
               required
             />
           </Field>
-          <Field label="Password">
+          <Field label={t.login.password}>
             <TextInput
               type="password"
               autoComplete="current-password"
@@ -91,14 +114,14 @@ function LoginForm() {
           <Toggle
             checked={remember}
             onChange={setRemember}
-            label="Keep me logged in on this computer"
-            description="Turn it off on a shared computer, so closing the browser logs you out."
+            label={t.login.remember}
+            description={t.login.rememberHint}
           />
 
           {error && <Alert tone="red">{error}</Alert>}
 
           <Button type="submit" loading={loading} className="w-full">
-            {loading ? "Logging in..." : "Log In"}
+            {loading ? t.login.loggingIn : t.login.logIn}
           </Button>
         </form>
       </div>

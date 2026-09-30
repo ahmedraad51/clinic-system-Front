@@ -1,0 +1,32 @@
+import type { Messages } from "../en";
+import { num, plural } from "../runtime";
+
+export const ui: Messages["ui"] = {
+  loading: "جارٍ التحميل...",
+  tryAgain: "إعادة المحاولة",
+  clearFilters: "مسح عوامل التصفية",
+  clearSearch: "مسح البحث",
+  clear: "مسح",
+  close: "إغلاق",
+  confirm: "تأكيد",
+  cancel: "إلغاء",
+  previousPage: "الصفحة السابقة",
+  nextPage: "الصفحة التالية",
+  records: (n: number) => plural(n, { zero: "لا سجلات", one: "سجل واحد", two: "سجلان", few: "# سجلات", many: "# سجلًا", other: "# سجل" }),
+  range: (from: number, to: number, total: number) => `${num(from)}–${num(to)} من ${num(total)}`,
+  pageOf: (page: number, pages: number) => `صفحة ${num(page)} من ${num(pages)}`,
+  noAccessTitle: "ليست لديك صلاحية لفتح هذه الصفحة",
+  noAccessText: "اطلب من مدير العيادة تفعيل الصلاحية لك من صفحة المستخدمين.",
+  goToDashboard: "الذهاب إلى الرئيسية",
+  notFound: (what: string) => `لم يُعثر على ${what}`,
+  couldNotOpen: (what: string) => `تعذّر فتح ${what}`,
+  notFoundText: "ربما تم حذفه، أو أن الرابط غير صحيح.",
+  searchPlaceholder: "بحث...",
+  searching: "جارٍ البحث...",
+  noMatches: "لا توجد نتائج",
+  nothingYet: "لا يوجد ما يُعرض بعد.",
+  required: "مطلوب",
+  listLoadFailed: "تعذّر تحميل القائمة.",
+  closeMessage: "إغلاق الرسالة",
+  nobodyLoggedIn: "لا يوجد مستخدم مسجّل الدخول.",
+};

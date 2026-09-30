@@ -1,5 +1,6 @@
 "use client";
 
+import { messages } from "@/i18n";
 import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { Button } from "./index";
@@ -104,7 +105,7 @@ export function Modal({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={messages().ui.close}
             className="w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11 -me-2 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700"
           >
             <X size={18} />
@@ -123,7 +124,7 @@ export function ConfirmDialog({
   open,
   title,
   message,
-  confirmLabel = "Confirm",
+  confirmLabel = messages().ui.confirm,
   danger = true,
   busy = false,
   onConfirm,
@@ -143,7 +144,7 @@ export function ConfirmDialog({
       <div className="text-sm text-gray-600">{message}</div>
       <div className="flex justify-end gap-2 mt-6">
         <Button variant="secondary" onClick={onCancel} disabled={busy}>
-          Cancel
+          {messages().ui.cancel}
         </Button>
         <Button variant={danger ? "danger" : "primary"} onClick={onConfirm} loading={busy}>
           {confirmLabel}

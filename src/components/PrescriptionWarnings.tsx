@@ -1,4 +1,5 @@
 import { ShieldAlert, ShieldCheck } from "lucide-react";
+import { useI18n } from "@/context/LanguageContext";
 import { cx } from "@/lib/format";
 import type { PrescriptionWarning } from "@/lib/prescriptions";
 
@@ -8,12 +9,13 @@ import type { PrescriptionWarning } from "@/lib/prescriptions";
  * line (the record page).
  */
 export default function PrescriptionWarnings({ warnings, quiet = false }: { warnings: PrescriptionWarning[]; quiet?: boolean }) {
+  const { t } = useI18n();
   if (warnings.length === 0) {
     if (quiet) return null;
     return (
       <p className="flex items-center gap-2 text-sm text-gray-500">
         <ShieldCheck size={16} className="shrink-0 text-green-600" aria-hidden="true" />
-        No warnings for this patient and these medicines.
+        {t.prescriptions.warnings.none}
       </p>
     );
   }
@@ -28,7 +30,7 @@ export default function PrescriptionWarnings({ warnings, quiet = false }: { warn
     >
       <p className="flex items-center gap-2 text-sm font-semibold">
         <ShieldAlert size={18} className="shrink-0" aria-hidden="true" />
-        Check before signing
+        {t.prescriptions.warnings.title}
       </p>
       <ul className="mt-2 space-y-1.5">
         {warnings.map((warning, index) => (
@@ -43,7 +45,7 @@ export default function PrescriptionWarnings({ warnings, quiet = false }: { warn
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-xs">The warnings do not stop the prescription from being saved. The dentist decides.</p>
+      <p className="mt-2 text-xs">{t.prescriptions.warnings.footer}</p>
     </div>
   );
 }

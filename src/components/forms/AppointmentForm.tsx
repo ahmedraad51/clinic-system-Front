@@ -10,6 +10,8 @@ import LinkSelect from "@/components/ui/LinkSelect";
 import { errorMessage, getList } from "@/lib/frappe";
 import { cx, formatDate, formatTime, fromMinutes, toMinutes, todayISO } from "@/lib/format";
 import { useDoctors, usePatientMedical } from "@/lib/hooks";
+import { label } from "@/i18n";
+import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
 import { APPOINTMENT_STATUSES, DURATIONS, type Appointment } from "@/lib/types";
 
@@ -99,6 +101,8 @@ export default function AppointmentForm({
   cancelHref: string;
   onSubmit: (data: AppointmentFormData) => Promise<void>;
 }) {
+  const { t } = useI18n();
+  const f = t.appointmentForm;
   const { settings, isOpenOn } = useSettings();
   const doctors = useDoctors();
   // A new booking with no doctor given starts with the doctor used last time on this computer.
@@ -131,7 +135,7 @@ export default function AppointmentForm({
       if (doctor) saveLastDoctor({ name: doctor.name, full_name: doctor.full_name });
     } catch (err) {
       console.error(err);
-      setError(errorMessage(err, "Could not save the appointment. Please try again."));
+      setError(errorMessage(err, f.saveFailed));
     } finally {
       setSaving(false);
     }
@@ -181,7 +185,7 @@ export default function AppointmentForm({
   const doctorMissing = form.doctor && !doctors.some((doctor) => doctor.name === form.doctor);
   const hours =
     settings.opening_time && settings.closing_time
-      ? `Clinic hours: ${formatTime(settings.opening_time)} to ${formatTime(settings.closing_time)}`
+      ? f.clinicHours(formatTime(settings.opening_time), formatTime(settings.closing_time))
       : undefined;
 
   const dirty = !done && JSON.stringify(form) !== JSON.stringify(baseline);
@@ -191,14 +195,14 @@ export default function AppointmentForm({
       <UnsavedChangesGuard when={dirty} />
       <Card>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Patient" required className="sm:col-span-2">
+          <Field label={t.common.patient} required className="sm:col-span-2">
             <LinkSelect
               doctype="Patient"
               value={form.patient}
               onChange={(patient) => setForm({ ...form, patient })}
               detailField="phone_number"
               initialLabel={patientLabel}
-              placeholder="Search by name or phone..."
+              placeholder={f.searchPatient}
               required
             />
           </Field>
@@ -207,9 +211,9 @@ export default function AppointmentForm({
               <MedicalAlerts patient={medical} />
             </div>
           )}
-          <Field label="Doctor" required className="sm:col-span-2">
+          <Field label={t.common.doctor} required className="sm:col-span-2">
             <SelectInput name="doctor" value={form.doctor} onChange={handleChange} required>
-              <option value="">Select Doctor</option>
+              <option value="">{f.selectDoctor}</option>
               {doctorMissing && (
                 <option value={form.doctor}>
                   {doctorLabel || (remembered?.name === form.doctor ? remembered.full_name : form.doctor)}
@@ -217,22 +221,24 @@ export default function AppointmentForm({
               )}
               {doctors.map((doctor) => (
                 <option key={doctor.name} value={doctor.name}>
-                  {doctor.specialization ? `${doctor.full_name} · ${doctor.specialization}` : doctor.full_name}
+                  {doctor.specialization
+                    ? `${doctor.full_name}${t.common.dot}${label(t.enums.specialization, doctor.specialization)}`
+                    : doctor.full_name}
                 </option>
               ))}
             </SelectInput>
           </Field>
-          <Field label="Date" required>
-            <TextInput type="date" name="appointment_date" value={form.appointment_date} onChange={handleChange} required />
+          <Field label={t.common.date} required>
+            <TextInput type="date" dir="ltr" name="appointment_date" value={form.appointment_date} onChange={handleChange} required />
           </Field>
-          <Field label="Time" required hint={hours}>
-            <TextInput type="time" name="appointment_time" value={form.appointment_time} onChange={handleChange} required />
+          <Field label={t.common.time} required hint={hours}>
+            <TextInput type="time" dir="ltr" name="appointment_time" value={form.appointment_time} onChange={handleChange} required />
           </Field>
-          <Field label="Duration">
+          <Field label={f.duration}>
             <SelectInput name="duration_minutes" value={form.duration_minutes} onChange={handleChange}>
               {DURATIONS.map((minutes) => (
                 <option key={minutes} value={String(minutes)}>
-                  {minutes} minutes
+                  {f.minutes(minutes)}
                 </option>
               ))}
             </SelectInput>
@@ -254,20 +260,20 @@ export default function AppointmentForm({
             />
           )}
           {showStatus && (
-            <Field label="Status">
+            <Field label={t.common.status}>
               <SelectInput name="status" value={form.status} onChange={handleChange}>
                 {APPOINTMENT_STATUSES.map((status) => (
                   <option key={status} value={status}>
-                    {status}
+                    {label(t.enums.appointmentStatus, status)}
                   </option>
                 ))}
               </SelectInput>
             </Field>
           )}
-          <Field label="Reason for Visit" className="sm:col-span-2">
+          <Field label={f.reasonForVisit} className="sm:col-span-2">
             <TextInput name="reason_for_visit" value={form.reason_for_visit} onChange={handleChange} />
           </Field>
-          <Field label="Notes" className="sm:col-span-2">
+          <Field label={t.common.notes} className="sm:col-span-2">
             <TextArea name="notes" value={form.notes} onChange={handleChange} />
           </Field>
         </div>
@@ -280,31 +286,32 @@ export default function AppointmentForm({
           {submitLabel}
         </Button>
         <LinkButton href={cancelHref} variant="secondary">
-          Cancel
+          {t.common.cancel}
         </LinkButton>
       </FormActions>
 
       <ConfirmDialog
         open={askClosed}
-        title="The clinic is closed on this day"
+        title={f.closedTitle}
         danger={false}
-        confirmLabel="Book anyway"
-        message={<p>{formatDate(form.appointment_date)} is not one of the clinic&apos;s working days (Settings). Book it anyway?</p>}
+        confirmLabel={f.bookAnyway}
+        message={<p>{f.closedText(formatDate(form.appointment_date))}</p>}
         onCancel={() => setAskClosed(false)}
         onConfirm={checkClashAndSave}
       />
 
       <ConfirmDialog
         open={clash !== null}
-        title="This doctor is already booked"
+        title={f.clashTitle}
         danger={false}
-        confirmLabel="Book anyway"
+        confirmLabel={f.bookAnyway}
         busy={saving}
         message={
           clash && (
             <p>
-              The doctor already has an appointment with <strong>{clash.patient_name || clash.name}</strong> on{" "}
-              {formatDate(form.appointment_date)} at {formatTime(clash.appointment_time)} that overlaps this time.
+              {f.clashBefore}
+              <strong>{clash.patient_name || clash.name}</strong>
+              {f.clashAfter(formatDate(form.appointment_date), formatTime(clash.appointment_time))}
             </p>
           )
         }
@@ -381,6 +388,7 @@ function DoctorDay({
   closed?: boolean;
   onPick: (time: string) => void;
 }) {
+  const f = useI18n().t.appointmentForm;
   const key = `${doctor}|${date}`;
   const [result, setResult] = useState<{ key: string; rows: Appointment[] } | null>(null);
 
@@ -442,27 +450,22 @@ function DoctorDay({
 
   return (
     <div className="sm:col-span-2 rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-3" aria-live="polite">
-      <p className="text-sm font-semibold text-gray-700">
-        {doctorName ? `${doctorName}, ` : ""}
-        {formatDate(date)}
-      </p>
+      <p className="text-sm font-semibold text-gray-700">{f.dayHeading(doctorName || "", formatDate(date))}</p>
       {!loaded ? (
-        <p className="text-sm text-gray-500">Loading the doctor&apos;s day...</p>
+        <p className="text-sm text-gray-500">{f.loadingDay}</p>
       ) : (
         <>
           <div>
-            <p className="text-xs font-medium text-gray-500 mb-1.5">Booked</p>
+            <p className="text-xs font-medium text-gray-500 mb-1.5">{f.booked}</p>
             {booked.length === 0 ? (
-              <p className="text-sm text-gray-600">Nothing booked yet.</p>
+              <p className="text-sm text-gray-600">{f.nothingBooked}</p>
             ) : (
               <ul className="flex flex-wrap gap-1.5">
                 {booked.map((a) => {
                   const { start, end } = span(a);
                   return (
                     <li key={a.name} className="rounded-lg bg-white border border-gray-200 px-2.5 py-1 text-xs text-gray-700">
-                      <span className="font-semibold">
-                        {formatTime(fromMinutes(start))}–{formatTime(fromMinutes(end))}
-                      </span>{" "}
+                      <span className="font-semibold">{f.range(formatTime(fromMinutes(start)), formatTime(fromMinutes(end)))}</span>{" "}
                       {a.patient_name}
                     </li>
                   );
@@ -471,14 +474,14 @@ function DoctorDay({
             )}
           </div>
           {date < today ? (
-            <p className="text-sm text-amber-700">This date is in the past.</p>
+            <p className="text-sm text-amber-700">{f.past}</p>
           ) : closed ? (
-            <p className="text-sm font-medium text-amber-700">The clinic is closed on this day.</p>
+            <p className="text-sm font-medium text-amber-700">{f.closed}</p>
           ) : (
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-1.5">Free for {duration} minutes — tap to choose</p>
+              <p className="text-xs font-medium text-gray-500 mb-1.5">{f.freeFor(duration)}</p>
               {free.length === 0 ? (
-                <p className="text-sm text-gray-600">No free time of {duration} minutes left in clinic hours on this day.</p>
+                <p className="text-sm text-gray-600">{f.noFree(duration)}</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {free.map((t, index) => {
@@ -497,7 +500,7 @@ function DoctorDay({
                             : "bg-white border-gray-200 text-gray-700 hover:border-primary-300",
                         )}
                       >
-                        {index === 0 && !selected ? `Next free: ${formatTime(value)}` : formatTime(value)}
+                        {index === 0 && !selected ? f.nextFree(formatTime(value)) : formatTime(value)}
                       </button>
                     );
                   })}
@@ -507,13 +510,14 @@ function DoctorDay({
           )}
           {outside && (
             <p className="text-sm font-medium text-amber-700">
-              {formatTime(time)} is outside {ownHours ? `${doctorName || "the doctor"}'s working hours` : "clinic hours"} (
-              {formatTime(fromMinutes(open))}–{formatTime(fromMinutes(close))}).
+              {ownHours
+                ? f.outsideDoctor(formatTime(time), doctorName || "", formatTime(fromMinutes(open)), formatTime(fromMinutes(close)))
+                : f.outsideClinic(formatTime(time), formatTime(fromMinutes(open)), formatTime(fromMinutes(close)))}
             </p>
           )}
           {clash && (
             <p className="text-sm font-medium text-amber-700">
-              {formatTime(time)} overlaps {clash.patient_name || "another appointment"} at {formatTime(clash.appointment_time)}.
+              {f.overlaps(formatTime(time), clash.patient_name || "", formatTime(clash.appointment_time))}
             </p>
           )}
         </>

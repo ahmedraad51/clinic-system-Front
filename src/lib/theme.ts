@@ -9,14 +9,17 @@
 /** Indigo, used when the clinic chose no colour. Keep in step with `--brand` in globals.css. */
 export const DEFAULT_THEME_COLOR = "#4f46e5";
 
-/** Ready-made choices on the settings page. */
+/**
+ * Ready-made choices on the settings page. `key` names the colour in the translations
+ * (t.settings.themeNames.teal …).
+ */
 export const THEME_PRESETS = [
-  { label: "Teal", value: "#0e7c86" },
-  { label: "Sky", value: "#0369a1" },
-  { label: "Blue", value: "#2563eb" },
-  { label: "Green", value: "#15803d" },
-  { label: "Rose", value: "#be123c" },
-  { label: "Purple", value: "#7e22ce" },
+  { key: "teal", value: "#0e7c86" },
+  { key: "sky", value: "#0369a1" },
+  { key: "blue", value: "#2563eb" },
+  { key: "green", value: "#15803d" },
+  { key: "rose", value: "#be123c" },
+  { key: "purple", value: "#7e22ce" },
 ] as const;
 
 const STORAGE_KEY = "theme_color";
