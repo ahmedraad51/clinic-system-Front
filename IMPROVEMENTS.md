@@ -10,9 +10,17 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Backlog
 
-1. Phase 4 of the redesign plan (the features from the competitor study), items 6 to 8, in both languages.
+1. Phase 4 of the redesign plan (the features from the competitor study), items 7 and 8, in both languages.
 
 ## Done
+
+- 2026-10-01 - **Each doctor's own prescription paper (Phase 4, item 6).** A doctor's page has a new **Prescription
+  Paper** card. **Edit Paper** sets the paper size (A5 or A4); the qualifications printed under the doctor's name;
+  a footer (hours, phone); an own logo; and a signature or stamp picture. If the doctor uses pads that already have
+  a printed header, tick "already printed" and enter how many mm to leave at the top and bottom: then only the
+  patient, the medicines and the signature are printed, in the space between. A preview shows the result while you
+  type. Prescriptions then print on that doctor's paper. English and Arabic. **What to check:** measure a
+  pre-printed pad with a ruler, enter it, and print a test prescription.
 
 - 2026-10-01 - **Print the whole patient file (Phase 4, item 5).** **Print File** on the patient page prints
   everything about the patient on the clinic letterhead: details, medical information and alerts, the dental chart,

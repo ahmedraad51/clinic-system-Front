@@ -36,6 +36,7 @@ const PAGES: Array<[string, string]> = [
   ["treatment-edit", "/treatments/TRT-2026-00002/edit"],
   ["prescription-new", "/prescriptions/new?patient=PAT-2026-00008&doctor=DOC-00004"],
   ["prescription-detail", "/prescriptions/RX-2026-00002"],
+  ["prescription-own-paper", "/prescriptions/RX-2026-00001"],
   ["prescription-edit", "/prescriptions/RX-2026-00002/edit"],
   ["payments", "/payments"],
   ["payment-new", "/payments/new"],

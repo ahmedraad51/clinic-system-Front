@@ -54,8 +54,18 @@ const A = (n: number) => "APT-2026-" + String(n).padStart(5, "0");
 const doctors: MockDoc[] = [
   { name: D.zainab, full_name: "Dr. Zainab Al-Hashimi", gender: "Female", specialization: "General Dentist", email: "zainab.alhashimi@dentclinic.test", phone_number: "0770 410 2233", start_time: "09:00", end_time: "17:00", is_active: 1 },
   { name: D.ali, full_name: "Dr. Ali Al-Jubouri", gender: "Male", specialization: "Orthodontist", email: "ali.aljubouri@dentclinic.test", phone_number: "0781 410 4455", start_time: "12:00", end_time: "18:00", is_active: 1 },
-  { name: D.noor, full_name: "Dr. Noor Al-Saadi", gender: "Female", specialization: "Endodontist", email: "noor.alsaadi@dentclinic.test", phone_number: "0750 410 6677", start_time: "09:00", end_time: "18:00", is_active: 1 },
-  { name: D.haider, full_name: "Dr. Haider Al-Obaidi", gender: "Male", specialization: "Oral Surgeon", email: "haider.alobaidi@dentclinic.test", phone_number: "0771 410 8899", start_time: "08:00", end_time: "14:00", is_active: 1 },
+  {
+    name: D.noor, full_name: "Dr. Noor Al-Saadi", gender: "Female", specialization: "Endodontist", email: "noor.alsaadi@dentclinic.test", phone_number: "0750 410 6677", start_time: "09:00", end_time: "18:00", is_active: 1,
+    // Her own prescription heading, printed by the app on plain A5 paper.
+    rx_paper_size: "A5", rx_preprinted: 0,
+    rx_qualifications: "BDS, MSc Endodontics (University of Baghdad)\nبكالوريوس طب وجراحة الفم والأسنان، ماجستير علاج الجذور",
+    rx_footer: "Sat–Thu 9 AM–6 PM · 0750 410 6677",
+  },
+  {
+    name: D.haider, full_name: "Dr. Haider Al-Obaidi", gender: "Male", specialization: "Oral Surgeon", email: "haider.alobaidi@dentclinic.test", phone_number: "0771 410 8899", start_time: "08:00", end_time: "14:00", is_active: 1,
+    // Pre-printed A5 pads from the print shop: the app leaves their header and footer blank.
+    rx_paper_size: "A5", rx_preprinted: 1, rx_top_mm: 45, rx_bottom_mm: 25,
+  },
   { name: D.rusul, full_name: "Dr. Rusul Kareem", gender: "Female", specialization: "Pediatric Dentist", email: "rusul.kareem@dentclinic.test", phone_number: "0782 410 1010", start_time: "10:00", end_time: "16:00", is_active: 1 },
 ];
 
@@ -602,6 +612,7 @@ const NUMBER_FIELDS = [
   "opening_float", "cash_payments", "expected_cash", "cash_counted", "difference",
   "recall_interval_months", "no_recall",
   "default_duration_days", "max_daily_mg", "is_nsaid", "avoid_in_pregnancy",
+  "rx_preprinted", "rx_top_mm", "rx_bottom_mm",
 ];
 
 const num = (value: MockValue): number => {
@@ -1313,10 +1324,14 @@ function readAsDataUrl(file: File): Promise<string> {
   });
 }
 
-/** Pretends to send the file at about 4 MB a second, reporting progress the way a real upload does. */
+/**
+ * Pretends to send the file at about 4 MB a second, reporting progress the way a real upload does. For tests,
+ * `window.__mockUploadMs = 3000` makes every upload take that long, so its progress bar stays on screen.
+ */
 async function sendSlowly(file: File, onProgress?: (fraction: number) => void) {
   const steps = 10;
-  const total = Math.min(4000, Math.max(150, file.size / 4000));
+  const forced = typeof window === "undefined" ? undefined : (window as unknown as { __mockUploadMs?: number }).__mockUploadMs;
+  const total = forced ?? Math.min(4000, Math.max(150, file.size / 4000));
   for (let step = 1; step <= steps; step++) {
     await new Promise((resolve) => setTimeout(resolve, total / steps));
     onProgress?.(step / steps);

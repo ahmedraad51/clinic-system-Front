@@ -5,9 +5,10 @@ import { useRecordDialogs } from "@/components/RecordDialogs";
 import { useDataVersion } from "@/lib/dataVersion";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { CalendarDays, CalendarRange, Pencil, Plus, Stethoscope, Sun } from "lucide-react";
+import { CalendarDays, CalendarRange, FileText, Pencil, Plus, Stethoscope, Sun } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import DoctorDialog from "@/components/DoctorDialog";
+import RxPaperDialog from "@/components/RxPaperDialog";
 import RequirePermission from "@/components/Guard";
 import {
   Badge, Button, Card, DetailLayout, LoadError, NotFoundCard, PageContainer, PageHeader, PageLoading, ProfileCard, RecordLoading, StatusBadge,
@@ -19,6 +20,7 @@ import { errorMessage, getList } from "@/lib/frappe";
 import { addDays, formatDate, formatTime, todayISO } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
 import { appointmentHref, routeId, treatmentHref } from "@/lib/links";
+import { rxPaperOf } from "@/lib/rxPaper";
 import type { Appointment, Doctor, TreatmentPlan } from "@/lib/types";
 
 export default function DoctorPage() {
@@ -47,6 +49,7 @@ function DoctorView() {
   const { can } = useSession();
   const { doc: doctor, loading, notFound, error, reload } = useDocument<Doctor>("Doctor", id);
   const [editing, setEditing] = useState(false);
+  const [editingPaper, setEditingPaper] = useState(false);
   const [related, setRelated] = useState<Related | null>(null);
   const [failed, setFailed] = useState("");
   const [version, setVersion] = useState(0);
@@ -114,6 +117,7 @@ function DoctorView() {
   const todayList = data?.appointments.filter((a) => a.appointment_date === today) ?? [];
   const later = data?.appointments.filter((a) => a.appointment_date > today) ?? [];
   const active = Number(doctor.is_active) === 1;
+  const paper = rxPaperOf(doctor);
   // After a failed load: the error with Try Again, and no spinners that never end.
   const loadFailed = !!failed && !data;
   const loadingValue = loadFailed ? "—" : "…";
@@ -252,7 +256,37 @@ function DoctorView() {
             )}
           </Card>
         )}
+        {/* How this doctor's prescriptions print. */}
+        <Card
+          title={t.rxPaper.title}
+          icon={FileText}
+          actions={
+            <Button size="sm" variant="secondary" icon={Pencil} onClick={() => setEditingPaper(true)}>
+              {t.rxPaper.edit}
+            </Button>
+          }
+        >
+          <p data-testid="rx-paper-summary" className="text-sm text-gray-700">
+            {paper.preprinted
+              ? t.rxPaper.summaryPreprinted(paper.size, paper.topMm, paper.bottomMm)
+              : paper.qualifications || paper.footer || paper.logo
+                ? t.rxPaper.summaryOwn(paper.size)
+                : t.rxPaper.summaryDefault(paper.size)}
+          </p>
+          {!paper.preprinted && paper.qualifications && <p className="mt-1 text-xs text-gray-500 whitespace-pre-line">{paper.qualifications}</p>}
+        </Card>
       </DetailLayout>
+
+      {editingPaper && (
+        <RxPaperDialog
+          doctor={doctor}
+          onClose={() => setEditingPaper(false)}
+          onSaved={() => {
+            setEditingPaper(false);
+            reload();
+          }}
+        />
+      )}
 
       {editing && (
         <DoctorDialog

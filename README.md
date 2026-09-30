@@ -193,7 +193,7 @@ what they are not allowed to do.
 | `/treatments/new`, `/treatments/[id]/edit` | Create or edit — type, FDI tooth number, diagnosis, cost |
 | `/treatments/[id]` | Money summary with progress, status changes, its payments, and its treatment sessions, and the patient's dental chart opened at the plan's tooth, and its history |
 | `/prescriptions/new`, `/prescriptions/[id]/edit` | Write a prescription: pick a medicine from the clinic's list and its usual dose, how often, days and instructions are filled in; a "Check before signing" box warns about an allergy, an NSAID with a blood thinner, pregnancy, a child's dose, a dose above the daily maximum or a medicine listed twice (never blocking) |
-| `/prescriptions/[id]` | The prescription, printable on the clinic letterhead with a signature line, with the warnings shown on screen |
+| `/prescriptions/[id]` | The prescription, printed on its doctor's own paper (A5 or A4, their qualifications, footer, logo and signature, or leaving room on pre-printed pads; set on the doctor's page) with a signature line, with the warnings shown on screen |
 | `/medicines` | The clinic's medicine list (managers): usual dose, how often, days, instructions, allergy words and the safety flags; a medicine is switched off, never deleted |
 | `/payments` | Ledger with search, method and date filters, and the total (dinars and dollars each on their own) |
 | `/payments/new`, `/payments/[id]/edit` | Record or edit a payment in dinars or dollars (pre-fills from a treatment plan; cannot go above what is left; a payment in the other currency uses that day's exchange rate, shown on the form and the receipt) |

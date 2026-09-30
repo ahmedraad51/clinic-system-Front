@@ -439,6 +439,14 @@ Naming `DOC-.#####`. Written only on `/doctors`; never deleted.
 | `is_active` | Check, default 1 | No | Only active doctors are offered. |
 | `gender` | Select: Female, Male | No | New (section 1). For the drawn avatar. |
 | `photo` | Attach Image | No | New (section 1). A file URL; the front end sends `null` to remove it. |
+| `rx_paper_size` | Select: A5, A4 (default A5) | No | New. The doctor's prescription paper ("Prescription Paper" on `/doctors/[id]`, `src/lib/rxPaper.ts`). |
+| `rx_preprinted` | Check | No | New. The paper already has the doctor's header and footer printed on it. |
+| `rx_top_mm`, `rx_bottom_mm` | Int, 0-120 | No | New. The room left for that printed header and footer, in mm (defaults 40 and 20). |
+| `rx_qualifications` | Small Text | No | New. Lines printed under the doctor's name. |
+| `rx_footer` | Small Text | No | New. Printed at the bottom of the prescription. |
+| `rx_logo`, `rx_signature` | Attach Image | No | New. An own logo, and a signature or stamp image; `null` removes them. |
+
+The prescription page reads the doctor with `GET /api/resource/Doctor` (these fields and `full_name`, `specialization`), so users with `view_treatments` must be able to read them; only `manage_users` writes them.
 
 ### Appointment
 

@@ -25,7 +25,11 @@ export async function navigate(page: Page, path: string) {
 
 /** Clicks a link in the sidebar menu. */
 export async function openFromMenu(page: Page, label: string) {
-  await page.getByRole("navigation").getByRole("link", { name: label, exact: true }).click();
+  const link = page.getByRole("navigation").getByRole("link", { name: label, exact: true });
+  const href = (await link.getAttribute("href")) ?? "";
+  await link.click();
+  // On a slow machine the old page is still on screen for a moment: wait for the new one first.
+  if (href.startsWith("/")) await page.waitForURL((url) => url.pathname === href);
   await waitForData(page);
 }
 

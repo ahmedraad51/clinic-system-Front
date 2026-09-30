@@ -30,6 +30,8 @@ test("an upload that runs out of time says so", () => {
 });
 
 test("the clinic logo upload shows its progress", async ({ page }) => {
+  // Three seconds, so the progress bar is still there to be seen on a busy computer.
+  await page.addInitScript(() => ((window as unknown as { __mockUploadMs?: number }).__mockUploadMs = 3000));
   await page.goto("/settings");
   await expect(page.getByRole("button", { name: "Upload Logo" })).toBeVisible();
   // About 1.5 MB, under the 2 MB limit for a logo.

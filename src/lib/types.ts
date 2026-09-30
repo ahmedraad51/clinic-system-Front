@@ -159,6 +159,19 @@ export interface Doctor extends BaseDoc {
   gender?: string;
   /** An uploaded photo (file URL), shown instead of the drawn avatar. */
   photo?: string;
+  /** The doctor's prescription paper (src/lib/rxPaper.ts): "A5" (default) or "A4". */
+  rx_paper_size?: string;
+  /** 1 when the paper already has the header and footer printed on it. */
+  rx_preprinted?: number;
+  /** Room left for a pre-printed header and footer, in mm. */
+  rx_top_mm?: number;
+  rx_bottom_mm?: number;
+  /** Lines under the name on the prescription ("BDS, MSc …"). */
+  rx_qualifications?: string;
+  rx_footer?: string;
+  /** File URLs: an own logo for the prescription, and a signature or stamp image. */
+  rx_logo?: string | null;
+  rx_signature?: string | null;
 }
 
 export interface Appointment extends BaseDoc {

@@ -20,6 +20,7 @@ import { today } from "./today";
 import { waitingRoom } from "./waitingRoom";
 import { qr } from "./qr";
 import { patientFile } from "./patientFile";
+import { rxPaper } from "./rxPaper";
 import { whatsapp } from "./whatsapp";
 import { sendWhatsapp } from "./sendWhatsapp";
 import { treatments } from "./treatments";
@@ -68,6 +69,7 @@ export const en = {
   waitingRoom,
   qr,
   patientFile,
+  rxPaper,
   whatsapp,
   sendWhatsapp,
   treatments,

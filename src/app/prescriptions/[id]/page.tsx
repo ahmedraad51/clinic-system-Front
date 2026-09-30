@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Pencil, Pill, Printer, Trash2 } from "lucide-react";
-import ClinicLetterhead from "@/components/ClinicLetterhead";
 import RequirePermission from "@/components/Guard";
 import PrescriptionWarnings from "@/components/PrescriptionWarnings";
+import { RxFooter, RxHeader, RxSignature } from "@/components/RxPaper";
 import { Button, Card, LinkButton, NotFoundCard, PageContainer, PageHeader, RecordLoading } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
@@ -18,7 +18,8 @@ import { display, formatDate, formatTime } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
 import { appointmentHref, patientHref, prescriptionHref, routeId } from "@/lib/links";
 import { MEDICINE_FIELDS, PRESCRIPTION_PATIENT_FIELDS, prescriptionWarnings, type PatientForPrescription } from "@/lib/prescriptions";
-import type { Appointment, DentalMedicine, Patient, Prescription } from "@/lib/types";
+import { RX_PAPER_FIELDS, rxPageCss, rxPaperOf } from "@/lib/rxPaper";
+import type { Appointment, DentalMedicine, Doctor, Patient, Prescription } from "@/lib/types";
 
 export default function PrescriptionDetailPage() {
   return (
@@ -50,6 +51,8 @@ function PrescriptionDetail() {
   const { doc, loading, notFound, error } = useDocument<Prescription>("Prescription", id);
   const [checked, setChecked] = useState<Checked | null>(null);
   const [visit, setVisit] = useState<Appointment | null>(null);
+  // The doctor's paper: size, own heading or pre-printed paper, signature.
+  const [paperOf, setPaperOf] = useState<{ doctor: string; row: Doctor | null } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const patientId = doc?.patient ?? "";
@@ -79,6 +82,29 @@ function PrescriptionDetail() {
       cancelled = true;
     };
   }, [patientId, medicineIds]);
+
+  const doctorId = doc?.doctor ?? "";
+  useEffect(() => {
+    if (!doctorId) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const rows = await getList<Doctor>("Doctor", ["name", "full_name", "specialization", ...RX_PAPER_FIELDS], {
+          filters: [["name", "=", doctorId]],
+          limit: 1,
+        });
+        if (!cancelled) setPaperOf({ doctor: doctorId, row: rows[0] ?? null });
+      } catch (err) {
+        // The clinic's plain paper, then.
+        console.error(err);
+        if (!cancelled) setPaperOf({ doctor: doctorId, row: null });
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [doctorId]);
 
   // The visit's date and time, so the page does not show its ID.
   const appointmentId = doc?.appointment ?? "";
@@ -112,6 +138,9 @@ function PrescriptionDetail() {
   const ready = checked?.key === `${patientId}|${medicineIds}` ? checked : null;
   const warnings = ready ? prescriptionWarnings(ready.patient, doc.medicines ?? [], new Map(ready.medicines.map((m) => [m.name, m]))) : [];
   const age = Number(ready?.patient?.age) || 0;
+  const paperDoctor = paperOf?.doctor === doc.doctor ? paperOf : null;
+  const paper = rxPaperOf(paperDoctor?.row);
+  const doctorName = doc.doctor_name || paperDoctor?.row?.full_name || doc.doctor;
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -140,7 +169,7 @@ function PrescriptionDetail() {
         back={{ href: patientHref(doc.patient), label: doc.patient_name || p.backPatient }}
         actions={
           <>
-            <Button variant="secondary" icon={Printer} onClick={() => window.print()}>
+            <Button variant="secondary" icon={Printer} onClick={() => window.print()} disabled={!paperDoctor}>
               {t.common.print}
             </Button>
             {canWrite && (
@@ -163,9 +192,22 @@ function PrescriptionDetail() {
       />
 
       {ready && <PrescriptionWarnings warnings={warnings} quiet />}
+      {/* The doctor's page size and, on pre-printed paper, room for its header and footer. */}
+      <style>{rxPageCss(paper)}</style>
+      {paperDoctor && (
+        <p data-testid="rx-prints-on" className="text-xs text-gray-500 print:hidden">
+          {t.rxPaper.printsOn(doctorName, paper.size)}
+        </p>
+      )}
 
       <Card className="print:shadow-none print:border-0">
-        <ClinicLetterhead kind={p.letterhead} reference={<span dir="ltr">{id}</span>} date={formatDate(doc.prescription_date)} />
+        <RxHeader
+          paper={paper}
+          doctorName={doctorName}
+          specialization={label(t.enums.specialization, paperDoctor?.row?.specialization)}
+          reference={<span dir="ltr">{id}</span>}
+          date={formatDate(doc.prescription_date)}
+        />
 
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 py-5">
           <div>
@@ -232,13 +274,8 @@ function PrescriptionDetail() {
           </div>
         )}
 
-        <div className="mt-12 grid grid-cols-2 gap-10 text-xs text-gray-500">
-          <div />
-          <div className="border-t border-gray-300 pt-2">
-            {p.signature}
-            {doc.doctor_name && <span className="block text-gray-700">{doc.doctor_name}</span>}
-          </div>
-        </div>
+        <RxSignature paper={paper} doctorName={doctorName} label={p.signature} />
+        <RxFooter paper={paper} />
       </Card>
 
       <ConfirmDialog
