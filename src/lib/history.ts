@@ -98,7 +98,7 @@ const STATUS_ENUMS: Record<string, keyof Messages["enums"]> = {
   "Treatment Session": "sessionStatus",
 };
 /** Too long or not text: say it changed, without the values. */
-const WITHOUT_VALUES = new Set(["dental_chart"]);
+const WITHOUT_VALUES = new Set(["dental_chart", "chart_sketch"]);
 
 export function isShownChange(doctype: string, field: string): boolean {
   return !HIDDEN.has(field) && !(HIDDEN_FOR[doctype] ?? []).includes(field);

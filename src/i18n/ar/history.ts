@@ -47,6 +47,7 @@ export const history: Messages["history"] = {
       chronic_diseases: "الأمراض المزمنة",
       medical_history: "التاريخ المرضي",
       dental_chart: "مخطط الأسنان",
+      chart_sketch: "الرسم على المخطط",
       next_recall_date: "الفحص الدوري القادم",
       recall_interval_months: "الفحص الدوري كل (أشهر)",
       no_recall: "بلا فحص دوري",

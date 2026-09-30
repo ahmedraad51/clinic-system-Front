@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" width="600" height="800">
+  <!-- A drawn periapical X-ray of 36 after root canal treatment and a crown, for the demo data. -->
+  <defs>
+    <radialGradient id="film" cx="50%" cy="45%" r="70%">
+      <stop offset="0" stop-color="#3a3a3a"/>
+      <stop offset="1" stop-color="#0d0d0d"/>
+    </radialGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="1.6"/></filter>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.08 0"/></filter>
+  </defs>
+  <rect width="300" height="400" rx="18" fill="url(#film)"/>
+  <path d="M0 170 C60 160 240 160 300 172 L300 400 L0 400 Z" fill="#5c5c5c" opacity="0.55" filter="url(#soft)"/>
+  <path d="M-30 60 C-30 40 30 40 40 60 L44 130 C44 150 36 170 30 200 L20 330 C18 345 6 345 4 330 L-6 210 Z" fill="#9e9e9e" filter="url(#soft)"/>
+  <path d="M262 64 C272 44 330 44 330 70 L320 210 L308 330 C306 345 294 345 292 330 L284 200 C274 170 260 150 262 130 Z" fill="#9e9e9e" filter="url(#soft)"/>
+  <g filter="url(#soft)">
+    <!-- zirconia crown: very bright -->
+    <path d="M66 66 C66 40 110 34 150 40 C190 34 234 40 234 66 L236 140 C236 158 226 170 216 176 L86 176 C74 170 64 158 64 140 Z" fill="#fafafa"/>
+    <path d="M92 176 C92 230 96 290 104 340 C108 356 124 356 126 340 C130 290 136 240 146 200 L156 200 C166 240 172 290 176 340 C178 356 194 356 198 340 C206 290 210 230 210 176 Z" fill="#b8b8b8"/>
+    <!-- root canal fillings: bright white lines to the tips -->
+    <path d="M116 150 C114 220 112 280 114 340 L121 340 C123 280 126 220 128 156 Z" fill="#ffffff"/>
+    <path d="M184 150 C186 220 188 280 186 340 L179 340 C177 280 174 220 172 156 Z" fill="#ffffff"/>
+    <rect x="112" y="140" width="76" height="20" rx="8" fill="#e6e6e6"/>
+  </g>
+  <!-- the dark patch has healed a little -->
+  <ellipse cx="116" cy="352" rx="10" ry="7" fill="#262626" opacity="0.5" filter="url(#soft)"/>
+  <rect width="300" height="400" rx="18" filter="url(#grain)"/>
+  <circle cx="22" cy="22" r="6" fill="#1a1a1a"/>
+</svg>

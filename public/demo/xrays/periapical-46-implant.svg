@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" width="600" height="800">
+  <!-- A drawn periapical X-ray of an implant in 46, for the demo data. -->
+  <defs>
+    <radialGradient id="film" cx="50%" cy="45%" r="70%">
+      <stop offset="0" stop-color="#3a3a3a"/>
+      <stop offset="1" stop-color="#0d0d0d"/>
+    </radialGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="1.4"/></filter>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.08 0"/></filter>
+  </defs>
+  <rect width="300" height="400" rx="18" fill="url(#film)"/>
+  <path d="M0 150 C60 140 240 140 300 152 L300 400 L0 400 Z" fill="#666" opacity="0.6" filter="url(#soft)"/>
+  <path d="M-30 60 C-30 40 30 40 40 60 L44 130 C44 150 36 170 30 200 L20 330 C18 345 6 345 4 330 L-6 210 Z" fill="#9e9e9e" filter="url(#soft)"/>
+  <path d="M262 64 C272 44 330 44 330 70 L320 210 L308 330 C306 345 294 345 292 330 L284 200 C274 170 260 150 262 130 Z" fill="#9e9e9e" filter="url(#soft)"/>
+  <!-- healing cap -->
+  <rect x="124" y="118" width="52" height="30" rx="8" fill="#f2f2f2" filter="url(#soft)"/>
+  <!-- implant body with threads -->
+  <g filter="url(#soft)">
+    <path d="M128 150 L172 150 L168 330 C166 346 134 346 132 330 Z" fill="#fafafa"/>
+    <g stroke="#9a9a9a" stroke-width="3">
+      <path d="M128 172 L172 166"/><path d="M129 194 L171 188"/><path d="M129 216 L171 210"/><path d="M130 238 L170 232"/>
+      <path d="M130 260 L170 254"/><path d="M131 282 L169 276"/><path d="M131 304 L169 298"/>
+    </g>
+  </g>
+  <rect width="300" height="400" rx="18" filter="url(#grain)"/>
+  <circle cx="22" cy="22" r="6" fill="#1a1a1a"/>
+</svg>

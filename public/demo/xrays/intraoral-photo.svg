@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="800" height="600">
+  <!-- A drawn intraoral photo of the lower left teeth with the new crown on 36, for the demo data. -->
+  <defs>
+    <linearGradient id="gum" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7a1f2b"/>
+      <stop offset="1" stop-color="#c85a67"/>
+    </linearGradient>
+    <linearGradient id="tooth" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fffdf5"/>
+      <stop offset="1" stop-color="#e8dcc0"/>
+    </linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="0.8"/></filter>
+  </defs>
+  <rect width="400" height="300" fill="#3a0d14"/>
+  <path d="M0 150 C80 120 320 120 400 150 L400 300 L0 300 Z" fill="url(#gum)"/>
+  <g filter="url(#soft)" stroke="#cbb892" stroke-width="1.5">
+    <path d="M30 150 C30 110 90 106 92 150 L90 200 C80 214 42 214 32 200 Z" fill="url(#tooth)"/>
+    <path d="M100 146 C100 104 164 100 166 146 L164 202 C152 218 112 218 102 202 Z" fill="url(#tooth)"/>
+    <path d="M176 140 C176 92 280 88 282 140 L280 206 C262 226 196 226 178 206 Z" fill="#fbfbf8" stroke="#bfc4cc"/>
+    <path d="M292 142 C292 98 380 96 382 142 L380 204 C362 222 310 222 294 204 Z" fill="url(#tooth)"/>
+  </g>
+  <!-- fissures -->
+  <g stroke="#b9a57e" stroke-width="2" fill="none" opacity="0.7">
+    <path d="M320 150 C330 160 346 160 356 150"/><path d="M50 160 C58 166 66 166 74 160"/>
+  </g>
+  <ellipse cx="200" cy="40" rx="140" ry="22" fill="#ffffff" opacity="0.12"/>
+</svg>

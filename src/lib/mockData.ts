@@ -469,6 +469,49 @@ const versions: MockDoc[] = [
   },
 ];
 
+/** X-rays and photos (the drawn demo pictures in public/demo/xrays). */
+const IMG = (n: number) => `IMG-2026-${String(n).padStart(5, "0")}`;
+const dentalImages: MockDoc[] = [
+  {
+    name: IMG(1), patient: P.zahraa, image: "/demo/xrays/periapical-36-before.svg", file_name: "periapical-36-before.png",
+    image_type: "Periapical", taken_on: "2026-06-18", teeth: "36",
+    description: "Deep caries on the distal side of 36, close to the pulp. Dark area at the mesial root tip.",
+    annotations: JSON.stringify({
+      version: 1, aspect: 4 / 3,
+      shapes: [
+        { kind: "circle", color: "#ef4444", width: 4, center: [0.68, 0.23], radius: 0.1 },
+        { kind: "arrow", color: "#facc15", width: 4, from: [0.2, 0.93], to: [0.36, 0.88] },
+        { kind: "text", color: "#facc15", at: [0.08, 0.97], text: "Lesion", size: 0.06 },
+      ],
+    }),
+  },
+  {
+    name: IMG(2), patient: P.zahraa, image: "/demo/xrays/panoramic.svg", file_name: "opg-2026-06.png",
+    image_type: "Panoramic (OPG)", taken_on: "2026-06-18", teeth: "",
+    description: "Full mouth before treatment.",
+  },
+  {
+    name: IMG(3), patient: P.zahraa, image: "/demo/xrays/periapical-36-after.svg", file_name: "periapical-36-after.png",
+    image_type: "Periapical", taken_on: "2026-06-25", teeth: "36",
+    description: "After root canal treatment: both canals filled to the tips.",
+  },
+  {
+    name: IMG(4), patient: P.zahraa, image: "/demo/xrays/bitewing-left.svg", file_name: "bitewing-left.png",
+    image_type: "Bitewing", taken_on: "2026-08-20", teeth: "26,27,36,37",
+    description: "Left side. Small caries on 37.",
+  },
+  {
+    name: IMG(5), patient: P.zahraa, image: "/demo/xrays/intraoral-photo.svg", file_name: "photo-36.jpg",
+    image_type: "Intraoral photo", taken_on: "2026-08-20", teeth: "36",
+    description: "Crown preparation on 36.",
+  },
+  {
+    name: IMG(6), patient: P.abbas, image: "/demo/xrays/periapical-46-implant.svg", file_name: "implant-46.png",
+    image_type: "Periapical", taken_on: "2026-08-11", teeth: "46",
+    description: "Implant in 46, one week after placement.",
+  },
+];
+
 const store: Store = {
   Patient: patients,
   Doctor: doctors,
@@ -484,6 +527,7 @@ const store: Store = {
   "Cash Count": cashCounts,
   "Dental Medicine": medicines,
   Prescription: prescriptions,
+  "Dental Image": dentalImages,
   Version: versions,
   File: [],
 };
@@ -511,13 +555,14 @@ const NAME_SERIES: Record<string, { prefix: string; year: boolean }> = {
   "Cash Count": { prefix: "CC", year: true },
   "Dental Medicine": { prefix: "MED", year: false },
   Prescription: { prefix: "RX", year: true },
+  "Dental Image": { prefix: "IMG", year: true },
 };
 
 /** Which doctypes link to which, so a delete can be refused the way Frappe refuses it. */
 const LINKED_FROM: Record<string, Array<[doctype: string, field: string]>> = {
   Patient: [
     ["Appointment", "patient"], ["Treatment Plan", "patient"], ["Treatment Session", "patient"],
-    ["Payment", "patient"], ["WhatsApp Log", "patient"], ["Prescription", "patient"],
+    ["Payment", "patient"], ["WhatsApp Log", "patient"], ["Prescription", "patient"], ["Dental Image", "patient"],
   ],
   Doctor: [["Appointment", "doctor"], ["Treatment Plan", "doctor"], ["Treatment Session", "doctor"], ["Prescription", "doctor"]],
   "Treatment Plan": [["Payment", "treatment_plan"], ["Treatment Session", "treatment_plan"]],
@@ -634,7 +679,7 @@ function recalculate(): void {
   const plansById = new Map(store["Treatment Plan"].map((doc) => [doc.name, doc]));
 
   // "Fetch from" fields: link labels copied onto the linking doc.
-  ["Appointment", "Treatment Plan", "Treatment Session", "Payment", "WhatsApp Log", "Prescription"].forEach((doctype) => {
+  ["Appointment", "Treatment Plan", "Treatment Session", "Payment", "WhatsApp Log", "Prescription", "Dental Image"].forEach((doctype) => {
     collection(doctype).forEach((doc) => {
       doc.patient_name = patientsById.get(String(doc.patient))?.full_name ?? "";
       if (doctype !== "Payment" && doctype !== "WhatsApp Log") {
@@ -1039,6 +1084,8 @@ export async function mockDeleteDoc(doctype: string, name: string): Promise<void
     }
   }
   docs.splice(index, 1);
+  // Frappe deletes the files attached to a deleted record.
+  store.File = store.File.filter((file) => !(file.attached_to_doctype === doctype && file.attached_to_name === name));
   // Its history goes with it (Frappe never gives the name to another record; the dummy data might).
   store.Version = store.Version.filter((version) => !(version.ref_doctype === doctype && version.docname === name));
   recalculate();

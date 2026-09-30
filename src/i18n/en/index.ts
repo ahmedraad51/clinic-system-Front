@@ -39,6 +39,7 @@ import { profile } from "./profile";
 import { login } from "./login";
 import { session } from "./session";
 import { history } from "./history";
+import { xrays } from "./xrays";
 
 export const en = {
   common,
@@ -81,6 +82,7 @@ export const en = {
   login,
   session,
   history,
+  xrays,
 };
 
 export type Messages = typeof en;

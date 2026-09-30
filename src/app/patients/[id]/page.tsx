@@ -11,7 +11,7 @@ import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import DentalChart from "@/components/DentalChart";
 import MedicalAlerts from "@/components/MedicalAlerts";
-import PatientFiles from "@/components/PatientFiles";
+import XraySection from "@/components/xrays/XraySection";
 import RecallDialog from "@/components/RecallDialog";
 import RecordHistory from "@/components/RecordHistory";
 import {
@@ -26,7 +26,8 @@ import { useToast } from "@/context/ToastContext";
 import { label, messages } from "@/i18n";
 import { deleteDoc, errorMessage, getList, updateDoc, type FilterRow } from "@/lib/frappe";
 import { addMonths, display, formatDate, formatMonth, formatTime, todayISO } from "@/lib/format";
-import { useDocument } from "@/lib/hooks";
+import { useDocument, usePatientImages } from "@/lib/hooks";
+import { chartSketchToSave, type ChartSketch } from "@/lib/sketch";
 import { DEFAULT_RECALL_MONTHS } from "@/lib/recall";
 import { whatsappNumber } from "@/lib/whatsapp";
 import { appointmentHref, patientHref, paymentHref, prescriptionHref, routeId, treatmentHref } from "@/lib/links";
@@ -63,6 +64,8 @@ function PatientDetail() {
   const { money, countryCode } = useSettings();
   const id = routeId(params.id);
   const { doc: patient, loading, notFound, error, reload } = useDocument<Patient>("Patient", id);
+  // X-rays and photos: shown in their own tab and on the dental chart's teeth.
+  const xrays = usePatientImages(id);
   const [tab, setTab] = useState<TabKey>("overview");
   const [related, setRelated] = useState<Related | null>(null);
   // The appointments, plans, sessions and payments could not load: say so in each tab, with Try Again.
@@ -165,6 +168,18 @@ function PatientDetail() {
     }
   };
 
+  const saveSketch = async (sketch: ChartSketch) => {
+    try {
+      await updateDoc("Patient", id, { chart_sketch: chartSketchToSave(sketch) || null });
+      toast.success(t.xrays.sketchSaved);
+      // The chart reads the sketch when it opens: keep the page's copy up to date for the next time.
+      reload();
+    } catch (err) {
+      toast.error(errorMessage(err, t.xrays.sketchFailed));
+      throw err;
+    }
+  };
+
   const saveChart = async (chart: DentalChartData) => {
     try {
       await updateDoc("Patient", id, { dental_chart: JSON.stringify(chart) });
@@ -190,7 +205,7 @@ function PatientDetail() {
     ...(showTreatments ? [{ key: "prescriptions" as const, label: p.tabs.prescriptions, count: data?.prescriptions.length }] : []),
     ...(showPayments ? [{ key: "payments" as const, label: p.tabs.payments, count: data?.payments.length }] : []),
     { key: "chart", label: p.tabs.chart },
-    { key: "files", label: p.tabs.files },
+    { key: "files", label: p.tabs.files, count: xrays.images?.length },
     { key: "history", label: p.tabs.history },
   ];
 
@@ -627,6 +642,11 @@ function PatientDetail() {
           patientAge={patient.age}
           plans={data?.plans}
           printHref={`${patientHref(id)}/chart`}
+          images={xrays.images ?? []}
+          patientName={patient.full_name}
+          onImagesChanged={xrays.reload}
+          sketch={patient.chart_sketch}
+          onSaveSketch={saveSketch}
           newTreatmentHref={
             can("add_treatments")
               ? (tooth) => `/treatments/new?patient=${encodeURIComponent(id)}&tooth=${tooth}`
@@ -635,7 +655,16 @@ function PatientDetail() {
         />
       )}
 
-      {tab === "files" && <PatientFiles patient={patient.name} canEdit={can("edit_patients")} />}
+      {tab === "files" && (
+        <XraySection
+          patient={patient.name}
+          patientName={patient.full_name}
+          images={xrays.images}
+          error={xrays.error}
+          onReload={xrays.reload}
+          canEdit={can("edit_patients")}
+        />
+      )}
 
       {tab === "history" && <RecordHistory doctype="Patient" name={patient.name} changedAt={patient.modified} startOpen />}
 

@@ -147,9 +147,19 @@ export const enums: Messages["enums"] = {
     "Dental Medicine": "الدواء",
     Prescription: "الوصفة الطبية",
     File: "الملف",
+    "Dental Image": "الصورة السنية",
   },
   language: {
     ar: "العربية",
     en: "الإنجليزية",
+  },
+  imageType: {
+    Periapical: "أشعة ذروية",
+    Bitewing: "أشعة مجنّحة (Bitewing)",
+    "Panoramic (OPG)": "أشعة بانورامية (OPG)",
+    Cephalometric: "أشعة سيفالومترية",
+    "CBCT screenshot": "لقطة CBCT",
+    "Intraoral photo": "صورة داخل الفم",
+    Other: "أخرى",
   },
 };

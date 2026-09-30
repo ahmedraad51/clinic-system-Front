@@ -5,8 +5,9 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- **Next: Phase 3 (a real X-ray section), then Phase 4** (the features from the competitor study), in both
-  languages.
+- **Next: Phase 4**, the features from the competitor study, in both languages: two currencies, expenses and
+  profit, the waiting room, QR codes, the whole patient file in print, custom prescription paper, restoring deleted
+  records, and installing the app.
 
 ## Backlog
 
@@ -15,6 +16,15 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Done
 
+- 2026-09-30 - **A real X-ray section (Phase 3).** Each X-ray or photo now has a type (periapical, bitewing,
+  panoramic, cephalometric, CBCT screenshot, intraoral photo, or other), the date it was taken, the teeth it shows and
+  a description. Add many at once by dragging them in, choosing them, or taking a photo with the tablet camera (JPG,
+  PNG or PDF). A full-screen viewer zooms, moves, turns, changes brightness and contrast, inverts, goes full screen
+  and steps to the next image. Draw on an image with coloured pens, arrows, circles and text: the drawing is saved on
+  its own and the original is never changed. Compare two images side by side (before and after), and print one on
+  the letterhead with the patient's name and date. On the dental chart, teeth with X-rays show a small picture mark,
+  tapping a tooth shows its X-rays, and the same drawing tools can sketch on the chart. The dummy patient Zahraa has
+  five drawn X-rays and photos to try it on. DICOM files come later.
 - 2026-09-30 - **The new look on every screen (Phase 2).** Every screen now carries the colour of its part of the
   clinic: an icon in a coloured tile next to its title, and the same colour on its cards, icons and charts. The
   appointment, treatment and payment lists show each patient's drawing. Reports has three real charts: revenue

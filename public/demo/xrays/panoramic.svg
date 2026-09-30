@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 480" width="1600" height="768">
+  <!-- A drawn panoramic (OPG) X-ray of a full adult mouth, for the demo data. -->
+  <defs>
+    <radialGradient id="film" cx="50%" cy="50%" r="70%">
+      <stop offset="0" stop-color="#3b3b3b"/>
+      <stop offset="1" stop-color="#090909"/>
+    </radialGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="2"/></filter>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.07 0"/></filter>
+    <g id="upper">
+      <path d="M-14 0 L14 0 L16 70 C16 80 8 84 0 84 C-8 84 -16 80 -16 70 Z" fill="#c8c8c8"/>
+      <path d="M-5 0 L-3 -80 L3 -80 L5 0 Z" fill="#9a9a9a"/>
+    </g>
+    <g id="lower">
+      <path d="M-14 0 L14 0 L16 -70 C16 -80 8 -84 0 -84 C-8 -84 -16 -80 -16 -70 Z" fill="#c8c8c8"/>
+      <path d="M-5 0 L-3 90 L3 90 L5 0 Z" fill="#9a9a9a"/>
+    </g>
+  </defs>
+  <rect width="1000" height="480" rx="24" fill="url(#film)"/>
+  <!-- jaw outline and sinuses -->
+  <path d="M60 300 C120 440 880 440 940 300 L960 150 C900 470 100 470 40 150 Z" fill="#595959" opacity="0.6" filter="url(#soft)"/>
+  <ellipse cx="300" cy="120" rx="120" ry="56" fill="#1b1b1b" opacity="0.6" filter="url(#soft)"/>
+  <ellipse cx="700" cy="120" rx="120" ry="56" fill="#1b1b1b" opacity="0.6" filter="url(#soft)"/>
+  <!-- upper arch: 18 … 28 -->
+  <g filter="url(#soft)" transform="translate(0 150)">
+    <use href="#upper" x="160" y="0" transform="rotate(8 160 0)"/>
+    <use href="#upper" x="210" y="8"/><use href="#upper" x="260" y="14"/><use href="#upper" x="305" y="18"/>
+    <use href="#upper" x="345" y="22"/><use href="#upper" x="385" y="24"/><use href="#upper" x="425" y="26"/><use href="#upper" x="465" y="27"/>
+    <use href="#upper" x="535" y="27"/><use href="#upper" x="575" y="26"/><use href="#upper" x="615" y="24"/><use href="#upper" x="655" y="22"/>
+    <use href="#upper" x="695" y="18"/><use href="#upper" x="740" y="14"/><use href="#upper" x="790" y="8"/>
+    <use href="#upper" x="840" y="0" transform="rotate(-8 840 0)"/>
+  </g>
+  <!-- lower arch: 48 … 38 (38 missing) -->
+  <g filter="url(#soft)" transform="translate(0 330)">
+    <use href="#lower" x="170" y="-4" transform="rotate(-8 170 -4)"/>
+    <use href="#lower" x="220" y="-10"/><use href="#lower" x="268" y="-16"/><use href="#lower" x="312" y="-20"/>
+    <use href="#lower" x="352" y="-24"/><use href="#lower" x="392" y="-26"/><use href="#lower" x="430" y="-27"/><use href="#lower" x="468" y="-28"/>
+    <use href="#lower" x="532" y="-28"/><use href="#lower" x="570" y="-27"/><use href="#lower" x="608" y="-26"/><use href="#lower" x="648" y="-24"/>
+    <use href="#lower" x="688" y="-20"/><use href="#lower" x="732" y="-16"/><use href="#lower" x="780" y="-10"/>
+  </g>
+  <!-- bright crown on 36 and root fillings -->
+  <path d="M716 270 L748 270 L750 300 L714 300 Z" fill="#fafafa" filter="url(#soft)"/>
+  <path d="M722 302 L724 390 L728 390 L728 302 Z M738 302 L738 390 L742 390 L742 302 Z" fill="#ffffff"/>
+  <!-- implant in 46 -->
+  <path d="M258 302 L278 302 L276 396 L260 396 Z" fill="#f0f0f0" filter="url(#soft)"/>
+  <rect width="1000" height="480" rx="24" filter="url(#grain)"/>
+</svg>

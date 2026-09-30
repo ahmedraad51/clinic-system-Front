@@ -418,12 +418,12 @@ export async function attachFile(file: File, doctype: string, name: string, opti
 
 /**
  * The address to show or open a file. Frappe gives paths such as "/files/logo.png" or
- * "/private/files/x-ray.jpg", which must go through the /frappe rewrite; data URLs (dummy data) and full
- * addresses are used as they are.
+ * "/private/files/x-ray.jpg", which must go through the /frappe rewrite; data URLs (dummy data), the app's own
+ * pictures (the demo X-rays in /demo/) and full addresses are used as they are.
  */
 export function fileHref(url: string | null | undefined): string {
   if (!url) return "";
-  return url.startsWith("/") && !url.startsWith("/frappe/") ? `/frappe${url}` : url;
+  return /^\/(private\/)?files\//.test(url) ? `/frappe${url}` : url;
 }
 
 /** True when a request failed because the doc does not exist (HTTP 404, or the dummy data's "not found"). */

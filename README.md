@@ -155,6 +155,7 @@ what they are not allowed to do.
 | Route | What it does |
 |---|---|
 | `/` | Redirects to `/dashboard` |
+| `/xrays/[id]` | One X-ray or photo, printable on the letterhead with its drawing |
 | `/dashboard` | A welcome banner, large quick-action tiles (new appointment, patient, treatment, payment), then today's appointments, the next 7 days, patient and plan counts, revenue this month, and charts of revenue and visits per month and treatments by type |
 | `/today` | The front desk's day: today's patients by doctor, one tap to confirm, complete or mark a no-show, late patients highlighted, medical alerts and balances at a glance, quick payments and walk-ins. Marking a visit Completed (here or on the appointment) asks what was done and saves it on the patient's treatment plan |
 | `/patients` | List with server-side search (name, phone, ID; a phone number is found however it was typed: `0770…`, `+964 770…`, `00964…` or Arabic digits), gender filter and paging |

@@ -21,7 +21,7 @@ import { useToast } from "@/context/ToastContext";
 import { createDoc, deleteDoc, errorMessage, getList, updateDoc } from "@/lib/frappe";
 import { label, messages } from "@/i18n";
 import { cx, display, formatDate, formatTime, todayISO } from "@/lib/format";
-import { useDoctors, useDocument, usePatientChart, usePatientMedical } from "@/lib/hooks";
+import { useDoctors, useDocument, usePatientChart, usePatientImages, usePatientMedical } from "@/lib/hooks";
 import { patientHref, paymentHref, routeId } from "@/lib/links";
 import {
   LAB_TREATMENT_TYPES, SESSION_STATUSES, TREATMENT_STATUSES,
@@ -53,6 +53,7 @@ function TreatmentDetail() {
   const { doc: plan, loading, notFound, error, reload } = useDocument<TreatmentPlan>("Treatment Plan", id);
   const medical = usePatientMedical(plan?.patient);
   const patientChart = usePatientChart(plan?.patient);
+  const patientImages = usePatientImages(plan?.patient);
   const [related, setRelated] = useState<Related | null>(null);
   const [relatedVersion, setRelatedVersion] = useState(0);
   // The sessions and payments could not load: say so, with Try Again.
@@ -320,6 +321,10 @@ function TreatmentDetail() {
           initialTooth={/^\d{2}$/.test(plan.tooth_number ?? "") ? Number(plan.tooth_number) : undefined}
           plans={[plan]}
           printHref={`${patientHref(plan.patient)}/chart`}
+          images={patientImages.images ?? []}
+          patientName={plan.patient_name}
+          onImagesChanged={patientImages.reload}
+          sketch={patientChart.chart_sketch}
         />
       )}
 

@@ -67,7 +67,7 @@ function ChartPrint() {
         <div className="mb-5">
           <MedicalAlerts patient={patient} />
         </div>
-        <DentalChart key={patient.name} initialChart={patient.dental_chart} canEdit={false} patientAge={patient.age} />
+        <DentalChart key={patient.name} initialChart={patient.dental_chart} canEdit={false} patientAge={patient.age} sketch={patient.chart_sketch} />
       </Card>
     </PageContainer>
   );

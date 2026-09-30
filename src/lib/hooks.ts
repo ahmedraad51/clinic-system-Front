@@ -5,7 +5,8 @@ import { messages } from "@/i18n";
 import { getCount, getDoc, getList, errorMessage, isNotFound, type FilterRow } from "./frappe";
 import { MEDICAL_FIELDS, type MedicalFields } from "./medical";
 import { phoneSearchPattern, toLatinDigits } from "./phone";
-import type { BaseDoc, Doctor, Patient } from "./types";
+import type { BaseDoc, DentalImage, Doctor, Patient } from "./types";
+import { IMAGE_FIELDS, sortImages } from "./xrays";
 
 /**
  * True while a CSS media query matches, e.g. useMediaQuery("(max-width: 639px)") for phones.
@@ -233,15 +234,15 @@ export function usePatientMedical(patient: string | undefined) {
   return result && result.patient === patient ? result.fields : null;
 }
 
-/** A patient's dental chart and age, for showing the chart on another record's page (a treatment plan). */
+/** A patient's dental chart, its sketch and age, for showing the chart on another record's page (a treatment plan). */
 export function usePatientChart(patient: string | undefined) {
-  const [result, setResult] = useState<{ patient: string; doc: Pick<Patient, "name" | "dental_chart" | "age"> | null } | null>(null);
+  const [result, setResult] = useState<{ patient: string; doc: Pick<Patient, "name" | "dental_chart" | "chart_sketch" | "age"> | null } | null>(null);
   useEffect(() => {
     if (!patient) return;
     let cancelled = false;
     const load = async () => {
       try {
-        const rows = await getList<Patient>("Patient", ["name", "dental_chart", "age"], {
+        const rows = await getList<Patient>("Patient", ["name", "dental_chart", "chart_sketch", "age"], {
           filters: [["name", "=", patient]],
           limit: 1,
         });
@@ -292,3 +293,36 @@ export function usePatientLooks(ids: string[]): Record<string, PatientLook> {
 }
 
 const NO_LOOKS: Record<string, PatientLook> = {};
+
+/**
+ * A patient's X-rays and photos (Dental Image records), newest first. `reload()` fetches them again after a change.
+ * Null while loading; `error` when they could not load.
+ */
+export function usePatientImages(patient: string | undefined) {
+  const [state, setState] = useState<{ patient: string; images: DentalImage[] | null; error: string } | null>(null);
+  const [version, setVersion] = useState(0);
+  useEffect(() => {
+    if (!patient) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const rows = await getList<DentalImage>("Dental Image", IMAGE_FIELDS, {
+          filters: [["patient", "=", patient]],
+          orderBy: "taken_on desc, name asc",
+          limit: 0,
+        });
+        if (!cancelled) setState({ patient, images: sortImages(rows), error: "" });
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) setState({ patient, images: null, error: errorMessage(err, messages().xrays.loadFailed) });
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [patient, version]);
+  const reload = useCallback(() => setVersion((v) => v + 1), []);
+  const current = state && state.patient === patient ? state : null;
+  return { images: current?.images ?? null, error: current?.error ?? "", reload };
+}

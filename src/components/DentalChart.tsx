@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, Plus, Printer, RotateCcw, Save, Sparkles, X } from "lucide-react";
+import { Check, FileText, ImageIcon, PenLine, Plus, Printer, RotateCcw, Save, Sparkles, X } from "lucide-react";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
+import ImageViewer from "@/components/xrays/ImageViewer";
+import { SketchCanvas, SketchToolbar } from "@/components/xrays/Sketch";
 import ToothLogo from "@/components/ToothLogo";
 import { Alert, Button, CardIcon, LinkButton, Segmented, StatusBadge, TextArea } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
@@ -12,7 +14,11 @@ import {
   cleanChart, describeTooth, isChildTooth, isUpper, parseDentalChart, surfaceLayout, toothKind, toothName, type ToothKind,
 } from "@/lib/dentalChart";
 import { cx } from "@/lib/format";
+import { fileHref } from "@/lib/frappe";
 import { treatmentHref } from "@/lib/links";
+import { parseChartSketch, SKETCH_COLOURS, type ChartSketch, type SketchData, type SketchTool } from "@/lib/sketch";
+import { imageTeeth, imageTitle, isPdf } from "@/lib/xrays";
+import type { DentalImage } from "@/lib/types";
 import {
   CHILD_LOWER_TEETH, CHILD_UPPER_TEETH, LOWER_TEETH, TOOTH_CONDITIONS, UPPER_TEETH,
   type DentalChartData, type SurfaceFinding, type ToothCondition, type ToothRecord, type ToothSurface,
@@ -149,6 +155,11 @@ export default function DentalChart({
   newTreatmentHref,
   initialTooth,
   printHref,
+  images = [],
+  patientName,
+  onImagesChanged,
+  sketch,
+  onSaveSketch,
 }: {
   /** Patient.dental_chart as it came from the server, in either shape. */
   initialChart?: unknown;
@@ -164,6 +175,15 @@ export default function DentalChart({
   initialTooth?: number;
   /** Where "Print" goes, e.g. /patients/<id>/chart. */
   printHref?: string;
+  /** The patient's X-rays and photos: a tooth that has some gets a marker, and its panel lists them. */
+  images?: DentalImage[];
+  patientName?: string;
+  /** An image was changed in the viewer. */
+  onImagesChanged?: () => void;
+  /** Patient.chart_sketch: a drawing on top of the adult teeth and one on the child teeth. */
+  sketch?: unknown;
+  /** Saves both drawings; without it there is no Sketch button. */
+  onSaveSketch?: (sketch: ChartSketch) => Promise<void>;
 }) {
   const { t } = useI18n();
   const [saved, setSaved] = useState<DentalChartData>(() => cleanChart(parseDentalChart(initialChart)));
@@ -177,6 +197,35 @@ export default function DentalChart({
     const onlyChild = marked.length > 0 && marked.every(isChildTooth);
     return onlyChild || (patientAge !== undefined && patientAge > 0 && patientAge < 6) ? "child" : "adult";
   });
+
+  // The drawing on the chart (the teeth themselves never change), and the one being drawn.
+  const [sketches, setSketches] = useState<ChartSketch>(() => parseChartSketch(sketch));
+  const [sketchDraft, setSketchDraft] = useState<SketchData | null>(null);
+  const [sketchTool, setSketchTool] = useState<SketchTool>("pen");
+  const [sketchColor, setSketchColor] = useState<string>(SKETCH_COLOURS[0]);
+  const [sketchSaving, setSketchSaving] = useState(false);
+  // The teeth area's height ÷ width, so the drawing keeps its place.
+  const teethRef = useRef<HTMLDivElement>(null);
+  const [teethAspect, setTeethAspect] = useState(0.4);
+  useEffect(() => {
+    const element = teethRef.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (width > 0) setTeethAspect(height / width);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  // An image opened from a tooth's panel: the images of that tooth, and which one.
+  // (The images come from `images` each time, so a change made in the viewer shows at once.)
+  const [viewing, setViewing] = useState<{ tooth: number; start: string } | null>(null);
+  const imagesOf = (tooth: number) => images.filter((image) => imageTeeth(image).includes(String(tooth)));
+  // A saved drawing shows on the teeth it was drawn on.
+  const sketchSaved: SketchData | undefined = sketches[dentition];
+  const sketchOnView = Boolean(sketchSaved && sketchSaved.shapes.length > 0);
+  // A drawing started and not saved yet counts as unsaved work.
+  const sketchChanged = Boolean(sketchDraft) && JSON.stringify(sketchDraft?.shapes) !== JSON.stringify(sketchSaved?.shapes ?? []);
 
   // On a narrow screen the chart scrolls sideways: keep the chosen tooth in view.
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -240,11 +289,19 @@ export default function DentalChart({
   const column = (tooth: number, upperJaw: boolean, index: number, count: number) => {
     const current = record(tooth);
     const active = plansFor(plans, tooth).some(isActivePlan);
+    const withImages = imagesOf(tooth).length > 0;
     const description = describeTooth(current);
+    // Screen readers hear about the X-rays too (the marker is only a picture).
+    const spoken = [description, withImages ? t.xrays.toothHasImages : ""].filter(Boolean).join(t.common.dot);
     const number = (
       <span className="flex items-center gap-0.5 text-xs font-semibold text-gray-600">
         {tooth}
         {active && <span className="w-1.5 h-1.5 rounded-full bg-primary-500" title={t.chart.openPlan} />}
+        {withImages && (
+          <span data-xray-marker className="text-sky-600" title={t.xrays.ofTooth}>
+            <ImageIcon size={10} aria-hidden="true" />
+          </span>
+        )}
       </span>
     );
     return (
@@ -254,7 +311,7 @@ export default function DentalChart({
         onClick={() => setSelected(selected === tooth ? null : tooth)}
         aria-pressed={selected === tooth}
         data-tooth={tooth}
-        aria-label={t.chart.toothButton(tooth, toothName(tooth), description)}
+        aria-label={t.chart.toothButton(tooth, toothName(tooth), spoken)}
         title={`${tooth} · ${toothName(tooth)}${description ? ` · ${description}` : ""}`}
         className={cx(
           "flex flex-col items-center gap-1 w-10 xl:w-12 py-1.5 rounded-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
@@ -282,7 +339,7 @@ export default function DentalChart({
 
   return (
     <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 w-full space-y-5 [print-color-adjust:exact] print:shadow-none print:border-0 print:p-0">
-      <UnsavedChangesGuard when={dirty && canEdit && Boolean(onSave)} />
+      <UnsavedChangesGuard when={(dirty && canEdit && Boolean(onSave)) || sketchChanged} />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-2.5">
           <CardIcon icon={ToothLogo} />
@@ -298,23 +355,31 @@ export default function DentalChart({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 print:hidden">
-          {printHref && !dirty && (
+          {onSaveSketch && canEdit && !dirty && !sketchDraft && (
+            <Button variant="secondary" icon={PenLine} onClick={() => setSketchDraft(sketchSaved ?? { version: 1, aspect: teethAspect, shapes: [] })}>
+              {t.xrays.sketch}
+            </Button>
+          )}
+          {printHref && !dirty && !sketchDraft && (
             <LinkButton href={printHref} variant="secondary" icon={Printer}>
               {t.common.print}
             </LinkButton>
           )}
-          <Segmented
-            label={t.chart.teeth}
-            value={dentition}
-            onChange={(next) => {
-              setDentition(next);
-              setSelected(null);
-            }}
-            options={[
-              { value: "adult", label: t.chart.adult },
-              { value: "child", label: t.chart.child },
-            ]}
-          />
+          {/* While drawing, the teeth stay as they are: the drawing belongs to them. */}
+          {!sketchDraft && (
+            <Segmented
+              label={t.chart.teeth}
+              value={dentition}
+              onChange={(next) => {
+                setDentition(next);
+                setSelected(null);
+              }}
+              options={[
+                { value: "adult", label: t.chart.adult },
+                { value: "child", label: t.chart.child },
+              ]}
+            />
+          )}
           {canEdit && onSave && dirty && (
             <>
               <Button variant="secondary" icon={RotateCcw} onClick={() => setChart(saved)} disabled={saving}>
@@ -328,9 +393,42 @@ export default function DentalChart({
         </div>
       </div>
 
+      {sketchDraft && (
+        <div className="space-y-2 print:hidden">
+          <p className="text-sm text-gray-600">{t.xrays.sketchHint}</p>
+          <SketchToolbar
+            tool={sketchTool}
+            onTool={setSketchTool}
+            color={sketchColor}
+            onColor={setSketchColor}
+            canUndo={sketchDraft.shapes.length > 0}
+            onUndo={() => setSketchDraft({ ...sketchDraft, shapes: sketchDraft.shapes.slice(0, -1) })}
+            onClear={() => setSketchDraft({ ...sketchDraft, shapes: [] })}
+            onCancel={() => setSketchDraft(null)}
+            saving={sketchSaving}
+            saveLabel={t.xrays.saveSketch}
+            onSave={async () => {
+              if (!onSaveSketch) return;
+              // This set of teeth gets the new drawing; the other keeps its own.
+              const next: ChartSketch = { ...sketches, [dentition]: { ...sketchDraft, aspect: teethAspect } };
+              setSketchSaving(true);
+              try {
+                await onSaveSketch(next);
+                setSketches(next);
+                setSketchDraft(null);
+              } catch {
+                // The page said why; the drawing stays open to try again.
+              } finally {
+                setSketchSaving(false);
+              }
+            }}
+          />
+        </div>
+      )}
+
       {/* Anatomical: the patient's right stays on the left in every language. */}
       <div ref={scrollRef} dir="ltr" className="overflow-x-auto -mx-2 px-2">
-        <div className="w-max mx-auto">
+        <div ref={teethRef} className="w-max mx-auto relative">
           <div className="flex justify-between text-xs text-gray-500 px-1 mb-1">
             <span>{t.chart.patientsRight}</span>
             <span className="font-medium text-gray-500">{t.chart.upperJaw}</span>
@@ -340,6 +438,18 @@ export default function DentalChart({
           <div className="my-2 border-t-2 border-dashed border-gray-200" />
           <div className="flex justify-center">{lower.map((tooth, i) => column(tooth, false, i, lower.length))}</div>
           <p className="text-center text-xs font-medium text-gray-500 mt-1">{t.chart.lowerJaw}</p>
+          {(sketchDraft || sketchOnView) && (
+            <SketchCanvas
+              sketch={sketchDraft ?? sketchSaved ?? { version: 1, aspect: teethAspect, shapes: [] }}
+              aspect={teethAspect}
+              editing={Boolean(sketchDraft)}
+              label={t.xrays.sketchTitle}
+              tool={sketchTool}
+              color={sketchColor}
+              onAdd={(shape) => sketchDraft && setSketchDraft({ ...sketchDraft, shapes: [...sketchDraft.shapes, shape] })}
+              className={sketchDraft ? "rounded-lg ring-2 ring-primary-400" : undefined}
+            />
+          )}
         </div>
       </div>
 
@@ -359,6 +469,19 @@ export default function DentalChart({
           onClose={() => setSelected(null)}
           plans={plansFor(plans, selected)}
           newTreatmentHref={newTreatmentHref?.(selected)}
+          images={imagesOf(selected)}
+          onOpenImage={(image) => setViewing({ tooth: selected, start: image.name })}
+        />
+      )}
+
+      {viewing && imagesOf(viewing.tooth).length > 0 && (
+        <ImageViewer
+          images={imagesOf(viewing.tooth)}
+          start={viewing.start}
+          patientName={patientName}
+          canEdit={canEdit}
+          onClose={() => setViewing(null)}
+          onChanged={() => onImagesChanged?.()}
         />
       )}
 
@@ -454,6 +577,8 @@ function ToothPanel({
   onClose,
   plans,
   newTreatmentHref,
+  images,
+  onOpenImage,
 }: {
   tooth: number;
   record?: ToothRecord;
@@ -467,6 +592,8 @@ function ToothPanel({
   onClose: () => void;
   plans: PlanOnTooth[];
   newTreatmentHref?: string;
+  images: DentalImage[];
+  onOpenImage: (image: DentalImage) => void;
 }) {
   const layout = surfaceLayout(tooth);
   const places: Array<[keyof typeof SURFACE_CLIPS, ToothSurface]> = [
@@ -613,6 +740,36 @@ function ToothPanel({
                       {label(t.enums.treatmentType, plan.treatment_type)}
                     </Link>
                     <StatusBadge kind="treatment" status={plan.status} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">{t.xrays.ofTooth}</p>
+            {images.length === 0 ? (
+              <p className="text-sm text-gray-500">{t.xrays.noneOfTooth}</p>
+            ) : (
+              <ul className="flex flex-wrap gap-2">
+                {images.map((image) => (
+                  <li key={image.name}>
+                    <button
+                      type="button"
+                      onClick={() => onOpenImage(image)}
+                      aria-label={t.xrays.openImage(imageTitle(image))}
+                      title={imageTitle(image)}
+                      className="block w-20 h-16 rounded-lg overflow-hidden bg-gray-950 ring-1 ring-gray-200 hover:ring-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                    >
+                      {isPdf(image) ? (
+                        <span className="w-full h-full flex items-center justify-center text-white/80">
+                          <FileText size={22} aria-hidden="true" />
+                        </span>
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element -- an uploaded X-ray of unknown size
+                        <img src={fileHref(image.image || "")} alt="" className="w-full h-full object-cover" />
+                      )}
+                    </button>
                   </li>
                 ))}
               </ul>

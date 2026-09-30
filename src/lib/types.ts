@@ -130,6 +130,8 @@ export interface Patient extends BaseDoc {
   notes?: string;
   /** JSON field. Frappe may send it as a string, and old records use the first shape; read it with parseDentalChart(). */
   dental_chart?: DentalChartData | Record<string, string> | string | null;
+  /** Free drawing on top of the dental chart: JSON (SketchData, see src/lib/sketch.ts). */
+  chart_sketch?: string | object | null;
   /** The next check-up the dentist chose; empty means the usual rule (see src/lib/recall.ts). */
   next_recall_date?: string | null;
   /** How often the dentist wants to see the patient, in months; 0 when not chosen. */
@@ -300,6 +302,33 @@ export interface CashCount extends BaseDoc {
 }
 
 /* -------------------------------------------------------- prescriptions -- */
+
+/** Dental Image.image_type: what kind of X-ray or photo it is. */
+export const IMAGE_TYPES = [
+  "Periapical", "Bitewing", "Panoramic (OPG)", "Cephalometric", "CBCT screenshot", "Intraoral photo", "Other",
+] as const;
+export type ImageType = (typeof IMAGE_TYPES)[number];
+
+/**
+ * An X-ray, photo or scan of a patient. The file itself (`image`, a private Frappe file attached to this record)
+ * is never changed: drawings on it are kept in `annotations` (see src/lib/sketch.ts).
+ */
+export interface DentalImage extends BaseDoc {
+  patient: string;
+  /** Read-only, fetched from the patient. */
+  patient_name?: string;
+  /** The file's URL. Empty for a moment while a new image is being uploaded. */
+  image?: string;
+  file_name?: string;
+  image_type: ImageType;
+  /** "YYYY-MM-DD". */
+  taken_on: string;
+  description?: string;
+  /** The FDI teeth it shows, comma-separated: "36,37". */
+  teeth?: string;
+  /** The drawing layer: JSON (SketchData), empty when nothing is drawn. */
+  annotations?: string | object | null;
+}
 
 export const MEDICINE_FORMS = ["Tablet", "Capsule", "Suspension", "Syrup", "Mouthwash", "Gel", "Drops", "Injection", "Other"] as const;
 export const MEDICINE_GROUPS = ["Antibiotic", "Painkiller", "Mouthwash", "Antifungal", "Other"] as const;

@@ -48,6 +48,7 @@ export const history = {
       chronic_diseases: "Chronic diseases",
       medical_history: "Medical history",
       dental_chart: "Dental chart",
+      chart_sketch: "Sketch on the chart",
       next_recall_date: "Next check-up",
       recall_interval_months: "Check-up every (months)",
       no_recall: "No recall",

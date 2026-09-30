@@ -151,9 +151,19 @@ export const enums = {
     "Dental Medicine": "Dental Medicine",
     Prescription: "Prescription",
     File: "File",
+    "Dental Image": "Dental Image",
   },
   language: {
     ar: "Arabic",
     en: "English",
+  },
+  imageType: {
+    Periapical: "Periapical",
+    Bitewing: "Bitewing",
+    "Panoramic (OPG)": "Panoramic (OPG)",
+    Cephalometric: "Cephalometric",
+    "CBCT screenshot": "CBCT screenshot",
+    "Intraoral photo": "Intraoral photo",
+    Other: "Other",
   },
 };

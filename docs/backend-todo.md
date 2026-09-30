@@ -31,6 +31,7 @@ Sections 1 and 2 explain what is new or still to confirm.
 | Clinic Settings | `default_language` | Select: ar, en (empty allowed) | The clinic's language for users who did not choose one. Empty means Arabic. |
 | Clinic Settings | `arabic_digits` | Check, default 0 | 1: Arabic screens write numbers ٠-٩ instead of 0-9. |
 | WhatsApp Template | `language` | Select: ar, en (empty allowed) | The language the message is written in; empty means any. The front end picks the template in the language of the screen, then one with no language. The reminder job should do the same with the clinic's default language (or the patient's, if a patient language is added later). |
+| Patient | `chart_sketch` | JSON | Drawings on top of the dental chart, one for the adult teeth and one for the child teeth: `{ "version": 1, "adult": { "version": 1, "aspect": 0.42, "shapes": [...] }, "child": {...} }` (each a SketchData, points from 0 to 1; either may be missing). Store and return it as is. The History card says it changed without showing the values. |
 | Doctor | `photo` | Attach Image | The doctor's photo, uploaded on `/doctors` with `upload_file` (a public file) and shown in round avatars: lists, the calendar, the Today board. Every clinic role must be able to read it with the Doctor list. |
 
 **Recall rule for `Appointment.on_update`.** When an appointment becomes Completed and its patient has
@@ -85,6 +86,28 @@ The end-of-day report (`/payments/day`) saves one cash count per day. Name serie
 Permissions: users with `add_payments` create and update; users with `view_payments` read. Do not allow delete
 for the front desk (a manager can correct a count by updating it). The front end reads it with
 `GET /api/resource/Cash Count` filtered on `count_date` and sorted `count_date desc`.
+
+### New doctype: Dental Image (the X-ray section)
+
+Naming `IMG-.YYYY.-.#####`. One record per X-ray, photo or scan of a patient. The front end creates the record,
+then uploads the file with `upload_file` (`doctype: "Dental Image"`, `docname`, `is_private: 1`), then sets `image`
+to the file's URL. Deleting the record must delete its attached file (Frappe does this for attachments).
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `patient` | Link Patient | Yes | |
+| `patient_name` | Data, read only, `fetch_from: patient.full_name` | | |
+| `image_type` | Select: Periapical, Bitewing, Panoramic (OPG), Cephalometric, CBCT screenshot, Intraoral photo, Other | Yes | |
+| `taken_on` | Date | Yes | |
+| `teeth` | Data | No | FDI numbers, comma-separated ("36,37"). Empty: the whole mouth. |
+| `description` | Small Text | No | |
+| `file_name` | Data | No | The name of the uploaded file. |
+| `image` | Attach Image (or Attach, for PDFs) | No | The private file's URL (`/private/files/…`). Empty for a moment during an upload. |
+| `annotations` | JSON | No | The drawing on top, one SketchData: `{ "version": 1, "aspect": 0.75, "shapes": [...] }` (points from 0 to 1 of the image). The file itself is never changed. |
+
+Permissions: read with `view_patients`; create, write and delete with `edit_patients` (the same rule the front end uses).
+Add Dental Image to the Patient's links, so a patient with images cannot be deleted. Accepted files: JPG, PNG, PDF up
+to 10 MB (DICOM later).
 
 ### New doctypes: Dental Medicine and Prescription
 
@@ -194,11 +217,13 @@ change `src/context/SessionContext.tsx` to call it with `callMethod`.
 - `GET /api/method/frappe.desk.reportview.get_count` with `doctype`, `fields`, `filters`, `or_filters`,
   `distinct` — used for the count when a search box is filled. **Check that this works for every role**; if
   not, add a small whitelisted count method.
-- `POST /api/method/upload_file` (multipart, `is_private=0`) for the clinic logo, and with `doctype=Patient`,
-  `docname=<patient>`, `is_private=1` for X-rays and photos. The front end lists them with
-  `GET /api/resource/File` filtered on `attached_to_doctype` and `attached_to_name`, deletes them with
-  `DELETE /api/resource/File/<name>`, and shows them at `/frappe<file_url>` through the rewrite (the session
-  cookie opens private files). Every role that can see patients must be able to read these File records.
+- `POST /api/method/upload_file` (multipart, `is_private=0`) for the clinic logo and doctor photos, and with
+  `doctype=Dental Image`, `docname=<image>`, `is_private=1` for X-rays and photos: the front end first creates the
+  Dental Image record, then uploads the file attached to it, then saves the file's URL in `image` (if the upload
+  fails it deletes the record again). It lists a patient's images with `GET /api/resource/Dental Image` filtered on
+  `patient`, deletes one with `DELETE /api/resource/Dental Image/<name>` (Frappe deletes the attached file with it),
+  and shows the file at `/frappe<file_url>` through the rewrite (the session cookie opens private files). Every
+  role with `view_patients` must be able to read these private files.
 - `GET /api/method/frappe.desk.form.load.getdoc` with `doctype`, `name` for the **History** card (patient,
   appointment, treatment plan and payment pages). The front end reads `docs[0].owner` and `creation`,
   `docinfo.versions` (`owner`, `creation`, `data` with `changed: [[field, old, new]]`; Frappe writes the values
@@ -312,6 +337,7 @@ Naming `PAT-.YYYY.-.#####`. Searched with `like` on `full_name`, `phone_number`,
 | `address` | Small Text | No | |
 | `allergies`, `current_medications`, `chronic_diseases`, `medical_history`, `notes` | Small Text | No | The medical alerts and prescription warnings are read from these texts. |
 | `dental_chart` | JSON | No | New (section 1). |
+| `chart_sketch` | JSON | No | New (section 1): the drawings on the chart. |
 | `next_recall_date` | Date | No | New (section 1). |
 | `recall_interval_months` | Int | No | New: 0, 3, 6, 9 or 12. |
 | `no_recall` | Check | No | New. |
@@ -534,9 +560,29 @@ Details in section 1.
 | `dose`, `frequency`, `instructions` | Data | No | |
 | `duration_days` | Int | No | |
 
+### Dental Image
+
+New (section 1, **New doctype: Dental Image**). Naming `IMG-.YYYY.-.#####`. Read with `patient`, `patient_name`,
+`image_type`, `taken_on`, `teeth`, `description`, `file_name`, `image`, `annotations`; filtered on
+`patient` (Stored) and sorted `taken_on desc, name asc`.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `patient` | Link Patient | Yes | Stored. |
+| `patient_name` | Data | Server | `fetch_from: patient.full_name`. |
+| `image_type` | Select | Yes | The seven values in section 1. |
+| `taken_on` | Date | Yes | |
+| `teeth` | Data | No | FDI numbers joined with `,`, no spaces. |
+| `description` | Small Text | No | |
+| `file_name` | Data | No | |
+| `image` | Attach Image | No | Set after the upload. |
+| `annotations` | JSON | No | |
+
 ### File (Frappe core)
 
-Uploaded with `upload_file` (section 4). The front end reads `name`, `file_name`, `file_url` and `creation`, filters on `attached_to_doctype` and `attached_to_name`, and deletes Files attached to a patient.
+Uploaded with `upload_file` (section 4): the clinic logo and doctor photos (public), and the file of each Dental
+Image (private, attached to it). The front end reads `name`, `file_name` and `file_url` from the upload's answer,
+and never lists or deletes File records itself.
 
 ### Version (Frappe core)
 

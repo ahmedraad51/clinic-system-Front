@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="800" height="600">
+  <!-- A drawn bitewing X-ray of the left side (upper and lower premolars and molars), for the demo data. -->
+  <defs>
+    <radialGradient id="film" cx="50%" cy="50%" r="75%">
+      <stop offset="0" stop-color="#383838"/>
+      <stop offset="1" stop-color="#0c0c0c"/>
+    </radialGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="1.4"/></filter>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.07 0"/></filter>
+  </defs>
+  <rect width="400" height="300" rx="18" fill="url(#film)"/>
+  <g fill="#c4c4c4" filter="url(#soft)">
+    <!-- upper teeth: 24 25 26 27 -->
+    <path d="M20 30 L70 30 L74 128 C74 140 66 144 46 144 C26 144 18 140 18 128 Z"/>
+    <path d="M84 30 L134 30 L138 128 C138 140 130 144 110 144 C90 144 82 140 82 128 Z"/>
+    <path d="M150 26 L240 26 L244 130 C244 142 236 146 196 146 C156 146 148 142 148 130 Z"/>
+    <path d="M254 26 L344 26 L348 128 C348 140 340 144 300 144 C260 144 252 140 252 128 Z"/>
+    <!-- lower teeth: 34 35 36 37 -->
+    <path d="M18 172 C18 160 26 156 46 156 C66 156 74 160 74 172 L70 270 L20 270 Z"/>
+    <path d="M82 172 C82 160 90 156 110 156 C130 156 138 160 138 172 L134 270 L84 270 Z"/>
+    <path d="M148 170 C148 158 156 154 196 154 C236 154 244 158 244 170 L240 274 L150 274 Z"/>
+    <path d="M252 172 C252 160 260 156 300 156 C340 156 348 160 348 172 L344 272 L254 272 Z"/>
+  </g>
+  <!-- pulp chambers -->
+  <g fill="#707070" filter="url(#soft)">
+    <rect x="36" y="60" width="20" height="50" rx="8"/><rect x="100" y="60" width="20" height="50" rx="8"/>
+    <rect x="176" y="62" width="40" height="44" rx="12"/><rect x="280" y="62" width="40" height="44" rx="12"/>
+    <rect x="36" y="192" width="20" height="50" rx="8"/><rect x="100" y="192" width="20" height="50" rx="8"/>
+    <rect x="176" y="196" width="40" height="44" rx="12"/><rect x="280" y="196" width="40" height="44" rx="12"/>
+  </g>
+  <!-- crown on 36 (bright) and a filling on 26, a small caries on 37 -->
+  <path d="M148 170 C148 158 156 154 196 154 C236 154 244 158 244 170 L242 196 L150 196 Z" fill="#fafafa" filter="url(#soft)"/>
+  <path d="M170 116 C180 106 212 106 222 116 L220 134 L172 134 Z" fill="#f5f5f5" filter="url(#soft)"/>
+  <circle cx="258" cy="172" r="8" fill="#242424" filter="url(#soft)"/>
+  <rect width="400" height="300" rx="18" filter="url(#grain)"/>
+</svg>
