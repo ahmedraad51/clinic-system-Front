@@ -5,14 +5,26 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Phase 4 goes on in the new look: expenses and profit, the waiting room, QR codes, the whole patient file in print,
+- Phase 4 goes on in the new look: the waiting room, QR codes, the whole patient file in print,
   custom prescription paper, restoring deleted records, and installing the app.
 
 ## Backlog
 
-1. Phase 4 of the redesign plan (the features from the competitor study), items 2 to 8, in both languages.
+1. Phase 4 of the redesign plan (the features from the competitor study), items 3 to 8, in both languages.
 
 ## Done
+
+- 2026-10-01 - **Expenses and profit (Phase 4, item 2).** A new **Expenses** page under Finance keeps what the
+  clinic spends: rent, salaries, dental supplies, lab bills, equipment, electricity and water, maintenance,
+  marketing. Each expense has a date, an amount in dinars or dollars (a dollar one counts at its day's rate), what it
+  was for, who was paid, how, and, if it belongs to one doctor (their lab work), that doctor. Search, filters, the
+  total and a CSV export; add and change them in a dialog. **Reports** now opens with a **Profit** card that says it
+  in plain words, for example: "From 1 Sep 2026 to 26 Sep 2026 the clinic took in IQD 250,000 and spent IQD 145,000,
+  so it made a profit of IQD 105,000 (42% of what came in). That is 74% less than in the 26 days before …", plus the
+  biggest cost, the doctor who brought in the most, and what patients still owe. Below it: expenses by category and
+  profit per doctor (the shared costs count for the whole clinic). Two new permission switches, **View Expenses** and
+  **Add Expenses** (a new row in the permissions table); only the manager has them at first. English and Arabic.
+  **What to check:** add this month's rent on the Expenses page, then look at the Profit card on Reports.
 
 - 2026-09-30 - **Forms in dialogs, wide pages and a permissions table.** New and edit forms for appointments,
   treatment plans and payments now open in a dialog over the page you are on, with what the page knows already

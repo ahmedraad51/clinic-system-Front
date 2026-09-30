@@ -114,7 +114,10 @@ The pictures are taken from the running app with the dummy data (`npm run screen
 
 ### Financial reports
 
-Revenue by treatment type, recent payments, and every plan still carrying a balance.
+Profit in plain words, expenses by category and profit by doctor, then revenue by treatment type, recent payments,
+and every plan still carrying a balance. The clinic's costs are kept on the Expenses page.
+
+![Expenses](docs/screenshots/expenses.png)
 
 ![Reports](docs/screenshots/reports.png)
 
@@ -122,7 +125,7 @@ Revenue by treatment type, recent payments, and every plan still carrying a bala
 
 ### Users and permissions
 
-Staff accounts map onto Frappe users; each one gets a `Clinic Permission` record with fourteen
+Staff accounts map onto Frappe users; each one gets a `Clinic Permission` record with sixteen
 independent switches, shown as a table: a row per section, a column each for View, Add, Edit and Delete, with
 select-all boxes for every row and column and the role presets above.
 
@@ -192,7 +195,8 @@ what they are not allowed to do.
 | `/payments` | Ledger with search, method and date filters, and the total (dinars and dollars each on their own) |
 | `/payments/new`, `/payments/[id]/edit` | Record or edit a payment in dinars or dollars (pre-fills from a treatment plan; cannot go above what is left; a payment in the other currency uses that day's exchange rate, shown on the form and the receipt) |
 | `/payments/[id]` | Printable receipt, a receipt slip for 58 or 80 mm thermal receipt printers (paper size set per computer), and the payment's history |
-| `/reports` | Revenue by treatment, method and month for a chosen period (in dinars, dollar payments at their day's rate), outstanding balances, CSV export |
+| `/expenses` | The clinic's costs (rent, salaries, supplies, lab bills), in dinars or dollars, each optionally against a doctor: search, filters, totals, CSV export, and add or change them in a dialog |
+| `/reports` | Profit in plain words (what came in, what was spent, up or down on the period before, the biggest cost, the best doctor), expenses by category and profit by doctor; revenue by treatment, method and month for a chosen period (in dinars, dollar payments at their day's rate), outstanding balances, CSV export |
 | `/doctors` | The clinic's doctors: add and edit name, specialization, phone, email, working hours, and switch a doctor off when they leave |
 | `/doctors/[id]` | One doctor: their details and working hours, today's patients, the next 30 days and their open treatment plans |
 | `/users`, `/users/[id]` | Staff accounts, roles, enable/disable, and the permissions table (sections by View, Add, Edit and Delete) with role presets |

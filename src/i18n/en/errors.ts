@@ -29,6 +29,8 @@ export const errors = {
       `Paid amount (${paid}) cannot be more than the total cost (${cost}) of ${plan}.`,
     costBelowPaid: (paid: string, cost: string) => `Paid amount (${paid}) cannot be more than the total cost (${cost}).`,
     countDay: "Choose the day of the count.",
+    expenseDate: "Choose the day of the expense.",
+    expenseCategory: "Choose what the expense was for.",
     countCash: "Enter the cash counted.",
     countTwice: (day: string, name: string) => `The cash for ${day} was already counted (${name}).`,
     countNote: "Write a note saying why the cash is short or over.",

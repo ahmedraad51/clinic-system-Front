@@ -1,5 +1,5 @@
 import type { Messages } from "../en";
-import { num } from "../runtime";
+import { num, plural } from "../runtime";
 
 export const reports: Messages["reports"] = {
   ranges: {
@@ -83,5 +83,47 @@ export const reports: Messages["reports"] = {
   csvPayments: ["رقم الدفعة", "التاريخ", "المريض", "العلاج", "الطريقة", "المبلغ", "العملة", "سعر الصرف", "المبلغ بعملة العيادة"],
   csvOutstanding: ["الخطة", "المريض", "العلاج", "السن", "الحالة", "العملة", "الكلفة الكلية", "المدفوع", "المتبقي"],
   received: (amounts: string) => `المستلم: ${amounts}`,
+  profit: {
+    title: "الربح",
+    summary: "بكلمات بسيطة",
+    expenses: "المصروفات",
+    profit: "الربح",
+    loss: "الخسارة",
+    margin: "من الوارد",
+    marginValue: (pct: number) => `${num(pct)}٪`,
+    byCategory: "المصروفات حسب الفئة",
+    byDoctor: "الربح حسب الطبيب",
+    colDoctor: "الطبيب",
+    colRevenue: "الوارد",
+    colExpenses: "التكاليف",
+    colProfit: "الربح",
+    shared: "العيادة كلها (تكاليف مشتركة)",
+    noDoctor: "مدفوعات بلا طبيب",
+    total: "المجموع",
+    noExpenses: "لا توجد مصروفات في هذه الفترة.",
+    openExpenses: "المصروفات",
+    byDoctorNote: "يُحسب للطبيب ما دُفع على خطط علاجه. والتكاليف المشتركة والمدفوعات بلا خطة أو طبيب تُحسب للعيادة كلها.",
+    when: (from: string, to: string) => `من ${from} إلى ${to}`,
+    whenAll: "حتى الآن",
+    made: (when: string, revenue: string, spent: string, profit: string, pct: number) =>
+      `${when} دخل العيادة ${revenue} وأنفقت ${spent}، فكان الربح ${profit} (${num(pct)}٪ من الوارد).`,
+    lost: (when: string, revenue: string, spent: string, loss: string) =>
+      `${when} دخل العيادة ${revenue} لكنها أنفقت ${spent}، فكانت الخسارة ${loss}.`,
+    even: (when: string, revenue: string) => `${when} دخل العيادة ${revenue} وأنفقت المبلغ نفسه، فلا ربح ولا خسارة.`,
+    nothing: (when: string) => `${when} لم يدخل شيء ولم يُنفق شيء.`,
+    noCosts: "لا توجد مصروفات مسجلة لهذه الفترة، لذلك يُحسب الوارد كله ربحًا. سجّل تكاليف العيادة في صفحة المصروفات.",
+    days: (n: number) => plural(n, { one: "يوم واحد", two: "يومين", few: "# أيام", many: "# يومًا", other: "# يوم" }),
+    up: (pct: number, days: string, range: string, before: string) =>
+      `وهذا أكثر بنسبة ${num(pct)}٪ مما كان في الـ${days} السابقة (${range})، حين كان الربح ${before}.`,
+    down: (pct: number, days: string, range: string, before: string) =>
+      `وهذا أقل بنسبة ${num(pct)}٪ مما كان في الـ${days} السابقة (${range})، حين كان الربح ${before}.`,
+    same: (days: string, range: string) => `وهو مثل ما كان في الـ${days} السابقة (${range}).`,
+    was: (days: string, range: string, before: string) => `في الـ${days} السابقة (${range}) كانت النتيجة ${before}.`,
+    biggestCost: (category: string, amount: string, pct: number) =>
+      `أكبر تكلفة كانت ${category}: ${amount} (${num(pct)}٪ من كل التكاليف).`,
+    bestDoctor: (name: string, revenue: string, profit: string) =>
+      `أكثر من جلب دخلًا ${name}: ${revenue}، ويبقى ${profit} بعد خصم تكاليف ${name}.`,
+    owed: (amount: string) => `ما زال على المرضى ${amount} في خطط علاجهم.`,
+  },
   outstandingNote: "خطط العملة الأخرى بسعر اليوم",
 };

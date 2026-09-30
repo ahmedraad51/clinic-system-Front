@@ -25,6 +25,7 @@ import { lab } from "./lab";
 import { chart } from "./chart";
 import { estimate } from "./estimate";
 import { payments } from "./payments";
+import { expenses } from "./expenses";
 import { paymentForm } from "./paymentForm";
 import { cash } from "./cash";
 import { receipt } from "./receipt";
@@ -70,6 +71,7 @@ export const ar: Messages = {
   chart,
   estimate,
   payments,
+  expenses,
   paymentForm,
   cash,
   receipt,

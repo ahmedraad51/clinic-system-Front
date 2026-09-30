@@ -30,6 +30,8 @@ export const errors: Messages["errors"] = {
       `المبلغ المدفوع (${num(paid)}) لا يمكن أن يتجاوز الكلفة الكلية (${num(cost)}) لخطة العلاج ${plan}.`,
     costBelowPaid: (paid: string, cost: string) => `المبلغ المدفوع (${num(paid)}) لا يمكن أن يتجاوز الكلفة الكلية (${num(cost)}).`,
     countDay: "اختر يوم الجرد.",
+    expenseDate: "اختر يوم المصروف.",
+    expenseCategory: "اختر فئة المصروف.",
     countCash: "أدخل مبلغ النقد المعدود.",
     countTwice: (day: string, name: string) => `تم جرد نقد يوم ${day} مسبقًا (${name}).`,
     countNote: "اكتب ملاحظة توضح سبب النقص أو الزيادة في النقد.",

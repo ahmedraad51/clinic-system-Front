@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, BarChart2, BriefcaseMedical, CalendarCheck, CalendarDays, CreditCard, Download, PieChart, Receipt, TrendingUp } from "lucide-react";
+import { AlertCircle, BarChart2, BriefcaseMedical, CalendarCheck, CalendarDays, CreditCard, Download, PieChart, Receipt, TrendingUp, Wallet } from "lucide-react";
 import { BarChart, DonutChart, type ChartPoint } from "@/components/Charts";
 import RequirePermission from "@/components/Guard";
 import {
@@ -10,13 +10,15 @@ import {
   StatusBadge, Table, TableMessage, Td, TextInput, Th, Toolbar,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
+import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { label, messages, num } from "@/i18n";
 import { errorMessage, getList, type FilterRow } from "@/lib/frappe";
 import { addDays, addMonths, downloadCsv, formatCompact, formatDate, formatMonth, formatMonthName, monthStart, todayISO } from "@/lib/format";
 import { baseAmount, currencyOf, sumByCurrency, totalsOrder } from "@/lib/currency";
 import { patientHref, paymentHref, treatmentHref } from "@/lib/links";
-import type { Appointment, Payment, TreatmentPlan } from "@/lib/types";
+import { computeProfit, previousPeriod, profitSummary } from "@/lib/profit";
+import type { Appointment, Expense, Payment, TreatmentPlan } from "@/lib/types";
 
 /** The period picker; the labels are t.reports.ranges[value]. */
 const RANGES = ["this_month", "last_month", "last_3_months", "this_year", "all", "custom"] as const;
@@ -45,8 +47,12 @@ interface ReportData {
   key: string;
   payments: Payment[];
   outstanding: TreatmentPlan[];
-  /** Plan → doctor, to share revenue out by doctor. */
-  planDoctors: Record<string, string>;
+  /** Plan → its doctor (ID and name), to share revenue out by doctor. */
+  planDoctors: Record<string, { doctor: string; name: string }>;
+  /** The period's expenses (only for users who may see them). */
+  expenses: Expense[] | null;
+  /** The profit of the period of the same length just before (a period with a start and an end). */
+  previous: { from: string; to: string; days: number; profit: number } | null;
   /** Appointments in the period up to today, for the outcomes and the per-day chart. */
   appointments: Appointment[];
   /** Plans started in the period, for the ring of treatment types. */
@@ -105,6 +111,8 @@ function Reports() {
   const { t } = useI18n();
   const r = t.reports;
   const { settings, money, moneyTotals, currency, toMain } = useSettings();
+  // Profit needs the expenses, which not every report reader may see.
+  const seeExpenses = useSession().can("view_expenses");
   const [range, setRange] = useState<Range>("this_month");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -136,7 +144,7 @@ function Reports() {
             ["name", "patient", "patient_name", "treatment_type", "tooth_number", "status", "currency", "total_cost", "paid_amount", "remaining_amount"],
             { filters: [["remaining_amount", ">", 0]], orderBy: "remaining_amount desc", limit: 0 },
           ),
-          getList<TreatmentPlan>("Treatment Plan", ["name", "doctor_name"], { limit: 0 }),
+          getList<TreatmentPlan>("Treatment Plan", ["name", "doctor", "doctor_name"], { limit: 0 }),
           getList<Appointment>("Appointment", ["name", "status", "appointment_date"], {
             filters: [
               ...(start ? [["appointment_date", ">=", start] as FilterRow] : []),
@@ -154,9 +162,32 @@ function Reports() {
             limit: 0,
           }),
         ]);
-        const planDoctors = Object.fromEntries(plans.map((plan) => [plan.name, plan.doctor_name || ""]));
+        const planDoctors = Object.fromEntries(plans.map((plan) => [plan.name, { doctor: plan.doctor || "", name: plan.doctor_name || "" }]));
+        let expenses: Expense[] | null = null;
+        let previous: ReportData["previous"] = null;
+        if (seeExpenses) {
+          const between = (field: string, a: string, b: string): FilterRow[] => [
+            ...(a ? [[field, ">=", a] as FilterRow] : []),
+            ...(b ? [[field, "<=", b] as FilterRow] : []),
+          ];
+          expenses = await getList<Expense>(
+            "Expense",
+            ["name", "expense_date", "category", "amount", "currency", "base_amount", "doctor", "doctor_name"],
+            { filters: between("expense_date", start, end), limit: 0 },
+          );
+          // The same number of days just before, to say whether things went up or down.
+          if (start && end && start <= end) {
+            const [prevFrom, prevTo, days] = previousPeriod(start, end);
+            const [prevPayments, prevExpenses] = await Promise.all([
+              getList<Payment>("Payment", ["amount", "base_amount"], { filters: between("payment_date", prevFrom, prevTo), limit: 0 }),
+              getList<Expense>("Expense", ["amount", "base_amount"], { filters: between("expense_date", prevFrom, prevTo), limit: 0 }),
+            ]);
+            const sum = (rows: Array<Payment | Expense>) => rows.reduce((total, row) => total + baseAmount(row), 0);
+            previous = { from: prevFrom, to: prevTo, days, profit: sum(prevPayments) - sum(prevExpenses) };
+          }
+        }
         if (!cancelled) {
-          setData({ key, payments, outstanding, planDoctors, appointments, plans: started });
+          setData({ key, payments, outstanding, planDoctors, appointments, plans: started, expenses, previous });
           setFailed("");
         }
       } catch (err) {
@@ -168,7 +199,7 @@ function Reports() {
     return () => {
       cancelled = true;
     };
-  }, [key, version]);
+  }, [key, version, seeExpenses]);
 
   if (settings.enable_financial_reports === 0) {
     return (
@@ -220,7 +251,7 @@ function Reports() {
     row.payment_method ? label(t.enums.paymentMethod, row.payment_method) : r.otherMethod,
   ).sort((a, b) => b[1] - a[1]);
   const byDoctor = groupSum(payments, (row) =>
-    row.treatment_plan ? data.planDoctors[row.treatment_plan] || r.noDoctor : r.generalPayments,
+    row.treatment_plan ? data.planDoctors[row.treatment_plan]?.name || r.noDoctor : r.generalPayments,
   ).sort((a, b) => b[1] - a[1]);
   const outcome = (status: string) => data.appointments.filter((a) => a.status === status).length;
   const completed = outcome("Completed");
@@ -243,6 +274,20 @@ function Reports() {
   const typeSeries: ChartPoint[] = [...typeCounts.entries()]
     .sort((a, b) => b[1] - a[1])
     .map(([type, value]) => ({ label: type ? label(t.enums.treatmentType, type) : r.otherType, value }));
+  // Profit: what came in minus the expenses, the whole clinic and per doctor, and the same in plain words.
+  const p = r.profit;
+  const profit = data.expenses ? computeProfit({ payments, expenses: data.expenses, planDoctors: data.planDoctors }) : null;
+  const summary = profit
+    ? profitSummary({
+        profit,
+        when: from || to ? p.when(from ? formatDate(from) : r.theStart, to ? formatDate(to) : r.today) : p.whenAll,
+        money: (amount) => money(amount),
+        previous: data.previous
+          ? { profit: data.previous.profit, days: data.previous.days, range: r.rangeText(formatDate(data.previous.from), formatDate(data.previous.to)) }
+          : undefined,
+        owed: outstandingTotal > 0 ? money(outstandingTotal) : "",
+      })
+    : [];
   const rangeLabel =
     from || to ? r.rangeText(from ? formatDate(from) : r.theStart, to ? formatDate(to) : r.today) : r.allTime;
 
@@ -316,6 +361,100 @@ function Reports() {
           />
           <StatCard title={r.outstanding} value={money(outstandingTotal)} icon={AlertCircle} tone="red" hint={outstandingInOther ? `${r.outstandingHint}${t.common.dot}${r.outstandingNote}` : r.outstandingHint} order={3} />
         </div>
+
+        {profit && (
+          <Card title={p.title} icon={Wallet} section="money">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <div className="xl:col-span-2 space-y-2">
+                <h3 className="text-sm font-medium text-gray-900">{p.summary}</h3>
+                <div data-testid="profit-summary" className="space-y-1.5 text-sm text-gray-700 leading-relaxed">
+                  {summary.map((sentence) => (
+                    <p key={sentence}>{sentence}</p>
+                  ))}
+                </div>
+              </div>
+              <dl className="grid grid-cols-3 xl:grid-cols-1 gap-4 content-start">
+                <div>
+                  <dt className="text-xs text-gray-500">{p.expenses}</dt>
+                  <dd data-testid="profit-expenses" className="text-lg font-semibold text-red-600 whitespace-nowrap">{money(profit.expenses)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-gray-500">{profit.profit < 0 ? p.loss : p.profit}</dt>
+                  <dd
+                    data-testid="profit-total"
+                    className={profit.profit < 0 ? "text-lg font-semibold text-red-600 whitespace-nowrap" : "text-lg font-semibold text-green-600 whitespace-nowrap"}
+                  >
+                    {money(Math.abs(profit.profit))}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-gray-500">{p.margin}</dt>
+                  <dd className="text-lg font-semibold text-gray-800">{profit.margin === null ? t.common.dash : p.marginValue(profit.margin)}</dd>
+                </div>
+              </dl>
+            </div>
+          </Card>
+        )}
+
+        {profit && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card
+              title={p.byCategory}
+              icon={Wallet}
+              section="red"
+              actions={
+                <Link href="/expenses" className="inline-flex items-center pointer-coarse:min-h-11 text-sm text-primary-600 hover:underline">
+                  {p.openExpenses}
+                </Link>
+              }
+            >
+              <Bars
+                rows={profit.byCategory.map(([category, amount]) => [label(t.enums.expenseCategory, category), amount])}
+                money={money}
+                empty={p.noExpenses}
+              />
+            </Card>
+            <Card title={p.byDoctor} icon={BriefcaseMedical} section="system" flush>
+              <Table>
+                <thead>
+                  <tr>
+                    <Th>{p.colDoctor}</Th>
+                    <Th className="text-end">{p.colRevenue}</Th>
+                    <Th className="text-end">{p.colExpenses}</Th>
+                    <Th className="text-end">{p.colProfit}</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {profit.byDoctor.length === 0 ? (
+                    <TableMessage colSpan={4}>{r.noPayments}</TableMessage>
+                  ) : (
+                    profit.byDoctor.map((row) => (
+                      <tr key={row.doctor || "clinic"} data-testid={`doctor-profit-${row.doctor || "clinic"}`}>
+                        <Td className="font-medium text-gray-800">{row.doctor ? row.name || row.doctor : p.shared}</Td>
+                        <Td label={p.colRevenue} className="text-end whitespace-nowrap">{money(row.revenue)}</Td>
+                        <Td label={p.colExpenses} className="text-end whitespace-nowrap text-red-600">{money(row.expenses)}</Td>
+                        <Td label={p.colProfit} className={row.profit < 0 ? "text-end whitespace-nowrap font-semibold text-red-600" : "text-end whitespace-nowrap font-semibold text-green-600"}>
+                          {money(row.profit)}
+                        </Td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+                {profit.byDoctor.length > 0 && (
+                  <tfoot>
+                    <tr>
+                      <Td className="font-semibold text-gray-800">{p.total}</Td>
+                      <Td label={p.colRevenue} className="text-end whitespace-nowrap font-semibold">{money(profit.revenue)}</Td>
+                      <Td label={p.colExpenses} className="text-end whitespace-nowrap font-semibold text-red-600">{money(profit.expenses)}</Td>
+                      <Td label={p.colProfit} className="text-end whitespace-nowrap font-semibold">{money(profit.profit)}</Td>
+                    </tr>
+                  </tfoot>
+                )}
+              </Table>
+              <p className="px-5 sm:px-6 py-3 text-xs text-gray-500">{p.byDoctorNote}</p>
+            </Card>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card title={r.byTreatment} icon={Receipt} section="treatments">

@@ -15,6 +15,7 @@ Retake them with `npm run screenshots:arabic`.
 | Treatment plan | ![](desktop/treatment.png) | ![](tablet/treatment.png) | ![](phone/treatment.png) |
 | Payments | ![](desktop/payments.png) | ![](tablet/payments.png) | ![](phone/payments.png) |
 | Receipt | ![](desktop/receipt.png) | ![](tablet/receipt.png) | ![](phone/receipt.png) |
+| Expenses | ![](desktop/expenses.png) | ![](tablet/expenses.png) | ![](phone/expenses.png) |
 | Reports | ![](desktop/reports.png) | ![](tablet/reports.png) | ![](phone/reports.png) |
 | Prescription | ![](desktop/prescription.png) | ![](tablet/prescription.png) | ![](phone/prescription.png) |
 | Settings | ![](desktop/settings.png) | ![](tablet/settings.png) | ![](phone/settings.png) |

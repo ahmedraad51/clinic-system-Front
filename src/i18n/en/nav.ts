@@ -8,6 +8,7 @@ export const nav = {
   appointments: "Appointments",
   treatments: "Treatments",
   payments: "Payments",
+  expenses: "Expenses",
   reports: "Reports",
   doctors: "Doctors",
   medicines: "Medicines",
@@ -71,6 +72,7 @@ export const nav = {
       newTreatment: { label: "New Treatment Plan", hint: "Plan work for a patient", words: "treatment plan" },
       recall: { label: "Recall List", hint: "Patients due for a check-up", words: "recall check-up checkup due remind" },
       payment: { label: "Record Payment", hint: "Take a payment", words: "pay money cash card receipt" },
+      expense: { label: "Add Expense", hint: "Rent, salaries, supplies, a lab bill", words: "expense cost spend bill rent salary supplies lab" },
     },
   },
 };

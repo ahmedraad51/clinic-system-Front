@@ -15,9 +15,9 @@ test("the permissions table: a checkbox per section and action, with select-all 
 
   const table = page.getByRole("table");
   await expect(table.getByRole("columnheader")).toHaveText(["Section", /View/, /Add/, /Edit/, /Delete/]);
-  // An action a section does not have is an empty cell: 10 of the 24.
-  await expect(table.getByLabel("Not available")).toHaveCount(10);
-  await expect(page.getByText("9 of 14 switched on")).toBeVisible();
+  // An action a section does not have is an empty cell: 12 of the 28.
+  await expect(table.getByLabel("Not available")).toHaveCount(12);
+  await expect(page.getByText("9 of 16 switched on")).toBeVisible();
 
   // Dalia can see treatments but not add or change them: the row is partly on.
   const treatments = table.getByRole("checkbox", { name: "All permissions for Treatments" });
@@ -25,7 +25,7 @@ test("the permissions table: a checkbox per section and action, with select-all 
   await treatments.check();
   await expect(table.getByRole("checkbox", { name: "Add Treatments" })).toBeChecked();
   await expect(table.getByRole("checkbox", { name: "Edit Treatments" })).toBeChecked();
-  await expect(page.getByText("11 of 14 switched on")).toBeVisible();
+  await expect(page.getByText("11 of 16 switched on")).toBeVisible();
 
   // A column: Delete in every section is only Delete Patients.
   await table.getByRole("checkbox", { name: "Delete in every section" }).check();

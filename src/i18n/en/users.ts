@@ -70,6 +70,7 @@ export const users = {
       appointments: "Appointments",
       treatments: "Treatments",
       payments: "Payments",
+      expenses: "Expenses",
       reports: "Reports",
       setup: "Clinic setup",
     },

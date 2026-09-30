@@ -11,6 +11,7 @@ export const common: Messages["common"] = {
   add: "إضافة",
   back: "رجوع",
   close: "إغلاق",
+  select: "اختر",
   print: "طباعة",
   confirm: "تأكيد",
   remove: "إزالة",

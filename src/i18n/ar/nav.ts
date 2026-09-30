@@ -9,6 +9,7 @@ export const nav: Messages["nav"] = {
   appointments: "المواعيد",
   treatments: "خطط العلاج",
   payments: "المدفوعات",
+  expenses: "المصروفات",
   reports: "التقارير",
   doctors: "الأطباء",
   medicines: "الأدوية",
@@ -69,6 +70,7 @@ export const nav: Messages["nav"] = {
       newTreatment: { label: "خطة علاج جديدة", hint: "تخطيط العلاج لمريض", words: "علاج خطة treatment" },
       recall: { label: "قائمة الفحص الدوري", hint: "مرضى حان موعد فحصهم الدوري", words: "فحص دوري مراجعة تذكير recall" },
       payment: { label: "تسجيل دفعة", hint: "استلام مبلغ", words: "دفع مبلغ نقد وصل payment" },
+      expense: { label: "إضافة مصروف", hint: "إيجار أو رواتب أو مواد أو فاتورة مختبر", words: "مصروف مصاريف تكلفة إيجار راتب مواد مختبر expense" },
     },
   },
 };

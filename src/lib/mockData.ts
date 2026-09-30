@@ -310,21 +310,21 @@ const clinicPermissions: MockDoc[] = [
     view_patients: 1, add_patients: 1, edit_patients: 1, delete_patients: 1,
     view_appointments: 1, add_appointments: 1, edit_appointments: 1,
     view_treatments: 1, add_treatments: 1, edit_treatments: 1,
-    view_payments: 1, add_payments: 1, view_reports: 1, manage_users: 1,
+    view_payments: 1, add_payments: 1, view_expenses: 1, add_expenses: 1, view_reports: 1, manage_users: 1,
   },
   {
     name: "dalia.jawad@dentclinic.test", user: "dalia.jawad@dentclinic.test",
     view_patients: 1, add_patients: 1, edit_patients: 1, delete_patients: 0,
     view_appointments: 1, add_appointments: 1, edit_appointments: 1,
     view_treatments: 1, add_treatments: 0, edit_treatments: 0,
-    view_payments: 1, add_payments: 1, view_reports: 0, manage_users: 0,
+    view_payments: 1, add_payments: 1, view_expenses: 0, add_expenses: 0, view_reports: 0, manage_users: 0,
   },
   {
     name: "zainab.alhashimi@dentclinic.test", user: "zainab.alhashimi@dentclinic.test",
     view_patients: 1, add_patients: 0, edit_patients: 1, delete_patients: 0,
     view_appointments: 1, add_appointments: 1, edit_appointments: 1,
     view_treatments: 1, add_treatments: 1, edit_treatments: 1,
-    view_payments: 1, add_payments: 0, view_reports: 0, manage_users: 0,
+    view_payments: 1, add_payments: 0, view_expenses: 0, add_expenses: 0, view_reports: 0, manage_users: 0,
   },
 ];
 
@@ -405,6 +405,22 @@ const whatsappLogs: MockDoc[] = [
 ];
 
 /* Past cash counts, so the manager has days to look back on. Floats of 100,000 plus the day's Cash payments. */
+/** Three months of costs (IQD unless said): supplies, electricity, lab bills for two doctors, a dollar purchase. */
+const expenses: MockDoc[] = [
+  { name: "EXP-2026-00012", expense_date: "2026-09-18", category: "Lab Fees", amount: 40000, doctor: D.haider, description: "Abutment and crown for Abbas Mahdi's implant", paid_to: "Al-Mansour Dental Lab", payment_method: "Cash" },
+  { name: "EXP-2026-00011", expense_date: "2026-09-10", category: "Utilities", amount: 45000, description: "Generator subscription and electricity, September", paid_to: "Al-Mansour generator", payment_method: "Cash" },
+  { name: "EXP-2026-00010", expense_date: "2026-09-03", category: "Dental Supplies", amount: 60000, description: "Composite, gloves, masks and anaesthetic cartridges", paid_to: "Baghdad Dental Supplies", payment_method: "Cash" },
+  { name: "EXP-2026-00009", expense_date: "2026-08-31", category: "Salaries", amount: 250000, description: "Dental assistant, August", paid_to: "Dental assistant", payment_method: "Cash" },
+  { name: "EXP-2026-00008", expense_date: "2026-08-25", category: "Equipment", amount: 150, currency: "USD", exchange_rate: 1480, description: "LED curing light", paid_to: "Dental equipment store", payment_method: "Cash" },
+  { name: "EXP-2026-00007", expense_date: "2026-08-22", category: "Lab Fees", amount: 120000, doctor: D.zainab, description: "Zirconia crown for Zahraa Hussein", paid_to: "Al-Mansour Dental Lab", payment_method: "Bank Transfer" },
+  { name: "EXP-2026-00006", expense_date: "2026-08-12", category: "Utilities", amount: 50000, description: "Generator subscription and electricity, August", paid_to: "Al-Mansour generator", payment_method: "Cash" },
+  { name: "EXP-2026-00005", expense_date: "2026-08-05", category: "Dental Supplies", amount: 150000, description: "Implant kit consumables and impression material", paid_to: "Baghdad Dental Supplies", payment_method: "Card" },
+  { name: "EXP-2026-00004", expense_date: "2026-07-31", category: "Salaries", amount: 250000, description: "Dental assistant, July", paid_to: "Dental assistant", payment_method: "Cash" },
+  { name: "EXP-2026-00003", expense_date: "2026-07-20", category: "Maintenance", amount: 35000, description: "Compressor service", paid_to: "Baghdad Dental Services", payment_method: "Cash" },
+  { name: "EXP-2026-00002", expense_date: "2026-07-14", category: "Utilities", amount: 55000, description: "Generator subscription and electricity, July", paid_to: "Al-Mansour generator", payment_method: "Cash" },
+  { name: "EXP-2026-00001", expense_date: "2026-07-08", category: "Dental Supplies", amount: 90000, description: "Filling materials and burs", paid_to: "Baghdad Dental Supplies", payment_method: "Cash" },
+];
+
 const cashCounts: MockDoc[] = [
   { name: "CC-2026-00003", count_date: "2026-08-18", opening_float: 100000, cash_payments: 25000, expected_cash: 125000, cash_counted: 130000, difference: 5000, note: "A patient left 5,000 extra; it goes against the next visit.", counted_by: "dalia.jawad@dentclinic.test", counted_at: "2026-08-18 18:05:00" },
   { name: "CC-2026-00002", count_date: "2026-07-30", opening_float: 100000, cash_payments: 35000, expected_cash: 135000, cash_counted: 125000, difference: -10000, note: "Change was given twice to one patient.", counted_by: "dalia.jawad@dentclinic.test", counted_at: "2026-07-30 18:10:00" },
@@ -529,6 +545,7 @@ const store: Store = {
   "Treatment Plan": treatmentPlans,
   "Treatment Session": sessions,
   Payment: payments,
+  Expense: expenses,
   User: users,
   "Clinic Permission": clinicPermissions,
   "Clinic Settings": clinicSettings,
@@ -558,6 +575,7 @@ const NAME_SERIES: Record<string, { prefix: string; year: boolean }> = {
   "Treatment Plan": { prefix: "TRT", year: true },
   "Treatment Session": { prefix: "SES", year: true },
   Payment: { prefix: "PAY", year: true },
+  Expense: { prefix: "EXP", year: true },
   "WhatsApp Template": { prefix: "WAT", year: false },
   "WhatsApp Log": { prefix: "WAL", year: true },
   File: { prefix: "FILE", year: false },
@@ -574,7 +592,7 @@ const LINKED_FROM: Record<string, Array<[doctype: string, field: string]>> = {
     ["Appointment", "patient"], ["Treatment Plan", "patient"], ["Treatment Session", "patient"],
     ["Payment", "patient"], ["WhatsApp Log", "patient"], ["Prescription", "patient"], ["Dental Image", "patient"],
   ],
-  Doctor: [["Appointment", "doctor"], ["Treatment Plan", "doctor"], ["Treatment Session", "doctor"], ["Prescription", "doctor"]],
+  Doctor: [["Appointment", "doctor"], ["Treatment Plan", "doctor"], ["Treatment Session", "doctor"], ["Prescription", "doctor"], ["Expense", "doctor"]],
   "Treatment Plan": [["Payment", "treatment_plan"], ["Treatment Session", "treatment_plan"]],
   Appointment: [["WhatsApp Log", "appointment"], ["Prescription", "appointment"]],
 };
@@ -630,6 +648,7 @@ function stampSeeds(): void {
     Appointment: (doc) => [`${addDays(String(doc.appointment_date), -7)} 10:00:00`, "dalia.jawad@dentclinic.test"],
     "Treatment Plan": () => ["2026-06-01 12:00:00", "laith.hamid@dentclinic.test"],
     Payment: (doc) => [`${doc.payment_date} 10:30:00`, "dalia.jawad@dentclinic.test"],
+    Expense: (doc) => [`${doc.expense_date} 16:00:00`, "laith.hamid@dentclinic.test"],
     // The doctor who wrote it, at the end of the visit.
     Prescription: (doc) => [
       `${doc.prescription_date} 11:00:00`,
@@ -699,6 +718,10 @@ function currencyOfDoc(doc: MockDoc | undefined): string {
 function paymentRate(pay: MockDoc): number | null {
   return num(pay.exchange_rate) > 0 ? num(pay.exchange_rate) : rateOn(rates(), String(pay.payment_date || todayISO()));
 }
+/** The rate an expense uses: its own, else the rate of its day. */
+function expenseRate(expense: MockDoc): number | null {
+  return num(expense.exchange_rate) > 0 ? num(expense.exchange_rate) : rateOn(rates(), String(expense.expense_date || todayISO()));
+}
 /** What a payment takes off its plan, in the plan's currency. */
 function planAmount(pay: MockDoc, plan: MockDoc): number {
   return convertMoney(num(pay.amount), currencyOfDoc(pay), currencyOfDoc(plan), paymentRate(pay), mainCurrency()) ?? 0;
@@ -718,6 +741,10 @@ function recalculate(): void {
         doc.doctor_name = doc.doctor ? doctorsById.get(String(doc.doctor))?.full_name ?? "" : "";
       }
     });
+  });
+  store.Expense.forEach((expense) => {
+    expense.doctor_name = expense.doctor ? doctorsById.get(String(expense.doctor))?.full_name ?? "" : "";
+    expense.base_amount = convertMoney(num(expense.amount), currencyOfDoc(expense), mainCurrency(), expenseRate(expense), mainCurrency()) ?? 0;
   });
   store["Cash Count"].forEach((count) => {
     const user = store.User.find((row) => row.name === count.counted_by);
@@ -988,6 +1015,32 @@ function checkPayment(payment: MockDoc, before?: MockDoc): void {
 }
 
 /**
+ * Mirrors what Expense.validate() should do: a date, a category, an amount above zero in a currency the clinic
+ * takes, and the rate of its day (kept while the day and currency stay) when it is in the second currency.
+ */
+function checkExpense(expense: MockDoc, before?: MockDoc): void {
+  const e = messages().errors.mock;
+  if (!expense.expense_date) throw new Error(e.expenseDate);
+  if (!expense.category) throw new Error(e.expenseCategory);
+  if (num(expense.amount) <= 0) throw new Error(e.amountAboveZero);
+  const main = mainCurrency();
+  const second = String(settingsDoc().second_currency || "").toUpperCase();
+  const code = currencyOfDoc(expense);
+  if (code !== main && code !== second) throw new Error(e.currencyNotTaken(code));
+  if (code === main) {
+    expense.currency = "";
+    expense.exchange_rate = null;
+  } else {
+    const keep = before && num(before.exchange_rate) > 0 && before.expense_date === expense.expense_date && currencyOfDoc(before) === code;
+    expense.exchange_rate = keep ? num(before.exchange_rate) : rateOn(rates(), String(expense.expense_date));
+    if (!(num(expense.exchange_rate) > 0)) throw new Error(e.noRate(code));
+  }
+  if (expense.doctor && !find("Doctor", expense.doctor)) throw new Error("Doctor " + expense.doctor + " not found");
+  if (!expense.doctor) expense.doctor = null;
+  delete expense.base_amount;
+}
+
+/**
  * Mirrors what Cash Count.validate() should do: one count per day, the day's Cash payments and the difference
  * worked out by the server, a note when the cash is short or over, and who counted it.
  */
@@ -1065,8 +1118,9 @@ function checkSettings(next: MockDoc, before: MockDoc): void {
   const inUse = (code: string) =>
     code !== "" &&
     (store["Treatment Plan"].some((plan) => String(plan.currency || "").toUpperCase() === code) ||
-      store.Payment.some((pay) => String(pay.currency || "").toUpperCase() === code));
-  if (main !== wasMain && (store["Treatment Plan"].length > 0 || store.Payment.length > 0)) throw new Error(e.mainInUse);
+      store.Payment.some((pay) => String(pay.currency || "").toUpperCase() === code) ||
+      store.Expense.some((expense) => String(expense.currency || "").toUpperCase() === code));
+  if (main !== wasMain && (store["Treatment Plan"].length > 0 || store.Payment.length > 0 || store.Expense.length > 0)) throw new Error(e.mainInUse);
   if (wasSecond && String(next.second_currency || "").toUpperCase() !== wasSecond && inUse(wasSecond)) throw new Error(e.secondInUse(wasSecond));
   const rows = (Array.isArray(next.exchange_rates) ? next.exchange_rates : []) as unknown as ExchangeRate[];
   const dates = rows.map((row) => String(row.rate_date || ""));
@@ -1146,6 +1200,7 @@ export async function mockCreateDoc(
     delete doc.send_welcome_email;
   }
   if (doctype === "Payment") checkPayment(doc);
+  if (doctype === "Expense") checkExpense(doc);
   if (doctype === "Treatment Plan") checkPlan(doc);
   if (doctype === "Cash Count") checkCashCount(doc);
   if (doctype === "Appointment") rollRecall(doc);
@@ -1176,6 +1231,7 @@ export async function mockUpdateDoc(
     next.full_name = [next.first_name, next.last_name].filter(Boolean).join(" ");
   }
   if (doctype === "Payment") checkPayment(next, doc);
+  if (doctype === "Expense") checkExpense(next, doc);
   if (doctype === "Treatment Plan") checkPlan(next, doc);
   if (doctype === "Clinic Settings") checkSettings(next, doc);
   if (doctype === "Cash Count") checkCashCount(next);

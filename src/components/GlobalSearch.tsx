@@ -5,7 +5,7 @@ import { useRecordDialogs, type RecordDialog } from "@/components/RecordDialogs"
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
-  BellRing, CalendarDays, CalendarPlus, ClipboardCheck, CreditCard, Search, Stethoscope, User, UserPlus, type LucideIcon,
+  BellRing, CalendarDays, CalendarPlus, ClipboardCheck, CreditCard, Search, Stethoscope, User, UserPlus, Wallet, type LucideIcon,
 } from "lucide-react";
 import { Spinner } from "@/components/ui";
 import { isDialogOpen } from "@/components/ui/Modal";
@@ -39,6 +39,7 @@ const ACTIONS: Action[] = [
   { key: "newTreatment", href: "/treatments/new", icon: Stethoscope, permission: "add_treatments" },
   { key: "recall", href: "/recall", icon: BellRing, permission: "view_appointments" },
   { key: "payment", href: "/payments/new", icon: CreditCard, permission: "add_payments" },
+  { key: "expense", href: "/expenses#new", icon: Wallet, permission: "add_expenses" },
 ];
 
 interface Result {
@@ -98,6 +99,7 @@ const ACTION_DIALOGS: Record<string, RecordDialog> = {
   "/patients/new": { kind: "newPatient" },
   "/treatments/new": { kind: "newTreatment" },
   "/payments/new": { kind: "newPayment" },
+  "/expenses#new": { kind: "newExpense" },
 };
 
 function SearchDialog({ onClose }: { onClose: () => void }) {

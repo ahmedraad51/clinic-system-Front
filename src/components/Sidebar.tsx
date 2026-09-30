@@ -14,6 +14,7 @@ import {
   Calendar,
   Stethoscope,
   CreditCard,
+  Wallet,
   BarChart2,
   Minus,
   UserCog,
@@ -33,7 +34,7 @@ import type { Messages } from "@/i18n";
 import type { PermissionKey } from "@/lib/types";
 
 /** A menu entry's text in the translation files (nav.*). */
-type MenuKey = "dashboard" | "today" | "patients" | "recall" | "appointments" | "treatments" | "payments" | "reports" | "doctors" | "medicines" | "users" | "whatsapp" | "settings";
+type MenuKey = "dashboard" | "today" | "patients" | "recall" | "appointments" | "treatments" | "payments" | "expenses" | "reports" | "doctors" | "medicines" | "users" | "whatsapp" | "settings";
 
 interface MenuItem {
   key: MenuKey;
@@ -59,6 +60,7 @@ const menuGroups: Array<{ group: keyof Messages["nav"]["groups"]; items: MenuIte
     group: "finance",
     items: [
       { key: "payments", icon: CreditCard, path: "/payments", permission: "view_payments" },
+      { key: "expenses", icon: Wallet, path: "/expenses", permission: "view_expenses" },
       { key: "reports", icon: BarChart2, path: "/reports", permission: "view_reports" },
     ],
   },

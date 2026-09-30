@@ -236,6 +236,42 @@ export interface Payment extends BaseDoc {
   notes?: string;
 }
 
+/** What the clinic spends money on. Saved in English; the labels are in enums.expenseCategory. */
+export const EXPENSE_CATEGORIES = [
+  "Rent",
+  "Salaries",
+  "Dental Supplies",
+  "Lab Fees",
+  "Equipment",
+  "Utilities",
+  "Maintenance",
+  "Marketing",
+  "Other",
+] as const;
+export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
+
+/** Money the clinic paid out: rent, salaries, supplies, a lab's bill. With a doctor, it counts against that doctor. */
+export interface Expense extends BaseDoc {
+  expense_date: string;
+  category: ExpenseCategory;
+  /** In the expense's currency. */
+  amount: number;
+  /** The clinic's own currency (empty) or the second one. */
+  currency?: string;
+  /** Read-only, set by the server: the rate of the expense's day when it is in the second currency. */
+  exchange_rate?: number;
+  /** Read-only, worked out by the server: the amount in the clinic's own currency, for totals. */
+  base_amount?: number;
+  /** Optional: the doctor this cost belongs to (their lab work, their assistant). Empty: the whole clinic's. */
+  doctor?: string;
+  /** Read-only, fetched from the doctor. */
+  doctor_name?: string;
+  description?: string;
+  /** Who was paid: the landlord, the lab, the supplier. */
+  paid_to?: string;
+  payment_method?: PaymentMethod;
+}
+
 export interface UserRole {
   role: string;
 }
@@ -415,7 +451,7 @@ export const PERMISSION_GROUPS = [
   { group: "patients", items: ["view_patients", "add_patients", "edit_patients", "delete_patients"] },
   { group: "appointments", items: ["view_appointments", "add_appointments", "edit_appointments"] },
   { group: "treatments", items: ["view_treatments", "add_treatments", "edit_treatments"] },
-  { group: "finance", items: ["view_payments", "add_payments", "view_reports"] },
+  { group: "finance", items: ["view_payments", "add_payments", "view_expenses", "add_expenses", "view_reports"] },
   { group: "system", items: ["manage_users"] },
 ] as const;
 
@@ -435,13 +471,15 @@ export type PermissionAction = (typeof PERMISSION_ACTIONS)[number];
  * a section does not have is an empty cell. Every PermissionKey is in exactly one cell.
  */
 export const PERMISSION_MATRIX: Array<{
-  row: "patients" | "appointments" | "treatments" | "payments" | "reports" | "setup";
+  row: "patients" | "appointments" | "treatments" | "payments" | "expenses" | "reports" | "setup";
   cells: Partial<Record<PermissionAction, PermissionKey>>;
 }> = [
   { row: "patients", cells: { view: "view_patients", add: "add_patients", edit: "edit_patients", delete: "delete_patients" } },
   { row: "appointments", cells: { view: "view_appointments", add: "add_appointments", edit: "edit_appointments" } },
   { row: "treatments", cells: { view: "view_treatments", add: "add_treatments", edit: "edit_treatments" } },
   { row: "payments", cells: { view: "view_payments", add: "add_payments" } },
+  // add_expenses also changes and deletes them, the way add_payments does for payments.
+  { row: "expenses", cells: { view: "view_expenses", add: "add_expenses" } },
   { row: "reports", cells: { view: "view_reports" } },
   // Users, doctors, medicines, WhatsApp and settings: one permission that allows changing them all.
   { row: "setup", cells: { edit: "manage_users" } },

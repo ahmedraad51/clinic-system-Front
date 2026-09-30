@@ -31,7 +31,7 @@ accurate.
 | `npm run build` | **Passes** (checked 2026-09-30): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-30). `npx tsc --noEmit` passes too. | |
 | Languages | **Arabic (default, right to left) and English.** Every text is in `src/i18n/en/*.ts` and `src/i18n/ar/*.ts`; the switch is in the menu. See **Languages** below. **Every new text must be added in both languages.** | `src/i18n/`, `src/context/LanguageContext.tsx` |
-| Tests | **Playwright tests pass** (162 tests, 12 of them in Arabic, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, phone numbers, the form dialogs and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (168 tests, 13 of them in Arabic, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, expenses and profit, phone numbers, the form dialogs and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -132,6 +132,7 @@ src/
 │   ├── appointments/  page · new · [id] · [id]/edit
 │   ├── treatments/    page · new · [id] · [id]/edit
 │   ├── payments/      page · new · [id] · [id]/edit
+│   ├── expenses/page.tsx          the clinic's costs; add / edit in the dialog
 │   ├── reports/page.tsx
 │   ├── doctors/       page (list with add/edit dialog) · [id] (the doctor's page)
 │   ├── users/         page · [id]
@@ -174,7 +175,7 @@ src/
 │   ├── RecallDialog.tsx      "Next check-up" on the patient page: every 3-12 months, no recall, or the usual rule
 │   ├── RecordHistory.tsx     the History card: who added a record and who changed what (closed until asked)
 │   ├── PrescriptionWarnings.tsx  the "Check before signing" band of a prescription (never blocking)
-│   ├── forms/                PatientForm, AppointmentForm, TreatmentForm, PaymentForm, PrescriptionForm (shared by new and edit)
+│   ├── forms/                PatientForm, AppointmentForm, TreatmentForm, PaymentForm, PrescriptionForm (shared by new and edit), ExpenseForm (dialog only)
 │   └── ui/
 │       ├── index.tsx         the UI kit (cards, buttons, inputs, tables, badges, paging, tabs, alerts, …)
 │       ├── Modal.tsx         Modal, ConfirmDialog
@@ -212,6 +213,7 @@ src/
     ├── history.ts            parseDocHistory() (Frappe's Version records), field labels, hidden fields, historyValue()
     ├── prescriptions.ts      FREQUENCIES, medicineDefaults(), doseMg(), prescriptionWarnings() (allergy, blood thinner, pregnancy, child, daily maximum, duplicate)
     ├── cashCount.ts          compareCash(): matched, short or over
+    ├── profit.ts             computeProfit() (clinic and per doctor), previousPeriod(), profitSummary() (the plain sentences)
     ├── receiptSlip.ts        the thermal receipt slip: buildReceiptSlip(), printHtml(), this computer's paper settings
     ├── theme.ts              the clinic colour: presets, contrast fix, applyThemeColor, the boot script
     └── links.ts              URL builders for records (always use these)
@@ -277,7 +279,8 @@ the dialog to be hidden, and use `openSaved(page, "Payment recorded.")` to follo
 | `/payments/day` | `view_payments` | End-of-day report for `?date=` (default today): totals per payment method and overall (each currency apart), a notice of the cash taken in the other currency (not in the drawer count), every payment of the day, a **Cash in the drawer** box (`CashCountCard`): Opening float and Cash counted boxes, Should be in the drawer (float + the day's Cash payments), Matched / Short by / Over by (`compareCash()` in `src/lib/cashCount.ts`), a Note required when short or over, and **Save Count** / **Update Count** (`add_payments`), saved as one **Cash Count** per day with who counted it and when (a notice appears if the day's Cash payments changed after the count); on paper the typed values print, empty ones as lines; Counted by / Checked by lines; and below, **Recent cash counts** (`RecentCashCounts`: the last 14 days counted, each day opening its report) so a manager can look back. Linked from Payments and the Today board |
 | `/payments/[id]` | `view_payments` | Printable receipt with clinic details, the amount in the payment's currency and, when two currencies met, **Exchange rate** ($1 = IQD 1,460) and **On the plan** (`plan_amount` in the plan's currency), also on the slip (`extra` lines); under it a **Receipt slip** row (`ReceiptSlipControls`): **Print Slip** prints the receipt for a 58 or 80 mm thermal receipt printer (clinic, receipt number, date, patient, what it was for, method, amount, **Left on this treatment** as it was right after this payment (the plan's cost minus its payments up to this one, so a reprint shows the same figure; none for a general payment or a cancelled plan), notes, and "Printed <time> by <user>"; the button waits until that balance has loaded) and **Slip Settings** sets this computer's paper width (58, 80 or 40-120 mm), side margin (0-10 mm) and text size, with **Print Test Slip**, kept in `localStorage.receipt_slip_paper`; a **History** card at the bottom (`RecordHistory`, not printed); Edit/Delete (`add_payments`); **WhatsApp** opens `wa.me` with a short receipt (amount, date, treatment, receipt number and method, and what the patient still has to pay) when `enable_whatsapp` is on |
 | `/payments/[id]/edit` | `add_payments` | Shared `PaymentForm` |
-| `/reports` | `view_reports`, and Clinic Settings `enable_financial_reports` | Period picker; revenue, count, average, outstanding (all in the clinic's currency: payments by `base_amount`, what is left on plans in the other currency at today's rate; with two currencies the revenue card adds "Received: IQD … + $…", and the CSVs have currency, rate and clinic-currency columns); revenue by treatment, method and month; latest payments; outstanding balances; CSV export of both; revenue by **doctor** (through each payment's treatment plan; payments without a plan are "General payments") and **Appointments** outcomes up to today (completed, no show, cancelled, still open) with the no-show rate, no-shows out of completed plus no-shows, shown red at 15% or more Three charts (`Charts.tsx`): **Revenue over Time** and **Appointments per Day** (a day per bar up to 45 days, else a month per bar, at most 24 months; cancelled appointments left out; appointments up to today), and **Treatment Plans by Type** (a ring of the plans started in the period, from Frappe's `creation`, not counting cancelled ones). |
+| `/expenses` | `view_expenses` | What the clinic spends: search (what for, paid to, doctor, ID), category filter (`EXPENSE_CATEGORIES`), date range, paging, the total of everything that matches (each currency apart), **Export CSV** (with the rate and the amount in the clinic's currency). With `add_expenses`: **Add Expense** and, per row, the date or the pencil to edit and the bin to delete (`ConfirmDialog`); the form (`ExpenseForm` in the `newExpense` / `editExpense` dialog) has date, category, currency (with two), amount (above zero; the day's rate shown for the second currency), what for, paid to, paid by, and an optional **doctor** (the cost then counts against that doctor). Also in the Ctrl+K actions (Add Expense) |
+| `/reports` | `view_reports`, and Clinic Settings `enable_financial_reports` | Period picker; with `view_expenses` a **Profit** card (under the four numbers): **In plain words** (`profitSummary()` in `src/lib/profit.ts`: took in, spent and the profit or loss with its share of what came in; no expenses recorded; up or down against the same number of days just before (`previousPeriod()`, only for a period with a start and an end); the biggest cost; the doctor who brought in the most and what is left after the costs recorded for them; what patients still owe), the expenses, the profit and the margin, then **Expenses by Category** and **Profit by Doctor** (took in: payments of the doctor's plans; costs: expenses with that doctor; the whole clinic's row takes the shared costs and payments without a plan or doctor; a total row); revenue, count, average, outstanding (all in the clinic's currency: payments by `base_amount`, what is left on plans in the other currency at today's rate; with two currencies the revenue card adds "Received: IQD … + $…", and the CSVs have currency, rate and clinic-currency columns); revenue by treatment, method and month; latest payments; outstanding balances; CSV export of both; revenue by **doctor** (through each payment's treatment plan; payments without a plan are "General payments") and **Appointments** outcomes up to today (completed, no show, cancelled, still open) with the no-show rate, no-shows out of completed plus no-shows, shown red at 15% or more Three charts (`Charts.tsx`): **Revenue over Time** and **Appointments per Day** (a day per bar up to 45 days, else a month per bar, at most 24 months; cancelled appointments left out; appointments up to today), and **Treatment Plans by Type** (a ring of the plans started in the period, from Frappe's `creation`, not counting cancelled ones). |
 | `/doctors` | `manage_users` | Doctor list (search, Active / Not active filter, paging; the name opens the doctor's page); Add Doctor and Edit (`DoctorDialog`) in a dialog: name, specialization (`DOCTOR_SPECIALIZATIONS`), phone, email, working hours (`start_time`, `end_time`; both or neither, end after start), **gender**, a **photo** (Upload Photo / Change Photo / Remove Photo, an image up to 5 MB through `uploadFile`, shown as the doctor's `Avatar` in lists, the calendar and the Today board) and Active. No delete: switch Active off |
 | `/medicines` | `manage_users` | The medicine list (search, Active filter, paging); Add Medicine and Edit in a dialog: name, strength, form (`MEDICINE_FORMS`), group (`MEDICINE_GROUPS`), the usual dose / how often / days / instructions, and the warning flags (allergy words, daily maximum in mg, note for children, NSAID, avoid in pregnancy) and Active. No delete: switch Active off, so old prescriptions keep their rows |
 | `/users` | `manage_users` | Staff list (without Administrator and Guest), search, status filter, Add User dialog (can apply the role's usual permissions) |
@@ -290,7 +293,7 @@ the dialog to be hidden, and use `openSaved(page, "Payment recorded.")` to follo
 **Forms in dialogs.** New and edit forms for appointments, treatment plans and payments open in a dialog over the
 page (`useRecordDialogs()` from `src/components/RecordDialogs.tsx`: `open({ kind: "newTreatment", prefill: { patient },
 patientName })`; kinds `newAppointment`, `editAppointment`, `newTreatment`, `editTreatment`, `newPayment`,
-`editPayment`, `newPatient`). The appointment dialog is wide (`size="xl"`); Add Patient is a side panel from the end
+`editPayment`, `newPatient`, `newExpense`, `editExpense`). The appointment dialog is wide (`size="xl"`); Add Patient is a side panel from the end
 side. Pass what the page knows as `prefill` (the calendar passes the day, time and doctor; the chart the tooth; a plan
 its patient, doctor and reason). After saving, the page stays: a toast with **Open** (the new record), `bumpData()`
 so lists and record pages load again, and the dialog closes. `DialogFor` also checks the permission of each kind
@@ -334,7 +337,7 @@ Rules for data code:
 
 - **Always use these helpers**, or the hooks below. Never add `fetch` or axios calls to pages or components.
 - **Doctype names are exact strings with spaces:** `"Patient"`, `"Doctor"`, `"Appointment"`,
-  `"Treatment Plan"`, `"Treatment Session"`, `"Payment"`, `"User"`, `"Clinic Permission"`,
+  `"Treatment Plan"`, `"Treatment Session"`, `"Payment"`, `"Expense"`, `"User"`, `"Clinic Permission"`,
   `"Clinic Settings"` (a single; its doc name is also `"Clinic Settings"`), `"WhatsApp Template"`,
   `"WhatsApp Log"`, `"Cash Count"`, `"Dental Medicine"`, `"Prescription"`, `"Dental Image"`.
 - **`getList` returns only the fields you ask for**, in both Frappe and the mock. If you render a field, put
@@ -400,7 +403,9 @@ either source.
   dollars), 10 treatment sessions, 17 payments (two dated today; two on the dollar plan), 9 users (including `Administrator`, `Guest` and one
   disabled doctor), 3 `Clinic Permission` records (the manager has every permission; the receptionist and
   one doctor have some), the `Clinic Settings` single (currency `IQD`, country code 964, no `theme_color`, so the default violet shows; doctors and staff users have a `gender`), 3 WhatsApp templates, 7 WhatsApp
-  log entries, 3 Cash Counts (22 Jul matched, 30 Jul short by 10,000, 18 Aug over by 5,000, counted by Dalia Jawad),
+  log entries, 12 Expenses (`EXP-2026-00001` … from July to September: supplies, electricity, maintenance, the
+  assistant's salary at each month's end, lab bills for Dr. Zainab (Aug) and Dr. Haider (Sep), and a $150 curing light;
+  this month IQD 145,000 against IQD 250,000 in, so the Profit card shows IQD 105,000), 3 Cash Counts (22 Jul matched, 30 Jul short by 10,000, 18 Aug over by 5,000, counted by Dalia Jawad),
   10 Dental Medicines (`MED-00001` Amoxicillin … `MED-00010` Nystatin, with usual dental doses a dentist must
   check) and 3 Prescriptions (`RX-2026-00001` Zahraa after her root canal, `RX-2026-00002` Saad after his
   extraction with a note about warfarin, `RX-2026-00003` Hassan), Clinic Settings take US dollars too (`second_currency` USD; 1 USD = 1,480 IQD from 1 January 2026 and 1,460 from 1
@@ -416,7 +421,7 @@ either source.
   day's Cash payments, `expected_cash` = float + that, `difference` = counted - expected, a note required when it
   is not 0, `counted_by_name` from the User, `counted_at` = now.
 - **IDs match the real naming series:** `PAT-2026-00001`, `DOC-00001`, `APT-2026-00001`,
-  `TRT-2026-00001`, `SES-2026-00001`, `PAY-2026-00001`, `WAT-00001`, `WAL-2026-00001`, `MED-00001`, `RX-2026-00001`, `IMG-2026-00001`. New docs get the next
+  `TRT-2026-00001`, `SES-2026-00001`, `PAY-2026-00001`, `EXP-2026-00001`, `WAT-00001`, `WAL-2026-00001`, `MED-00001`, `RX-2026-00001`, `IMG-2026-00001`. New docs get the next
   number with the current year. Users are named by `email`, Clinic Permissions by `user` (a duplicate gets
   `" 2"`, `" 3"` …).
 - **Fields the server computes or fetches are rebuilt after every write** by `recalculate()`:
@@ -425,6 +430,9 @@ either source.
     `summary` on Prescription (the rows' `medicine_name` joined with ", ").
   - Payment: `plan_amount` (the amount in its plan's currency) and `base_amount` (in the clinic's currency), at the
     payment's own `exchange_rate` (else the rate of its day).
+  - Expense: `doctor_name`, and `base_amount` at its own `exchange_rate` (set by `checkExpense()` like a payment's:
+    the rate of its day for the second currency, kept while the day and currency stay). A date, a category and an
+    amount above zero are required.
   - Treatment Plan: `paid_amount` is the sum of its payments' `plan_amount`. `remaining_amount` is
     `max(0, total_cost − paid_amount)`, or `0` if the plan is `Cancelled`.
   - Patient: `total_treatments`, `total_appointments`, `total_paid` (sum of `base_amount`), `total_remaining`
@@ -494,9 +502,10 @@ Field names are Frappe fieldnames. Form state keys must match them exactly. Fiel
 | **Appointment** | `patient`\*, `doctor`\*, `appointment_date`\*, `appointment_time`\*, `duration_minutes`, `status`, `reason_for_visit`, `notes` | `patient_name`, `doctor_name` |
 | **Treatment Plan** | `lab_name`, `lab_sent_date`, `lab_due_date`, `lab_received_date` † (Lab Work card), `patient`\*, `doctor`, `treatment_type`\*, `tooth_number` (FDI number from a dropdown), `currency` † (empty: the clinic's own), `total_cost`\*, `diagnosis`, `treatment_notes`, `status` (edit only; new plans are `Planned`) | `paid_amount`, `remaining_amount`, `patient_name`, `doctor_name` |
 | **Treatment Session** † | `patient`, `treatment_plan`, `doctor`, `session_date`\*, `session_time`, `status`, `notes` | `patient_name`, `doctor_name` |
+| **Expense** † | `expense_date`\*, `category`\* (`EXPENSE_CATEGORIES`), `amount`\*, `currency`, `doctor`, `description`, `paid_to`, `payment_method` (on `/expenses`) | `exchange_rate`, `base_amount`, `doctor_name` |
 | **Payment** | `patient`\*, `treatment_plan`, `payment_date`\*, `amount`\*, `currency` †, `exchange_rate` † (the rate of its day), `payment_method`\*, `notes` | `patient_name`, `treatment_type`, `plan_amount` †, `base_amount` † |
 | **User** (Frappe core) | `email`, `first_name`, `enabled`, `new_password` (create only), `send_welcome_email: 0`, `roles: [{ role }]` | `full_name`, `gender` and `user_image` (for the avatar) |
-| **Clinic Permission** | `user` plus 14 flags set to `0` or `1` | |
+| **Clinic Permission** | `user` plus 16 flags set to `0` or `1` | |
 | **Clinic Settings** † (single) | `clinic_name`, `logo`, `phone`, `email`, `address`, `tax_number`, `currency`, `opening_time`, `closing_time`, `theme_color`, `enable_whatsapp`, `enable_patient_portal`, `enable_financial_reports`, `treatment_prices` † (child table rows `{ treatment_type, price }`; `useSettings().prices` is the lookup), `phone_country_code` †, `second_currency` †, `exchange_rates` † (rows `{ rate_date, rate }`) | |
 | **WhatsApp Template** † | `template_name`, `trigger`, `message`, `is_active` | |
 | **Cash Count** † | `count_date`\*, `opening_float`, `cash_counted`\*, `note` (required when short or over), `counted_by` | `cash_payments`, `expected_cash`, `difference`, `counted_by_name`, `counted_at` |
@@ -514,7 +523,8 @@ Allowed values live in `src/lib/types.ts`. Keep form options, badge colours (`ST
 - Treatment Plan `status`: `Planned`, `In Progress`, `Completed`, `Cancelled`
 - Treatment Plan `treatment_type`: `Filling`, `Root Canal`, `Crown`, `Bridge`, `Extraction`, `Implant`, `Cleaning`, `Whitening`
 - Treatment Session `status` †: `Scheduled`, `Completed`, `Cancelled`
-- Payment `payment_method`: `Cash`, `Card`, `Bank Transfer`
+- Payment `payment_method`: `Cash`, `Card`, `Bank Transfer` (an Expense's too, or empty)
+- Expense `category`: `Rent`, `Salaries`, `Dental Supplies`, `Lab Fees`, `Equipment`, `Utilities`, `Maintenance`, `Marketing`, `Other`
 - Dental Medicine `dosage_form`: `MEDICINE_FORMS`; `medicine_group`: `MEDICINE_GROUPS`; a prescription row's `frequency`: the values of `FREQUENCIES` in `src/lib/prescriptions.ts`
 - WhatsApp Template `trigger`: `24 Hours Before`, `2 Hours Before`, `Manual`; WhatsApp Log `status`: `Sent`, `Failed`, `Pending`
 - Roles: `Clinic Manager`, `Clinic Doctor`, `Clinic Receptionist`, plus Frappe's own roles such as `System Manager`
@@ -591,7 +601,7 @@ doc means no section is open (the dashboard and profile still work).
 | Patients | `view_patients`, `add_patients`, `edit_patients`, `delete_patients` | menu item and pages; Add, Edit, Delete buttons; editing the dental chart needs `edit_patients` |
 | Appointments | `view_appointments`, `add_appointments`, `edit_appointments` | menu, pages, bell; status buttons, Edit and Delete need `edit_appointments` |
 | Treatments | `view_treatments`, `add_treatments`, `edit_treatments` | menu, pages; status, Edit, Delete and sessions need `edit_treatments`; prescriptions are read with `view_treatments` and written, changed and deleted with `add_treatments` |
-| Finance | `view_payments`, `add_payments`, `view_reports` | Payments menu and pages, balances and money cards; Add, Edit and Delete payments need `add_payments`; Reports needs `view_reports` |
+| Finance | `view_payments`, `add_payments`, `view_expenses`, `add_expenses`, `view_reports` | Payments menu and pages, balances and money cards; Add, Edit and Delete payments need `add_payments`; the Expenses menu and page, and the Profit card on Reports, need `view_expenses`; adding, changing and deleting expenses `add_expenses`; Reports needs `view_reports` |
 | System | `manage_users` | Doctors, Medicines, Users, WhatsApp and Settings pages and menu items, Settings in the profile menu |
 
 **The UI only hides things.** The back end must refuse the data too. `/users/[id]` saves with `updateDoc`

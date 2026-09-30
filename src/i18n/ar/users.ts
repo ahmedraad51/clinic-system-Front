@@ -65,6 +65,7 @@ export const users: Messages["users"] = {
       appointments: "المواعيد",
       treatments: "العلاجات",
       payments: "المدفوعات",
+      expenses: "المصروفات",
       reports: "التقارير",
       setup: "إعداد العيادة",
     },

@@ -1,4 +1,4 @@
-import { num } from "../runtime";
+import { num, plural } from "../runtime";
 
 /** The financial reports page (/reports). */
 export const reports = {
@@ -88,5 +88,48 @@ export const reports = {
   csvPayments: ["Payment", "Date", "Patient", "Treatment", "Method", "Amount", "Currency", "Exchange Rate", "Amount in Clinic Currency"],
   csvOutstanding: ["Plan", "Patient", "Treatment", "Tooth", "Status", "Currency", "Total Cost", "Paid", "Remaining"],
   received: (amounts: string) => `Received: ${amounts}`,
+  /** Profit: what came in minus the expenses (only for users who may see the expenses). */
+  profit: {
+    title: "Profit",
+    summary: "In plain words",
+    expenses: "Expenses",
+    profit: "Profit",
+    loss: "Loss",
+    margin: "Of what came in",
+    marginValue: (pct: number) => `${num(pct)}%`,
+    byCategory: "Expenses by Category",
+    byDoctor: "Profit by Doctor",
+    colDoctor: "Doctor",
+    colRevenue: "Took in",
+    colExpenses: "Costs",
+    colProfit: "Profit",
+    shared: "Whole clinic (shared costs)",
+    noDoctor: "Payments without a doctor",
+    total: "Total",
+    noExpenses: "No expenses in this period.",
+    openExpenses: "Expenses",
+    byDoctorNote: "A doctor takes in the payments of their treatment plans. Shared costs, and payments without a plan or doctor, count for the whole clinic.",
+    when: (from: string, to: string) => `From ${from} to ${to}`,
+    whenAll: "So far",
+    made: (when: string, revenue: string, spent: string, profit: string, pct: number) =>
+      `${when} the clinic took in ${revenue} and spent ${spent}, so it made a profit of ${profit} (${num(pct)}% of what came in).`,
+    lost: (when: string, revenue: string, spent: string, loss: string) =>
+      `${when} the clinic took in ${revenue} but spent ${spent}, so it lost ${loss}.`,
+    even: (when: string, revenue: string) => `${when} the clinic took in ${revenue} and spent the same, so it broke even.`,
+    nothing: (when: string) => `${when} nothing came in and nothing was spent.`,
+    noCosts: "No expenses are recorded for this period, so all of it counts as profit. Record the clinic's costs on the Expenses page.",
+    days: (n: number) => plural(n, { one: "# day", other: "# days" }),
+    up: (pct: number, days: string, range: string, before: string) =>
+      `That is ${num(pct)}% more than in the ${days} before (${range}), when the profit was ${before}.`,
+    down: (pct: number, days: string, range: string, before: string) =>
+      `That is ${num(pct)}% less than in the ${days} before (${range}), when the profit was ${before}.`,
+    same: (days: string, range: string) => `That is the same as in the ${days} before (${range}).`,
+    was: (days: string, range: string, before: string) => `In the ${days} before (${range}) the result was ${before}.`,
+    biggestCost: (category: string, amount: string, pct: number) =>
+      `The biggest cost was ${category}: ${amount} (${num(pct)}% of all costs).`,
+    bestDoctor: (name: string, revenue: string, profit: string) =>
+      `${name} brought in the most: ${revenue}, or ${profit} after the costs recorded for them.`,
+    owed: (amount: string) => `Patients still owe ${amount} on their treatment plans.`,
+  },
   outstandingNote: "plans in the other currency at today's rate",
 };

@@ -94,6 +94,34 @@ Permissions: users with `add_payments` create and update; users with `view_payme
 for the front desk (a manager can correct a count by updating it). The front end reads it with
 `GET /api/resource/Cash Count` filtered on `count_date` and sorted `count_date desc`.
 
+### New doctype: Expense (and two permission switches)
+
+The Expenses page (`/expenses`) and the Profit part of Reports. Name series `EXP-.YYYY.-.#####`. An expense with a
+`doctor` counts against that doctor in "Profit by Doctor"; one without is the whole clinic's (rent, salaries).
+
+| Field | Type | Notes |
+|---|---|---|
+| `expense_date` | Date, required | |
+| `category` | Select, required | `Rent`, `Salaries`, `Dental Supplies`, `Lab Fees`, `Equipment`, `Utilities`, `Maintenance`, `Marketing`, `Other` (`EXPENSE_CATEGORIES` in `src/lib/types.ts`). |
+| `amount` | Currency, required | Above zero, in the expense's currency. |
+| `currency` | Link Currency or Data | Empty is the clinic's own; else `Clinic Settings.second_currency`. |
+| `exchange_rate` | Float, read only | Set in `validate()` from `Clinic Settings.exchange_rates` (the rate of `expense_date`) when `currency` is the second one; kept while the day and currency stay, like Payment. |
+| `base_amount` | Currency, read only | The amount in the clinic's own currency (`amount × exchange_rate` for the second currency), for totals. |
+| `doctor` | Link Doctor | Optional. |
+| `doctor_name` | Data, read only, `fetch_from: doctor.full_name` | |
+| `description` | Data | What it was for. |
+| `paid_to` | Data | The landlord, the lab, the supplier. |
+| `payment_method` | Select | `Cash`, `Card`, `Bank Transfer`, or empty. |
+
+`validate()`: a date and a category, `amount > 0`, a currency the clinic takes, and a rate for the day when it is
+the second currency ("There is no exchange rate for USD on that day."). **Clinic Settings.validate()** must also
+count expenses when it refuses to change `currency` or to clear a `second_currency` in use.
+
+Two new **Clinic Permission** switches: `view_expenses` (read the list and the profit on Reports) and
+`add_expenses` (create, change and delete expenses). The Clinic Manager has both; the doctor and receptionist
+presets have neither. The front end reads with `GET /api/resource/Expense` filtered on `expense_date` and
+`category`, searched on `description`, `paid_to`, `doctor_name` and `name`, sorted `expense_date desc, name desc`.
+
 ### New doctype: Dental Image (the X-ray section)
 
 Naming `IMG-.YYYY.-.#####`. One record per X-ray, photo or scan of a patient. The front end creates the record,
@@ -207,7 +235,7 @@ The UI hides screens with the Clinic Permission flags, but Frappe decides what d
   - the `Doctor` list (for dropdowns).
 - **Users with `manage_users`** (normally Clinic Manager) must be able to read and write `Doctor`, `User`,
   `Clinic Permission`, `Clinic Settings`, `WhatsApp Template`, and read `WhatsApp Log`.
-- **Enforce the 14 flags on the server**, for example with `has_permission` / `permission_query_conditions`
+- **Enforce the 16 flags on the server**, for example with `has_permission` / `permission_query_conditions`
   hooks, or by giving each role DocType permissions that match the presets in `ROLE_PRESETS`
   (`src/lib/types.ts`). Otherwise a user could still call the API directly.
 
@@ -510,7 +538,7 @@ with `GET /api/resource/Clinic Permission/<user>`.
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `user` | Link User | Yes | Unique. |
-| `view_patients`, `add_patients`, `edit_patients`, `delete_patients`, `view_appointments`, `add_appointments`, `edit_appointments`, `view_treatments`, `add_treatments`, `edit_treatments`, `view_payments`, `add_payments`, `view_reports`, `manage_users` | Check | No | 14 switches, sent as 0 or 1. |
+| `view_patients`, `add_patients`, `edit_patients`, `delete_patients`, `view_appointments`, `add_appointments`, `edit_appointments`, `view_treatments`, `add_treatments`, `edit_treatments`, `view_payments`, `add_payments`, `view_expenses`, `add_expenses`, `view_reports`, `manage_users` | Check | No | 16 switches, sent as 0 or 1. |
 
 ### Clinic Settings (single)
 
@@ -576,6 +604,24 @@ Details and rules in section 1. The front end sends `count_date`, `opening_float
 | `cash_payments`, `expected_cash`, `difference` | Currency | Server | |
 | `counted_by_name` | Data, fetched | Server | |
 | `counted_at` | Datetime | Server | |
+
+### Expense
+
+Details and rules in section 1. The front end sends `expense_date`, `category`, `amount`, `currency`, `doctor`
+(or null), `description`, `paid_to` and `payment_method` (or null); it reads `exchange_rate`, `base_amount` and
+`doctor_name` back.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `expense_date` | Date | Yes | |
+| `category` | Select | Yes | |
+| `amount` | Currency | Yes | Above zero. |
+| `currency` | Data | No | Empty is the clinic's own. |
+| `doctor` | Link Doctor | No | |
+| `description`, `paid_to` | Data | No | |
+| `payment_method` | Select | No | |
+| `exchange_rate`, `base_amount` | Float, Currency | Server | |
+| `doctor_name` | Data, fetched | Server | |
 
 ### Dental Medicine
 

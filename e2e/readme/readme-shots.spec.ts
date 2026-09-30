@@ -26,6 +26,7 @@ test("readme screenshots", async ({ page }) => {
   await shot(page, "/appointments?view=day", "appointments");
   await shot(page, "/treatments", "treatments");
   await shot(page, "/payments", "payments");
+  await shot(page, "/expenses", "expenses");
   await shot(page, "/reports", "reports");
   await shot(page, `/users/${userId("laith.hamid@dentclinic.test")}`, "permissions");
   await shot(page, `/users/${userId("dalia.jawad@dentclinic.test")}`, "permissions-partial");

@@ -6,6 +6,7 @@ import AppointmentForm, {
   EMPTY_APPOINTMENT, appointmentPayload, appointmentToForm, type AppointmentFormData,
 } from "@/components/forms/AppointmentForm";
 import PatientForm, { EMPTY_PATIENT, patientPayload, type PatientFormData } from "@/components/forms/PatientForm";
+import ExpenseForm, { emptyExpense, expensePayload, expenseToForm, type ExpenseFormData } from "@/components/forms/ExpenseForm";
 import PaymentForm, { emptyPayment, paymentPayload, paymentToForm, type PaymentFormData } from "@/components/forms/PaymentForm";
 import TreatmentForm, { EMPTY_TREATMENT, treatmentPayload, treatmentToForm, type TreatmentFormData } from "@/components/forms/TreatmentForm";
 import { NotFoundCard, PageLoading } from "@/components/ui";
@@ -18,7 +19,7 @@ import { bumpData } from "@/lib/dataVersion";
 import { createDoc, updateDoc } from "@/lib/frappe";
 import { useDocument } from "@/lib/hooks";
 import { appointmentHref, patientHref, paymentHref, treatmentHref } from "@/lib/links";
-import type { Appointment, Patient, Payment, PermissionKey, TreatmentPlan } from "@/lib/types";
+import type { Appointment, Expense, Patient, Payment, PermissionKey, TreatmentPlan } from "@/lib/types";
 
 /**
  * New and edit forms in a dialog over the page they are opened from, instead of a page of their own: a dialog in
@@ -35,7 +36,9 @@ export type RecordDialog =
   | { kind: "editTreatment"; id: string }
   | { kind: "newPayment"; prefill?: { patient?: string; treatment?: string }; patientName?: string }
   | { kind: "editPayment"; id: string }
-  | { kind: "newPatient" };
+  | { kind: "newPatient" }
+  | { kind: "newExpense"; prefill?: { doctor?: string } }
+  | { kind: "editExpense"; id: string };
 
 const RecordDialogsContext = createContext<((dialog: RecordDialog) => void) | null>(null);
 
@@ -128,6 +131,8 @@ const NEEDS: Record<RecordDialog["kind"], PermissionKey> = {
   newPayment: "add_payments",
   editPayment: "add_payments",
   newPatient: "add_patients",
+  newExpense: "add_expenses",
+  editExpense: "add_expenses",
 };
 
 function DialogFor({ dialog, onClose }: { dialog: RecordDialog; onClose: () => void }) {
@@ -148,6 +153,10 @@ function DialogFor({ dialog, onClose }: { dialog: RecordDialog; onClose: () => v
       return <EditPaymentDialog id={dialog.id} onClose={onClose} />;
     case "newPatient":
       return <NewPatientPanel onClose={onClose} />;
+    case "newExpense":
+      return <NewExpenseDialog prefill={dialog.prefill} onClose={onClose} />;
+    case "editExpense":
+      return <EditExpenseDialog id={dialog.id} onClose={onClose} />;
   }
 }
 
@@ -326,6 +335,56 @@ function NewPaymentDialog({
           {...dialog}
         />
       )}
+    </FormDialog>
+  );
+}
+
+/* ---------------------------------------------------------------- expenses -- */
+
+function NewExpenseDialog({ prefill, onClose }: { prefill?: { doctor?: string }; onClose: () => void }) {
+  const { t } = useI18n();
+  const toast = useToast();
+  const initial: ExpenseFormData = { ...emptyExpense(), doctor: prefill?.doctor ?? "" };
+  const handleSubmit = async (data: ExpenseFormData) => {
+    await createDoc<Expense>("Expense", expensePayload(data));
+    toast.success(t.expenses.added);
+    bumpData();
+    onClose();
+  };
+  return (
+    <FormDialog title={t.expenses.newTitle} onClose={onClose}>
+      {(dialog) => <ExpenseForm initial={initial} submitLabel={t.expenses.save} onSubmit={handleSubmit} {...dialog} />}
+    </FormDialog>
+  );
+}
+
+function EditExpenseDialog({ id, onClose }: { id: string; onClose: () => void }) {
+  const { t } = useI18n();
+  const toast = useToast();
+  const { doc, loading, notFound, error } = useDocument<Expense>("Expense", id);
+  const handleSubmit = async (data: ExpenseFormData) => {
+    await updateDoc("Expense", id, expensePayload(data));
+    toast.success(t.expenses.saved);
+    bumpData();
+    onClose();
+  };
+  return (
+    <FormDialog title={t.expenses.editTitle} onClose={onClose}>
+      {(dialog) =>
+        loading ? (
+          <PageLoading />
+        ) : notFound || !doc ? (
+          <NotFoundCard error={error} what={label(t.enums.doctype, "Expense")} backHref="/expenses" backLabel={t.expenses.backToList} />
+        ) : (
+          <ExpenseForm
+            initial={expenseToForm(doc)}
+            doctorLabel={doc.doctor_name}
+            submitLabel={t.common.saveChanges}
+            onSubmit={handleSubmit}
+            {...dialog}
+          />
+        )
+      }
     </FormDialog>
   );
 }

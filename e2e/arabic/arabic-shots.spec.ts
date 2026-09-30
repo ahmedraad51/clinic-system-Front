@@ -24,6 +24,7 @@ const SCREENS: Array<[string, string]> = [
   ["treatment", "/treatments/TRT-2026-00002"],
   ["payments", "/payments"],
   ["receipt", "/payments/PAY-2026-00001"],
+  ["expenses", "/expenses"],
   ["reports", "/reports"],
   ["prescription", "/prescriptions/RX-2026-00002"],
   ["settings", "/settings"],
