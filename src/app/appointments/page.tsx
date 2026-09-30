@@ -18,7 +18,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { label } from "@/i18n";
 import type { FilterRow } from "@/lib/frappe";
 import { addDays, display, formatDate, formatLongDate, formatTime, todayISO, weekStart } from "@/lib/format";
-import { searchFilters, useDebounced, useDoctorList, usePagedList, usePatientLooks } from "@/lib/hooks";
+import { searchFilters, useDebounced, useDoctorList, usePagedList } from "@/lib/hooks";
 import { appointmentHref } from "@/lib/links";
 import { APPOINTMENT_STATUSES, type Appointment } from "@/lib/types";
 
@@ -205,7 +205,6 @@ function AppointmentsList() {
     orFilters: searchFilters(debounced, ["patient_name", "doctor_name", "reason_for_visit", "name"]),
     orderBy: `appointment_date ${direction}, appointment_time ${direction}`,
   });
-  const looks = usePatientLooks(list.rows.map((row) => row.patient));
   const filtered = Boolean(debounced.trim() || status || when !== "all");
   const clearFilters = () => {
     setSearch("");
@@ -272,7 +271,7 @@ function AppointmentsList() {
                   </Td>
                   <Td label={t.common.time} className="whitespace-nowrap">{formatTime(a.appointment_time)}</Td>
                   <Td label={t.common.patient}>
-                    <PatientLink id={a.patient} name={a.patient_name} look={looks[a.patient]} />
+                    <PatientLink id={a.patient} name={a.patient_name} />
                   </Td>
                   <Td label={t.common.doctor}>{display(a.doctor_name)}</Td>
                   <Td label={t.appointments.reason} className="max-w-[240px] truncate">{display(a.reason_for_visit)}</Td>

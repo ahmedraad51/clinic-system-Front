@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   BellRing, CalendarDays, CalendarPlus, ClipboardCheck, CreditCard, Search, Stethoscope, User, UserPlus, type LucideIcon,
@@ -72,13 +73,13 @@ export default function GlobalSearch() {
         aria-label={t.nav.search.button}
         aria-keyshortcuts="Control+K"
         className={cx(
-          "flex items-center gap-2 h-11 rounded-xl bg-gray-50 text-gray-500 hover:bg-gray-100 transition",
-          "w-11 justify-center sm:w-72 sm:justify-start sm:px-3.5",
+          "flex items-center gap-2 h-[2.375rem] pointer-coarse:h-11 rounded-full sm:rounded-md text-gray-500 hover:text-gray-800 transition-colors",
+          "w-[2.375rem] pointer-coarse:w-11 justify-center sm:w-auto sm:justify-start sm:px-2",
         )}
       >
-        <Search size={18} className="shrink-0" />
+        <Search size={22} className="shrink-0 text-primary-600" />
         <span className="hidden sm:inline text-sm">{t.nav.search.short}</span>
-        <kbd className="hidden sm:inline ms-auto rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-xs font-sans text-gray-500">
+        <kbd className="hidden md:inline ms-2 rounded-md border border-gray-300 px-1.5 py-0.5 text-xs font-sans text-gray-500">
           {t.nav.search.shortcut}
         </kbd>
       </button>
@@ -164,10 +165,11 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
   const optionId = (index: number) => `${listId}-${index}`;
   const firstAction = patients.length;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[10vh] print:hidden">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} aria-hidden="true" />
-      <div role="dialog" aria-modal="true" aria-label={s.dialog} className="relative w-full max-w-xl bg-white rounded-2xl shadow-xl overflow-hidden">
+  // On the page itself (not inside the top bar, whose own layer would keep it under the menu).
+  return createPortal(
+    <div className="fixed inset-0 z-[52] flex items-start justify-center p-4 pt-[10vh] print:hidden">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
+      <div role="dialog" aria-modal="true" aria-label={s.dialog} className="relative w-full max-w-xl bg-surface rounded-md shadow-xl overflow-hidden">
         <div className="flex items-center gap-3 px-4 border-b border-gray-100">
           <Search size={20} className="text-gray-500 shrink-0" />
           <input
@@ -249,6 +251,7 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
           {s.keys}
         </p>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

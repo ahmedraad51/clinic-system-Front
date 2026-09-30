@@ -259,40 +259,6 @@ export function usePatientChart(patient: string | undefined) {
   return result && result.patient === patient ? result.doc : null;
 }
 
-/** What a patient's drawn avatar needs: gender and age. */
-export type PatientLook = Pick<Patient, "name" | "gender" | "age">;
-
-/**
- * Gender and age of a few patients (by ID), for their avatars in a list whose rows only hold the patient's name
- * (appointments, the Today board). Missing patients are left out; nothing is shown while loading.
- */
-export function usePatientLooks(ids: string[]): Record<string, PatientLook> {
-  const key = [...new Set(ids.filter(Boolean))].sort().join("|");
-  const [result, setResult] = useState<{ key: string; looks: Record<string, PatientLook> } | null>(null);
-  useEffect(() => {
-    if (!key) return;
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const rows = await getList<Patient>("Patient", ["name", "gender", "age"], {
-          filters: [["name", "in", key.split("|")]],
-          limit: 0,
-        });
-        if (!cancelled) setResult({ key, looks: Object.fromEntries(rows.map((row) => [row.name, row])) });
-      } catch (err) {
-        // Only the drawings are missing: each avatar falls back to a neutral one.
-        console.error(err);
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [key]);
-  return result && result.key === key ? result.looks : NO_LOOKS;
-}
-
-const NO_LOOKS: Record<string, PatientLook> = {};
 
 /** A plan with something left to pay: its currency and what is left, in it. */
 export type OpenBalance = Pick<TreatmentPlan, "currency" | "remaining_amount">;

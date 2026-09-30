@@ -71,13 +71,14 @@ function ToothDrawing({ tooth, record }: { tooth: number; record?: ToothRecord }
   const shape = SHAPES[toothKind(tooth)];
   const missing = has(record, "missing");
   const implant = has(record, "implant");
+  // Fixed paints, the same in dark mode: teeth stay white on the chart.
   const crownFill = has(record, "crown")
-    ? "fill-amber-200 stroke-amber-600"
+    ? "fill-[#fde68a] stroke-[#d97706]"
     : record?.legacy === "treated"
-      ? "fill-primary-100 stroke-primary-500"
+      ? "fill-[color-mix(in_srgb,var(--brand)_16%,white)] stroke-[var(--brand)]"
       : record?.legacy === "pending"
-        ? "fill-yellow-100 stroke-yellow-500"
-        : "fill-white stroke-gray-400";
+        ? "fill-[#fef9c3] stroke-[#eab308]"
+        : "fill-white stroke-[#9e9ba9]";
   return (
     <svg viewBox="0 0 40 64" className="w-9 h-[58px] xl:w-11 xl:h-[70px] overflow-visible" aria-hidden="true">
       <g transform={isUpper(tooth) ? "translate(0 64) scale(1 -1)" : undefined} strokeWidth={1.4} strokeLinejoin="round">
@@ -88,21 +89,21 @@ function ToothDrawing({ tooth, record }: { tooth: number; record?: ToothRecord }
           </g>
         ) : (
           <>
-            {!implant && <path d={shape.roots} className="fill-gray-50 stroke-gray-400" />}
+            {!implant && <path d={shape.roots} className="fill-[#f7f7f9] stroke-[#9e9ba9]" />}
             <path d={shape.crown} className={crownFill} />
           </>
         )}
         {implant && (
           <g>
-            <path d="M15 29 L25 29 L24 57 L20 62 L16 57 Z" className="fill-gray-300 stroke-gray-500" />
+            <path d="M15 29 L25 29 L24 57 L20 62 L16 57 Z" className="fill-[#d4d4d8] stroke-[#71717a]" />
             {[34, 39, 44, 49, 54].map((y) => (
-              <path key={y} d={`M14.5 ${y} L25.5 ${y - 2}`} className="stroke-gray-500" />
+              <path key={y} d={`M14.5 ${y} L25.5 ${y - 2}`} className="stroke-[#71717a]" />
             ))}
           </g>
         )}
         {has(record, "root_canal") && !implant && !missing &&
           shape.canals.map((d) => <path key={d} d={d} className="fill-none stroke-rose-500" strokeWidth={2.4} strokeLinecap="round" />)}
-        {has(record, "bridge") && <rect x={-2} y={11} width={44} height={6} rx={2} className="fill-violet-400/80 stroke-violet-600" />}
+        {has(record, "bridge") && <rect x={-2} y={11} width={44} height={6} rx={2} className="fill-[#a78bfa]/80 stroke-[#7c3aed]" />}
         {has(record, "extract") && (
           <path d="M7 6 L33 58 M33 6 L7 58" className="stroke-red-500" strokeWidth={3} strokeLinecap="round" />
         )}
@@ -125,7 +126,7 @@ function SurfaceSquare({ tooth, record }: { tooth: number; record?: ToothRecord 
   };
   return (
     <svg viewBox="0 0 28 28" className={cx("w-7 h-7 xl:w-8 xl:h-8", has(record, "missing") && "opacity-30")} aria-hidden="true">
-      <g className="stroke-gray-400" strokeWidth={1} strokeLinejoin="round">
+      <g className="stroke-[#9e9ba9]" strokeWidth={1} strokeLinejoin="round">
         <path d="M0.5 0.5 L27.5 0.5 L19.5 8.5 L8.5 8.5 Z" className={fill(layout.top)} />
         <path d="M0.5 27.5 L27.5 27.5 L19.5 19.5 L8.5 19.5 Z" className={fill(layout.bottom)} />
         <path d="M0.5 0.5 L8.5 8.5 L8.5 19.5 L0.5 27.5 Z" className={fill(layout.left)} />
@@ -338,7 +339,7 @@ export default function DentalChart({
   };
 
   return (
-    <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 w-full space-y-5 [print-color-adjust:exact] print:shadow-none print:border-0 print:p-0">
+    <section className="bg-surface rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 w-full space-y-5 [print-color-adjust:exact] print:shadow-none print:border-0 print:p-0">
       <UnsavedChangesGuard when={(dirty && canEdit && Boolean(onSave)) || sketchChanged} />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-2.5">
@@ -529,12 +530,12 @@ function Legend() {
     <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs text-gray-500">
       {item("bg-red-500 border-red-600", t.chart.findingNames.caries)}
       {item("bg-sky-500 border-sky-600", t.chart.findingNames.filling)}
-      {item("bg-amber-200 border-amber-600", t.chart.conditions.crown)}
-      {item("bg-white border-rose-500 border-2", t.chart.conditions.root_canal)}
-      {item("bg-gray-300 border-gray-500", t.chart.conditions.implant)}
-      {item("bg-violet-400 border-violet-600", t.chart.conditions.bridge)}
-      {item("bg-white border-gray-300 border-dashed", t.chart.conditions.missing)}
-      {item("bg-white border-red-500 border-2", t.chart.conditions.extract)}
+      {item("bg-[#fde68a] border-[#d97706]", t.chart.conditions.crown)}
+      {item("bg-surface border-rose-500 border-2", t.chart.conditions.root_canal)}
+      {item("bg-[#d4d4d8] border-[#71717a]", t.chart.conditions.implant)}
+      {item("bg-[#a78bfa] border-[#7c3aed]", t.chart.conditions.bridge)}
+      {item("bg-surface border-gray-300 border-dashed", t.chart.conditions.missing)}
+      {item("bg-surface border-red-500 border-2", t.chart.conditions.extract)}
     </div>
   );
 }
@@ -559,9 +560,9 @@ const LABEL_PLACES = {
 } as const;
 
 const FINDING_BUTTONS: Record<SurfaceFinding | "none", string> = {
-  none: "bg-white text-gray-500 hover:bg-gray-100",
-  caries: "bg-red-500 text-white hover:bg-red-600",
-  filling: "bg-sky-500 text-white hover:bg-sky-600",
+  none: "bg-surface text-gray-500 hover:bg-gray-100",
+  caries: "bg-red-500 text-white hover:bg-[#dc2626]",
+  filling: "bg-sky-500 text-white hover:bg-[#0284c7]",
 };
 
 function ToothPanel({
@@ -610,14 +611,14 @@ function ToothPanel({
     <div className="rounded-2xl border border-primary-100 bg-primary-50/40 p-4 sm:p-5 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-lg font-bold text-gray-800">{t.chart.tooth(tooth)}</p>
+          <p className="text-lg font-semibold text-gray-800">{t.chart.tooth(tooth)}</p>
           <p className="text-sm text-gray-500">{toothName(tooth)}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
           aria-label={t.chart.closePanel}
-          className="w-11 h-11 -me-2 -mt-2 flex items-center justify-center rounded-lg text-gray-500 hover:bg-white hover:text-gray-700"
+          className="w-11 h-11 -me-2 -mt-2 flex items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800"
         >
           <X size={18} />
         </button>
@@ -644,7 +645,7 @@ function ToothPanel({
                   onClick={() => onSurface(surface)}
                   aria-label={t.chart.surfaceButton(t.chart.surfaces[surface], finding ? t.chart.findingNames[finding] : t.chart.healthySurface)}
                   className={cx(
-                    "absolute inset-0 flex text-sm font-bold transition disabled:cursor-default focus:outline-none focus-visible:brightness-90",
+                    "absolute inset-0 flex text-sm font-semibold transition disabled:cursor-default focus:outline-none focus-visible:brightness-90",
                     LABEL_PLACES[place],
                     FINDING_BUTTONS[finding ?? "none"],
                   )}
@@ -696,8 +697,8 @@ function ToothPanel({
                       className={cx(
                         "inline-flex items-center gap-1.5 min-h-11 px-3.5 rounded-xl border text-sm font-medium transition",
                         on
-                          ? "bg-primary-600 border-primary-600 text-white"
-                          : "bg-white border-gray-200 text-gray-700 hover:border-primary-300",
+                          ? "bg-brand border-primary-600 text-white"
+                          : "bg-surface border-gray-200 text-gray-700 hover:border-primary-300",
                       )}
                     >
                       {on && <Check size={14} />}

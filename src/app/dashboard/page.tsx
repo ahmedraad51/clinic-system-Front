@@ -9,9 +9,8 @@ import {
 import Avatar from "@/components/Avatar";
 import { BarChart, DonutChart, type ChartPoint } from "@/components/Charts";
 import RequirePermission from "@/components/Guard";
-import ToothMascot from "@/components/ToothMascot";
 import {
-  ActionTile, Card, EmptyState, IconTile, LinkButton, LoadError, PageContainer, Segmented, StatCard, StatusBadge, type Hue,
+  ActionTile, CARD_CLASS, Card, EmptyState, IconTile, LinkButton, LoadError, PageContainer, Segmented, StatCard, StatusBadge, type Hue,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
@@ -20,7 +19,6 @@ import { errorMessage, getCount, getList, type FilterRow } from "@/lib/frappe";
 import { label, messages, num } from "@/i18n";
 import { addDays, cx, formatCompact, formatDate, formatLongDate, formatMonth, formatMonthName, formatTime, monthStart, todayISO } from "@/lib/format";
 import { baseAmount } from "@/lib/currency";
-import { usePatientLooks, type PatientLook } from "@/lib/hooks";
 import { appointmentHref } from "@/lib/links";
 import { DEFAULT_RECALL_MONTHS, RECALL_APPOINTMENT_FIELDS, RECALL_PATIENT_FIELDS, dueForRecall } from "@/lib/recall";
 import type { Appointment, Patient, Payment, TreatmentPlan } from "@/lib/types";
@@ -222,7 +220,6 @@ function Dashboard() {
     };
   }, [today, seePatients, seeAppointments, seeTreatments, seeMoney, mine, settings.enable_whatsapp, version]);
 
-  const looks = usePatientLooks([...(data?.today ?? []), ...(data?.upcoming ?? [])].map((a) => a.patient));
   const stillToCome = data?.today.filter((a) => a.status === "Scheduled" || a.status === "Confirmed").length ?? 0;
   const loadingValue = "…";
   // In the clinic's currency: what is left on a plan in the other currency counts at today's rate.
@@ -356,7 +353,7 @@ function Dashboard() {
                   </Link>
                 }
               >
-                <AppointmentList rows={data?.today} looks={looks} empty={t.dashboard.noAppointmentsToday} showDate={false} />
+                <AppointmentList rows={data?.today} empty={t.dashboard.noAppointmentsToday} showDate={false} />
               </Card>
               <Card
                 title={mine ? t.dashboard.myNext7 : t.dashboard.next7}
@@ -369,7 +366,7 @@ function Dashboard() {
                   </Link>
                 }
               >
-                <AppointmentList rows={data?.upcoming} looks={looks} empty={t.dashboard.nothingNext7} showDate />
+                <AppointmentList rows={data?.upcoming} empty={t.dashboard.nothingNext7} showDate />
               </Card>
             </div>
           )}
@@ -422,42 +419,26 @@ function Dashboard() {
   );
 }
 
-/**
- * The greeting at the top: the date, "Good morning, …" and a one-line summary of the day, on a bold gradient with a
- * smiling tooth.
- */
+/** The greeting at the top: the date, "Good morning, …" and a one-line summary of the day, on a plain card. */
 function WelcomeBanner({ title, date, summary, actions }: { title: string; date: string; summary?: string; actions?: ReactNode }) {
   return (
-    <div
-      className={cx(
-        "relative overflow-hidden rounded-2xl px-6 py-6 sm:px-8 shadow-lg",
-        "bg-linear-to-br from-primary-800 via-primary-600 to-(--sec-appointments)",
-      )}
-    >
-      {/* Soft circles in the corner. */}
-      <span aria-hidden="true" className="absolute -top-16 -end-10 w-56 h-56 rounded-full bg-white/10" />
-      <span aria-hidden="true" className="absolute -bottom-20 end-40 w-40 h-40 rounded-full bg-white/5" />
-      <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-white/85">{date}</p>
-          <h1 className="text-2xl font-bold text-white mt-0.5 break-words">{title}</h1>
-          {summary && <p className="text-sm text-white/85 mt-1">{summary}</p>}
-          {actions && <div className="mt-4">{actions}</div>}
-        </div>
-        <ToothMascot size={104} className="hidden sm:block shrink-0 text-white/90 motion-safe:animate-bob" />
+    <div className={cx(CARD_CLASS, "px-5 py-5 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4")}>
+      <div className="min-w-0">
+        <p className="text-sm text-gray-500">{date}</p>
+        <h1 className="text-2xl font-medium text-gray-900 mt-0.5 break-words">{title}</h1>
+        {summary && <p className="text-sm text-gray-600 mt-1">{summary}</p>}
       </div>
+      {actions && <div className="shrink-0">{actions}</div>}
     </div>
   );
 }
 
 function AppointmentList({
   rows,
-  looks,
   empty,
   showDate,
 }: {
   rows?: Appointment[];
-  looks: Record<string, PatientLook>;
   empty: string;
   showDate: boolean;
 }) {
@@ -476,7 +457,6 @@ function AppointmentList({
   return (
     <ul className="divide-y divide-gray-100 pb-2">
       {rows.map((a) => {
-        const look = looks[a.patient];
         return (
           <li key={a.name}>
             <Link href={appointmentHref(a.name)} className="flex items-center gap-3 sm:gap-4 px-5 sm:px-6 py-3 hover:bg-gray-50">
@@ -484,7 +464,7 @@ function AppointmentList({
                 <span className="block text-sm font-semibold text-sec-ink whitespace-nowrap">{formatTime(a.appointment_time)}</span>
                 {showDate && <span className="block text-xs text-gray-500">{formatDate(a.appointment_date)}</span>}
               </span>
-              <Avatar name={a.patient_name || a.patient} gender={look?.gender} age={look?.age} size={36} className="max-sm:hidden" />
+              <Avatar name={a.patient_name || a.patient} size={36} className="max-sm:hidden" />
               <span className="flex-1 min-w-0">
                 <span className="block text-sm font-medium text-gray-800 truncate">{a.patient_name || a.name}</span>
                 <span className="block text-xs text-gray-500 truncate">

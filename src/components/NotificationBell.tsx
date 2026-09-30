@@ -7,9 +7,10 @@ import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { num } from "@/i18n";
 import { getList, type FilterRow } from "@/lib/frappe";
-import { formatTime, todayISO } from "@/lib/format";
+import { cx, formatTime, todayISO } from "@/lib/format";
 import { appointmentHref } from "@/lib/links";
 import { Button, StatusBadge } from "@/components/ui";
+import { TOP_DROPDOWN, TOP_ICON_BUTTON } from "./topbarStyles";
 import type { Appointment } from "@/lib/types";
 
 /**
@@ -75,11 +76,11 @@ export default function NotificationBell() {
         onClick={toggle}
         aria-expanded={open}
         aria-label={failed ? t.notifications.loadFailedLabel : t.notifications.countLabel(items.length)}
-        className="relative w-11 h-11 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition"
+        className={TOP_ICON_BUTTON}
       >
-        <Bell size={18} />
+        <Bell size={22} />
         {items.length > 0 && (
-          <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center">
+          <span className="absolute top-0 -end-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-error text-white text-[10px] font-semibold flex items-center justify-center">
             {num(items.length)}
           </span>
         )}
@@ -88,7 +89,7 @@ export default function NotificationBell() {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden="true" />
-          <div className="absolute end-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-lg border border-gray-100">
+          <div className={cx(TOP_DROPDOWN, "w-80")}>
             <div className="px-4 py-3 border-b border-gray-100">
               <p className="text-sm font-semibold text-gray-800">{t.common.today}</p>
               <p className="text-xs text-gray-500">{mine ? t.notifications.mine : t.notifications.all}</p>

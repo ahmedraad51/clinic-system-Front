@@ -366,7 +366,7 @@ export default function PatientForm({
                   }
                   className={cx(
                     "inline-flex items-center gap-1.5 min-h-11 px-3.5 rounded-xl border text-sm font-medium transition disabled:cursor-default",
-                    on ? "bg-red-50 border-red-200 text-red-800" : "bg-white border-gray-200 text-gray-700 hover:border-primary-300",
+                    on ? "bg-red-50 border-red-200 text-red-800" : "bg-surface border-gray-200 text-gray-700 hover:border-primary-300",
                   )}
                 >
                   {on && <Check size={14} />}

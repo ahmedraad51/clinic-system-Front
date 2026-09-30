@@ -217,7 +217,7 @@ function UserDetail() {
                         onClick={() => togglePerm(item)}
                         className={cx(
                           "flex items-center gap-2 min-h-9 pointer-coarse:min-h-11 px-3 py-1.5 rounded-full text-sm font-medium border transition-all",
-                          on ? "bg-primary-600 text-white border-primary-600" : "bg-white text-gray-600 border-gray-200 hover:border-primary-300",
+                          on ? "bg-brand text-white border-primary-600" : "bg-surface text-gray-600 border-gray-200 hover:border-primary-300",
                         )}
                       >
                         {on && <Check size={12} />}

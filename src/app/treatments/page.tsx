@@ -15,7 +15,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { label } from "@/i18n";
 import type { FilterRow } from "@/lib/frappe";
 import { display } from "@/lib/format";
-import { searchFilters, useDebounced, usePagedList, usePatientLooks } from "@/lib/hooks";
+import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
 import { treatmentHref } from "@/lib/links";
 import { TREATMENT_STATUSES, TREATMENT_TYPES, type TreatmentPlan } from "@/lib/types";
 
@@ -49,7 +49,6 @@ function TreatmentsList() {
     orFilters: treatmentSearch(debounced, (type) => label(t.enums.treatmentType, type)),
     orderBy: "name desc",
   });
-  const looks = usePatientLooks(list.rows.map((row) => row.patient));
   const filtered = Boolean(debounced.trim() || status || type);
   const clearFilters = () => {
     setSearch("");
@@ -132,7 +131,7 @@ function TreatmentsList() {
                     </span>
                   </Td>
                   <Td label={t.common.patient}>
-                    <PatientLink id={plan.patient} name={plan.patient_name} look={looks[plan.patient]} />
+                    <PatientLink id={plan.patient} name={plan.patient_name} />
                   </Td>
                   <Td label={t.treatments.tooth}>{display(plan.tooth_number)}</Td>
                   <Td label={t.common.doctor}>{display(plan.doctor_name)}</Td>

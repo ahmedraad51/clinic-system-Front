@@ -1,154 +1,261 @@
 @import "tailwindcss";
 
 /*
- * The design tokens. Use these through Tailwind classes (bg-primary-600, text-sm, …), never raw colours.
+ * The design tokens ("Clean", 2026-09-30): a calm admin look, the same on every screen. Use them through Tailwind
+ * classes (bg-surface, text-gray-800, bg-brand, text-primary-600, shadow-sm …), never raw colours.
  *
- * --brand is the clinic's main colour, indigo by default. src/lib/theme.ts replaces it with Clinic Settings →
- * theme_color when the clinic chose one (darkened if needed so white text on it stays readable), and every
- * primary-* shade is mixed from it.
+ * Everything that changes between light and dark mode is a CSS variable on <html>: --ink (the text colour),
+ * --surface (cards, menus, the top bar), --page-bg (behind the cards) and the shadow colour. `html.dark` swaps them
+ * (src/lib/appearance.ts sets the class before the first paint), and every gray-*, primary-* and surface class is
+ * mixed from them, so screens need no dark: classes of their own.
  *
- * Each part of the clinic has its own colour too (--sec-patients, --sec-appointments, …). A `sec-patients`
- * class sets --sec for everything inside it, and bg-sec, text-sec-ink, bg-sec-soft, from-sec … use it.
+ * --brand is the clinic's main colour, violet by default. src/lib/theme.ts replaces it with Clinic Settings →
+ * theme_color when the clinic chose one (darkened if needed so white text on it stays readable).
  */
 :root {
-  --brand: #4f46e5;
-  --page-bg: #eef1f8;
-  --sec-patients: #2563eb;
-  --sec-appointments: #c026d3;
-  --sec-treatments: #0891b2;
-  --sec-money: #059669;
-  --sec-reports: #ea580c;
-  --sec-system: #64748b;
-  --sec-whatsapp: #16a34a;
-  --sec: var(--brand);
-  /* The backgrounds of drawn avatars. */
-  --avatar-1: #c7d2fe;
-  --avatar-2: #bfdbfe;
-  --avatar-3: #f5d0fe;
-  --avatar-4: #a5f3fc;
-  --avatar-5: #fed7aa;
-  --avatar-6: #bbf7d0;
+  --brand: #6a5fdd;
+  --ink: #2f2b3d;
+  --surface: #ffffff;
+  --page-bg: #f8f7fa;
+  /* What darker shades of a colour are mixed towards: black in light mode, white in dark mode (readable text). */
+  --shade: #000000;
+  --shadow-rgb: 47 43 61;
+  --shadow-a-sm: 0.12;
+  --shadow-a-md: 0.14;
+  --shadow-a-lg: 0.16;
+  --shadow-a-xl: 0.18;
+  /* The status colours of the design: success, info, warning, error and the neutral secondary. */
+  --success: #28c76f;
+  --info: #00bad1;
+  --warning: #ff9f43;
+  --error: #ff4c51;
+  --secondary: #808390;
+  /* How much of the clinic colour its text shades keep (the rest is --shade): full strength on a light page. */
+  --p-mix-600: 100%;
+  --p-mix-700: 86%;
+  --p-mix-800: 72%;
+  --p-mix-900: 58%;
+  color-scheme: light;
+}
+
+@media screen {
+  :root.dark {
+    --ink: #e1def5;
+    --surface: #2f3349;
+    --page-bg: #25293c;
+    --shade: #ffffff;
+    --shadow-rgb: 19 17 32;
+    --shadow-a-sm: 0.18;
+    --shadow-a-md: 0.2;
+    --shadow-a-lg: 0.22;
+    --shadow-a-xl: 0.24;
+    color-scheme: dark;
+    /*
+     * The clinic colour is darkened for white text on it, so on a dark page its text shades (links, icons, focus rings)
+     * are mixed with white instead: 600 is 5:1 on the dark surface. Solid buttons use bg-brand, which stays as it is.
+     */
+    --p-mix-600: 60%;
+    --p-mix-700: 52%;
+    --p-mix-800: 44%;
+    --p-mix-900: 36%;
+
+    /* Status tints: soft washes of each colour on the dark surface, and light text shades. */
+    --color-red-50: color-mix(in srgb, #ff4c51 12%, #2f3349);
+    --color-red-100: color-mix(in srgb, #ff4c51 18%, #2f3349);
+    --color-red-200: color-mix(in srgb, #ff4c51 32%, #2f3349);
+    --color-red-600: #ff7a7e;
+    --color-red-700: #ff8f92;
+    --color-red-800: #ffa3a6;
+    --color-red-900: #ffb8ba;
+    --color-green-50: color-mix(in srgb, #28c76f 12%, #2f3349);
+    --color-green-100: color-mix(in srgb, #28c76f 18%, #2f3349);
+    --color-green-200: color-mix(in srgb, #28c76f 32%, #2f3349);
+    --color-green-600: #4fd98c;
+    --color-green-700: #62dd98;
+    --color-green-800: #7fe3ab;
+    --color-green-900: #9aeabe;
+    --color-yellow-50: color-mix(in srgb, #ff9f43 12%, #2f3349);
+    --color-yellow-100: color-mix(in srgb, #ff9f43 18%, #2f3349);
+    --color-yellow-200: color-mix(in srgb, #ff9f43 32%, #2f3349);
+    --color-yellow-600: #ffb36b;
+    --color-yellow-700: #ffbd7e;
+    --color-yellow-800: #ffc994;
+    --color-yellow-900: #ffd5ab;
+    --color-amber-50: color-mix(in srgb, #ff9f43 12%, #2f3349);
+    --color-amber-100: color-mix(in srgb, #ff9f43 18%, #2f3349);
+    --color-amber-200: color-mix(in srgb, #ff9f43 32%, #2f3349);
+    --color-amber-600: #ffb36b;
+    --color-amber-700: #ffbd7e;
+    --color-amber-800: #ffc994;
+    --color-amber-900: #ffd5ab;
+    --color-blue-50: color-mix(in srgb, #00bad1 12%, #2f3349);
+    --color-blue-100: color-mix(in srgb, #00bad1 18%, #2f3349);
+    --color-blue-200: color-mix(in srgb, #00bad1 32%, #2f3349);
+    --color-blue-600: #3fd0e2;
+    --color-blue-700: #5ad6e6;
+    --color-blue-800: #7ddfeb;
+    --color-sky-50: color-mix(in srgb, #00bad1 12%, #2f3349);
+    --color-sky-100: color-mix(in srgb, #00bad1 18%, #2f3349);
+    --color-sky-200: color-mix(in srgb, #00bad1 32%, #2f3349);
+    --color-sky-600: #3fd0e2;
+    --color-sky-700: #5ad6e6;
+    --color-sky-800: #7ddfeb;
+    --color-purple-50: color-mix(in srgb, #a96bf7 12%, #2f3349);
+    --color-purple-100: color-mix(in srgb, #a96bf7 18%, #2f3349);
+    --color-purple-200: color-mix(in srgb, #a96bf7 32%, #2f3349);
+    --color-purple-600: #b98bf8;
+    --color-purple-700: #c49df9;
+    --color-purple-800: #d0b2fa;
+    --color-violet-50: color-mix(in srgb, #a96bf7 12%, #2f3349);
+    --color-violet-100: color-mix(in srgb, #a96bf7 18%, #2f3349);
+    --color-violet-600: #b98bf8;
+    --color-violet-700: #c49df9;
+    --color-rose-50: color-mix(in srgb, #ff4c51 12%, #2f3349);
+    --color-rose-600: #ff7a7e;
+    --color-rose-700: #ff8f92;
+    --color-indigo-600: #9a92f5;
+    /* The darkest text shades too (calendar blocks, notes on tints). */
+    --color-red-950: #ffcdce;
+    --color-green-950: #b4f0cf;
+    --color-yellow-950: #ffe2c2;
+    --color-amber-950: #ffe2c2;
+    --color-blue-900: #9fe7f0;
+    --color-blue-950: #c2f1f7;
+    --color-sky-900: #9fe7f0;
+    --color-sky-950: #c2f1f7;
+    --color-purple-900: #dcc7fb;
+    --color-purple-950: #e8dafd;
+    --color-violet-800: #d0b2fa;
+    --color-violet-900: #dcc7fb;
+    --color-rose-800: #ffa3a6;
+    --color-rose-900: #ffb8ba;
+  }
+}
+
+/* Dark mode, the collapsed menu and the other appearance choices are classes on <html> (src/lib/appearance.ts). */
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant nav-collapsed (&:where(.nav-collapsed, .nav-collapsed *));
+@custom-variant skin-bordered (&:where(.skin-bordered, .skin-bordered *));
+@custom-variant content-wide (&:where(.content-wide, .content-wide *));
+
+/*
+ * Mixed where they are used (inline), so a part of the page that sets its own --ink and --surface (the semi-dark
+ * menu) gets its own greys.
+ */
+@theme inline {
+  --color-surface: var(--surface);
+  --color-page: var(--page-bg);
+  --color-ink: var(--ink);
+
+  /* Greys are the text colour at a strength, over the surface: 900 is headings, 500 the quietest readable text. */
+  --color-gray-50: color-mix(in srgb, var(--ink) 4%, var(--surface));
+  --color-gray-100: color-mix(in srgb, var(--ink) 8%, var(--surface));
+  --color-gray-200: color-mix(in srgb, var(--ink) 13%, var(--surface));
+  --color-gray-300: color-mix(in srgb, var(--ink) 26%, var(--surface));
+  --color-gray-400: color-mix(in srgb, var(--ink) 42%, var(--surface));
+  --color-gray-500: color-mix(in srgb, var(--ink) 68%, var(--surface));
+  --color-gray-600: color-mix(in srgb, var(--ink) 76%, var(--surface));
+  --color-gray-700: color-mix(in srgb, var(--ink) 84%, var(--surface));
+  --color-gray-800: color-mix(in srgb, var(--ink) 90%, var(--surface));
+  --color-gray-900: color-mix(in srgb, var(--ink) 96%, var(--surface));
+
+  --color-primary-50: color-mix(in srgb, var(--brand) 8%, var(--surface));
+  --color-primary-100: color-mix(in srgb, var(--brand) 16%, var(--surface));
+  --color-primary-200: color-mix(in srgb, var(--brand) 28%, var(--surface));
+  --color-primary-300: color-mix(in srgb, var(--brand) 45%, var(--surface));
+  --color-primary-400: color-mix(in srgb, var(--brand) 70%, var(--surface));
+  --color-primary-500: color-mix(in srgb, var(--brand) 88%, var(--surface));
+  --color-primary-600: color-mix(in srgb, var(--brand) var(--p-mix-600), var(--shade));
+  --color-primary-700: color-mix(in srgb, var(--brand) var(--p-mix-700), var(--shade));
+  --color-primary-800: color-mix(in srgb, var(--brand) var(--p-mix-800), var(--shade));
+  --color-primary-900: color-mix(in srgb, var(--brand) var(--p-mix-900), var(--shade));
+  /* Solid clinic colour under white text (buttons, the active menu item): the same in both modes. */
+  --color-brand: var(--brand);
+  --color-brand-dark: color-mix(in srgb, var(--brand) 86%, #000);
+  /* Solid status colours under white text, the same in both modes (toasts, the WhatsApp button). */
+  --color-solid-green: #15803d;
+  --color-solid-green-dark: #166534;
+  --color-solid-red: #dc2626;
+  --color-solid-red-dark: #b91c1c;
+  --color-solid-ink: #2f2b3d;
+
+  --color-success: var(--success);
+  --color-info: var(--info);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-secondary: var(--secondary);
+
+  /* One soft shadow family, in the text colour. */
+  --shadow-xs: 0 1px 4px 0 rgb(var(--shadow-rgb) / var(--shadow-a-sm));
+  --shadow-sm: 0 2px 8px 0 rgb(var(--shadow-rgb) / var(--shadow-a-sm));
+  --shadow-md: 0 3px 12px 0 rgb(var(--shadow-rgb) / var(--shadow-a-md));
+  --shadow-lg: 0 4px 18px 0 rgb(var(--shadow-rgb) / var(--shadow-a-lg));
+  --shadow-xl: 0 5px 30px 0 rgb(var(--shadow-rgb) / var(--shadow-a-xl));
+  /* The lift under a solid coloured button, a focused field or the active menu item. */
+  --shadow-primary: 0 2px 6px 0 color-mix(in srgb, var(--brand) 30%, transparent);
 }
 
 @theme {
-  /* The greys are Tailwind's cool slate, so gray-* classes match the dark menu. */
-  --color-gray-50: oklch(98.4% 0.003 247.858);
-  --color-gray-100: oklch(96.8% 0.007 247.896);
-  --color-gray-200: oklch(92.9% 0.013 255.508);
-  --color-gray-300: oklch(86.9% 0.022 252.894);
-  --color-gray-400: oklch(70.4% 0.04 256.788);
-  --color-gray-500: oklch(55.4% 0.046 257.417);
-  --color-gray-600: oklch(44.6% 0.043 257.281);
-  --color-gray-700: oklch(37.2% 0.044 257.287);
-  --color-gray-800: oklch(27.9% 0.041 260.031);
-  --color-gray-900: oklch(20.8% 0.042 265.755);
+  /* Poppins for English, El Messiri for Arabic (next/font in layout.tsx). */
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
 
-  --color-primary-50: color-mix(in oklab, var(--brand) 7%, white);
-  --color-primary-100: color-mix(in oklab, var(--brand) 14%, white);
-  --color-primary-200: color-mix(in oklab, var(--brand) 28%, white);
-  --color-primary-300: color-mix(in oklab, var(--brand) 48%, white);
-  --color-primary-400: color-mix(in oklab, var(--brand) 70%, white);
-  --color-primary-500: color-mix(in oklab, var(--brand) 88%, white);
-  --color-primary-600: var(--brand);
-  --color-primary-700: color-mix(in oklab, var(--brand) 82%, black);
-  --color-primary-800: color-mix(in oklab, var(--brand) 66%, black);
-  --color-primary-900: color-mix(in oklab, var(--brand) 50%, black);
-
-  /* One text scale for the whole app, a little larger than Tailwind's default for easy reading. */
+  /* One text scale: 13 px small text, 15 px body. */
   --text-xs: 0.8125rem;
-  --text-xs--line-height: 1.15rem;
+  --text-xs--line-height: 1.25rem;
   --text-sm: 0.9375rem;
-  --text-sm--line-height: 1.4rem;
+  --text-sm--line-height: 1.375rem;
+
+  /* 6 px corners on cards, fields, buttons and menus (rounded-xl and rounded-2xl both give it). */
+  --radius-xl: 0.375rem;
+  --radius-2xl: 0.375rem;
+  --radius-3xl: 0.5rem;
 
   /*
    * A new page fades in while lifting 6px. "backwards", not "both": once it ends the page has no transform
    * left, which would make position: fixed dialogs inside the page cover only the page.
    */
-  --animate-page-in: page-in 0.22s ease-out backwards;
+  --animate-page-in: page-in 0.2s ease-out backwards;
   @keyframes page-in {
     from {
       opacity: 0;
       transform: translateY(6px);
     }
   }
-
-  /* Cards and tiles rise into place one after another (give each an animation-delay). */
-  --animate-rise: rise 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
-  @keyframes rise {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-  }
-
-  /* Chart bars grow up from the axis (with origin-bottom and transform-box: fill-box). */
-  --animate-grow-up: grow-up 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
-  @keyframes grow-up {
-    from {
-      transform: scaleY(0);
-    }
-  }
-
-  /* A slow, small bob for the drawings in the welcome banner. */
-  --animate-bob: bob 5s ease-in-out infinite;
-  @keyframes bob {
-    50% {
-      transform: translateY(-4px);
-    }
-  }
 }
 
-/* The colour of the part of the clinic a card or tile belongs to (see sec-* below). */
-@theme inline {
-  --color-sec: var(--sec);
-  --color-sec-soft: color-mix(in oklab, var(--sec) 11%, white);
-  --color-sec-light: color-mix(in oklab, var(--sec) 62%, white);
-  --color-sec-ink: color-mix(in oklab, var(--sec) 72%, black);
-  --color-sec-deep: color-mix(in oklab, var(--sec) 78%, black);
-}
-
-@utility sec-brand {
+/*
+ * The colour of a small tinted icon (IconTile) or a chart: a sec-* class (written by hueClass() in the UI kit) sets
+ * --sec, and bg-sec, bg-sec-soft, text-sec and text-sec-ink use it.
+ */
+:root {
   --sec: var(--brand);
 }
-@utility sec-patients {
-  --sec: var(--sec-patients);
+@theme inline {
+  --color-sec: var(--sec);
+  --color-sec-soft: color-mix(in srgb, var(--sec) 16%, var(--surface));
+  --color-sec-light: color-mix(in srgb, var(--sec) 55%, var(--surface));
+  --color-sec-ink: color-mix(in srgb, var(--sec) 62%, var(--shade));
 }
-@utility sec-appointments {
-  --sec: var(--sec-appointments);
+@utility sec-primary {
+  --sec: var(--brand);
 }
-@utility sec-treatments {
-  --sec: var(--sec-treatments);
-}
-@utility sec-money {
-  --sec: var(--sec-money);
-}
-@utility sec-reports {
-  --sec: var(--sec-reports);
-}
-@utility sec-system {
-  --sec: var(--sec-system);
-}
-@utility sec-whatsapp {
-  --sec: var(--sec-whatsapp);
-}
-/* The plain tones (Tone in the UI kit), dark enough for white text on them. */
 @utility sec-blue {
-  --sec: #2563eb;
+  --sec: var(--info);
 }
 @utility sec-green {
-  --sec: #15803d;
+  --sec: var(--success);
 }
 @utility sec-gray {
-  --sec: #4b5563;
+  --sec: var(--secondary);
 }
 @utility sec-red {
-  --sec: #dc2626;
+  --sec: var(--error);
 }
 @utility sec-yellow {
-  --sec: #b45309;
+  --sec: var(--warning);
 }
 @utility sec-purple {
-  --sec: #9333ea;
+  --sec: #9c4df5;
 }
 
 /* A clear focus ring for keyboard users on links and other focusable things without their own ring. */
@@ -160,15 +267,21 @@
   }
 }
 
-body {
+html {
   background-color: var(--page-bg);
-  color: #1f2937;
-  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Arabic screens: IBM Plex Sans Arabic (its Latin letters are used for names typed in English). */
+body {
+  background-color: var(--page-bg);
+  color: color-mix(in srgb, var(--ink) 84%, var(--surface));
+  font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.9375rem;
+}
+
+/* Arabic screens: El Messiri for Arabic letters; Poppins (which has none) still draws names typed in English. */
 :root[lang="ar"] body {
-  font-family: var(--font-arabic), var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-poppins), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0;
 }
 
 /* The page behind the cards. */
@@ -176,7 +289,22 @@ body {
   background: var(--page-bg);
 }
 
+/* The semi-dark menu: the menu alone takes the dark colours (Appearance panel → Semi-dark menu, light pages only). */
+:root.nav-semi-dark:not(.dark) [data-nav] {
+  --ink: #e1def5;
+  --surface: #2f3349;
+  --shade: #ffffff;
+  color-scheme: dark;
+}
+
+/* Thin scrollbars in the menu, as in the rest of the design. */
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ink) 22%, transparent) transparent;
+}
+
 @media print {
+  html,
   body,
   .app-bg {
     background: #ffffff;

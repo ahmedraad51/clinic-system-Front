@@ -123,7 +123,7 @@ export default function SendWhatsAppDialog({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={onClose}
-                  className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-xl bg-green-600 text-white text-sm font-medium shadow-sm hover:bg-green-700"
+                  className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-md bg-solid-green text-white text-sm font-medium shadow-sm hover:bg-solid-green-dark"
                 >
                   <MessageCircle size={16} />
                   {t.sendWhatsapp.open}

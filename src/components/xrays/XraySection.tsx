@@ -210,7 +210,7 @@ export default function XraySection({
                             aria-pressed={comparing ? chosen : undefined}
                             disabled={Boolean(comparing) && isPdf(image)}
                             className={cx(
-                              "group w-full text-start rounded-2xl border overflow-hidden bg-white transition hover:shadow-md",
+                              "group w-full text-start rounded-md border overflow-hidden bg-surface transition hover:shadow-md",
                               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:opacity-40",
                               chosen ? "border-primary-500 ring-2 ring-primary-500" : "border-gray-200/80",
                             )}

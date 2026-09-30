@@ -26,12 +26,12 @@ export default function ClinicLetterhead({ kind, reference, date }: { kind: stri
           // eslint-disable-next-line @next/next/no-img-element -- the logo is an uploaded file of unknown size
           <img src={fileHref(settings.logo)} alt="" className="w-12 h-12 rounded-xl object-contain" />
         ) : (
-          <span className="w-12 h-12 shrink-0 bg-primary-600 rounded-xl flex items-center justify-center text-white print:border print:border-gray-300">
+          <span className="w-12 h-12 shrink-0 bg-brand rounded-xl flex items-center justify-center text-white print:border print:border-gray-300">
             <ToothLogo size={24} />
           </span>
         )}
         <div className="min-w-0">
-          <p className="font-bold text-gray-800 text-lg">{clinicName}</p>
+          <p className="font-semibold text-gray-800 text-lg">{clinicName}</p>
           {contact.length > 0 && (
             <p className="text-xs text-gray-500">
               {contact.map((part, index) => (

@@ -72,7 +72,7 @@ export const settings = {
   saveSettings: "Save Settings",
   // Theme colour
   themeColour: "Theme colour",
-  themeHint: "Buttons, links and highlights use this colour. The first choice is the default indigo.",
+  themeHint: "Buttons, links and highlights use this colour. The first choice is the default violet.",
   defaultColour: "Default colour",
   /** The ready-made colours (THEME_PRESETS in src/lib/theme.ts). */
   themeNames: {

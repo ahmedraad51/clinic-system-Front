@@ -123,13 +123,13 @@ function DayReport() {
               {byMethod.map((row) => (
                 <div key={row.method} className="rounded-xl border border-gray-100 px-4 py-3">
                   <p className="text-xs text-gray-500">{label(t.enums.paymentMethod, row.method)}</p>
-                  <p className="text-lg font-bold text-gray-800">{moneyTotals(row.total)}</p>
+                  <p className="text-lg font-semibold text-gray-800">{moneyTotals(row.total)}</p>
                   <p className="text-xs text-gray-500">{c.payments(row.count)}</p>
                 </div>
               ))}
               <div className="rounded-xl bg-primary-50 px-4 py-3 print:bg-white print:border print:border-gray-300">
                 <p className="text-xs text-primary-800">{c.total}</p>
-                <p className="text-lg font-bold text-primary-900">{moneyTotals(total)}</p>
+                <p className="text-lg font-semibold text-primary-900">{moneyTotals(total)}</p>
                 <p className="text-xs text-primary-800">{c.payments(rows.length)}</p>
               </div>
             </div>

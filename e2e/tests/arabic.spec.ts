@@ -12,7 +12,7 @@ test("the app opens in Arabic, right to left, and switches to English and back",
   const html = page.locator("html");
   await expect(html).toHaveAttribute("lang", "ar");
   await expect(html).toHaveAttribute("dir", "rtl");
-  await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain("IBM Plex Sans Arabic");
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain("El Messiri");
 
   // Arabic words, Iraqi month names and dinars.
   await expect(page.getByRole("heading", { name: "صباح الخير، Administrator" })).toBeVisible();
@@ -24,9 +24,9 @@ test("the app opens in Arabic, right to left, and switches to English and back",
   const box = await patients.boundingBox();
   expect(box?.x ?? 0).toBeGreaterThan(1000);
 
-  // The switch in the menu.
-  const language = page.getByRole("group", { name: "اللغة" });
-  await language.getByRole("button", { name: "English" }).click();
+  // The language menu in the top bar.
+  await page.getByRole("button", { name: "تغيير اللغة" }).click();
+  await page.getByRole("group", { name: "اللغة" }).getByRole("button", { name: "English" }).click();
   await expect(html).toHaveAttribute("dir", "ltr");
   await expect(page.getByRole("heading", { name: "Good morning, Administrator" })).toBeVisible();
   await expect(page.getByText("Saturday, 26 September 2026")).toBeVisible();
@@ -37,6 +37,7 @@ test("the app opens in Arabic, right to left, and switches to English and back",
   await expect(html).toHaveAttribute("lang", "en");
   await expect(page.getByRole("heading", { name: "Good morning, Administrator" })).toBeVisible();
 
+  await page.getByRole("button", { name: "Switch the language" }).click();
   await page.getByRole("group", { name: "Language" }).getByRole("button", { name: "العربية" }).click();
   await expect(html).toHaveAttribute("dir", "rtl");
   await expect(page.getByRole("heading", { name: "صباح الخير، Administrator" })).toBeVisible();
@@ -92,6 +93,7 @@ test("switching the language with unsaved changes asks first", async ({ page }) 
   await page.goto("/patients/new");
   await page.getByLabel("الاسم الكامل").fill("نصف مكتوب");
   const language = page.getByRole("group", { name: "اللغة" });
+  await page.getByRole("button", { name: "تغيير اللغة" }).click();
   await language.getByRole("button", { name: "English" }).click();
   const dialog = page.getByRole("dialog", { name: "المغادرة دون حفظ؟" });
   await expect(dialog).toBeVisible();
@@ -99,6 +101,7 @@ test("switching the language with unsaved changes asks first", async ({ page }) 
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(page.getByLabel("الاسم الكامل")).toHaveValue("نصف مكتوب");
 
+  // The question stopped the click, so the language menu is still open.
   await language.getByRole("button", { name: "English" }).click();
   await dialog.getByRole("button", { name: "المغادرة دون حفظ" }).click();
   await expect(page.locator("html")).toHaveAttribute("dir", "ltr");

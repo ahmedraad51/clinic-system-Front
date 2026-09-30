@@ -36,7 +36,7 @@ export default function MedicalAlerts({ patient, title }: { patient: MedicalFiel
             <li
               key={flag.kind}
               className={cx(
-                "rounded-lg border bg-white px-2.5 py-1 text-sm",
+                "rounded-lg border bg-surface px-2.5 py-1 text-sm",
                 flag.severity === "high" ? "border-red-200" : "border-yellow-300",
               )}
             >

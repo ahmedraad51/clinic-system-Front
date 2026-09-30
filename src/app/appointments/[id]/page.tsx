@@ -217,7 +217,7 @@ function AppointmentDetail() {
                   disabled={updating !== null || current}
                   className={cx(
                     "min-h-11 px-4 py-2 rounded-xl text-sm font-medium transition disabled:cursor-not-allowed",
-                    current ? "bg-primary-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50",
+                    current ? "bg-brand text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50",
                   )}
                 >
                   {updating === status ? t.common.saving : statusLabel("appointment", status)}

@@ -5,9 +5,10 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- **Phase 4**, the features from the competitor study, in both languages. Done: two currencies. Next: expenses and
-  profit, the waiting room, QR codes, the whole patient file in print, custom prescription paper, restoring deleted
-  records, and installing the app.
+- **Waiting for the owner:** the new clean look is done (see Done). Please look at it before the work goes on. After
+  your approval: the Arabic version is checked again in the new look, then Phases 2, 3 and 4 continue in the new look
+  (Phase 4 is paused after its first item, two currencies; next are expenses and profit, the waiting room, QR codes,
+  the whole patient file in print, custom prescription paper, restoring deleted records, and installing the app).
 
 ## Backlog
 
@@ -15,6 +16,20 @@ Each finished item says what changed, when, and which commit holds it.
    competitor study), after the Arabic version, in both languages.
 
 ## Done
+
+- 2026-09-30 - **A clean, professional look, like the pet store app.** The owner found the "Midnight" design
+  AI-made, so it is replaced everywhere by a calm admin look rebuilt in DentClinic's own code (no template files, no
+  Vuetify): white cards with small rounded corners and soft shadows on a light grey page, a white menu with the
+  chosen page in solid violet, a floating top bar with round icon buttons, violet buttons, outlined boxes with small
+  labels above, plain tables, soft status chips, and the Poppins font (El Messiri in Arabic). The gradients, glows,
+  the smiling tooth, the decorative drawings and the drawn people are gone: people are shown by their initials, or
+  their photo. New, per computer, in the **Appearance** panel (the palette icon in the top bar): **dark mode** (or the
+  computer's own setting), a **menu that collapses to icons** (also the small circle at the top of the menu), a
+  bordered skin, a dark menu beside a light page, and a wide page. The theme and language each have a menu in the top
+  bar. It all works in English and in Arabic, right to left. Before and after pictures, with dark mode:
+  [docs/design-changes/2-clean](docs/design-changes/2-clean/README.md); the Arabic pictures and the README pictures are
+  retaken. **What to check:** switch to dark mode and back, collapse the menu, and look at a few screens in Arabic.
+  (No new packages; the fonts come through Next.js, so no restart of the dev server is needed.)
 
 - 2026-09-30 - **Dinars and dollars (Phase 4, item 1).** Settings has a new **Currencies** card: a second currency
   (US dollars) and its exchange rates, each from a date on ("1 USD in IQD: 1,460 from 1 September"). A treatment

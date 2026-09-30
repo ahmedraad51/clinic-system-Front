@@ -20,10 +20,11 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | null>(null);
 
+/** Solid colours that stay the same in dark mode, so the white text stays readable. */
 const STYLES: Record<ToastKind, string> = {
-  success: "bg-green-600",
-  error: "bg-red-600",
-  info: "bg-gray-800",
+  success: "bg-solid-green",
+  error: "bg-solid-red",
+  info: "bg-solid-ink",
 };
 
 /** Small messages in the corner, e.g. "Patient saved". They close by themselves. */

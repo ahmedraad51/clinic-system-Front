@@ -816,7 +816,7 @@ function Timeline({
           <ol className="relative border-s-2 border-gray-100 ms-4 space-y-1">
             {group.items.map((item) => (
                 <li key={item.key} className="relative ps-6">
-                  <IconTile icon={item.icon} hue={item.hue} size="sm" className="absolute -start-[17px] top-2.5 rounded-full ring-4 ring-white" />
+                  <IconTile icon={item.icon} hue={item.hue} size="sm" className="absolute -start-[17px] top-2.5 rounded-full ring-4 ring-surface" />
                   <Link
                     href={item.href}
                     className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl px-3 py-2.5 min-h-11 hover:bg-gray-50"

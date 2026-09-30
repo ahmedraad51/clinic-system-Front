@@ -203,15 +203,15 @@ function TreatmentDetail() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
           <div className="flex items-baseline justify-between gap-3 sm:block">
             <p className="text-xs text-gray-500">{t.treatments.totalCost}</p>
-            <p className="text-lg sm:text-2xl font-bold text-gray-800 sm:mt-1">{money(total, plan.currency)}</p>
+            <p className="text-lg sm:text-2xl font-semibold text-gray-800 sm:mt-1">{money(total, plan.currency)}</p>
           </div>
           <div className="flex items-baseline justify-between gap-3 sm:block">
             <p className="text-xs text-gray-500">{t.treatments.paid}</p>
-            <p data-testid="plan-paid" className="text-lg sm:text-2xl font-bold text-green-600 sm:mt-1">{money(paid, plan.currency)}</p>
+            <p data-testid="plan-paid" className="text-lg sm:text-2xl font-semibold text-green-600 sm:mt-1">{money(paid, plan.currency)}</p>
           </div>
           <div className="flex items-baseline justify-between gap-3 sm:block">
             <p className="text-xs text-gray-500">{t.treatments.remaining}</p>
-            <p data-testid="plan-remaining" className={cx("text-lg sm:text-2xl font-bold sm:mt-1", remaining > 0 ? "text-red-600" : "text-gray-500")}>
+            <p data-testid="plan-remaining" className={cx("text-lg sm:text-2xl font-semibold sm:mt-1", remaining > 0 ? "text-red-600" : "text-gray-500")}>
               {money(remaining, plan.currency)}
             </p>
           </div>
@@ -254,7 +254,7 @@ function TreatmentDetail() {
                       disabled={updating !== null || current}
                       className={cx(
                         "min-h-11 px-4 py-2 rounded-xl text-sm font-medium transition disabled:cursor-not-allowed",
-                        current ? "bg-primary-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50",
+                        current ? "bg-brand text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50",
                       )}
                     >
                       {updating === status ? t.common.saving : label(t.enums.treatmentStatus, status)}

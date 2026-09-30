@@ -250,7 +250,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
             // eslint-disable-next-line @next/next/no-img-element -- the logo is an uploaded file of unknown size
             <img src={fileHref(form.logo)} alt={t.settings.logoAlt} className="w-16 h-16 rounded-2xl object-contain bg-gray-50 border border-gray-100" />
           ) : (
-            <span className="w-16 h-16 rounded-2xl bg-primary-600 flex items-center justify-center text-white">
+            <span className="w-16 h-16 rounded-2xl bg-brand flex items-center justify-center text-white">
               <ToothLogo size={30} />
             </span>
           )}
@@ -455,7 +455,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
                   }
                   className={cx(
                     "min-h-11 px-3.5 rounded-xl border text-sm font-medium transition",
-                    on ? "bg-primary-600 border-primary-600 text-white" : "bg-white border-gray-200 text-gray-600 hover:border-primary-300",
+                    on ? "bg-brand border-primary-600 text-white" : "bg-surface border-gray-200 text-gray-600 hover:border-primary-300",
                   )}
                 >
                   {t.dates.daysShort[index]}
@@ -564,7 +564,7 @@ function ThemeColorPicker({ value, onChange }: { value: string; onChange: (value
             value={current}
             onChange={(event) => onChange(event.target.value)}
             aria-label={t.settings.anyColour}
-            className="h-9 w-12 pointer-coarse:h-11 pointer-coarse:w-14 rounded-lg border border-gray-200 bg-white p-1 cursor-pointer"
+            className="h-9 w-12 pointer-coarse:h-11 pointer-coarse:w-14 rounded-lg border border-gray-200 bg-surface p-1 cursor-pointer"
           />
           {t.settings.other}
         </label>

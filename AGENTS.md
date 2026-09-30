@@ -31,7 +31,7 @@ accurate.
 | `npm run build` | **Passes** (checked 2026-09-30): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-30). `npx tsc --noEmit` passes too. | |
 | Languages | **Arabic (default, right to left) and English.** Every text is in `src/i18n/en/*.ts` and `src/i18n/ar/*.ts`; the switch is in the menu. See **Languages** below. **Every new text must be added in both languages.** | `src/i18n/`, `src/context/LanguageContext.tsx` |
-| Tests | **Playwright tests pass** (146 tests, 10 of them in Arabic, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (147 tests, 10 of them in Arabic, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -51,7 +51,7 @@ Both flags are set this way on purpose. Leave them alone unless the task is abou
 | `npm run screenshots` | Full-page screenshots of every page at desktop 1440×900, tablet 1024×768 and phone 390×844, saved to `screenshots/<size>/<page>.png` (ignored by git). `PAGES=dashboard,patients` limits it; `SKIP_BUILD=1` works here too. |
 | `npm run screenshots:readme` | Retakes the pictures in `README.md` into `docs/screenshots/` (desktop, dummy data). Run it after a visible change and commit the images. `SKIP_BUILD=1` works here too |
 | `npm run screenshots:arabic` | The main screens in Arabic at desktop, tablet and phone size into `docs/arabic/<size>/<screen>.png` (dummy data, 26 September 2026). `SKIP_BUILD=1` works here too |
-| `npm run screenshots:design` | The redesign's "after" pictures (main screens in English at three sizes) into `docs/design-changes/after/`; the "before" ones come from the plain design (commit 147e676). `SKIP_BUILD=1` works here too |
+| `npm run screenshots:design` | The current redesign's "after" pictures (main screens in English at desktop, tablet and phone size, plus desktop in dark mode) into `docs/design-changes/2-clean/after/`; `SHOTS=before` retakes the "before" side, `DESIGN=` picks another folder. `SKIP_BUILD=1` works here too |
 
 The Frappe address comes from the `FRAPPE_URL` environment variable (for example in `.env.local`), default
 `http://dent_clinic.localhost:8000`. See `next.config.ts`.
@@ -65,7 +65,7 @@ The Frappe address comes from the `FRAPPE_URL` environment variable (for example
 | Framework | Next.js **16.2.9**, App Router, Turbopack |
 | UI | React **19.2.4**, TypeScript 5 with `strict: true`, path alias `@/*` → `src/*` |
 | Styling | Tailwind CSS **v4** via `@tailwindcss/postcss`. It is CSS-first: no `tailwind.config.*`; the design tokens (the `primary-*` palette and the text scale) are an `@theme` block in `src/app/globals.css` |
-| Font | Manrope through `next/font/google` in `layout.tsx` (the `--font-manrope` variable, used by `body` in `globals.css`) |
+| Font | Poppins for English and El Messiri for Arabic, through `next/font/google` in `layout.tsx` (the `--font-poppins` and `--font-arabic` variables, used by `body` in `globals.css`) |
 | Icons | `lucide-react` everywhere; the tooth logo is our own SVG in `src/components/ToothLogo.tsx` |
 | HTTP | `axios`, one instance in `src/lib/frappe.ts` |
 | State | React Context (auth, settings, session, toasts) and per-page `useState`. No global store, no data-fetching library |
@@ -93,10 +93,11 @@ src/lib/frappe.ts   the only module that touches data
   data in effects after mount. No Server Actions, no server-side data fetching, no `loading.tsx` or
   `error.tsx`, no `proxy.ts` (the Next 16 name for middleware).
 - **Provider tree** (in `layout.tsx`): `AuthProvider` → `SettingsProvider` → `SessionProvider` →
-  `LanguageProvider` → `ToastProvider` → `MainLayout` → page. `LanguageProvider` keys its children by the language,
+  `ToastProvider` → `LanguageProvider` → `MainLayout` → page. `LanguageProvider` keys its children by the language,
   so everything below is drawn again when it changes.
-- **Shell.** `MainLayout` draws the `Sidebar` (fixed `w-64`, a slide-in drawer below the `lg` breakpoint) and
-  the `Topbar` (`h-16`) around `<main>`. On `/login` it renders the page with no shell. Both bars carry
+- **Shell.** `MainLayout` draws the `Sidebar` (fixed, z-50, 16.25rem wide or 4.375rem collapsed to icons; a slide-in
+  drawer below the `lg` breakpoint), the `Topbar` (sticky, z-30: a floating bar 3.375rem high, 1rem below the top)
+  and a one-line footer around `<main>`. On `/login` it renders the page with no shell. Both bars carry
   `print:hidden`, so a printed page is just the content (used by the payment receipt).
 - **One login guard.** `MainLayout` sends logged-out visitors to `/login`, and waits until `isLoading` is
   false first. Pages do not check the login themselves.
@@ -105,8 +106,11 @@ src/lib/frappe.ts   the only module that touches data
   user lacks the permission.
 - **Global search.** `GlobalSearch` in the top bar (and Ctrl+K / ⌘K anywhere) finds patients (`view_patients`)
   by name, phone, second phone or ID, and lists quick actions filtered by permission. Add new everyday
-  actions to `ACTIONS` in `GlobalSearch.tsx`. The top bar must not get `backdrop-blur` or a `transform`:
-  either makes `position: fixed` overlays inside it (search, bell, profile menu) cover only the bar.
+  actions to `ACTIONS` in `GlobalSearch.tsx`. The top bar itself must not get `backdrop-blur` or a `transform`
+  (its blur is on a separate background layer): either would make `position: fixed` overlays inside it cover only the
+  bar. Its stacking layer (z-30) also keeps overlays inside it under the menu, so full-screen ones (the search dialog,
+  the Appearance panel) are portals on `document.body` at z-[52]; its dropdown menus stay under the bar. The
+  calendar card is `isolate`, so its sticky headers stay under the bar's menus.
 - **One data seam.** No page calls `fetch` or axios itself. That is why switching to dummy data is a
   one-line change. Keep it that way.
 
@@ -117,7 +121,7 @@ src/lib/frappe.ts   the only module that touches data
 ```
 src/
 ├── app/
-│   ├── layout.tsx                 root layout: fonts (Manrope, IBM Plex Sans Arabic), boot scripts, providers, MainLayout
+│   ├── layout.tsx                 root layout: fonts (Poppins, El Messiri), boot scripts, providers, MainLayout
 │   ├── page.tsx                   redirect("/dashboard")
 │   ├── not-found.tsx              404 page
 │   ├── globals.css                Tailwind import, body colours, print background
@@ -138,8 +142,10 @@ src/
 │   └── profile/page.tsx
 ├── components/
 │   ├── MainLayout.tsx        shell + the login guard
-│   ├── Sidebar.tsx           nav in three groups (CLINIC, FINANCE, SYSTEM), hidden items by permission, user card
-│   ├── Topbar.tsx            mobile menu button, global search, bell, settings, profile dropdown, logout
+│   ├── Sidebar.tsx           the menu: three groups (CLINIC, FINANCE, SYSTEM), items hidden by permission, collapses to icons
+│   ├── Topbar.tsx            the floating top bar: menu button, search, theme and language menus, bell, Appearance, profile menu
+│   ├── AppearancePanel.tsx   the Appearance drawer: theme, skin, semi-dark menu, menu open or collapsed, width, language
+│   ├── topbarStyles.ts       TOP_ICON_BUTTON, the round icon button of the top bar
 │   ├── GlobalSearch.tsx      search button and Ctrl+K / ⌘K palette: patients by name, phone or ID, and quick actions
 │   ├── NotificationBell.tsx  today's Scheduled/Confirmed appointments
 │   ├── AppointmentCalendar.tsx  the day and week time grid on /appointments
@@ -156,9 +162,8 @@ src/
 │   ├── LabWorkCard.tsx       lab work of a treatment plan; labState() and LAB_BADGES
 │   ├── ClinicLetterhead.tsx  the clinic header on printouts (receipt, estimate)
 │   ├── ScreenSizeCard.tsx    the screen size switch on /profile
-│   ├── Avatar.tsx            round avatars: an uploaded photo, or a drawing (man, woman, boy, girl; a white coat for doctors); MyAvatar
-│   ├── Charts.tsx            BarChart and DonutChart, drawn in code in the colour of their section
-│   ├── ToothMascot.tsx       the smiling tooth in the dashboard's welcome banner
+│   ├── Avatar.tsx            round avatars: an uploaded photo, or the person's initials (`initials()`); MyAvatar, PatientLink
+│   ├── Charts.tsx            BarChart and DonutChart, drawn in code in the colour of their section (plain bars, no gradients)
 │   ├── CashCountCard.tsx     the cash drawer count on the end-of-day report, and the recent counts
 │   ├── ReceiptSlip.tsx       "Print Slip" and "Slip Settings" under a payment receipt (thermal receipt printers)
 │   ├── CurrencySelect.tsx    the currency picker of plans and payments (only when the clinic takes two currencies)
@@ -197,7 +202,8 @@ src/
     ├── display.ts            this computer's screen size (80-120 %): readZoom, saveZoom, the boot script
     ├── sketch.ts             drawings on pictures and on the chart: SketchData, parseSketch, sketchToSave, ChartSketch, parseChartSketch, chartSketchToSave, colours, tools
     ├── xrays.ts              Dental Image helpers: accepted files, guessImageType, parseTeeth, imageTitle, IMAGE_FIELDS
-    ├── avatar.ts             avatarKind() (gender and age: man, woman, boy, girl, person), avatarLook() (details from the name)
+    ├── appearance.ts         this computer's appearance (light, dark, system; collapsed menu; skin; semi-dark menu; width): useAppearance, saveAppearance
+    ├── appearanceBoot.ts     its boot script for <head> (no React hooks: the root layout is a Server Component)
     ├── iraq.ts               IRAQ_GOVERNORATES (English and Arabic names), suggested in the patient address box
     ├── recall.ts             dueForRecall() (the dentist's date first, then the period), RECALL_CHOICES, recallUpdate()
     ├── history.ts            parseDocHistory() (Frappe's Version records), field labels, hidden fields, historyValue()
@@ -210,7 +216,7 @@ docs/
 ├── backend-todo.md           what the back end must provide for this front end
 ├── screenshots/              images used by README.md (retake with npm run screenshots:readme)
 ├── arabic/                   the main screens in Arabic at three sizes (npm run screenshots:arabic)
-└── design-changes/           the redesign before and after, at three sizes (npm run screenshots:design)
+└── design-changes/           each redesign before and after: 1-midnight/, 2-clean/ (npm run screenshots:design)
 public/                       placeholder SVGs from create-next-app (unused)
 e2e/
 ├── helpers.ts                waitForData, navigate (client-side, keeps the dummy data), openFromMenu, pickLink
@@ -236,7 +242,7 @@ on the form, and a click made while the save is still running is overridden by t
 | Route | Permission | What it does |
 |---|---|---|
 | `/` | none | Server redirect to `/dashboard` |
-| `/dashboard` | none (cards appear per permission) | A **welcome banner** (date, greeting, "2 appointments today, 2 still to come.", the smiling `ToothMascot`); right under it the **quick actions** as large `ActionTile`s (New Appointment, Add Patient, New Treatment, Record Payment, each by permission, with a one-line hint from `sm` up); counts for today's appointments, patients, active plans; revenue this month and amount owed; today's list and the next 7 days; a **Needs attention** card (hidden when empty) with past appointments still open, tomorrow's reminders not yet opened, patients due for recall (`dueForRecall` in `src/lib/recall.ts`: the dentist's date, else 6 months) and patients who owe money, each linking to where it is handled; the appointment lists show each patient's `Avatar` (`usePatientLooks`). Below, three **charts** (`Charts.tsx`), each by permission: revenue per month for the last 6 months (`view_payments`, amounts written short, "450K"), visits per month (`view_appointments`, cancelled ones and no-shows left out) and treatment plans by type (`view_treatments`, a ring with the 5 biggest types and "Other") |
+| `/dashboard` | none (cards appear per permission) | A **welcome card** (date, greeting, "2 appointments today, 2 still to come."); right under it the **quick actions** as large `ActionTile`s (New Appointment, Add Patient, New Treatment, Record Payment, each by permission, with a one-line hint from `sm` up); counts for today's appointments, patients, active plans; revenue this month and amount owed; today's list and the next 7 days; a **Needs attention** card (hidden when empty) with past appointments still open, tomorrow's reminders not yet opened, patients due for recall (`dueForRecall` in `src/lib/recall.ts`: the dentist's date, else 6 months) and patients who owe money, each linking to where it is handled; the appointment lists show each patient's initials (`Avatar`). Below, three **charts** (`Charts.tsx`), each by permission: revenue per month for the last 6 months (`view_payments`, amounts written short, "450K"), visits per month (`view_appointments`, cancelled ones and no-shows left out) and treatment plans by type (`view_treatments`, a ring with the 5 biggest types and "Other") |
 | `/today` | `view_appointments` | The front desk board: counts (still to come, late, completed, no show), today's appointments grouped by doctor with one-tap **Confirm**, **Completed**, **No show** and **Undo** (`edit_appointments`), late patients (still open `LATE_AFTER` = 10 minutes after the start) highlighted, a red chip for high medical alerts, what the patient owes (`view_payments`), **Add Payment** (`add_payments`), **Walk-in** (books now, rounded up to the quarter hour) and Refresh. **Tomorrow's reminders** (when `enable_whatsapp` is on) lists tomorrow's booked patients with **Send reminder**, which opens `wa.me` with the active "24 Hours Before" template (or the first active one) filled in; opened reminders are remembered on that computer (`localStorage.reminders_opened`). **Lab work due** lists plans sent to a lab and not back that are late or due within two days (`view_treatments`). Below, **Earlier, still open** lists up to 50 past appointments still Scheduled or Confirmed, with Completed / No show / Cancelled buttons; resolved ones drop off. The dashboard and the bell link here |
 | `/patients` | `view_patients` | Server-side search (name, phone, second phone, ID), gender filter, paging. Each row: name with ID, age and gender, medical-alert chips (`medicalFlags`), phone, next booked visit (`view_appointments`, loaded for the rows on the page) and balance (`view_payments`). With `view_payments`, a **Balance** filter ("Owes money": `total_remaining > 0`, biggest first; `?balance=owing` opens on it) adds a WhatsApp **Remind** link with the balance written in |
 | `/recall` | `view_patients` and `view_appointments` | Patients due for a check-up and with nothing Scheduled or Confirmed from today on: a patient with `next_recall_date` (the dentist's choice) is due from that date whatever the period, one with `no_recall` never is, and everyone else is due when no Completed visit falls within the chosen period (3, 6, 9 or 12 months; default 6). A **Check-up due** column says when and why ("Dentist: every 3 months" or "6 months after the last visit"); longest overdue first, never-seen patients last. Tap to call, a WhatsApp link with a ready reminder text (`wa.me/<digits>?text=`), and Book (`add_appointments`). Worked out in the browser from all appointments |
@@ -265,7 +271,7 @@ on the form, and a click made while the save is still running is overridden by t
 | `/payments/[id]` | `view_payments` | Printable receipt with clinic details, the amount in the payment's currency and, when two currencies met, **Exchange rate** ($1 = IQD 1,460) and **On the plan** (`plan_amount` in the plan's currency), also on the slip (`extra` lines); under it a **Receipt slip** row (`ReceiptSlipControls`): **Print Slip** prints the receipt for a 58 or 80 mm thermal receipt printer (clinic, receipt number, date, patient, what it was for, method, amount, **Left on this treatment** as it was right after this payment (the plan's cost minus its payments up to this one, so a reprint shows the same figure; none for a general payment or a cancelled plan), notes, and "Printed <time> by <user>"; the button waits until that balance has loaded) and **Slip Settings** sets this computer's paper width (58, 80 or 40-120 mm), side margin (0-10 mm) and text size, with **Print Test Slip**, kept in `localStorage.receipt_slip_paper`; a **History** card at the bottom (`RecordHistory`, not printed); Edit/Delete (`add_payments`); **WhatsApp** opens `wa.me` with a short receipt (amount, date, treatment, receipt number and method, and what the patient still has to pay) when `enable_whatsapp` is on |
 | `/payments/[id]/edit` | `add_payments` | Shared `PaymentForm` |
 | `/reports` | `view_reports`, and Clinic Settings `enable_financial_reports` | Period picker; revenue, count, average, outstanding (all in the clinic's currency: payments by `base_amount`, what is left on plans in the other currency at today's rate; with two currencies the revenue card adds "Received: IQD … + $…", and the CSVs have currency, rate and clinic-currency columns); revenue by treatment, method and month; latest payments; outstanding balances; CSV export of both; revenue by **doctor** (through each payment's treatment plan; payments without a plan are "General payments") and **Appointments** outcomes up to today (completed, no show, cancelled, still open) with the no-show rate, no-shows out of completed plus no-shows, shown red at 15% or more Three charts (`Charts.tsx`): **Revenue over Time** and **Appointments per Day** (a day per bar up to 45 days, else a month per bar, at most 24 months; cancelled appointments left out; appointments up to today), and **Treatment Plans by Type** (a ring of the plans started in the period, from Frappe's `creation`, not counting cancelled ones). |
-| `/doctors` | `manage_users` | Doctor list (search, Active / Not active filter, paging); Add Doctor and Edit in a dialog: name, specialization (`DOCTOR_SPECIALIZATIONS`), phone, email, working hours (`start_time`, `end_time`; both or neither, end after start), **gender** (for the drawn avatar), a **photo** (Upload Photo / Change Photo / Remove Photo, an image up to 5 MB through `uploadFile`, shown as the doctor's `Avatar` in lists, the calendar and the Today board) and Active. No delete: switch Active off |
+| `/doctors` | `manage_users` | Doctor list (search, Active / Not active filter, paging); Add Doctor and Edit in a dialog: name, specialization (`DOCTOR_SPECIALIZATIONS`), phone, email, working hours (`start_time`, `end_time`; both or neither, end after start), **gender**, a **photo** (Upload Photo / Change Photo / Remove Photo, an image up to 5 MB through `uploadFile`, shown as the doctor's `Avatar` in lists, the calendar and the Today board) and Active. No delete: switch Active off |
 | `/medicines` | `manage_users` | The medicine list (search, Active filter, paging); Add Medicine and Edit in a dialog: name, strength, form (`MEDICINE_FORMS`), group (`MEDICINE_GROUPS`), the usual dose / how often / days / instructions, and the warning flags (allergy words, daily maximum in mg, note for children, NSAID, avoid in pregnancy) and Active. No delete: switch Active off, so old prescriptions keep their rows |
 | `/users` | `manage_users` | Staff list (without Administrator and Guest), search, status filter, Add User dialog (can apply the role's usual permissions) |
 | `/users/[id]` | `manage_users` | Clinic role, enable/disable, the 14 permission switches with presets. `[id]` is `encodeURIComponent(btoa(user.name))` |
@@ -346,7 +352,7 @@ Rules for data code:
 | `useDoctorList()` | The same, as `{ doctors, loading }`, for screens that would look empty while doctors load (the calendar) |
 | `useDebounced(value, ms)` | Waits until typing stops |
 | `useMediaQuery(query)` | True while a media query matches (false on the server); e.g. phone-only layouts |
-| `usePatientLooks(ids)` | Gender and age of a few patients by ID, for avatars in lists whose rows only hold `patient_name` |
+| `useOpenBalances(ids, enabled)` | The plans with something left of a few patients (currency and remaining), for `useSettings().owedText()` |
 
 ### Getting requests to the real back end
 
@@ -366,14 +372,14 @@ either source.
 - **Seed data** is Iraqi: Iraqi names, addresses in Baghdad (Mahalla / Zuqaq / House) and other governorates (Basra,
   Erbil, Najaf, Babylon), mobile numbers typed the usual ways (`0770 123 4567`, `07801112233`, `+964 772 771 4520`),
   and prices in Iraqi dinars (`currency` IQD; filling 40,000, root canal 150,000, crown 200,000, bridge 600,000,
-  extraction 30,000, implant 1,000,000, cleaning 35,000, whitening 250,000 in the price list). 12 patients (Fatima Salman is a 9-year-old child, drawn as a girl; two,
+  extraction 30,000, implant 1,000,000, cleaning 35,000, whitening 250,000 in the price list). 12 patients (Fatima Salman is a 9-year-old child; two,
   Suha Majeed and Muhannad Taha, last seen more than six months ago for the recall list; Hiba Kadhim has a dentist's
   recall every 3 months, due 3 days before the app loads, and Shahad Qasim one in January 2027; Muhannad Taha's phone is
   `0770 123 4567` and Yousif Sattar's `07801112233`, which the phone tests rely on), 5 doctors, 24 appointments (December 2025 to September 2026, all five statuses; three of
   them are dated today and tomorrow when the app loads), 16 treatment plans (all four statuses; one priced in US
   dollars), 10 treatment sessions, 17 payments (two dated today; two on the dollar plan), 9 users (including `Administrator`, `Guest` and one
   disabled doctor), 3 `Clinic Permission` records (the manager has every permission; the receptionist and
-  one doctor have some), the `Clinic Settings` single (currency `IQD`, country code 964, no `theme_color`, so the default indigo shows; doctors and staff users have a `gender` for their avatars), 3 WhatsApp templates, 7 WhatsApp
+  one doctor have some), the `Clinic Settings` single (currency `IQD`, country code 964, no `theme_color`, so the default violet shows; doctors and staff users have a `gender`), 3 WhatsApp templates, 7 WhatsApp
   log entries, 3 Cash Counts (22 Jul matched, 30 Jul short by 10,000, 18 Aug over by 5,000, counted by Dalia Jawad),
   10 Dental Medicines (`MED-00001` Amoxicillin … `MED-00010` Nystatin, with usual dental doses a dentist must
   check) and 3 Prescriptions (`RX-2026-00001` Zahraa after her root canal, `RX-2026-00002` Saad after his
@@ -566,7 +572,7 @@ doc means no section is open (the dashboard and profile still work).
 | Appointments | `view_appointments`, `add_appointments`, `edit_appointments` | menu, pages, bell; status buttons, Edit and Delete need `edit_appointments` |
 | Treatments | `view_treatments`, `add_treatments`, `edit_treatments` | menu, pages; status, Edit, Delete and sessions need `edit_treatments`; prescriptions are read with `view_treatments` and written, changed and deleted with `add_treatments` |
 | Finance | `view_payments`, `add_payments`, `view_reports` | Payments menu and pages, balances and money cards; Add, Edit and Delete payments need `add_payments`; Reports needs `view_reports` |
-| System | `manage_users` | Doctors, Medicines, Users, WhatsApp and Settings pages and menu items, the settings icon |
+| System | `manage_users` | Doctors, Medicines, Users, WhatsApp and Settings pages and menu items, Settings in the profile menu |
 
 **The UI only hides things.** The back end must refuse the data too. `/users/[id]` saves with `updateDoc`
 when the doc exists and `createDoc` when it does not, and refreshes the session when you edit yourself.
@@ -675,12 +681,11 @@ function Things() {
 
 ### The UI kit (`src/components/ui`)
 
-`PageContainer` (`narrow` for forms; `section` colours every icon tile and chart inside), `PageHeader` (title, subtitle, back link, actions, badge, `avatar`, or `icon` + `section`: the screen's icon in a gradient tile; give every screen one), `Card`
-(`flush` for tables; `icon` draws a lucide icon, or `ToothLogo`, in a small coloured tile before the title, via
-`CardIcon`: give every titled card on a record page one; `section` gives the card the colour of a part of the clinic), `CARD_CLASS` (the card look, for boxes that are not a `Card`), `IconTile` (an icon in a coloured rounded tile; `hue`, sizes sm, md, lg), `hueClass(hue)`, `StatCard` (`section` for its colour, `order` for the rise-in delay), `ActionTile` (a large tile for an everyday job, with a hint; `section`, `order`), `Badge`, `StatusBadge` (kinds: appointment, treatment, session, method,
+`PageContainer` (`narrow` for forms; up to 1440 px, the whole width with the Wide setting; `section` colours the small tinted icons inside), `PageHeader` (title, subtitle, back link, actions, badge, `avatar`; `icon` and `section` are accepted and not drawn: titles are plain text), `Card`
+(`flush` for tables; `icon` draws a quiet grey icon before the title, via `CardIcon`: give every titled card on a record page one), `CARD_CLASS` (the card look, for boxes that are not a `Card`: surface colour, 6 px corners, soft shadow, a border in the bordered skin), `IconTile` (an icon on a soft tint of its colour in a small rounded square; `hue`, sizes sm, md, lg), `hueClass(hue)`, `StatCard` (the figure and its name, a tinted icon on the end side, hidden on phones; `section` or `tone` for the icon's colour), `ActionTile` (a card for an everyday job, with a tinted icon and a hint; `section`), `Badge` (a label chip: 4 px corners, a 16 % tint of its colour with readable text), `StatusBadge` (kinds: appointment, treatment, session, method,
 whatsapp, trigger, user) and `statusTone(kind, status)` for other views that must match the badge colours,
 `Button` and `LinkButton` (primary, secondary, danger, ghost, success; sm, md; `icon`, `loading`),
-`Segmented` (joined view switch, e.g. Day / Week / List), `FormActions` (sticky Save / Cancel bar), `Field` (label wrapping one input; `error` for a failed check; the label takes the clinic colour while focused) and `focusField()`, `TextInput`,
+`Segmented` (joined view switch, e.g. Day / Week / List; the chosen one solid), `FormActions` (sticky Save / Cancel bar), `Field` (a small label above one input, wrapping it; `error` for a failed check; the label takes the clinic colour while focused) and `focusField()`, `TextInput`,
 `NumberInput` (every amount, price or age box; `decimals={false}` for whole numbers), `PhoneInput` (every phone box),
 `SelectInput`, `TextArea`, `Toggle`,
 `SearchInput`, `Toolbar`, `Table`, `Th`, `Td` (with `label` for the phone cards), `ClickableRow`, `TableLoading`, `TableMessage`, `TableError` (a failed list load with Try Again), `ClearFiltersButton`, `LoadError` (a failed page load with Try Again), `Pagination`, `DetailList` and
@@ -691,49 +696,70 @@ writing new class lists.
 
 ### Styling
 
-- **The design ("Midnight", chosen by the owner on 2026-09-30).** Indigo clinic colour, cool slate greys (the `gray`
-  scale in `globals.css` is Tailwind's slate), a dark night-blue menu (`Sidebar`) with glowing gradient icon tiles,
-  a gradient welcome banner on the dashboard, white cards with a thin border (`CARD_CLASS`; a card with a `section`
-  gets a 3 px top edge in its colour), white stat cards with a coloured bottom edge, gradient action tiles with white
-  text, gradient primary buttons, and pill tabs in a white bar. Font: Manrope.
-- **Section colours.** Each part of the clinic has its own colour: `patients`, `appointments`,
-  `treatments`, `money`, `reports`, `system` and `whatsapp` (`Section` in the UI kit). A `sec-patients` (etc.)
-  class, written for you by `hueClass()`, sets `--sec` for everything inside, and `bg-sec`, `bg-sec-soft`,
-  `bg-sec-light`, `text-sec-ink` (readable text), `from-sec`, `to-sec-deep` use it. Pass `section` to `Card`,
-  `StatCard` and `ActionTile`, or `hue` to `IconTile` (a `Tone` works too: `sec-red`, `sec-green` …). Write the
-  class names out in full (`hueClass` does): Tailwind only builds classes it can find in the code.
-- **Every screen carries its section's colour**: `<PageContainer section="patients">` and `<PageHeader icon={Users} section="patients">`
-  (printouts only the container). Lists show the patient with `<PatientLink id name look />` (`Avatar.tsx`, looks from
-  `usePatientLooks`), cards on record pages have an `icon`. `BarChart` turns compact after 12 bars (thin bars,
-  values in the tooltips, every few labels).
-- **Avatars:** show a person with `<Avatar name gender age photo role="doctor" size />` (`src/components/Avatar.tsx`)
-  or `<MyAvatar />` for the user. They are `aria-hidden`, so always write the name next to them. Patients under 13
-  are drawn as children. Details (skin tone, hair, beard, headscarf, glasses) come from the name, so they never
-  change between screens.
-- One visual style everywhere: white cards (`Card`, or `CARD_CLASS`) on the page background (`app-bg`, `--page-bg`),
-  `rounded-xl` inputs and buttons, the `primary-*` colour, lucide icons in coloured tiles. No emoji titles.
+- **The design ("Clean", chosen by the owner on 2026-09-30, after the pet store app's admin look).** A light grey page
+  (`--page-bg` #f8f7fa) with white (`bg-surface`) cards: 6 px corners and a soft shadow (`shadow-md`, 0 3px 12px in the
+  text colour at 14 %). A white menu with a soft shadow; the active item is solid clinic colour with a small coloured
+  lift (`shadow-primary`). A floating top bar 16 px below the top: see-through white with a blur (on a separate layer:
+  a blur on the bar itself would trap the fixed overlays inside it), round icon buttons in the clinic colour. Buttons:
+  solid with `shadow-primary`, 40 px (44 px on touch screens), 6 px corners, medium weight; the secondary one outlined.
+  Fields outlined (the text colour at 26 %), 2 px clinic colour and a lift on focus, the label small and above.
+  Tables plain: small-capital headers in the text colour, thin rows. Pill tabs. Violet clinic colour (#6a5fdd, the
+  design's #7367f0 a touch deeper for readable white text). Poppins, El Messiri for Arabic. No gradients, glows,
+  mascots, drawings or cartoon avatars: people are shown by their initials, or a photo.
+- **Dark mode and the other appearance choices** are per computer (`src/lib/appearance.ts`, `localStorage.appearance`):
+  light, dark or the computer's own setting (the theme menu in the top bar, or the Appearance panel), a menu collapsed
+  to 70 px of icons (the pin in the menu's header; pointing at it or tabbing into it opens it over the page), the
+  bordered skin (borders instead of shadows), a semi-dark menu on a light page, and a compact (1440 px) or wide page.
+  `APPEARANCE_BOOT_SCRIPT` puts the classes (`dark`, `nav-collapsed`, `skin-bordered`, `nav-semi-dark`,
+  `content-wide`) on `<html>` before the first paint, and the Tailwind variants `dark:`, `nav-collapsed:`,
+  `skin-bordered:` and `content-wide:` (globals.css) react to them.
+- **Colours come from a few variables**, so screens need no `dark:` classes: `--ink` (the text colour), `--surface`,
+  `--page-bg` and `--shade` change with the mode, and every `gray-*` (the text colour at a strength over the surface:
+  900 headings, 800 body, 500 the quietest readable text, 200 borders, 50-100 hover and quiet backgrounds),
+  `primary-*` and `surface` class is mixed from them where it is used (`@theme inline`). In dark mode the clinic
+  colour's text shades (`text-primary-600` …, rings, borders) are mixed with white to stay readable, so **solid clinic
+  colour under white text is `bg-brand`** (`hover:bg-brand-dark`), never `bg-primary-600`. Status hues (red, green,
+  yellow, amber, blue, sky, purple, violet, rose) get soft tints (50-200) and light text shades (600-950) in dark
+  mode, so **never put white text on `bg-red-600`, `bg-green-600` …**: use `bg-solid-green`, `bg-solid-red`,
+  `bg-solid-ink` (the same in both modes) or a fixed hex. Use `bg-surface`, never `bg-white`, for anything that is a
+  card, menu or field (`bg-white` stays white: a switch knob, the X-ray viewer). Drawings that must look the same in
+  both modes (the teeth of the dental chart) use fixed hex paints. The design's colours are `--success`, `--info`, `--warning`,
+  `--error` and `--secondary` (`bg-success` …). The semi-dark menu sets its own `--ink` and `--surface`
+  (`:root.nav-semi-dark:not(.dark) [data-nav]` in globals.css, so it is right before the first paint), and printing
+  always uses the light colours.
+- **Tinted icons.** `IconTile`, `StatCard`, `ActionTile` and the timeline take a colour from a `Section`
+  (`patients` violet, `appointments` cyan, `treatments` orange, `money` green, `reports` violet, `system` grey,
+  `whatsapp` green) or a `Tone`: `hueClass()` writes a `sec-primary`, `sec-blue` … class that sets `--sec`, and
+  `bg-sec`, `bg-sec-soft` (a 16 % tint), `bg-sec-light`, `text-sec` and `text-sec-ink` (readable text) use it.
+  The class names are written out in full in `SEC_CLASSES` (the UI kit): Tailwind only builds classes it finds in
+  the code.
+  Charts use it too (`BarChart` bars: the strongest solid, the others `bg-sec-light`; turns compact after 12 bars).
+- **Avatars:** `<Avatar name photo size />` (`src/components/Avatar.tsx`): the photo when there is one, else the
+  initials on a tint of the clinic colour; `<MyAvatar />` for the user, `<PatientLink id name />` in lists. They are
+  `aria-hidden`, so always write the name next to them.
+- One visual style everywhere: cards (`Card`, or `CARD_CLASS`) on the page background (`app-bg`, `--page-bg`), 6 px
+  corners (`rounded-md`; `rounded-xl` and `rounded-2xl` are 6 px too), the `primary-*` colour, lucide icons. No
+  emoji titles, no gradients.
 - **Colour: use `primary-50` … `primary-900` for anything that is "the clinic colour"** (buttons, links, active
   menu items, focus rings, highlights). Never write `blue-*` for that. The palette is mixed from one CSS variable,
   `--brand`, which `SettingsContext` sets from Clinic Settings `theme_color` through `applyThemeColor()`
   (`src/lib/theme.ts`). A colour too light for white text is darkened to 4.5:1 contrast. With no `theme_color` (the
-  dummy data has none) the default indigo `#4f46e5` (`DEFAULT_THEME_COLOR`) is used; Settings offers it as the first
+  dummy data has none) the default violet `#6a5fdd` (`DEFAULT_THEME_COLOR`) is used; Settings offers it as the first
   swatch, "Default colour". A script in `layout.tsx` applies the
   last colour before the first paint. `blue` stays only as a
   status tone (see Badge colours). The `Tone` type also has `primary`; `StatCard` uses it by default.
 - **Text sizes:** `--text-xs` is 13 px and `--text-sm` is 15 px (a little larger than Tailwind's default, for
-  reading at a distance). Page titles `text-2xl font-bold`, card titles `text-base font-semibold`, body
+  reading at a distance). Page titles `text-2xl font-medium`, card titles `text-lg font-medium`, body
   `text-sm`, hints and table headers `text-xs`. Do not add other sizes for ordinary text.
 - **Motion is short and calm, and only `motion-safe:`.** A new page fades in while lifting 6 px
-  (`animate-page-in`, 0.22 s, on a wrapper keyed by the path in `MainLayout`), buttons shrink to 98 % while
-  pressed, and clickable cards (`StatCard` with `href`, `ActionTile`) lift 1 px on hover. Stat cards, action
-  tiles and the Today counts rise 10 px into place one after another (`animate-rise`, 0.4 s, `order` sets the
-  delay), chart bars grow from the axis (`animate-grow-up`), and the banner's tooth bobs 4 px (`animate-bob`). All
-  use fill mode `backwards` (or loop on a small decoration), so nothing is left transformed. The page animation
-  uses fill mode `backwards` so no transform stays on the page afterwards: a transform on an ancestor makes the
-  page's `position: fixed` dialogs cover only that ancestor (`e2e/tests/motion.spec.ts` checks it). Do not add
-  longer or bigger animations.
-- **Touch targets are at least 44 px.** `Button` md, inputs, tabs and menu links have `min-h-11`; small
-  buttons and icon buttons grow to 44 px on touch screens with the `pointer-coarse:` variant. Do the same for
+  (`animate-page-in`, 0.2 s, on a wrapper keyed by the path in `MainLayout`), buttons shrink to 98 % while
+  pressed, clickable cards (`StatCard` with `href`, `ActionTile`) get a deeper shadow on hover, and the menu
+  collapses and opens in 0.2 s. The page animation uses fill mode `backwards` so no transform stays on the page
+  afterwards: a transform on an ancestor makes the page's `position: fixed` dialogs cover only that ancestor
+  (`e2e/tests/motion.spec.ts` checks it). Do not add longer or bigger animations.
+- **Touch targets are at least 44 px on touch screens.** Buttons, inputs and tabs are 40 px with a mouse (menu items
+  38 px, top-bar icon buttons 38 px) and grow to 44 px on touch screens with the `pointer-coarse:` variant
+  (`pointer-coarse:min-h-11`). Do the same for
   any new clickable thing.
 - **Phones:** below the `sm` breakpoint every `Table` turns its rows into cards. Give each `Td` except the
   first (the row's name or date) and action cells `label="…"` with the same text as its `Th`; empty cells
@@ -865,7 +891,7 @@ from the translation files, never from text typed in a component.
 - **Dates and money** follow the language by themselves: `formatDate` ("8 أيلول 2026", the Iraqi month names),
   `formatTime` ("10:00 ص"), `formatLongDate`, `formatMonth`, `weekdayShort`, `useSettings().money`
   ("1,250,000 د.ع"), `formatCompact` ("450 ألف").
-- **Which language.** In order: the user's own choice (`User.language`, saved by the switch in the menu), the
+- **Which language.** In order: the user's own choice (`User.language`, saved by the language menu in the top bar or the Appearance panel), the
   language chosen on this computer (`localStorage.language_choice`), the clinic's default (Clinic Settings →
   **Default language**, `default_language`), Arabic. `LANG_BOOT_SCRIPT` sets `lang` and `dir` on `<html>` from the
   language shown last (`localStorage.language`) before the first paint.
@@ -873,8 +899,9 @@ from the translation files, never from text typed in a component.
   `border-s` …), give sideways arrows `rtl:rotate-180`, and slide things in from the start side
   (`-translate-x-full rtl:translate-x-full`). Phone numbers, record IDs, amounts and times in inputs, and the dental
   chart's teeth (anatomical: the patient's right is always on the left) keep `dir="ltr"`.
-- **Fonts.** Manrope for English, IBM Plex Sans Arabic for Arabic (`next/font`, `--font-manrope` and
-  `--font-arabic`; `globals.css` picks by `lang`).
+- **Fonts.** Poppins for English, El Messiri for Arabic (`next/font`, `--font-poppins` and `--font-arabic`). On
+  Arabic screens `body` lists Poppins first: it has no Arabic letters, so Arabic text is El Messiri and names typed
+  in English stay Poppins (Poppins has `adjustFontFallback: false`: its Arial fallback would otherwise draw the Arabic).
 - **WhatsApp templates** have a `language` (`ar`, `en` or empty): `pickTemplate(templates, trigger, lang)` in
   `src/lib/whatsapp.ts` prefers the screen's language. The dummy data has each template in both languages.
 - **Tests.** The browser tests run in English: `e2e/fixtures.ts` sets the language chosen on the computer to `en`

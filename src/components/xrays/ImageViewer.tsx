@@ -45,7 +45,7 @@ function ViewerButton({
       className={cx(
         "w-10 h-10 pointer-coarse:w-11 pointer-coarse:h-11 shrink-0 inline-flex items-center justify-center rounded-xl transition",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 disabled:opacity-35",
-        pressed ? "bg-white text-gray-900" : "text-white/90 hover:bg-white/15",
+        pressed ? "bg-white text-black" : "text-white/90 hover:bg-white/15",
         className,
       )}
     >
@@ -284,7 +284,7 @@ export default function ImageViewer({
             <button
               type="button"
               onClick={() => setDrawing(sketch)}
-              className="inline-flex items-center gap-2 min-h-10 pointer-coarse:min-h-11 px-3 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700"
+              className="inline-flex items-center gap-2 min-h-10 pointer-coarse:min-h-11 px-3 rounded-xl bg-brand text-white text-sm font-medium hover:bg-brand-dark"
             >
               <PenLine size={17} />
               {x.draw}

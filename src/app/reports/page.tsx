@@ -357,7 +357,7 @@ function Reports() {
             ) : (
               <div className="space-y-4">
                 <div className="flex items-baseline gap-2">
-                  <span className={noShowRate !== null && noShowRate >= 15 ? "text-3xl font-bold text-red-600" : "text-3xl font-bold text-gray-800"}>
+                  <span className={noShowRate !== null && noShowRate >= 15 ? "text-3xl font-semibold text-red-600" : "text-3xl font-semibold text-gray-800"}>
                     {noShowRate === null ? t.common.dash : r.rate(noShowRate)}
                   </span>
                   <span className="text-sm text-gray-500">{r.rateText}</span>
@@ -490,7 +490,7 @@ function Reports() {
                   <Td />
                   <Td />
                   <Td />
-                  <Td label={r.colRemaining} className="text-end whitespace-nowrap font-bold text-red-600">{money(outstandingTotal)}</Td>
+                  <Td label={r.colRemaining} className="text-end whitespace-nowrap font-semibold text-red-600">{money(outstandingTotal)}</Td>
                 </tr>
               </tfoot>
             )}

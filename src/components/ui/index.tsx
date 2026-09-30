@@ -1,10 +1,11 @@
 "use client";
 
 /**
- * The shared building blocks for every screen. Use these instead of writing new
- * Tailwind classes for cards, buttons, inputs, tables and badges, so the app looks
- * the same everywhere. Spacing uses start/end (not left/right) so a right-to-left
- * layout can be added later without rewriting screens.
+ * The shared building blocks for every screen. Use these instead of writing new Tailwind classes for cards,
+ * buttons, inputs, tables and badges, so the app looks the same everywhere. The look ("Clean"): white cards with
+ * 6 px corners and a soft shadow on a light grey page, solid buttons in the clinic colour with a small coloured lift,
+ * outlined fields with the label above, soft tinted chips, and plain tables. Every colour comes from the tokens in
+ * globals.css, so dark mode needs nothing here. Spacing uses start/end (not left/right) for right-to-left pages.
  */
 
 import Link from "next/link";
@@ -12,6 +13,7 @@ import { useRouter } from "next/navigation";
 import type {
   ButtonHTMLAttributes,
   ComponentType,
+  CSSProperties,
   InputHTMLAttributes,
   MouseEvent,
   ReactNode,
@@ -31,34 +33,41 @@ import { toLatinDigits } from "@/lib/phone";
 
 export type Tone = "primary" | "blue" | "green" | "gray" | "red" | "yellow" | "purple";
 
-const BADGE_TONES: Record<Tone, string> = {
-  primary: "bg-primary-100 text-primary-800",
-  blue: "bg-blue-100 text-blue-700",
-  green: "bg-green-100 text-green-700",
-  gray: "bg-gray-100 text-gray-700",
-  red: "bg-red-100 text-red-700",
-  yellow: "bg-yellow-100 text-yellow-700",
-  purple: "bg-purple-100 text-purple-700",
+/** Each tone is one of the design's colours. */
+const TONE_COLORS: Record<Tone, string> = {
+  primary: "var(--brand)",
+  blue: "var(--info)",
+  green: "var(--success)",
+  gray: "var(--secondary)",
+  red: "var(--error)",
+  yellow: "var(--warning)",
+  purple: "#9c4df5",
 };
 
 /**
- * The part of the clinic something belongs to. Each has its own colour (globals.css);
- * a card, tile or chart inside takes it through the bg-sec / text-sec-ink / … classes.
+ * The part of the clinic something belongs to. Its only visible effect is the colour of a small tinted icon (a stat
+ * card, a timeline dot): patients violet, appointments cyan, treatments orange, money green, reports violet.
  */
 export type Section = "patients" | "appointments" | "treatments" | "money" | "reports" | "system" | "whatsapp";
 
 /** A section, or one of the plain tones. */
 export type Hue = Section | Tone;
 
-const HUE_CLASSES: Record<Hue, string> = {
-  patients: "sec-patients",
-  appointments: "sec-appointments",
-  treatments: "sec-treatments",
-  money: "sec-money",
-  reports: "sec-reports",
-  system: "sec-system",
-  whatsapp: "sec-whatsapp",
-  primary: "sec-brand",
+const SECTION_TONES: Record<Section, Tone> = {
+  patients: "primary",
+  appointments: "blue",
+  treatments: "yellow",
+  money: "green",
+  reports: "primary",
+  system: "gray",
+  whatsapp: "green",
+};
+
+const toneOf = (hue: Hue): Tone => (hue in SECTION_TONES ? SECTION_TONES[hue as Section] : (hue as Tone));
+
+/** Written out in full: Tailwind only builds the classes it can find in the code. */
+const SEC_CLASSES: Record<Tone, string> = {
+  primary: "sec-primary",
   blue: "sec-blue",
   green: "sec-green",
   gray: "sec-gray",
@@ -67,9 +76,12 @@ const HUE_CLASSES: Record<Hue, string> = {
   purple: "sec-purple",
 };
 
-/** The class that gives everything inside the colour of this section or tone. */
+/**
+ * The class that gives everything inside the colour of this section or tone (for bg-sec, bg-sec-soft, text-sec and
+ * text-sec-ink, defined in globals.css).
+ */
 export function hueClass(hue?: Hue): string | undefined {
-  return hue ? HUE_CLASSES[hue] : undefined;
+  return hue ? SEC_CLASSES[toneOf(hue)] : undefined;
 }
 
 /** Badge colour for every status value. Keep in line with the allowed values in lib/types.ts. */
@@ -85,13 +97,15 @@ const STATUS_TONES = {
 
 export type StatusKind = keyof typeof STATUS_TONES;
 
+/** A small label chip: a soft tint of its colour with the colour's text (readable in both modes). */
 export function Badge({ tone = "gray", children }: { tone?: Tone; children: ReactNode }) {
   return (
     <span
+      // The text is the colour mixed toward black (white in dark mode): 4.5:1 or more on the tint.
+      style={{ "--c": TONE_COLORS[tone], "--c-ink": tone === "yellow" ? "55%" : "62%" } as CSSProperties}
       className={cx(
-        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
-        "ring-1 ring-inset ring-current/15",
-        BADGE_TONES[tone],
+        "inline-flex items-center h-6 px-2.5 rounded text-xs font-medium whitespace-nowrap",
+        "bg-[color-mix(in_srgb,var(--c)_16%,var(--surface))] text-[color-mix(in_srgb,var(--c)_var(--c-ink),var(--shade))]",
       )}
     >
       {children}
@@ -129,12 +143,18 @@ export function StatusBadge({ kind, status }: { kind: StatusKind; status?: strin
 /* --------------------------------------------------------------- layout -- */
 
 /**
- * The page's frame. `section` gives everything inside the colour of that part of the clinic (icon tiles, charts,
- * the header's icon), unless a card sets its own.
+ * The page's frame: up to 1440 px wide (the whole width when the Settings panel says "Wide"), or a narrow column
+ * for forms. `section` colours the small tinted icons inside.
  */
 export function PageContainer({ children, narrow = false, section }: { children: ReactNode; narrow?: boolean; section?: Hue }) {
   return (
-    <div className={cx("mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6", narrow ? "max-w-3xl" : "max-w-7xl", hueClass(section))}>
+    <div
+      className={cx(
+        "mx-auto px-4 sm:px-6 py-6 space-y-6",
+        narrow ? "max-w-3xl" : "max-w-[90rem] content-wide:max-w-none",
+        hueClass(section),
+      )}
+    >
       {children}
     </div>
   );
@@ -147,8 +167,6 @@ export function PageHeader({
   actions,
   badge,
   avatar,
-  icon,
-  section,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
@@ -157,7 +175,7 @@ export function PageHeader({
   badge?: ReactNode;
   /** A picture before the title, e.g. the patient's Avatar. */
   avatar?: ReactNode;
-  /** The screen's icon, in a tile of its section's colour before the title (when there is no avatar). */
+  /** Kept for the screens that pass them: page titles are plain text. */
   icon?: CardIconType;
   section?: Hue;
 }) {
@@ -166,7 +184,7 @@ export function PageHeader({
       {back && (
         <Link
           href={back.href}
-          className="inline-flex items-center gap-1.5 pointer-coarse:min-h-11 text-sm text-gray-500 hover:text-gray-800 print:hidden"
+          className="inline-flex items-center gap-1.5 pointer-coarse:min-h-11 text-sm text-gray-500 hover:text-primary-600 print:hidden"
         >
           <ArrowLeft size={15} className="rtl:rotate-180" />
           {back.label}
@@ -174,10 +192,10 @@ export function PageHeader({
       )}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="min-w-0 flex items-center gap-4">
-          {avatar ?? (icon && <IconTile icon={icon} hue={section} size="lg" className="max-sm:hidden" />)}
+          {avatar}
           <div className="min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-gray-900 break-words">{title}</h1>
+              <h1 className="text-2xl font-medium text-gray-900 break-words">{title}</h1>
               {badge}
             </div>
             {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
@@ -193,14 +211,14 @@ export function PageHeader({
 type CardIconType = ComponentType<{ size?: number; className?: string }>;
 
 const TILE_SIZES = {
-  sm: { box: "w-8 h-8 rounded-lg", icon: 17 },
-  md: { box: "w-10 h-10 rounded-xl", icon: 20 },
-  lg: { box: "w-12 h-12 rounded-2xl", icon: 24 },
+  sm: { box: "w-8 h-8", icon: 18 },
+  md: { box: "w-10 h-10", icon: 22 },
+  lg: { box: "w-12 h-12", icon: 26 },
 } as const;
 
 /**
- * An icon in a rounded tile with a glowing gradient. The colour is `hue`, or the section of the card around it (the
- * clinic colour by default).
+ * An icon on a soft tint of its colour, in a small rounded square (a stat card, a timeline entry). The colour is
+ * `hue`, or the section of the card around it (the clinic colour by default).
  */
 export function IconTile({
   icon: Icon,
@@ -217,26 +235,25 @@ export function IconTile({
   return (
     <span
       aria-hidden="true"
-      className={cx(
-        hueClass(hue),
-        box,
-        "shrink-0 inline-flex items-center justify-center print:hidden",
-        "bg-linear-to-br from-sec to-sec-deep text-white shadow-sm",
-        className,
-      )}
+      className={cx(hueClass(hue), box, "shrink-0 inline-flex items-center justify-center rounded-md bg-sec-soft text-sec print:hidden", className)}
     >
       <Icon size={icon} />
     </span>
   );
 }
 
-/** The small coloured tile that holds a card's icon, before its title. */
-export function CardIcon({ icon }: { icon: CardIconType }) {
-  return <IconTile icon={icon} size="sm" />;
+/** A card's icon, before its title: plain and quiet, so a long page is easy to scan. */
+export function CardIcon({ icon: Icon }: { icon: CardIconType }) {
+  return (
+    <span aria-hidden="true" className="shrink-0 text-gray-500 print:hidden">
+      <Icon size={20} />
+    </span>
+  );
 }
 
-/** The look of every card: crisp white with a thin border. */
-export const CARD_CLASS = "bg-white rounded-2xl border border-gray-200/80 shadow-sm";
+/** The look of every card: the surface colour, 6 px corners and a soft shadow (a thin border in the bordered skin). */
+export const CARD_CLASS =
+  "bg-surface rounded-md shadow-md skin-bordered:shadow-none skin-bordered:border skin-bordered:border-gray-200";
 
 export function Card({
   title,
@@ -245,28 +262,27 @@ export function Card({
   children,
   className,
   flush = false,
-  section,
 }: {
   title?: ReactNode;
-  /** Shown in a small tinted square before the title, so a long page is easy to scan. */
+  /** Shown before the title, so a long page is easy to scan. */
   icon?: CardIconType;
   actions?: ReactNode;
   children: ReactNode;
   className?: string;
   /** No padding around the body. Use for tables. */
   flush?: boolean;
-  /** The part of the clinic the card is about: colours its icon, charts and top edge. */
+  /** Kept for the screens that pass it: colours the small tinted icons inside. */
   section?: Hue;
 }) {
   const hasHeader = Boolean(title || actions);
   return (
-    <section className={cx(CARD_CLASS, hueClass(section), section && "border-t-[3px] border-t-sec", className)}>
+    <section className={cx(CARD_CLASS, className)}>
       {hasHeader && (
-        <div className={cx("flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 sm:px-6 pt-5", flush && "pb-4")}>
+        <div className={cx("flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 sm:px-6 pt-5 sm:pt-6", flush && "pb-4")}>
           {title ? (
             <div className="flex items-center gap-2.5 min-w-0">
               {icon && <CardIcon icon={icon} />}
-              <h2 className="text-base font-semibold text-gray-800">{title}</h2>
+              <h2 className="text-lg font-medium text-gray-900">{title}</h2>
             </div>
           ) : (
             <span />
@@ -281,6 +297,7 @@ export function Card({
   );
 }
 
+/** A number on a card: the figure and its name on one side, a small tinted icon on the other. */
 export function StatCard({
   title,
   value,
@@ -289,7 +306,6 @@ export function StatCard({
   section,
   hint,
   href,
-  order = 0,
 }: {
   title: string;
   value: ReactNode;
@@ -300,45 +316,36 @@ export function StatCard({
   section?: Hue;
   hint?: ReactNode;
   href?: string;
-  /** Position in a row of cards: each one rises into place a moment after the one before. */
+  /** Kept for the screens that pass it. */
   order?: number;
 }) {
   const body = (
-    <>
-      {/* A coloured edge along the bottom. */}
-      <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1 bg-linear-to-r from-sec to-sec-light" />
-      <div className="relative w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-linear-to-br from-sec to-sec-deep text-white shadow-sm">
-        <Icon size={20} />
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <div className="text-sm text-gray-600">{title}</div>
+        {/* Wraps instead of cutting off: "IQD 1,250,000" does not fit a phone's half-width card on one line. The
+            currency format joins "IQD" and the number with a no-break space; a plain one lets it wrap there. */}
+        <div className="mt-1 text-xl sm:text-2xl font-medium text-gray-900 leading-tight break-words">
+          {typeof value === "string" ? value.replace(/\u00a0/g, " ") : value}
+        </div>
+        {hint && <div className="text-xs text-gray-500 mt-1">{hint}</div>}
       </div>
-      {/* Wraps instead of cutting off: "IQD 1,250,000" does not fit a phone's half-width card on one line. The
-          currency format joins "IQD" and the number with a no-break space; a plain one lets it wrap there. */}
-      <div className="relative text-xl sm:text-2xl font-bold text-gray-800 leading-tight break-words">
-        {typeof value === "string" ? value.replace(/ /g, " ") : value}
-      </div>
-      <div className="relative text-sm text-gray-500 mt-1">{title}</div>
-      {hint && <div className="relative text-xs text-gray-500 mt-1">{hint}</div>}
-    </>
+      <IconTile icon={Icon} hue={section ?? tone} className="max-sm:hidden" />
+    </div>
   );
-  const className = cx(
-    hueClass(section ?? tone),
-    "relative overflow-hidden block rounded-2xl p-5 motion-safe:animate-rise",
-    "bg-white border border-gray-200/80 shadow-sm",
-  );
-  const style = { animationDelay: `${order * 70}ms` };
+  const className = cx(CARD_CLASS, "block p-5");
   return href ? (
-    <Link href={href} style={style} className={cx(className, "hover:shadow-md motion-safe:hover:-translate-y-px transition")}>
+    <Link href={href} className={cx(className, "transition-shadow hover:shadow-lg")}>
       {body}
     </Link>
   ) : (
-    <div style={style} className={className}>
-      {body}
-    </div>
+    <div className={className}>{body}</div>
   );
 }
 
 /**
- * A large tile for an everyday job ("New Appointment · Book a visit"): a gradient in the colour of its section,
- * with white text. Put a few of them in a grid near the top of a page, so the job is one tap away.
+ * A large tile for an everyday job ("New Appointment · Book a visit"): a card with a tinted icon, the job and a hint.
+ * Put a few of them in a grid near the top of a page, so the job is one tap away.
  */
 export function ActionTile({
   href,
@@ -346,37 +353,25 @@ export function ActionTile({
   hint,
   icon: Icon,
   section,
-  order = 0,
 }: {
   href: string;
   label: string;
   hint?: string;
   icon: LucideIcon;
-  /** The part of the clinic the job belongs to (its colour). The clinic colour when left out. */
+  /** The part of the clinic the job belongs to (the colour of its icon). The clinic colour when left out. */
   section?: Hue;
   order?: number;
 }) {
   return (
     <Link
       href={href}
-      style={{ animationDelay: `${order * 60}ms` }}
-      className={cx(
-        hueClass(section),
-        "group flex items-center gap-3 min-h-[4.5rem] rounded-2xl border p-3 sm:p-4 transition motion-safe:animate-rise motion-safe:hover:-translate-y-px",
-        "bg-linear-to-br from-sec to-sec-deep border-transparent shadow-md hover:shadow-lg",
-      )}
+      className={cx(CARD_CLASS, "group flex items-center gap-3 min-h-[4.5rem] p-3 sm:p-4 transition-shadow hover:shadow-lg")}
     >
-      <span
-        className={cx(
-          "w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-xl flex items-center justify-center bg-white/20 text-white",
-        )}
-      >
-        <Icon size={20} aria-hidden="true" />
-      </span>
+      <IconTile icon={Icon} hue={section ?? "primary"} />
       <span className="min-w-0">
-        <span className="block text-sm font-semibold text-white leading-snug">{label}</span>
+        <span className="block text-sm font-medium text-gray-900 leading-snug group-hover:text-primary-600">{label}</span>
         {/* Two tiles share a phone's width: the hint would squeeze the label, so it shows from sm up. */}
-        {hint && <span className="block text-xs text-white/90 leading-snug max-sm:hidden">{hint}</span>}
+        {hint && <span className="block text-xs text-gray-500 leading-snug max-sm:hidden">{hint}</span>}
       </span>
     </Link>
   );
@@ -388,26 +383,27 @@ type Variant = "primary" | "secondary" | "danger" | "ghost" | "success";
 type Size = "sm" | "md";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-linear-to-br from-primary-600 to-primary-800 text-white hover:to-primary-900 shadow-md shadow-primary-600/25",
-  secondary: "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50",
-  danger: "bg-red-600 text-white hover:bg-red-700 shadow-sm",
-  ghost: "text-gray-600 hover:bg-gray-100",
-  success: "bg-green-600 text-white hover:bg-green-700 shadow-sm",
+  primary: "bg-brand text-white shadow-primary hover:bg-brand-dark",
+  // Outlined in the neutral colour: Cancel, Back, and the quieter jobs.
+  secondary: "border border-gray-300 text-gray-700 hover:bg-gray-100",
+  danger: "bg-[#dc2626] text-white shadow-[0_2px_6px_0_rgb(220_38_38/0.3)] hover:bg-[#b91c1c]",
+  ghost: "text-gray-700 hover:bg-gray-100",
+  success: "bg-[#15803d] text-white shadow-[0_2px_6px_0_rgb(21_128_61/0.3)] hover:bg-[#166534]",
 };
 
 const SIZES: Record<Size, string> = {
   // Small buttons grow to 44 px on touch screens, so they are easy to hit with a finger.
-  sm: "min-h-9 pointer-coarse:min-h-11 px-3 py-1.5 text-xs gap-1.5",
-  md: "min-h-11 px-4 py-2 text-sm gap-2",
+  sm: "min-h-8 pointer-coarse:min-h-11 px-3.5 py-1 text-xs gap-1.5",
+  md: "min-h-10 pointer-coarse:min-h-11 px-[1.1rem] py-2 text-sm gap-2",
 };
 
 const buttonClass = (variant: Variant, size: Size, className?: string) =>
   cx(
-    "inline-flex items-center justify-center rounded-xl font-medium transition whitespace-nowrap",
+    "inline-flex items-center justify-center rounded-md font-medium transition whitespace-nowrap",
     // Felt at once on a touch screen: the button gives a little while pressed.
     "motion-safe:active:scale-[0.98] disabled:active:scale-100",
-    "disabled:opacity-50 disabled:cursor-not-allowed",
-    "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1",
+    "disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none",
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 focus-visible:ring-offset-surface",
     VARIANTS[variant],
     SIZES[size],
     className,
@@ -480,15 +476,21 @@ export function LinkButton({
 
 /* --------------------------------------------------------------- inputs -- */
 
+/**
+ * An outlined field: a thin border in the text colour (stronger on hover), and on focus a 2 px border in the clinic
+ * colour with a small coloured lift.
+ */
 export const inputClass =
-  "w-full min-h-11 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm max-sm:text-base text-gray-800 placeholder:text-gray-500 " +
-  "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 " +
+  "w-full min-h-10 pointer-coarse:min-h-11 rounded-md border border-gray-300 bg-surface px-3.5 py-1.5 text-sm max-sm:text-base text-gray-900 " +
+  "placeholder:text-gray-400 hover:border-gray-500 transition-[border-color,box-shadow] " +
+  "focus:outline-none focus:border-primary-600 focus:ring-1 focus:ring-primary-600 focus:shadow-primary " +
+  "disabled:bg-gray-100 disabled:text-gray-500 disabled:hover:border-gray-300 " +
   // A field that failed its check (the form sets aria-invalid, and passes the message to Field's `error`).
-  "aria-invalid:border-red-400 aria-invalid:focus:ring-red-400";
+  "aria-invalid:border-error aria-invalid:ring-1 aria-invalid:ring-error aria-invalid:focus:shadow-none";
 
 /**
- * A label above one input. The input goes inside as children, so clicking the label focuses it. The label takes
- * the clinic colour while its input has focus. `error` shows the reason a check failed right under the field;
+ * A small label above one input. The input goes inside as children, so clicking the label focuses it. The label
+ * takes the clinic colour while its input has focus. `error` shows the reason a check failed right under the field;
  * give the input `aria-invalid` too, and move to it with `focusField()`.
  */
 export function Field({
@@ -510,8 +512,8 @@ export function Field({
     <label className={cx("block group/field", className)}>
       <span
         className={cx(
-          "block text-sm font-medium mb-1.5 transition-colors",
-          error ? "text-red-700" : "text-gray-700 group-focus-within/field:text-primary-700",
+          "block text-xs mb-1 transition-colors",
+          error ? "text-red-700" : "text-gray-800 group-focus-within/field:text-primary-600",
         )}
       >
         {label}
@@ -519,7 +521,7 @@ export function Field({
       </span>
       {children}
       {error && (
-        <span role="alert" className="flex items-start gap-1.5 text-xs font-medium text-red-700 mt-1.5">
+        <span role="alert" className="flex items-start gap-1.5 text-xs text-red-700 mt-1">
           <AlertCircle size={14} className="shrink-0 mt-0.5" aria-hidden="true" />
           {error}
         </span>
@@ -644,11 +646,16 @@ export function Toggle({
       onClick={() => onChange(!checked)}
       className="flex items-start gap-3 text-start w-full disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      <span className={cx("relative inline-flex h-6 w-11 shrink-0 rounded-full transition", checked ? "bg-primary-600" : "bg-gray-200")}>
+      <span
+        className={cx(
+          "relative inline-flex h-[1.125rem] w-[1.875rem] mt-0.5 shrink-0 rounded-full transition",
+          checked ? "bg-brand shadow-primary" : "bg-gray-200 shadow-[inset_0_0_4px_rgb(0_0_0/0.16)]",
+        )}
+      >
         <span
           className={cx(
-            "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all",
-            checked ? "start-[22px]" : "start-0.5",
+            "absolute top-0.5 h-3.5 w-3.5 rounded-full bg-white shadow-xs transition-all",
+            checked ? "start-[0.875rem]" : "start-0.5",
           )}
         />
       </span>
@@ -685,7 +692,7 @@ export function SearchInput({
           type="button"
           onClick={() => onChange("")}
           aria-label={messages().ui.clearSearch}
-          className="absolute end-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          className="absolute end-1 top-1/2 -translate-y-1/2 w-8 h-8 pointer-coarse:w-10 pointer-coarse:h-10 flex items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700"
         >
           <X size={16} />
         </button>
@@ -708,7 +715,7 @@ export function Segmented<K extends string>({
   label: string;
 }) {
   return (
-    <div role="group" aria-label={label} className="inline-flex flex-wrap max-w-full rounded-xl bg-gray-200/70 p-1 gap-1">
+    <div role="group" aria-label={label} className="inline-flex flex-wrap max-w-full rounded-md border border-gray-200 bg-surface p-1 gap-1">
       {options.map((option) => {
         const Icon = option.icon;
         const active = option.value === value;
@@ -719,9 +726,9 @@ export function Segmented<K extends string>({
             aria-pressed={active}
             onClick={() => onChange(option.value)}
             className={cx(
-              "inline-flex items-center justify-center gap-1.5 min-h-9 pointer-coarse:min-h-11 px-2.5 sm:px-3.5 rounded-lg text-sm font-medium transition",
+              "inline-flex items-center justify-center gap-1.5 min-h-8 pointer-coarse:min-h-11 px-2.5 sm:px-3.5 rounded text-sm font-medium transition",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
-              active ? "bg-white text-primary-700 shadow-sm" : "text-gray-600 hover:text-gray-900",
+              active ? "bg-brand text-white shadow-primary" : "text-gray-700 hover:bg-primary-50 hover:text-primary-600",
             )}
           >
             {Icon && <Icon size={15} />}
@@ -739,7 +746,7 @@ export function Segmented<K extends string>({
  */
 export function FormActions({ children }: { children: ReactNode }) {
   return (
-    <div className="sticky bottom-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-[color-mix(in_oklab,var(--page-bg)_95%,transparent)] border-t border-gray-200 flex flex-wrap items-center gap-3 print:hidden">
+    <div className="sticky bottom-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-[color-mix(in_srgb,var(--page-bg)_94%,transparent)] backdrop-blur-sm border-t border-gray-200 flex flex-wrap items-center gap-3 print:hidden">
       {children}
     </div>
   );
@@ -764,7 +771,7 @@ export function Table({ children }: { children: ReactNode }) {
         className={cx(
           "w-full text-sm",
           "max-sm:block max-sm:[&>thead]:hidden max-sm:[&>tbody]:block",
-          "max-sm:[&>tbody>tr]:block max-sm:[&>tbody>tr]:px-4 max-sm:[&>tbody>tr]:py-3 max-sm:[&>tbody>tr]:border-b max-sm:[&>tbody>tr]:border-gray-100",
+          "max-sm:[&>tbody>tr]:block max-sm:[&>tbody>tr]:px-4 max-sm:[&>tbody>tr]:py-3 max-sm:[&>tbody>tr]:border-b max-sm:[&>tbody>tr]:border-gray-200",
         )}
       >
         {children}
@@ -779,7 +786,8 @@ export function Th({ children, className }: { children?: ReactNode; className?: 
       className={cx(
         // text-start unless the column is right-aligned (text-end), so numbers line up under their header.
         className?.includes("text-end") ? "" : "text-start",
-        "px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 border-b border-gray-100 whitespace-nowrap",
+        // Plain headers: small capitals in the text colour, no background.
+        "px-4 first:ps-6 last:pe-6 py-3.5 text-xs font-semibold uppercase tracking-wide text-gray-800 border-b border-gray-200 whitespace-nowrap",
         className,
       )}
     >
@@ -793,7 +801,7 @@ export function Td({ children, className, label }: { children?: ReactNode; class
     <td
       data-label={label}
       className={cx(
-        "px-5 py-3.5 text-gray-600 border-b border-gray-50 align-middle",
+        "px-4 sm:first:ps-6 sm:last:pe-6 py-3 text-gray-700 border-b border-gray-200 align-middle",
         // Phone card layout (see Table).
         "max-sm:flex max-sm:items-center max-sm:gap-4 max-sm:px-0 max-sm:py-1 max-sm:border-0 max-sm:max-w-none",
         label
@@ -829,7 +837,7 @@ export function TableLoading({ colSpan, rows = 5 }: { colSpan: number; rows?: nu
     <>
       {Array.from({ length: rows }, (_, row) => (
         <tr key={row} aria-hidden={row > 0 ? true : undefined}>
-          <td colSpan={colSpan} className="px-5 py-4 border-b border-gray-50 max-sm:block">
+          <td colSpan={colSpan} className="px-6 py-4 border-b border-gray-200 max-sm:block">
             {row === 0 && <span className="sr-only" role="status">{messages().ui.loading}</span>}
             <div className="flex items-center gap-6 animate-pulse">
               <div className="h-4 w-1/4 rounded bg-gray-100" />
@@ -904,21 +912,21 @@ export function Pagination({
 }) {
   if (total === 0) return null;
   if (total <= pageSize) {
-    return <p className="px-5 py-3 text-xs text-gray-500">{messages().ui.records(total)}</p>;
+    return <p className="px-6 py-3 text-xs text-gray-500 border-t border-gray-200">{messages().ui.records(total)}</p>;
   }
   const pages = Math.ceil(total / pageSize);
   const from = (page - 1) * pageSize + 1;
   const to = Math.min(total, page * pageSize);
   const arrow =
-    "inline-flex items-center justify-center w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent";
+    "inline-flex items-center justify-center w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11 rounded-md bg-gray-100 text-gray-800 hover:bg-primary-100 hover:text-primary-700 disabled:opacity-45 disabled:hover:bg-gray-100 disabled:hover:text-gray-800";
   return (
-    <div className="flex items-center justify-between gap-3 px-5 py-3 text-sm text-gray-500">
+    <div className="flex items-center justify-between gap-3 px-6 py-3 text-sm text-gray-500 border-t border-gray-200">
       <span>{messages().ui.range(from, to, total)}</span>
       <div className="flex items-center gap-1">
         <button type="button" className={arrow} disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label={messages().ui.previousPage}>
           <ChevronLeft size={16} className="rtl:rotate-180" />
         </button>
-        <span className="px-2 whitespace-nowrap">{messages().ui.pageOf(page, pages)}</span>
+        <span className="px-2 whitespace-nowrap text-gray-800">{messages().ui.pageOf(page, pages)}</span>
         <button type="button" className={arrow} disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label={messages().ui.nextPage}>
           <ChevronRight size={16} className="rtl:rotate-180" />
         </button>
@@ -933,11 +941,11 @@ export function Pagination({
 export function DetailRow({ label, children }: { label: string; children?: ReactNode }) {
   const empty = children === null || children === undefined || children === "";
   return (
-    <div className="grid grid-cols-1 @xs:grid-cols-3 gap-1 @xs:gap-4 py-2.5 border-b border-gray-50 last:border-0">
+    <div className="grid grid-cols-1 @xs:grid-cols-3 gap-1 @xs:gap-4 py-2.5 border-b border-gray-100 last:border-0">
       <dt className="text-sm text-gray-500 break-words">{label}</dt>
       <dd className="@xs:col-span-2 min-w-0 text-sm text-gray-800 whitespace-pre-line break-words">
         {/* Typed text keeps its own direction (<bdi>): an English note on an Arabic screen ends with its full stop. */}
-        {empty ? <span className="text-gray-300">—</span> : typeof children === "string" ? <bdi>{children}</bdi> : children}
+        {empty ? <span className="text-gray-400">—</span> : typeof children === "string" ? <bdi>{children}</bdi> : children}
       </dd>
     </div>
   );
@@ -958,12 +966,8 @@ export function Tabs<K extends string>({
   onChange: (key: K) => void;
 }) {
   return (
-    <div
-      className={cx(
-        // A white bar of pill tabs.
-        "overflow-x-auto print:hidden border border-gray-200/80 bg-white rounded-2xl p-1.5 shadow-sm",
-      )}
-    >
+    // Pill tabs on the page: the chosen one solid in the clinic colour.
+    <div className="overflow-x-auto print:hidden -m-1 p-1">
       <div className="flex gap-1 min-w-max" role="tablist">
         {tabs.map((tab) => (
           <button
@@ -973,13 +977,20 @@ export function Tabs<K extends string>({
             aria-selected={active === tab.key}
             onClick={() => onChange(tab.key)}
             className={cx(
-              "min-h-11 px-4 py-2 text-sm font-medium rounded-xl transition whitespace-nowrap",
-              active === tab.key ? "bg-primary-600 text-white" : "text-gray-500 hover:text-gray-800 hover:bg-gray-100",
+              "min-h-10 pointer-coarse:min-h-11 px-4 py-2 text-sm font-medium rounded-md transition whitespace-nowrap",
+              active === tab.key ? "bg-brand text-white shadow-primary" : "text-gray-800 hover:bg-primary-50 hover:text-primary-600",
             )}
           >
             {tab.label}
             {tab.count !== undefined && (
-              <span className="ms-1.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">{tab.count}</span>
+              <span
+                className={cx(
+                  "ms-1.5 rounded px-1.5 py-0.5 text-xs",
+                  active === tab.key ? "bg-white/20 text-white" : "bg-gray-100 text-gray-700",
+                )}
+              >
+                {tab.count}
+              </span>
             )}
           </button>
         ))}
@@ -997,17 +1008,19 @@ export function Alert({
   title?: string;
   children: ReactNode;
 }) {
-  const styles = {
-    // Information uses the clinic colour.
-    blue: "bg-primary-50 border-primary-100 text-primary-800",
-    red: "bg-red-50 border-red-100 text-red-800",
-    yellow: "bg-yellow-50 border-yellow-100 text-yellow-800",
-  }[tone];
+  // A soft tint of the colour, and the colour's icon in a small solid square. Information uses the clinic colour.
+  const color = { blue: "var(--brand)", red: "var(--error)", yellow: "var(--warning)" }[tone];
   const Icon = tone === "blue" ? Info : AlertCircle;
   return (
-    <div role={tone === "red" ? "alert" : undefined} className={cx("flex gap-3 rounded-xl border px-4 py-3 text-sm", styles)}>
-      <Icon size={18} className="shrink-0 mt-0.5" />
-      <div>
+    <div
+      role={tone === "red" ? "alert" : undefined}
+      style={{ "--c": color } as CSSProperties}
+      className="flex gap-3 rounded-md px-4 py-3 text-sm bg-[color-mix(in_srgb,var(--c)_14%,var(--surface))] text-[color-mix(in_srgb,var(--c)_58%,var(--shade))]"
+    >
+      <span className="shrink-0 w-[1.875rem] h-[1.875rem] rounded-md flex items-center justify-center bg-[var(--c)] text-white" aria-hidden="true">
+        <Icon size={18} />
+      </span>
+      <div className="min-w-0 self-center">
         {title && <p className="font-semibold">{title}</p>}
         <div>{children}</div>
       </div>
@@ -1060,7 +1073,7 @@ export function ProgressBar({
         aria-valuemax={100}
       >
         <div
-          className={cx("h-full rounded-full transition-[width] duration-200", tone === "green" ? "bg-green-500" : "bg-primary-600")}
+          className={cx("h-full rounded-full transition-[width] duration-200", tone === "green" ? "bg-green-500" : "bg-brand")}
           style={{ width: `${percent}%` }}
         />
       </div>
@@ -1080,9 +1093,9 @@ export function PageLoading({ label: text = messages().ui.loading }: { label?: s
 /** A grey card of the skeleton below: a title with its icon square, then a few lines. */
 function SkeletonCard({ lines }: { lines: number }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 space-y-4">
+    <div className={cx(CARD_CLASS, "p-5 sm:p-6 space-y-4")}>
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-gray-100" />
+        <div className="w-5 h-5 rounded bg-gray-100" />
         <div className="h-4 w-32 rounded bg-gray-200/70" />
       </div>
       {Array.from({ length: lines }, (_, line) => (
@@ -1111,7 +1124,7 @@ export function RecordLoading() {
             <div className="h-7 w-64 max-w-full rounded-lg bg-gray-200/70" />
             <div className="h-3.5 w-44 rounded bg-gray-100" />
           </div>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 grid grid-cols-2 sm:grid-cols-4 gap-5">
+          <div className={cx(CARD_CLASS, "p-5 sm:p-6 grid grid-cols-2 sm:grid-cols-4 gap-5")}>
             {Array.from({ length: 4 }, (_, box) => (
               <div key={box} className={cx("space-y-2", box > 1 && "max-sm:hidden")}>
                 <div className="h-3 w-16 rounded bg-gray-100" />
@@ -1131,24 +1144,12 @@ export function RecordLoading() {
   );
 }
 
-/** A small, calm drawing for empty lists: a soft disc with sparkles and the icon on a card. */
+/** The icon of an empty list: plain, on a soft tint of the clinic colour. */
 function EmptyDrawing({ icon: Icon }: { icon: LucideIcon }) {
   return (
-    <div className="relative w-32 h-28 mb-4" aria-hidden="true">
-      <svg viewBox="0 0 128 112" className="absolute inset-0 w-full h-full">
-        <ellipse cx="64" cy="102" rx="36" ry="5" className="fill-gray-200/70" />
-        <circle cx="64" cy="52" r="42" className="fill-primary-50" />
-        <circle cx="64" cy="52" r="30" className="fill-primary-100/60" />
-        <circle cx="16" cy="26" r="4" className="fill-primary-200" />
-        <circle cx="114" cy="72" r="3" className="fill-primary-200" />
-        <circle cx="24" cy="84" r="2.5" className="fill-gray-200" />
-        <path d="M108 14v10M103 19h10" strokeWidth="2.5" strokeLinecap="round" className="stroke-primary-300" />
-        <path d="M14 56v6M11 59h6" strokeWidth="2" strokeLinecap="round" className="stroke-gray-300" />
-      </svg>
-      <span className="absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-2xl bg-white shadow-sm border border-primary-100 text-primary-600 flex items-center justify-center">
-        <Icon size={26} strokeWidth={1.75} />
-      </span>
-    </div>
+    <span aria-hidden="true" className="mb-3 w-12 h-12 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center">
+      <Icon size={24} strokeWidth={1.75} />
+    </span>
   );
 }
 
@@ -1164,9 +1165,9 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center text-center py-12 px-6">
+    <div className="flex flex-col items-center text-center py-10 px-6">
       <EmptyDrawing icon={Icon} />
-      <p className="font-semibold text-gray-700">{title}</p>
+      <p className="font-medium text-gray-900">{title}</p>
       {text && <p className="text-sm text-gray-500 mt-1 max-w-sm">{text}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>

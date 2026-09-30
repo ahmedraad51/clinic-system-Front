@@ -431,9 +431,10 @@ export default function AppointmentCalendar({
       {result?.error && <Alert tone="red">{result.error}</Alert>}
       {view === "day" && !isOpenOn(date) && <Alert tone="yellow">{c.closedDay}</Alert>}
 
-      <div className={cx("relative overflow-hidden", CARD_CLASS)}>
+      {/* isolate: the grid's sticky headers and chips stack among themselves, under the top bar's menus. */}
+      <div className={cx("relative isolate overflow-hidden", CARD_CLASS)}>
         {loading && (
-          <div className="absolute top-3 end-3 z-50 rounded-full bg-white/90 px-3 py-1 text-xs text-gray-500 shadow-sm" role="status">
+          <div className="absolute top-3 end-3 z-50 rounded-full bg-surface/90 px-3 py-1 text-xs text-gray-600 shadow-sm" role="status">
             {t.common.loading}
           </div>
         )}
@@ -449,7 +450,7 @@ export default function AppointmentCalendar({
                 type="button"
                 onClick={() => setPhoneColumn((shownIndex - 1 + columns.length) % columns.length)}
                 aria-label={c.previousDoctor}
-                className="w-11 h-11 flex items-center justify-center rounded-lg text-gray-600 hover:bg-white"
+                className="w-11 h-11 flex items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
               >
                 <ChevronLeft size={20} className="rtl:rotate-180" />
               </button>
@@ -459,7 +460,7 @@ export default function AppointmentCalendar({
                   {columns.map((column, index) => (
                     <span
                       key={column.key}
-                      className={cx("w-1.5 h-1.5 rounded-full", index === shownIndex ? "bg-primary-600" : "bg-gray-300")}
+                      className={cx("w-1.5 h-1.5 rounded-full", index === shownIndex ? "bg-brand" : "bg-gray-300")}
                     />
                   ))}
                 </div>
@@ -468,7 +469,7 @@ export default function AppointmentCalendar({
                 type="button"
                 onClick={() => setPhoneColumn((shownIndex + 1) % columns.length)}
                 aria-label={c.nextDoctor}
-                className="w-11 h-11 flex items-center justify-center rounded-lg text-gray-600 hover:bg-white"
+                className="w-11 h-11 flex items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
               >
                 <ChevronRight size={20} className="rtl:rotate-180" />
               </button>
@@ -481,12 +482,12 @@ export default function AppointmentCalendar({
               style={{ gridTemplateColumns: `4.25rem repeat(${shown.length}, minmax(${minColumn}, 1fr))` }}
             >
               {/* Header row */}
-              <div className="sticky top-0 start-0 z-40 bg-white border-b border-e border-gray-100" />
+              <div className="sticky top-0 start-0 z-40 bg-surface border-b border-e border-gray-100" />
               {shown.map((column) => (
                 <div
                   key={column.key}
                   data-today={column.today}
-                  className="sticky top-0 z-30 bg-white border-b border-gray-100 border-e last:border-e-0 px-2 py-2.5 text-center"
+                  className="sticky top-0 z-30 bg-surface border-b border-gray-100 border-e last:border-e-0 px-2 py-2.5 text-center"
                 >
                   {view === "day" ? (
                     <>
@@ -509,7 +510,7 @@ export default function AppointmentCalendar({
                       <p
                         className={cx(
                           "mx-auto mt-0.5 w-8 h-8 rounded-full flex items-center justify-center text-base font-semibold",
-                          column.today ? "bg-primary-600 text-white" : "text-gray-800",
+                          column.today ? "bg-brand text-white" : "text-gray-800",
                         )}
                       >
                         {column.subtitle}
@@ -521,7 +522,7 @@ export default function AppointmentCalendar({
               ))}
 
               {/* Time labels */}
-              <div className="sticky start-0 z-[25] bg-white border-e border-gray-100" style={{ height }}>
+              <div className="sticky start-0 z-[25] bg-surface border-e border-gray-100" style={{ height }}>
                 {hours.map((m, i) => (
                   <span
                     key={m}

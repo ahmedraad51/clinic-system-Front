@@ -37,7 +37,7 @@ export default function PrescriptionWarnings({ warnings, quiet = false }: { warn
           <li
             key={`${warning.kind}-${warning.medicine}-${index}`}
             className={cx(
-              "rounded-lg border bg-white px-3 py-1.5 text-sm text-gray-800",
+              "rounded-lg border bg-surface px-3 py-1.5 text-sm text-gray-800",
               warning.severity === "high" ? "border-red-200" : "border-yellow-300",
             )}
           >

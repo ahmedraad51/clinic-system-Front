@@ -63,9 +63,9 @@ export function BarChart({
                 title={`${point.fullLabel ?? point.label}: ${format(point.value)}`}
                 style={style}
                 className={cx(
-                  "w-full origin-bottom motion-safe:animate-grow-up",
-                  "rounded-t-md bg-linear-to-t from-sec to-sec-light",
-                  index !== strong && "opacity-70",
+                  // Plain bars: the strongest (this month) in the full colour, the others in a soft tint of it.
+                  "w-full rounded-t",
+                  index === strong ? "bg-sec" : "bg-sec-light",
                 )}
               />
             </div>
@@ -77,16 +77,16 @@ export function BarChart({
   );
 }
 
-/** The colours of a ring's slices, in order: the section colours, then greys. */
+/** The colours of a ring's slices, in order: the design's colours, then greys. */
 const SLICE_COLOURS = [
-  "var(--sec-treatments)",
-  "var(--sec-patients)",
-  "var(--sec-appointments)",
-  "var(--sec-money)",
-  "var(--sec-reports)",
   "var(--brand)",
-  "#94a3b8",
-  "#cbd5e1",
+  "var(--info)",
+  "var(--success)",
+  "var(--warning)",
+  "var(--error)",
+  "#9c4df5",
+  "var(--secondary)",
+  "color-mix(in srgb, var(--ink) 25%, var(--surface))",
 ];
 
 /** A ring cut into slices, with the total in the middle and a legend beside it. */
@@ -138,7 +138,7 @@ export function DonutChart({
           ))}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-bold text-gray-800 leading-none">{format(total)}</span>
+          <span className="text-2xl font-semibold text-gray-800 leading-none">{format(total)}</span>
           <span className="text-xs text-gray-500 mt-1">{centerLabel}</span>
         </div>
       </div>

@@ -6,20 +6,23 @@
  * darkened until it reaches the WCAG AA contrast of 4.5:1, so buttons stay readable whatever is chosen.
  */
 
-/** Indigo, used when the clinic chose no colour. Keep in step with `--brand` in globals.css. */
-export const DEFAULT_THEME_COLOR = "#4f46e5";
+/**
+ * Violet, used when the clinic chose no colour: the design's #7367f0, a touch deeper so white text on it is
+ * readable (4.9:1). Keep in step with `--brand` in globals.css.
+ */
+export const DEFAULT_THEME_COLOR = "#6a5fdd";
 
 /**
  * Ready-made choices on the settings page. `key` names the colour in the translations
  * (t.settings.themeNames.teal …).
  */
 export const THEME_PRESETS = [
-  { key: "teal", value: "#0e7c86" },
-  { key: "sky", value: "#0369a1" },
+  { key: "teal", value: "#0d9394" },
+  { key: "sky", value: "#16b1ff" },
   { key: "blue", value: "#2563eb" },
-  { key: "green", value: "#15803d" },
-  { key: "rose", value: "#be123c" },
-  { key: "purple", value: "#7e22ce" },
+  { key: "green", value: "#28c76f" },
+  { key: "rose", value: "#ff4c51" },
+  { key: "purple", value: "#9c4df5" },
 ] as const;
 
 const STORAGE_KEY = "theme_color";
@@ -58,7 +61,7 @@ export function readableBrand(value: string | null | undefined): string {
 
 /**
  * Applies the clinic colour to the page and remembers it, so the next visit starts in the right colour. No colour
- * (the clinic never chose one) leaves the default indigo (globals.css).
+ * (the clinic never chose one) leaves the default violet (globals.css).
  */
 export function applyThemeColor(value: string | null | undefined): void {
   const root = document.documentElement.style;

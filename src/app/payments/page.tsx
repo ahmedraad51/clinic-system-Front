@@ -16,7 +16,7 @@ import { label } from "@/i18n";
 import { getList, type FilterRow } from "@/lib/frappe";
 import { display, formatDate } from "@/lib/format";
 import { currencyOf, sumByCurrency, type MoneyTotals } from "@/lib/currency";
-import { searchFilters, useDebounced, usePagedList, usePatientLooks } from "@/lib/hooks";
+import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
 import { paymentHref, treatmentHref } from "@/lib/links";
 import { PAYMENT_METHODS, type Payment } from "@/lib/types";
 
@@ -53,7 +53,6 @@ function PaymentsList() {
     orFilters,
     orderBy: "payment_date desc, name desc",
   });
-  const looks = usePatientLooks(list.rows.map((row) => row.patient));
 
   // The total of every payment that matches, not just this page.
   const sumKey = JSON.stringify({ filters, orFilters });
@@ -169,7 +168,7 @@ function PaymentsList() {
                     <span className="block text-xs text-gray-500">{pay.name}</span>
                   </Td>
                   <Td label={p.colPatient}>
-                    <PatientLink id={pay.patient} name={pay.patient_name} look={looks[pay.patient]} />
+                    <PatientLink id={pay.patient} name={pay.patient_name} />
                   </Td>
                   <Td label={p.colTreatment}>
                     {pay.treatment_plan ? (

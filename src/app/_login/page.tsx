@@ -57,7 +57,7 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 w-full max-w-md">
+      <div className="bg-surface rounded-2xl border border-gray-100 shadow-sm p-8 w-full max-w-md">
         {/* Nobody is known yet, so the choice is kept on this computer. */}
         <div role="group" aria-label={t.nav.language} className="flex justify-end gap-1 -mt-2 mb-2">
           {LANGS.map((option) => (
@@ -77,10 +77,10 @@ function LoginForm() {
           ))}
         </div>
         <div className="text-center mb-8">
-          <span className="mx-auto w-12 h-12 bg-primary-600 rounded-2xl flex items-center justify-center text-white">
+          <span className="mx-auto w-12 h-12 bg-brand rounded-2xl flex items-center justify-center text-white">
             <ToothLogo size={26} />
           </span>
-          <h1 className="text-2xl font-bold text-gray-800 mt-4">{t.common.appName}</h1>
+          <h1 className="text-2xl font-semibold text-gray-800 mt-4">{t.common.appName}</h1>
           <p className="text-gray-500 text-sm mt-1">{t.login.subtitle}</p>
         </div>
 

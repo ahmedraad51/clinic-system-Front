@@ -89,26 +89,26 @@ export function Modal({
 
   return (
     <div className={cx("fixed inset-0 flex items-end sm:items-center justify-center sm:p-4 print:hidden", priority ? "z-[55]" : "z-50")}>
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
         className={cx(
-          "relative bg-white w-full rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[90vh] flex flex-col",
+          "relative bg-surface w-full rounded-t-md sm:rounded-md shadow-lg max-h-[90vh] flex flex-col",
           wide ? "sm:max-w-2xl" : "sm:max-w-md",
         )}
       >
-        <div className="flex items-center justify-between gap-3 px-6 pt-5 pb-3">
-          <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
+        <div className="flex items-center justify-between gap-3 px-6 pt-6 pb-4">
+          <h2 className="text-lg font-medium text-gray-900">{title}</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label={messages().ui.close}
-            className="w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11 -me-2 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            className="w-8 h-8 pointer-coarse:w-11 pointer-coarse:h-11 -me-2 flex items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800"
           >
-            <X size={18} />
+            <X size={20} />
           </button>
         </div>
         <div ref={bodyRef} className="px-6 pb-6 overflow-y-auto">
@@ -127,6 +127,7 @@ export function ConfirmDialog({
   confirmLabel = messages().ui.confirm,
   danger = true,
   busy = false,
+  priority = false,
   onConfirm,
   onCancel,
 }: {
@@ -136,11 +137,13 @@ export function ConfirmDialog({
   confirmLabel?: string;
   danger?: boolean;
   busy?: boolean;
+  /** Above other dialogs and the Appearance panel (a question asked from inside them). */
+  priority?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
   return (
-    <Modal open={open} title={title} onClose={busy ? noop : onCancel}>
+    <Modal open={open} title={title} onClose={busy ? noop : onCancel} priority={priority}>
       <div className="text-sm text-gray-600">{message}</div>
       <div className="flex justify-end gap-2 mt-6">
         <Button variant="secondary" onClick={onCancel} disabled={busy}>

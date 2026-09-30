@@ -270,7 +270,7 @@ function PaymentDetail() {
 
         <div className="flex items-center justify-between rounded-xl bg-green-50 px-5 py-4">
           <span className="text-sm font-medium text-green-800">{r.amountPaid}</span>
-          <span className="text-2xl font-bold text-green-700">{money(payment.amount, payment.currency)}</span>
+          <span className="text-2xl font-semibold text-green-700">{money(payment.amount, payment.currency)}</span>
         </div>
         {rateLines.length > 0 && (
           <dl data-testid="receipt-rate" className="mt-3 space-y-1 text-sm">

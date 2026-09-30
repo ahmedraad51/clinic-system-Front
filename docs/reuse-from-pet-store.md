@@ -516,6 +516,11 @@ Only two items need a package; everything else is plain TypeScript and React.
 
 ## 9. Design ideas
 
+**Update 2026-09-30:** the owner then asked for the pet store's whole look (its colours, font, cards, tables, forms,
+menu, top bar, dark mode, collapsed menu), rebuilt in DentClinic's own code. It replaced the teal and "Midnight"
+styles: see [design-changes/2-clean](design-changes/2-clean/README.md) and the **Styling** section of AGENTS.md. The
+items below are the earlier, smaller ideas.
+
 Added 2026-09-28. The owner now allows **design ideas** from the pet store (layouts, navigation, cards, spacing,
 typography, forms, tables, empty and loading states, small animations) when they make DentClinic clearer or
 easier for clinic staff. Each one is rebuilt in DentClinic's own React, Tailwind and UI kit

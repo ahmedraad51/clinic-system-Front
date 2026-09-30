@@ -205,7 +205,7 @@ function Statement() {
               </div>
               <div className="flex justify-between gap-4 rounded-xl bg-primary-50 px-3 py-2 print:bg-white print:border print:border-gray-300">
                 <span className="font-semibold text-primary-900">{s.balance}</span>
-                <span className="font-bold text-primary-900">{balance}</span>
+                <span className="font-semibold text-primary-900">{balance}</span>
               </div>
             </div>
           </div>

@@ -51,18 +51,18 @@ function AppointmentCard() {
       />
 
       {/* About the size of a postcard, drawn with a dashed edge to cut along. */}
-      <div dir={dir} className="mx-auto max-w-md rounded-2xl border-2 border-dashed border-gray-300 bg-white p-6 space-y-5 text-start print:mt-0">
+      <div dir={dir} className="mx-auto max-w-md rounded-2xl border-2 border-dashed border-gray-300 bg-surface p-6 space-y-5 text-start print:mt-0">
         <div className="flex items-center gap-3">
           {settings.logo ? (
             // eslint-disable-next-line @next/next/no-img-element -- the logo is an uploaded file of unknown size
             <img src={fileHref(settings.logo)} alt="" className="w-11 h-11 rounded-xl object-contain" />
           ) : (
-            <span className="w-11 h-11 shrink-0 rounded-xl bg-primary-600 text-white flex items-center justify-center">
+            <span className="w-11 h-11 shrink-0 rounded-xl bg-brand text-white flex items-center justify-center">
               <ToothLogo size={22} />
             </span>
           )}
           <div>
-            <p className="font-bold text-gray-800">{clinicName}</p>
+            <p className="font-semibold text-gray-800">{clinicName}</p>
             <p className="text-xs text-gray-500">{card.yourNext}</p>
           </div>
         </div>
@@ -73,7 +73,7 @@ function AppointmentCard() {
         </div>
 
         <div className="rounded-xl bg-primary-50 px-4 py-3 print:bg-white print:border print:border-gray-300">
-          <p className="text-xl font-bold text-primary-900">{formatLongDate(appointment.appointment_date)}</p>
+          <p className="text-xl font-semibold text-primary-900">{formatLongDate(appointment.appointment_date)}</p>
           <p className="text-lg font-semibold text-primary-800">{card.at(formatTime(appointment.appointment_time))}</p>
           {appointment.doctor_name && <p className="text-sm text-primary-800 mt-1">{card.with(appointment.doctor_name)}</p>}
         </div>

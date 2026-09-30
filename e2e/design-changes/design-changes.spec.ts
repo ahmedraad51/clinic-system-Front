@@ -3,16 +3,20 @@ import { test } from "../fixtures";
 import { waitForData } from "../helpers";
 
 /**
- * Before-and-after pictures of the redesign (Phase 2), in English: the main screens at desktop, tablet and phone
- * size, saved to docs/design-changes/<SHOTS>/<size>/<screen>.png. SHOTS is "after" by default; the "before"
- * pictures were taken the same way from the plain design (commit 147e676). Run with `npm run screenshots:design`.
+ * Before-and-after pictures of a redesign, in English: the main screens at desktop, tablet and phone size, saved to
+ * docs/design-changes/<DESIGN>/<SHOTS>/<size>/<screen>.png. DESIGN is the current redesign ("2-clean"), SHOTS is
+ * "after" by default; the "before" pictures were taken the same way from the design before it. Run with
+ * `npm run screenshots:design` (SHOTS=before to retake the other side).
  */
+const DESIGN = process.env.DESIGN || "2-clean";
 const SHOTS = process.env.SHOTS || "after";
 
 const SIZES = [
-  { name: "desktop", width: 1440, height: 900 },
-  { name: "tablet", width: 1024, height: 768 },
-  { name: "phone", width: 390, height: 844 },
+  { name: "desktop", width: 1440, height: 900, dark: false },
+  { name: "tablet", width: 1024, height: 768, dark: false },
+  { name: "phone", width: 390, height: 844, dark: false },
+  // The new look has a dark mode too: desktop pictures of it with the "after" ones.
+  ...(SHOTS === "after" ? [{ name: "desktop-dark", width: 1440, height: 900, dark: true }] : []),
 ];
 
 const SCREENS: Array<[string, string]> = [
@@ -47,10 +51,11 @@ for (const size of SIZES) {
   test(`design ${SHOTS}, ${size.name}`, async ({ page }) => {
     test.setTimeout(300_000);
     await page.setViewportSize({ width: size.width, height: size.height });
+    if (size.dark) await page.addInitScript(() => localStorage.setItem("appearance", JSON.stringify({ mode: "dark" })));
     for (const [name, path] of SCREENS) {
       await page.goto(path);
       await waitForData(page);
-      await shoot(page, `docs/design-changes/${SHOTS}/${size.name}/${name}.png`, !path.startsWith("/appointments?"));
+      await shoot(page, `docs/design-changes/${DESIGN}/${SHOTS}/${size.name}/${name}.png`, !path.startsWith("/appointments?"));
     }
   });
 }

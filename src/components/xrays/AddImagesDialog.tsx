@@ -114,7 +114,7 @@ export default function AddImagesDialog({
         <ul className="space-y-2 max-h-64 overflow-y-auto">
           {files.map((file, index) => (
             <li key={file.name + index} className="flex items-center gap-3 rounded-xl border border-gray-200/80 p-2">
-              <span className="w-14 h-14 shrink-0 rounded-lg bg-gray-900 overflow-hidden flex items-center justify-center text-white/80">
+              <span className="w-14 h-14 shrink-0 rounded-md bg-black overflow-hidden flex items-center justify-center text-white/80">
                 {previews[index] ? (
                   // eslint-disable-next-line @next/next/no-img-element -- a local preview of the chosen file
                   <img src={previews[index]} alt="" className="w-full h-full object-cover" />

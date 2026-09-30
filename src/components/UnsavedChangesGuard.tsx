@@ -57,6 +57,8 @@ export default function UnsavedChangesGuard({ when }: { when: boolean }) {
 
   return (
     <ConfirmDialog
+      // Asked from anywhere: also from the Appearance panel's language choice.
+      priority
       open={pending !== null}
       title={t.history.leaveTitle}
       message={<p>{t.history.leaveText}</p>}

@@ -11,7 +11,7 @@ import FinishVisitDialog from "@/components/FinishVisitDialog";
 import { LAB_BADGES, labState } from "@/components/LabWorkCard";
 import RequirePermission from "@/components/Guard";
 import {
-  Badge, Button, Card, EmptyState, IconTile, LinkButton, LoadError, PageContainer, PageHeader, PageLoading, Segmented, StatusBadge,
+  Badge, Button, CARD_CLASS, Card, EmptyState, IconTile, LinkButton, LoadError, PageContainer, PageHeader, PageLoading, Segmented, StatusBadge,
   hueClass, statusLabel, type Hue,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
@@ -339,7 +339,7 @@ function TodayBoard() {
                         >
                           <div className="flex items-start gap-4">
                             <div className="w-[5.5rem] shrink-0 pt-1">
-                              <p className="text-base font-bold text-gray-800 whitespace-nowrap">{formatTime(a.appointment_time)}</p>
+                              <p className="text-base font-semibold text-gray-800 whitespace-nowrap">{formatTime(a.appointment_time)}</p>
                               {late && (
                                 <p className="text-xs font-semibold text-amber-700">{t.today.minutesLate(minutesLate(a))}</p>
                               )}
@@ -562,16 +562,10 @@ function TodayBoard() {
 /** One of the day's counts, in its own colour (grey while it is zero and nothing needs doing). */
 function Count({ label, value, icon, hue }: { label: string; value: number; icon: LucideIcon; hue: Hue }) {
   return (
-    <div
-      className={cx(
-        hueClass(hue),
-        "flex items-center gap-3 rounded-2xl px-4 py-3 border motion-safe:animate-rise",
-        "bg-white border-gray-200/80 shadow-sm",
-      )}
-    >
+    <div className={cx(hueClass(hue), CARD_CLASS, "flex items-center gap-3 px-4 py-3")}>
       <IconTile icon={icon} />
       <div>
-        <p className="text-2xl font-bold text-sec-ink leading-tight">{num(value)}</p>
+        <p className="text-2xl font-medium text-gray-900 leading-tight">{num(value)}</p>
         <p className="text-sm text-gray-600">{label}</p>
       </div>
     </div>

@@ -263,7 +263,7 @@ export function SketchToolbar({
     cx(
       "w-10 h-10 pointer-coarse:w-11 pointer-coarse:h-11 inline-flex items-center justify-center rounded-xl transition",
       active
-        ? "bg-primary-600 text-white"
+        ? "bg-brand text-white"
         : dark
           ? "text-white/85 hover:bg-white/15"
           : "text-gray-600 hover:bg-gray-100",

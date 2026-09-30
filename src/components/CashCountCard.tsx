@@ -134,7 +134,7 @@ export function CashCountCard({ date, cashPayments, onSaved }: { date: string; c
   const row = (label: string, value: string, strong = false) => (
     <div className="flex flex-wrap justify-between gap-2">
       <span className="text-gray-600">{label}</span>
-      <span className={strong ? "font-bold text-gray-800" : "font-medium text-gray-800"}>{value}</span>
+      <span className={strong ? "font-semibold text-gray-800" : "font-medium text-gray-800"}>{value}</span>
     </div>
   );
 

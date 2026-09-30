@@ -216,7 +216,7 @@ export default function LinkSelect({
         <ul
           id={listId}
           role="listbox"
-          className="absolute z-30 mt-1 w-full max-h-64 overflow-auto rounded-xl border border-gray-100 bg-white shadow-lg py-1"
+          className="absolute z-30 mt-1 w-full max-h-64 overflow-auto rounded-md bg-surface shadow-lg py-1.5 skin-bordered:border skin-bordered:border-gray-200"
         >
           {options.length === 0 ? (
             <li className="px-3.5 py-2.5 text-sm text-gray-500">{searching ? messages().ui.searching : messages().ui.noMatches}</li>

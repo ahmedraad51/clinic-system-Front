@@ -464,7 +464,7 @@ function DoctorDay({
                 {booked.map((a) => {
                   const { start, end } = span(a);
                   return (
-                    <li key={a.name} className="rounded-lg bg-white border border-gray-200 px-2.5 py-1 text-xs text-gray-700">
+                    <li key={a.name} className="rounded-lg bg-surface border border-gray-200 px-2.5 py-1 text-xs text-gray-700">
                       <span className="font-semibold">{f.range(formatTime(fromMinutes(start)), formatTime(fromMinutes(end)))}</span>{" "}
                       {a.patient_name}
                     </li>
@@ -496,8 +496,8 @@ function DoctorDay({
                         className={cx(
                           "min-h-9 pointer-coarse:min-h-11 px-3 rounded-lg border text-sm font-medium transition",
                           selected
-                            ? "bg-primary-600 border-primary-600 text-white"
-                            : "bg-white border-gray-200 text-gray-700 hover:border-primary-300",
+                            ? "bg-brand border-primary-600 text-white"
+                            : "bg-surface border-gray-200 text-gray-700 hover:border-primary-300",
                         )}
                       >
                         {index === 0 && !selected ? f.nextFree(formatTime(value)) : formatTime(value)}
