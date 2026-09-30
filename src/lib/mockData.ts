@@ -50,11 +50,11 @@ const T = (n: number) => "TRT-2026-" + String(n).padStart(5, "0");
 const A = (n: number) => "APT-2026-" + String(n).padStart(5, "0");
 
 const doctors: MockDoc[] = [
-  { name: D.zainab, full_name: "Dr. Zainab Al-Hashimi", specialization: "General Dentist", email: "zainab.alhashimi@dentclinic.test", phone_number: "0770 410 2233", start_time: "09:00", end_time: "17:00", is_active: 1 },
-  { name: D.ali, full_name: "Dr. Ali Al-Jubouri", specialization: "Orthodontist", email: "ali.aljubouri@dentclinic.test", phone_number: "0781 410 4455", start_time: "12:00", end_time: "18:00", is_active: 1 },
-  { name: D.noor, full_name: "Dr. Noor Al-Saadi", specialization: "Endodontist", email: "noor.alsaadi@dentclinic.test", phone_number: "0750 410 6677", start_time: "09:00", end_time: "18:00", is_active: 1 },
-  { name: D.haider, full_name: "Dr. Haider Al-Obaidi", specialization: "Oral Surgeon", email: "haider.alobaidi@dentclinic.test", phone_number: "0771 410 8899", start_time: "08:00", end_time: "14:00", is_active: 1 },
-  { name: D.rusul, full_name: "Dr. Rusul Kareem", specialization: "Pediatric Dentist", email: "rusul.kareem@dentclinic.test", phone_number: "0782 410 1010", start_time: "10:00", end_time: "16:00", is_active: 1 },
+  { name: D.zainab, full_name: "Dr. Zainab Al-Hashimi", gender: "Female", specialization: "General Dentist", email: "zainab.alhashimi@dentclinic.test", phone_number: "0770 410 2233", start_time: "09:00", end_time: "17:00", is_active: 1 },
+  { name: D.ali, full_name: "Dr. Ali Al-Jubouri", gender: "Male", specialization: "Orthodontist", email: "ali.aljubouri@dentclinic.test", phone_number: "0781 410 4455", start_time: "12:00", end_time: "18:00", is_active: 1 },
+  { name: D.noor, full_name: "Dr. Noor Al-Saadi", gender: "Female", specialization: "Endodontist", email: "noor.alsaadi@dentclinic.test", phone_number: "0750 410 6677", start_time: "09:00", end_time: "18:00", is_active: 1 },
+  { name: D.haider, full_name: "Dr. Haider Al-Obaidi", gender: "Male", specialization: "Oral Surgeon", email: "haider.alobaidi@dentclinic.test", phone_number: "0771 410 8899", start_time: "08:00", end_time: "14:00", is_active: 1 },
+  { name: D.rusul, full_name: "Dr. Rusul Kareem", gender: "Female", specialization: "Pediatric Dentist", email: "rusul.kareem@dentclinic.test", phone_number: "0782 410 1010", start_time: "10:00", end_time: "16:00", is_active: 1 },
 ];
 
 const patients: MockDoc[] = [
@@ -118,12 +118,12 @@ const patients: MockDoc[] = [
   },
   {
     name: P.fatima, full_name: "Fatima Salman", gender: "Female",
-    date_of_birth: "2006-11-30", age: 19,
+    date_of_birth: "2017-03-14", age: 9,
     phone_number: "0751 660 3374", secondary_phone: "",
     email: "fatima.salman@example.com", address: "Al-Jadriya, near the University of Baghdad, Baghdad",
     allergies: "None", current_medications: "None", chronic_diseases: "None",
     medical_history: "First visit July 2026 - one filling on tooth 16.",
-    notes: "Student, afternoon slots only.",
+    notes: "Comes with her mother. Afternoon slots only (school).",
     dental_chart: { "16": "treated" },
   },
   {
@@ -290,13 +290,13 @@ const payments: MockDoc[] = [
 const users: MockDoc[] = [
   { name: "Administrator", full_name: "Administrator", first_name: "Administrator", email: "admin@dentclinic.test", enabled: 1, roles: [{ role: "System Manager" }] },
   { name: "Guest", full_name: "Guest", first_name: "Guest", email: "guest@dentclinic.test", enabled: 1, roles: [] },
-  { name: "laith.hamid@dentclinic.test", full_name: "Laith Hamid", first_name: "Laith", email: "laith.hamid@dentclinic.test", enabled: 1, roles: [{ role: "Clinic Manager" }] },
-  { name: "dalia.jawad@dentclinic.test", full_name: "Dalia Jawad", first_name: "Dalia", email: "dalia.jawad@dentclinic.test", enabled: 1, roles: [{ role: "Clinic Receptionist" }] },
-  { name: "zainab.alhashimi@dentclinic.test", full_name: "Dr. Zainab Al-Hashimi", first_name: "Zainab", email: "zainab.alhashimi@dentclinic.test", enabled: 1, roles: [{ role: "Clinic Doctor" }] },
-  { name: "ali.aljubouri@dentclinic.test", full_name: "Dr. Ali Al-Jubouri", first_name: "Ali", email: "ali.aljubouri@dentclinic.test", enabled: 1, roles: [{ role: "Clinic Doctor" }] },
-  { name: "noor.alsaadi@dentclinic.test", full_name: "Dr. Noor Al-Saadi", first_name: "Noor", email: "noor.alsaadi@dentclinic.test", enabled: 1, roles: [{ role: "Clinic Doctor" }] },
-  { name: "haider.alobaidi@dentclinic.test", full_name: "Dr. Haider Al-Obaidi", first_name: "Haider", email: "haider.alobaidi@dentclinic.test", enabled: 1, roles: [{ role: "Clinic Doctor" }] },
-  { name: "rusul.kareem@dentclinic.test", full_name: "Dr. Rusul Kareem", first_name: "Rusul", email: "rusul.kareem@dentclinic.test", enabled: 0, roles: [{ role: "Clinic Doctor" }] },
+  { name: "laith.hamid@dentclinic.test", full_name: "Laith Hamid", first_name: "Laith", gender: "Male", email: "laith.hamid@dentclinic.test", enabled: 1, roles: [{ role: "Clinic Manager" }] },
+  { name: "dalia.jawad@dentclinic.test", full_name: "Dalia Jawad", first_name: "Dalia", gender: "Female", email: "dalia.jawad@dentclinic.test", enabled: 1, roles: [{ role: "Clinic Receptionist" }] },
+  { name: "zainab.alhashimi@dentclinic.test", full_name: "Dr. Zainab Al-Hashimi", first_name: "Zainab", gender: "Female", email: "zainab.alhashimi@dentclinic.test", enabled: 1, roles: [{ role: "Clinic Doctor" }] },
+  { name: "ali.aljubouri@dentclinic.test", full_name: "Dr. Ali Al-Jubouri", first_name: "Ali", gender: "Male", email: "ali.aljubouri@dentclinic.test", enabled: 1, roles: [{ role: "Clinic Doctor" }] },
+  { name: "noor.alsaadi@dentclinic.test", full_name: "Dr. Noor Al-Saadi", first_name: "Noor", gender: "Female", email: "noor.alsaadi@dentclinic.test", enabled: 1, roles: [{ role: "Clinic Doctor" }] },
+  { name: "haider.alobaidi@dentclinic.test", full_name: "Dr. Haider Al-Obaidi", first_name: "Haider", gender: "Male", email: "haider.alobaidi@dentclinic.test", enabled: 1, roles: [{ role: "Clinic Doctor" }] },
+  { name: "rusul.kareem@dentclinic.test", full_name: "Dr. Rusul Kareem", first_name: "Rusul", gender: "Female", email: "rusul.kareem@dentclinic.test", enabled: 0, roles: [{ role: "Clinic Doctor" }] },
 ];
 
 const clinicPermissions: MockDoc[] = [
@@ -335,7 +335,6 @@ const clinicSettings: MockDoc[] = [
     tax_number: "",
     opening_time: "09:00",
     closing_time: "18:00",
-    theme_color: "#0e7c86",
     enable_whatsapp: 1,
     enable_patient_portal: 0,
     enable_financial_reports: 1,

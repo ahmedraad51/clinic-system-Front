@@ -27,6 +27,8 @@ Sections 1 and 2 explain what is new or still to confirm.
 | Patient | `next_recall_date` | Date | The next check-up the dentist chose. Empty means the usual rule (no visit for 6 months). |
 | Patient | `recall_interval_months` | Int | How often the dentist wants the patient back: 3, 6, 9 or 12; 0 when not chosen. |
 | Patient | `no_recall` | Check | 1 when the dentist said the patient needs no recall (moved away, treated elsewhere). The front end then sends `recall_interval_months = 0` and `next_recall_date = null`. |
+| Doctor | `gender` | Select: Female, Male (empty allowed) | Picks the drawn avatar (a man or a woman in a white coat) when there is no photo. |
+| Doctor | `photo` | Attach Image | The doctor's photo, uploaded on `/doctors` with `upload_file` (a public file) and shown in round avatars: lists, the calendar, the Today board. Every clinic role must be able to read it with the Doctor list. |
 
 **Recall rule for `Appointment.on_update`.** When an appointment becomes Completed and its patient has
 `recall_interval_months > 0` and `no_recall = 0`, set `Patient.next_recall_date` to the appointment date plus that
@@ -326,6 +328,8 @@ Naming `DOC-.#####`. Written only on `/doctors`; never deleted.
 | `email` | Data (Email) | No | Links a user to their Doctor record (section 2). Every clinic role must be able to read it. |
 | `start_time`, `end_time` | Time | No | Both or neither; the end must be after the start. |
 | `is_active` | Check, default 1 | No | Only active doctors are offered. |
+| `gender` | Select: Female, Male | No | New (section 1). For the drawn avatar. |
+| `photo` | Attach Image | No | New (section 1). A file URL; the front end sends `null` to remove it. |
 
 ### Appointment
 
@@ -410,6 +414,7 @@ The name is the email address. Created on `/users`; only `enabled` and `roles` a
 | `roles` | Table (Has Role): `role` | Yes | Clinic Manager, Clinic Doctor or Clinic Receptionist. Other roles on the user (such as System Manager) are kept. |
 | `new_password` | Password | Yes | On create only, at least 8 characters. |
 | `send_welcome_email` | Check | No | Always sent as 0. |
+| `gender`, `user_image` | Frappe's own User fields | No | Read only, for the avatar in the menu, the top bar and the users list. Every user must be able to read their own. |
 
 ### Clinic Permission
 
@@ -433,7 +438,7 @@ with `GET /api/resource/Clinic Permission/<user>`.
 | `phone_country_code` | Data | No | New (section 1). Digits only; empty means 964. |
 | `opening_time`, `closing_time` | Time | No | |
 | `working_days` | Data | No | Day names, comma-separated (section 2). Empty means open every day. |
-| `theme_color` | Color | No | A hex colour. |
+| `theme_color` | Color | No | A hex colour. Empty means the colour of the design the front end uses; the front end sends `""` for that. |
 | `enable_whatsapp`, `enable_financial_reports` | Check, **default 1** | No | The front end treats only an explicit 0 as off. |
 | `enable_patient_portal` | Check | No | Saved only; not used yet. |
 | `treatment_prices` | Table (**Clinic Treatment Price**) | No | New (section 1). Rows: `treatment_type` (Select, the plan types), `price` (Currency). Only rows with a price are sent. |

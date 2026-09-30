@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Shield, UserPlus, UserSearch } from "lucide-react";
+import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Button, Card, ClearFiltersButton, ClickableRow, Field, PageContainer, PageHeader, Pagination,
@@ -38,7 +39,7 @@ function UsersList() {
   };
 
   const list = usePagedList<User>("User", {
-    fields: ["name", "full_name", "email", "enabled"],
+    fields: ["name", "full_name", "email", "enabled", "gender", "user_image"],
     filters: [HIDDEN_USERS, ...(status ? [["enabled", "=", status === "active" ? 1 : 0] as FilterRow] : [])],
     orFilters: searchFilters(debounced, ["full_name", "email"]),
     orderBy: "full_name asc",
@@ -96,9 +97,7 @@ function UsersList() {
                 <ClickableRow key={u.name} href={userHref(u.name)} dimmed={list.loading}>
                   <Td>
                     <span className="flex items-center gap-3">
-                      <span className="w-8 h-8 shrink-0 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-semibold text-sm">
-                        {(u.full_name || u.name).charAt(0).toUpperCase()}
-                      </span>
+                      <Avatar name={u.full_name || u.name} gender={u.gender} photo={u.user_image} size={36} />
                       <span className="font-medium text-gray-800">{u.full_name || u.name}</span>
                     </span>
                   </Td>

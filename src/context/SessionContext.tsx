@@ -29,6 +29,9 @@ interface SessionState {
 export interface MyDoctor {
   name: string;
   full_name: string;
+  /** For the avatar in the menu and the top bar. */
+  gender?: string;
+  photo?: string;
 }
 
 interface SessionContextType {
@@ -82,11 +85,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       let doctor: MyDoctor | null = null;
       if (profile.email) {
         try {
-          const rows = await getList<Doctor>("Doctor", ["name", "full_name"], {
+          const rows = await getList<Doctor>("Doctor", ["name", "full_name", "gender", "photo"], {
             filters: [["email", "=", profile.email], ["is_active", "=", 1]],
             limit: 1,
           });
-          if (rows[0]) doctor = { name: rows[0].name, full_name: rows[0].full_name };
+          if (rows[0]) doctor = { name: rows[0].name, full_name: rows[0].full_name, gender: rows[0].gender, photo: rows[0].photo };
         } catch {
           // Not allowed to read doctors: the screens simply show everyone.
         }

@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
-import { BriefcaseMedical, Pencil, Plus } from "lucide-react";
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { BriefcaseMedical, Camera, Pencil, Plus, Trash2 } from "lucide-react";
+import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Badge, Button, Card, ClearFiltersButton, Field, PageContainer, PageHeader, Pagination, PhoneInput,
+  Alert, Badge, Button, Card, ClearFiltersButton, Field, PageContainer, PageHeader, Pagination, PhoneInput, ProgressBar,
   SearchInput, SelectInput, Table, TableError, TableLoading, TableMessage, Td, TextInput, Th, Toggle, Toolbar,
 } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
-import { createDoc, errorMessage, updateDoc, type FilterRow } from "@/lib/frappe";
+import { createDoc, errorMessage, updateDoc, uploadFile, type FilterRow } from "@/lib/frappe";
 import { display, formatTime } from "@/lib/format";
 import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
 import { toLatinDigits } from "@/lib/phone";
@@ -39,7 +40,7 @@ function DoctorsList() {
   };
 
   const list = usePagedList<Doctor>("Doctor", {
-    fields: ["name", "full_name", "specialization", "phone_number", "email", "start_time", "end_time", "is_active"],
+    fields: ["name", "full_name", "specialization", "phone_number", "email", "start_time", "end_time", "is_active", "gender", "photo"],
     filters: status ? [["is_active", "=", status === "active" ? 1 : 0] as FilterRow] : undefined,
     orFilters: searchFilters(debounced, ["full_name", "specialization", "phone_number", "email"]),
     orderBy: "full_name asc",
@@ -98,14 +99,19 @@ function DoctorsList() {
               list.rows.map((doctor) => (
                 <tr key={doctor.name} className={list.loading ? "opacity-60" : undefined}>
                   <Td>
-                    <button
-                      type="button"
-                      onClick={() => setEditing(doctor)}
-                      className="font-medium text-gray-800 hover:text-primary-600 text-start"
-                    >
-                      {doctor.full_name}
-                    </button>
-                    {doctor.email && <span className="block text-xs text-gray-500">{doctor.email}</span>}
+                    <div className="flex items-center gap-3">
+                      <Avatar name={doctor.full_name} gender={doctor.gender} photo={doctor.photo} role="doctor" size={40} />
+                      <div className="min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => setEditing(doctor)}
+                          className="font-medium text-gray-800 hover:text-primary-600 text-start"
+                        >
+                          {doctor.full_name}
+                        </button>
+                        {doctor.email && <span className="block text-xs text-gray-500">{doctor.email}</span>}
+                      </div>
+                    </div>
                   </Td>
                   <Td label="Specialization">{display(doctor.specialization)}</Td>
                   <Td label="Phone" className="whitespace-nowrap">{display(doctor.phone_number)}</Td>
@@ -154,7 +160,12 @@ interface DoctorForm {
   start_time: string;
   end_time: string;
   is_active: boolean;
+  gender: string;
+  photo: string;
 }
+
+/** A doctor's photo is shown small (a circle in lists and the calendar): 5 MB is plenty. */
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
 function toForm(doctor: Doctor | null): DoctorForm {
   return {
@@ -165,6 +176,8 @@ function toForm(doctor: Doctor | null): DoctorForm {
     start_time: (doctor?.start_time ?? "").slice(0, 5),
     end_time: (doctor?.end_time ?? "").slice(0, 5),
     is_active: doctor ? Number(doctor.is_active) === 1 : true,
+    gender: doctor?.gender ?? "",
+    photo: doctor?.photo ?? "",
   };
 }
 
@@ -173,9 +186,36 @@ function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doctor | null; onC
   const [form, setForm] = useState<DoctorForm>(() => toForm(doctor));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const photoRef = useRef<HTMLInputElement>(null);
+  // Upload progress 0-100 while a photo is being sent, else null.
+  const [photoProgress, setPhotoProgress] = useState<number | null>(null);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [event.target.name]: event.target.value });
+  };
+
+  const handlePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose a photo (an image file).");
+      return;
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      setError("The photo must be smaller than 5 MB.");
+      return;
+    }
+    setError("");
+    setPhotoProgress(0);
+    try {
+      const url = await uploadFile(file, { onProgress: (fraction) => setPhotoProgress(fraction * 100) });
+      setForm((prev) => ({ ...prev, photo: url }));
+    } catch (err) {
+      setError(errorMessage(err, "Could not upload the photo."));
+    } finally {
+      setPhotoProgress(null);
+    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -197,6 +237,8 @@ function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doctor | null; onC
       start_time: form.start_time || null,
       end_time: form.end_time || null,
       is_active: form.is_active ? 1 : 0,
+      gender: form.gender || null,
+      photo: form.photo || null,
     };
     try {
       if (doctor) {
@@ -216,6 +258,32 @@ function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doctor | null; onC
   return (
     <Modal open title={doctor ? "Edit Doctor" : "Add Doctor"} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* The photo shows in lists, the calendar and the Today board; without one a drawing is used. */}
+        <div className="flex items-center gap-4">
+          <Avatar name={form.full_name || "New doctor"} gender={form.gender} photo={form.photo} role="doctor" size={72} />
+          <div className="flex flex-wrap items-center gap-2">
+            <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} aria-label="Doctor photo" />
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Camera}
+              loading={photoProgress !== null}
+              onClick={() => photoRef.current?.click()}
+            >
+              {form.photo ? "Change Photo" : "Upload Photo"}
+            </Button>
+            {form.photo && (
+              <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setForm({ ...form, photo: "" })}>
+                Remove Photo
+              </Button>
+            )}
+            {photoProgress !== null && (
+              <div className="basis-full max-w-60">
+                <ProgressBar value={photoProgress} label="Uploading photo" />
+              </div>
+            )}
+          </div>
+        </div>
         <Field label="Full Name" required hint='Shown everywhere, for example "Dr. Zainab Al-Hashimi".'>
           <TextInput name="full_name" value={form.full_name} onChange={handleChange} required autoComplete="off" />
         </Field>
@@ -232,6 +300,14 @@ function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doctor | null; onC
           </SelectInput>
         </Field>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Gender" hint="Picks the drawing when there is no photo.">
+            <SelectInput name="gender" value={form.gender} onChange={handleChange}>
+              <option value="">Not set</option>
+              <option value="Female">Female</option>
+              <option value="Male">Male</option>
+            </SelectInput>
+          </Field>
+          <div className="max-sm:hidden" />
           <Field label="Phone">
             <PhoneInput name="phone_number" value={form.phone_number} onChange={handleChange} />
           </Field>
@@ -255,7 +331,7 @@ function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doctor | null; onC
         {error && <Alert tone="red">{error}</Alert>}
 
         <div className="flex flex-wrap gap-2 pt-2">
-          <Button type="submit" loading={saving}>
+          <Button type="submit" loading={saving} disabled={photoProgress !== null}>
             {doctor ? "Save Doctor" : "Add Doctor"}
           </Button>
           <Button variant="secondary" onClick={onClose} disabled={saving}>

@@ -151,6 +151,10 @@ export interface Doctor extends BaseDoc {
   start_time?: string;
   end_time?: string;
   is_active?: number;
+  /** "Male" or "Female": picks the drawn avatar when there is no photo. */
+  gender?: string;
+  /** An uploaded photo (file URL), shown instead of the drawn avatar. */
+  photo?: string;
 }
 
 export interface Appointment extends BaseDoc {
@@ -228,6 +232,9 @@ export interface User extends BaseDoc {
   full_name?: string;
   enabled?: number;
   roles?: UserRole[];
+  /** Frappe's own User fields, for the avatar: "Male" / "Female", and an uploaded photo. */
+  gender?: string;
+  user_image?: string;
 }
 
 /** One row of Clinic Settings → treatment_prices (a child table). */

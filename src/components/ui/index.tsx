@@ -37,15 +37,36 @@ const BADGE_TONES: Record<Tone, string> = {
   purple: "bg-purple-100 text-purple-700",
 };
 
-const ICON_TONES: Record<Tone, string> = {
-  primary: "bg-primary-50 text-primary-600",
-  blue: "bg-blue-50 text-blue-600",
-  green: "bg-green-50 text-green-600",
-  gray: "bg-gray-100 text-gray-600",
-  red: "bg-red-50 text-red-600",
-  yellow: "bg-yellow-50 text-yellow-600",
-  purple: "bg-purple-50 text-purple-600",
+/**
+ * The part of the clinic something belongs to. Each has its own colour in every design option (globals.css);
+ * a card, tile or chart inside takes it through the bg-sec / text-sec-ink / … classes.
+ */
+export type Section = "patients" | "appointments" | "treatments" | "money" | "reports" | "system" | "whatsapp";
+
+/** A section, or one of the plain tones. */
+export type Hue = Section | Tone;
+
+const HUE_CLASSES: Record<Hue, string> = {
+  patients: "sec-patients",
+  appointments: "sec-appointments",
+  treatments: "sec-treatments",
+  money: "sec-money",
+  reports: "sec-reports",
+  system: "sec-system",
+  whatsapp: "sec-whatsapp",
+  primary: "sec-brand",
+  blue: "sec-blue",
+  green: "sec-green",
+  gray: "sec-gray",
+  red: "sec-red",
+  yellow: "sec-yellow",
+  purple: "sec-purple",
 };
+
+/** The class that gives everything inside the colour of this section or tone. */
+export function hueClass(hue?: Hue): string | undefined {
+  return hue ? HUE_CLASSES[hue] : undefined;
+}
 
 /** Badge colour for every status value. Keep in line with the allowed values in lib/types.ts. */
 const STATUS_TONES = {
@@ -62,7 +83,13 @@ export type StatusKind = keyof typeof STATUS_TONES;
 
 export function Badge({ tone = "gray", children }: { tone?: Tone; children: ReactNode }) {
   return (
-    <span className={cx("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap", BADGE_TONES[tone])}>
+    <span
+      className={cx(
+        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
+        "design-b:ring-1 design-b:ring-inset design-b:ring-current/15 design-c:font-semibold",
+        BADGE_TONES[tone],
+      )}
+    >
       {children}
     </span>
   );
@@ -95,12 +122,15 @@ export function PageHeader({
   back,
   actions,
   badge,
+  avatar,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
   back?: { href: string; label: string };
   actions?: ReactNode;
   badge?: ReactNode;
+  /** A picture before the title, e.g. the patient's Avatar. */
+  avatar?: ReactNode;
 }) {
   return (
     <div className="space-y-2">
@@ -114,12 +144,15 @@ export function PageHeader({
         </Link>
       )}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-gray-800 break-words">{title}</h1>
-            {badge}
+        <div className="min-w-0 flex items-center gap-4">
+          {avatar}
+          <div className="min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl font-bold text-gray-800 break-words design-b:text-gray-900 design-c:tracking-tight">{title}</h1>
+              {badge}
+            </div>
+            {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
           </div>
-          {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2 print:hidden">{actions}</div>}
       </div>
@@ -130,14 +163,57 @@ export function PageHeader({
 /** A lucide icon, or one of ours drawn the same way (the tooth). */
 type CardIconType = ComponentType<{ size?: number; className?: string }>;
 
-/** The small tinted square that holds a card's icon, before its title. */
-export function CardIcon({ icon: Icon }: { icon: CardIconType }) {
+const TILE_SIZES = {
+  sm: { box: "w-8 h-8 rounded-lg", icon: 17 },
+  md: { box: "w-10 h-10 rounded-xl", icon: 20 },
+  lg: { box: "w-12 h-12 rounded-2xl", icon: 24 },
+} as const;
+
+/**
+ * An icon in a coloured rounded tile: pastel in design A, a glowing gradient in B, a solid circle in C. The colour
+ * is `hue`, or the section of the card around it (the clinic colour by default).
+ */
+export function IconTile({
+  icon: Icon,
+  hue,
+  size = "md",
+  className,
+}: {
+  icon: CardIconType;
+  hue?: Hue;
+  size?: keyof typeof TILE_SIZES;
+  className?: string;
+}) {
+  const { box, icon } = TILE_SIZES[size];
   return (
-    <span aria-hidden="true" className="w-8 h-8 shrink-0 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center print:hidden">
-      <Icon size={17} />
+    <span
+      aria-hidden="true"
+      className={cx(
+        hueClass(hue),
+        box,
+        "shrink-0 inline-flex items-center justify-center print:hidden",
+        "bg-sec-soft text-sec-ink",
+        "design-b:bg-linear-to-br design-b:from-sec design-b:to-sec-deep design-b:text-white design-b:shadow-sm",
+        "design-c:bg-sec design-c:text-white design-c:rounded-full",
+        className,
+      )}
+    >
+      <Icon size={icon} />
     </span>
   );
 }
+
+/** The small coloured tile that holds a card's icon, before its title. */
+export function CardIcon({ icon }: { icon: CardIconType }) {
+  return <IconTile icon={icon} size="sm" />;
+}
+
+/** The look of every card: soft and tinted in A, crisp in B, warm in C. */
+export const CARD_CLASS = cx(
+  "bg-white rounded-2xl border border-gray-100 shadow-[0_12px_32px_-20px_color-mix(in_oklab,var(--brand)_45%,transparent)]",
+  "design-b:border-gray-200/80 design-b:shadow-sm",
+  "design-c:border-orange-100 design-c:shadow-[0_14px_30px_-22px_rgb(194_65_12/0.45)]",
+);
 
 export function Card({
   title,
@@ -146,6 +222,7 @@ export function Card({
   children,
   className,
   flush = false,
+  section,
 }: {
   title?: ReactNode;
   /** Shown in a small tinted square before the title, so a long page is easy to scan. */
@@ -155,10 +232,12 @@ export function Card({
   className?: string;
   /** No padding around the body. Use for tables. */
   flush?: boolean;
+  /** The part of the clinic the card is about: colours its icon, charts and (in design B) its top edge. */
+  section?: Hue;
 }) {
   const hasHeader = Boolean(title || actions);
   return (
-    <section className={cx("bg-white rounded-2xl border border-gray-100 shadow-sm", className)}>
+    <section className={cx(CARD_CLASS, hueClass(section), section && "design-b:border-t-[3px] design-b:border-t-sec", className)}>
       {hasHeader && (
         <div className={cx("flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 sm:px-6 pt-5", flush && "pb-4")}>
           {title ? (
@@ -184,38 +263,66 @@ export function StatCard({
   value,
   icon: Icon,
   tone = "primary",
+  section,
   hint,
   href,
+  order = 0,
 }: {
   title: string;
   value: ReactNode;
   icon: LucideIcon;
   /** Defaults to the clinic colour. */
   tone?: Tone;
+  /** The part of the clinic the number is about; its colour wins over `tone`. */
+  section?: Hue;
   hint?: ReactNode;
   href?: string;
+  /** Position in a row of cards: each one rises into place a moment after the one before. */
+  order?: number;
 }) {
   const body = (
     <>
-      <div className={cx("w-10 h-10 rounded-xl flex items-center justify-center mb-3", ICON_TONES[tone])}>
+      {/* A big faint copy of the icon in the corner (A and C), a coloured edge along the bottom (B). */}
+      <Icon
+        aria-hidden="true"
+        size={96}
+        className="absolute -end-4 -bottom-5 text-sec opacity-[0.09] design-b:hidden design-c:text-white design-c:opacity-15 pointer-events-none"
+      />
+      <span aria-hidden="true" className="hidden design-b:block absolute inset-x-0 bottom-0 h-1 bg-linear-to-r from-sec to-sec-light" />
+      <div
+        className={cx(
+          "relative w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-sec text-white shadow-sm",
+          "design-b:bg-linear-to-br design-b:from-sec design-b:to-sec-deep",
+          "design-c:bg-white/20 design-c:rounded-full design-c:shadow-none",
+        )}
+      >
         <Icon size={20} />
       </div>
       {/* Wraps instead of cutting off: "IQD 1,250,000" does not fit a phone's half-width card on one line. The
           currency format joins "IQD" and the number with a no-break space; a plain one lets it wrap there. */}
-      <div className="text-xl sm:text-2xl font-bold text-gray-800 leading-tight break-words">
+      <div className="relative text-xl sm:text-2xl font-bold text-gray-800 leading-tight break-words design-c:text-white">
         {typeof value === "string" ? value.replace(/ /g, " ") : value}
       </div>
-      <div className="text-sm text-gray-500 mt-1">{title}</div>
-      {hint && <div className="text-xs text-gray-500 mt-1">{hint}</div>}
+      <div className="relative text-sm text-gray-600 mt-1 design-b:text-gray-500 design-c:text-white/90">{title}</div>
+      {hint && <div className="relative text-xs text-gray-600 mt-1 design-b:text-gray-500 design-c:text-white/85">{hint}</div>}
     </>
   );
-  const className = "block bg-white rounded-2xl border border-gray-100 shadow-sm p-5";
+  const className = cx(
+    hueClass(section ?? tone),
+    "relative overflow-hidden block rounded-2xl p-5 motion-safe:animate-rise",
+    "bg-sec-soft border border-sec/10",
+    "design-b:bg-white design-b:border-gray-200/80 design-b:shadow-sm",
+    "design-c:bg-linear-to-br design-c:from-sec design-c:to-sec-deep design-c:border-transparent design-c:shadow-[0_14px_28px_-18px_var(--sec)]",
+  );
+  const style = { animationDelay: `${order * 70}ms` };
   return href ? (
-    <Link href={href} className={cx(className, "hover:shadow-md hover:border-primary-100 motion-safe:hover:-translate-y-px transition")}>
+    <Link href={href} style={style} className={cx(className, "hover:shadow-md motion-safe:hover:-translate-y-px transition")}>
       {body}
     </Link>
   ) : (
-    <div className={className}>{body}</div>
+    <div style={style} className={className}>
+      {body}
+    </div>
   );
 }
 
@@ -223,22 +330,47 @@ export function StatCard({
  * A large tile for an everyday job ("New Appointment · Book a visit"): a tinted box with the icon in a white
  * square. Put a few of them in a grid near the top of a page, so the job is one tap away.
  */
-export function ActionTile({ href, label, hint, icon: Icon }: { href: string; label: string; hint?: string; icon: LucideIcon }) {
+export function ActionTile({
+  href,
+  label,
+  hint,
+  icon: Icon,
+  section,
+  order = 0,
+}: {
+  href: string;
+  label: string;
+  hint?: string;
+  icon: LucideIcon;
+  /** The part of the clinic the job belongs to (its colour). The clinic colour when left out. */
+  section?: Hue;
+  order?: number;
+}) {
   return (
     <Link
       href={href}
+      style={{ animationDelay: `${order * 60}ms` }}
       className={cx(
-        "group flex items-center gap-3 min-h-[4.5rem] rounded-2xl border border-primary-100 bg-primary-50/70 p-3 sm:p-4",
-        "hover:bg-primary-50 hover:border-primary-200 hover:shadow-sm motion-safe:hover:-translate-y-px transition",
+        hueClass(section),
+        "group flex items-center gap-3 min-h-[4.5rem] rounded-2xl border p-3 sm:p-4 transition motion-safe:animate-rise motion-safe:hover:-translate-y-px",
+        "bg-white border-sec/20 hover:border-sec/50 hover:shadow-md",
+        "design-b:bg-linear-to-br design-b:from-sec design-b:to-sec-deep design-b:border-transparent design-b:shadow-md design-b:hover:shadow-lg",
+        "design-c:bg-sec-soft design-c:border-transparent design-c:hover:border-sec/30",
       )}
     >
-      <span className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-xl bg-white shadow-sm flex items-center justify-center text-primary-600 group-hover:text-primary-700">
+      <span
+        className={cx(
+          "w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-xl flex items-center justify-center bg-sec-soft text-sec-ink",
+          "design-b:bg-white/20 design-b:text-white",
+          "design-c:bg-sec design-c:text-white design-c:rounded-full design-c:shadow-sm",
+        )}
+      >
         <Icon size={20} aria-hidden="true" />
       </span>
       <span className="min-w-0">
-        <span className="block text-sm font-semibold text-gray-800 leading-snug">{label}</span>
+        <span className="block text-sm font-semibold text-gray-800 leading-snug design-b:text-white">{label}</span>
         {/* Two tiles share a phone's width: the hint would squeeze the label, so it shows from sm up. */}
-        {hint && <span className="block text-xs text-gray-600 leading-snug max-sm:hidden">{hint}</span>}
+        {hint && <span className="block text-xs text-gray-600 leading-snug max-sm:hidden design-b:text-white/90">{hint}</span>}
       </span>
     </Link>
   );
@@ -250,7 +382,9 @@ type Variant = "primary" | "secondary" | "danger" | "ghost" | "success";
 type Size = "sm" | "md";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-primary-600 text-white hover:bg-primary-700 shadow-sm",
+  primary:
+    "bg-primary-600 text-white hover:bg-primary-700 shadow-sm " +
+    "design-b:bg-linear-to-br design-b:from-primary-600 design-b:to-primary-800 design-b:shadow-md design-b:shadow-primary-600/25 design-b:hover:to-primary-900",
   secondary: "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50",
   danger: "bg-red-600 text-white hover:bg-red-700 shadow-sm",
   ghost: "text-gray-600 hover:bg-gray-100",
@@ -265,7 +399,7 @@ const SIZES: Record<Size, string> = {
 
 const buttonClass = (variant: Variant, size: Size, className?: string) =>
   cx(
-    "inline-flex items-center justify-center rounded-xl font-medium transition whitespace-nowrap",
+    "inline-flex items-center justify-center rounded-xl font-medium transition whitespace-nowrap design-c:rounded-full design-c:font-semibold",
     // Felt at once on a touch screen: the button gives a little while pressed.
     "motion-safe:active:scale-[0.98] disabled:active:scale-100",
     "disabled:opacity-50 disabled:cursor-not-allowed",
@@ -566,7 +700,7 @@ export function Segmented<K extends string>({
   label: string;
 }) {
   return (
-    <div role="group" aria-label={label} className="inline-flex flex-wrap max-w-full rounded-xl bg-gray-100 p-1 gap-1">
+    <div role="group" aria-label={label} className="inline-flex flex-wrap max-w-full rounded-xl bg-gray-100 p-1 gap-1 design-b:bg-gray-200/70 design-c:rounded-full design-c:bg-orange-100/70">
       {options.map((option) => {
         const Icon = option.icon;
         const active = option.value === value;
@@ -577,7 +711,7 @@ export function Segmented<K extends string>({
             aria-pressed={active}
             onClick={() => onChange(option.value)}
             className={cx(
-              "inline-flex items-center justify-center gap-1.5 min-h-9 pointer-coarse:min-h-11 px-2.5 sm:px-3.5 rounded-lg text-sm font-medium transition",
+              "inline-flex items-center justify-center gap-1.5 min-h-9 pointer-coarse:min-h-11 px-2.5 sm:px-3.5 rounded-lg text-sm font-medium transition design-c:rounded-full",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
               active ? "bg-white text-primary-700 shadow-sm" : "text-gray-600 hover:text-gray-900",
             )}
@@ -597,7 +731,7 @@ export function Segmented<K extends string>({
  */
 export function FormActions({ children }: { children: ReactNode }) {
   return (
-    <div className="sticky bottom-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-slate-50/95 border-t border-gray-200 flex flex-wrap items-center gap-3 print:hidden">
+    <div className="sticky bottom-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-[color-mix(in_oklab,var(--page-bg)_95%,transparent)] border-t border-gray-200 flex flex-wrap items-center gap-3 print:hidden">
       {children}
     </div>
   );
@@ -819,8 +953,15 @@ export function Tabs<K extends string>({
   onChange: (key: K) => void;
 }) {
   return (
-    <div className="border-b border-gray-200 overflow-x-auto print:hidden">
-      <div className="flex gap-1 min-w-max" role="tablist">
+    <div
+      className={cx(
+        "border-b border-gray-200 overflow-x-auto print:hidden",
+        // B: a white bar of pill tabs. C: separate round pills.
+        "design-b:border design-b:border-gray-200/80 design-b:bg-white design-b:rounded-2xl design-b:p-1.5 design-b:shadow-sm",
+        "design-c:border-b-0",
+      )}
+    >
+      <div className="flex gap-1 min-w-max design-c:gap-2" role="tablist">
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -830,9 +971,10 @@ export function Tabs<K extends string>({
             onClick={() => onChange(tab.key)}
             className={cx(
               "min-h-11 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition whitespace-nowrap",
+              "design-b:mb-0 design-b:border-b-0 design-b:rounded-xl design-c:mb-0 design-c:border design-c:rounded-full",
               active === tab.key
-                ? "border-primary-600 text-primary-700"
-                : "border-transparent text-gray-500 hover:text-gray-800",
+                ? "border-primary-600 text-primary-700 design-b:bg-primary-600 design-b:text-white design-c:bg-primary-600 design-c:text-white"
+                : "border-transparent text-gray-500 hover:text-gray-800 design-b:hover:bg-gray-100 design-c:bg-white design-c:border-gray-200",
             )}
           >
             {tab.label}

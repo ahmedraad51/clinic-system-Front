@@ -53,10 +53,23 @@ export function readableBrand(value: string | null | undefined): string {
   return hex;
 }
 
-/** Applies the clinic colour to the page and remembers it, so the next visit starts in the right colour. */
+/**
+ * Applies the clinic colour to the page and remembers it, so the next visit starts in the right colour. No colour
+ * (the clinic never chose one) leaves the design option's own colour (globals.css).
+ */
 export function applyThemeColor(value: string | null | undefined): void {
+  const root = document.documentElement.style;
+  if (!normalizeHex(value)) {
+    root.removeProperty("--brand");
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Storage is blocked: nothing was saved either.
+    }
+    return;
+  }
   const brand = readableBrand(value);
-  document.documentElement.style.setProperty("--brand", brand);
+  root.setProperty("--brand", brand);
   try {
     localStorage.setItem(STORAGE_KEY, brand);
   } catch {

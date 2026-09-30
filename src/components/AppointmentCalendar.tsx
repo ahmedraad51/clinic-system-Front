@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, type PointerEvent } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Alert, statusTone, type Tone } from "@/components/ui";
+import Avatar from "@/components/Avatar";
+import { Alert, CARD_CLASS, statusTone, type Tone } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
 import { errorMessage, getList, updateDoc } from "@/lib/frappe";
@@ -62,6 +63,8 @@ interface Column {
   date: string;
   /** Set in the day view: the doctor this column belongs to. */
   doctor?: string;
+  /** The day view's doctor, for their photo or drawing above the column. */
+  person?: { gender?: string; photo?: string };
   title: string;
   subtitle?: string;
   today?: boolean;
@@ -266,6 +269,7 @@ export default function AppointmentCalendar({
         key: doctor.name,
         date,
         doctor: doctor.name,
+        person: { gender: doctor.gender, photo: doctor.photo },
         title: doctor.full_name,
         subtitle: booked === 0 ? "Free all day" : booked === 1 ? "1 appointment" : `${booked} appointments`,
         today: date === today,
@@ -419,7 +423,7 @@ export default function AppointmentCalendar({
       {result?.error && <Alert tone="red">{result.error}</Alert>}
       {view === "day" && !isOpenOn(date) && <Alert tone="yellow">The clinic is closed on this day.</Alert>}
 
-      <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className={cx("relative overflow-hidden", CARD_CLASS)}>
         {loading && (
           <div className="absolute top-3 end-3 z-50 rounded-full bg-white/90 px-3 py-1 text-xs text-gray-500 shadow-sm" role="status">
             Loading...
@@ -480,6 +484,7 @@ export default function AppointmentCalendar({
                 >
                   {view === "day" ? (
                     <>
+                      <Avatar name={column.title} gender={column.person?.gender} photo={column.person?.photo} role="doctor" size={40} className="mb-1" />
                       <p className="text-sm font-semibold text-gray-800 truncate" title={column.title}>
                         {column.title}
                       </p>

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { HeartPulse, MessageCircle, UserPlus, UserSearch } from "lucide-react";
+import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import {
   Card, ClearFiltersButton, ClickableRow, LinkButton, PageContainer, PageHeader, PageLoading, Pagination,
@@ -166,13 +167,18 @@ function PatientsList() {
               list.rows.map((patient) => (
                 <ClickableRow key={patient.name} href={patientHref(patient.name)} dimmed={list.loading}>
                   <Td>
-                    <Link href={patientHref(patient.name)} className="font-medium text-gray-800 hover:text-primary-600">
-                      {patient.full_name}
-                    </Link>
-                    <span className="block text-xs text-gray-500">
-                      {[patient.name, patient.age ? `${patient.age} years` : "", patient.gender].filter(Boolean).join(" · ")}
-                    </span>
-                    <MedicalChips patient={patient} />
+                    <div className="flex items-start gap-3">
+                      <Avatar name={patient.full_name} gender={patient.gender} age={patient.age} size={40} />
+                      <div className="min-w-0">
+                        <Link href={patientHref(patient.name)} className="font-medium text-gray-800 hover:text-primary-600">
+                          {patient.full_name}
+                        </Link>
+                        <span className="block text-xs text-gray-500">
+                          {[patient.name, patient.age ? `${patient.age} years` : "", patient.gender].filter(Boolean).join(" · ")}
+                        </span>
+                        <MedicalChips patient={patient} />
+                      </div>
+                    </div>
                   </Td>
                   <Td label="Phone" className="whitespace-nowrap">{display(patient.phone_number)}</Td>
                   {showNext && (

@@ -3,6 +3,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Check, KeyRound, Users, X } from "lucide-react";
 import RequirePermission from "@/components/Guard";
+import { MyAvatar } from "@/components/Avatar";
+import DesignOptionCard from "@/components/DesignOptionCard";
 import ScreenSizeCard from "@/components/ScreenSizeCard";
 import {
   Alert, Badge, Button, Card, DetailList, DetailRow, Field, PageContainer, PageHeader, SelectInput, TextInput,
@@ -32,9 +34,7 @@ function Profile() {
 
       <Card>
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 shrink-0 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold text-xl">
-            {displayName.charAt(0).toUpperCase()}
-          </div>
+          <MyAvatar size={56} />
           <div className="min-w-0">
             <p className="font-semibold text-gray-800 text-lg">{displayName}</p>
             <p className="text-sm text-gray-500">{roleLabel}</p>
@@ -61,6 +61,7 @@ function Profile() {
         </div>
       </Card>
 
+      <DesignOptionCard />
       <ScreenSizeCard />
 
       <Card title="What I Can Do">

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { getCount, getDoc, getList, errorMessage, isNotFound, type FilterRow } from "./frappe";
+import { DEFAULT_DESIGN, readDesign, subscribeDesign, type DesignOption } from "./design";
 import { MEDICAL_FIELDS, type MedicalFields } from "./medical";
 import { phoneSearchPattern, toLatinDigits } from "./phone";
 import type { BaseDoc, Doctor, Patient } from "./types";
@@ -20,6 +21,13 @@ export function useMediaQuery(query: string): boolean {
     [query],
   );
   return useSyncExternalStore(subscribe, () => window.matchMedia(query).matches, () => false);
+}
+
+const serverDesign = () => DEFAULT_DESIGN;
+
+/** The design option chosen on this computer (A, B or C). */
+export function useDesign(): DesignOption {
+  return useSyncExternalStore(subscribeDesign, readDesign, serverDesign);
 }
 
 /** Returns the value once it has stopped changing for `delay` ms. Used for search boxes. */
@@ -182,7 +190,7 @@ export function useDoctorList() {
     let cancelled = false;
     const load = async () => {
       try {
-        const rows = await getList<Doctor>("Doctor", ["name", "full_name", "specialization", "start_time", "end_time"], {
+        const rows = await getList<Doctor>("Doctor", ["name", "full_name", "specialization", "start_time", "end_time", "gender", "photo"], {
           filters: [["is_active", "=", 1]],
           orderBy: "full_name asc",
           limit: 0,
@@ -256,3 +264,38 @@ export function usePatientChart(patient: string | undefined) {
   }, [patient]);
   return result && result.patient === patient ? result.doc : null;
 }
+
+/** What a patient's drawn avatar needs: gender and age. */
+export type PatientLook = Pick<Patient, "name" | "gender" | "age">;
+
+/**
+ * Gender and age of a few patients (by ID), for their avatars in a list whose rows only hold the patient's name
+ * (appointments, the Today board). Missing patients are left out; nothing is shown while loading.
+ */
+export function usePatientLooks(ids: string[]): Record<string, PatientLook> {
+  const key = [...new Set(ids.filter(Boolean))].sort().join("|");
+  const [result, setResult] = useState<{ key: string; looks: Record<string, PatientLook> } | null>(null);
+  useEffect(() => {
+    if (!key) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const rows = await getList<Patient>("Patient", ["name", "gender", "age"], {
+          filters: [["name", "in", key.split("|")]],
+          limit: 0,
+        });
+        if (!cancelled) setResult({ key, looks: Object.fromEntries(rows.map((row) => [row.name, row])) });
+      } catch (err) {
+        // Only the drawings are missing: each avatar falls back to a neutral one.
+        console.error(err);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [key]);
+  return result && result.key === key ? result.looks : NO_LOOKS;
+}
+
+const NO_LOOKS: Record<string, PatientLook> = {};

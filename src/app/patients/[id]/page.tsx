@@ -7,6 +7,7 @@ import {
   BellRing, Calendar, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, CreditCard, HeartPulse, History, IdCard,
   MessageCircle, Pencil, Phone, Pill, Plus, Printer, Stethoscope, Trash2, Wallet, type LucideIcon,
 } from "lucide-react";
+import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import DentalChart from "@/components/DentalChart";
 import MedicalAlerts from "@/components/MedicalAlerts";
@@ -14,15 +15,15 @@ import PatientFiles from "@/components/PatientFiles";
 import RecallDialog from "@/components/RecallDialog";
 import RecordHistory from "@/components/RecordHistory";
 import {
-  Button, Card, ClickableRow, DetailList, DetailRow, EmptyState, LinkButton, LoadError, NotFoundCard,
-  PageContainer, PageHeader, PageLoading, RecordLoading, StatusBadge, Table, Tabs, Td, Th,
+  Button, Card, ClickableRow, DetailList, DetailRow, EmptyState, IconTile, LinkButton, LoadError, NotFoundCard,
+  PageContainer, PageHeader, PageLoading, RecordLoading, StatusBadge, Table, Tabs, Td, Th, type Hue,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { deleteDoc, errorMessage, getList, updateDoc, type FilterRow } from "@/lib/frappe";
-import { addMonths, cx, display, formatDate, formatMonth, formatTime, todayISO } from "@/lib/format";
+import { addMonths, display, formatDate, formatMonth, formatTime, todayISO } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
 import { DEFAULT_RECALL_MONTHS } from "@/lib/recall";
 import { whatsappNumber } from "@/lib/whatsapp";
@@ -198,6 +199,7 @@ function PatientDetail() {
       <PageHeader
         title={patient.full_name}
         subtitle={subtitle}
+        avatar={<Avatar name={patient.full_name} gender={patient.gender} age={patient.age} size={64} />}
         back={{ href: "/patients", label: "Patients" }}
         actions={
           <>
@@ -268,7 +270,7 @@ function PatientDetail() {
 
         <dl className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-x-6 gap-y-4 mt-5 pt-5 border-t border-gray-100">
           {showAppointments && (
-            <Fact icon={History} label="Last visit">
+            <Fact icon={History} hue="appointments" label="Last visit">
               {lastVisit ? (
                 <Link href={appointmentHref(lastVisit.name)} className="hover:text-primary-600">
                   {formatDate(lastVisit.appointment_date)}
@@ -282,7 +284,7 @@ function PatientDetail() {
             </Fact>
           )}
           {showAppointments && (
-            <Fact icon={CalendarClock} label="Next appointment">
+            <Fact icon={CalendarClock} hue="appointments" label="Next appointment">
               {nextVisit ? (
                 <Link href={appointmentHref(nextVisit.name)} className="hover:text-primary-600">
                   {nextVisit.appointment_date === today ? "Today" : formatDate(nextVisit.appointment_date)},{" "}
@@ -296,7 +298,7 @@ function PatientDetail() {
               )}
             </Fact>
           )}
-          <Fact icon={BellRing} label="Next check-up">
+          <Fact icon={BellRing} hue="patients" label="Next check-up">
             {Number(patient.no_recall) === 1 ? (
               <span className="text-gray-500">No recall</span>
             ) : patient.next_recall_date ? (
@@ -331,7 +333,7 @@ function PatientDetail() {
             )}
           </Fact>
           {showPayments && (
-            <Fact icon={Wallet} label="Balance to pay">
+            <Fact icon={Wallet} hue={remaining > 0 ? "red" : "money"} label="Balance to pay">
               <span className={remaining > 0 ? "text-red-600" : "text-gray-500"}>{money(remaining)}</span>
               {remaining > 0 && can("add_payments") && (
                 <Link
@@ -344,7 +346,7 @@ function PatientDetail() {
             </Fact>
           )}
           {showPayments && (
-            <Fact icon={CreditCard} label="Paid so far">
+            <Fact icon={CreditCard} hue="money" label="Paid so far">
               {money(patient.total_paid)}
             </Fact>
           )}
@@ -355,11 +357,11 @@ function PatientDetail() {
 
       {tab === "overview" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <Card title="Timeline" icon={History} className="lg:col-span-2">
+          <Card title="Timeline" icon={History} section="patients" className="lg:col-span-2">
             {!data ? relatedWaiting : <Timeline data={data} today={today} money={money} />}
           </Card>
           <div className="space-y-6">
-            <Card title="Contact and Basic Information" icon={IdCard}>
+            <Card title="Contact and Basic Information" icon={IdCard} section="patients">
               <DetailList>
                 <DetailRow label="Patient ID">{patient.name}</DetailRow>
                 <DetailRow label="Gender">{patient.gender}</DetailRow>
@@ -371,7 +373,7 @@ function PatientDetail() {
                 <DetailRow label="Address">{patient.address}</DetailRow>
               </DetailList>
             </Card>
-            <Card title="Medical Information" icon={HeartPulse}>
+            <Card title="Medical Information" icon={HeartPulse} section="red">
               <DetailList>
                 <DetailRow label="Allergies">{patient.allergies}</DetailRow>
                 <DetailRow label="Current Medications">{patient.current_medications}</DetailRow>
@@ -651,12 +653,10 @@ function PatientDetail() {
   );
 }
 
-function Fact({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: ReactNode }) {
+function Fact({ icon, hue, label, children }: { icon: LucideIcon; hue: Hue; label: string; children: ReactNode }) {
   return (
     <div className="flex items-start gap-3 min-w-0">
-      <span className="w-9 h-9 shrink-0 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center">
-        <Icon size={18} />
-      </span>
+      <IconTile icon={icon} hue={hue} />
       <div className="min-w-0">
         <dt className="text-xs text-gray-500">{label}</dt>
         <dd className="text-sm font-semibold text-gray-800 mt-0.5">{children}</dd>
@@ -672,7 +672,7 @@ interface TimelineItem {
   date: string;
   time?: string;
   icon: LucideIcon;
-  tone: string;
+  hue: Hue;
   title: string;
   detail?: string;
   href: string;
@@ -688,7 +688,7 @@ function Timeline({ data, today, money }: { data: Related; today: string; money:
       date: a.appointment_date,
       time: a.appointment_time,
       icon: a.status === "Completed" ? CalendarCheck : Calendar,
-      tone: "bg-blue-50 text-blue-600",
+      hue: "appointments",
       title: a.reason_for_visit || "Appointment",
       detail: [formatTime(a.appointment_time), a.doctor_name].filter(Boolean).join(" · "),
       href: appointmentHref(a.name),
@@ -702,7 +702,7 @@ function Timeline({ data, today, money }: { data: Related; today: string; money:
         date: s.session_date,
         time: s.session_time,
         icon: ClipboardList,
-        tone: "bg-primary-50 text-primary-600",
+        hue: "treatments",
         title: `${what} session`,
         detail: [s.notes, s.doctor_name].filter(Boolean).join(" · "),
         href: treatmentHref(s.treatment_plan),
@@ -713,7 +713,7 @@ function Timeline({ data, today, money }: { data: Related; today: string; money:
       key: p.name,
       date: p.payment_date,
       icon: CreditCard,
-      tone: "bg-green-50 text-green-600",
+      hue: "money",
       title: `Paid ${money(Number(p.amount) || 0)}`,
       detail: [p.payment_method, p.treatment_type].filter(Boolean).join(" · "),
       href: paymentHref(p.name),
@@ -743,18 +743,9 @@ function Timeline({ data, today, money }: { data: Related; today: string; money:
         <section key={group.label}>
           <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">{group.label}</h3>
           <ol className="relative border-s-2 border-gray-100 ms-4 space-y-1">
-            {group.items.map((item) => {
-              const Icon = item.icon;
-              return (
+            {group.items.map((item) => (
                 <li key={item.key} className="relative ps-6">
-                  <span
-                    className={cx(
-                      "absolute -start-[17px] top-2.5 w-8 h-8 rounded-full ring-4 ring-white flex items-center justify-center",
-                      item.tone,
-                    )}
-                  >
-                    <Icon size={15} />
-                  </span>
+                  <IconTile icon={item.icon} hue={item.hue} size="sm" className="absolute -start-[17px] top-2.5 rounded-full ring-4 ring-white" />
                   <Link
                     href={item.href}
                     className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl px-3 py-2.5 min-h-11 hover:bg-gray-50"
@@ -767,8 +758,7 @@ function Timeline({ data, today, money }: { data: Related; today: string; money:
                     {item.badge}
                   </Link>
                 </li>
-              );
-            })}
+            ))}
           </ol>
         </section>
       ))}

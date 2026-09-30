@@ -31,7 +31,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   if (isLoading || !user) return <PageLoading />;
 
   return (
-    <div className="min-h-screen bg-gray-50 print:bg-white">
+    <div className="min-h-screen app-bg print:bg-white">
       {/* First thing a keyboard user reaches: jump past the menu. */}
       <a
         href="#main"

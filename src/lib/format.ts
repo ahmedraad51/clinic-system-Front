@@ -164,6 +164,11 @@ export function formatMonth(yearMonth: string): string {
   return `${MONTHS[Number(month) - 1] ?? month} ${year}`;
 }
 
+/** A short number for charts: 450000 → "450K", 1250000 → "1.3M", 36 → "36". Latin digits. */
+export function formatCompact(value: number): string {
+  return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(value || 0);
+}
+
 /** Shows a dash for empty values. */
 export function display(value: string | number | null | undefined): string {
   if (value === null || value === undefined || value === "") return "—";

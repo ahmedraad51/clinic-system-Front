@@ -2,18 +2,24 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, CheckCheck, Clock, CreditCard, FileText, HeartPulse, MessageCircle, Plus, RefreshCw, UserX } from "lucide-react";
+import {
+  AlarmClock, Check, CheckCheck, Clock, CreditCard, FileText, FlaskConical, HeartPulse, History, MessageCircle, Plus, RefreshCw, UserX,
+  type LucideIcon,
+} from "lucide-react";
+import Avatar from "@/components/Avatar";
 import FinishVisitDialog from "@/components/FinishVisitDialog";
 import { LAB_BADGES, labState } from "@/components/LabWorkCard";
 import RequirePermission from "@/components/Guard";
 import {
-  Badge, Button, Card, EmptyState, LinkButton, LoadError, PageContainer, PageHeader, PageLoading, Segmented, StatusBadge,
+  Badge, Button, Card, EmptyState, IconTile, LinkButton, LoadError, PageContainer, PageHeader, PageLoading, Segmented, StatusBadge,
+  hueClass, type Hue,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { errorMessage, getList, updateDoc } from "@/lib/frappe";
 import { addDays, cx, formatDate, formatLongDate, formatTime, fromMinutes, todayISO, toMinutes } from "@/lib/format";
+import { useDoctors } from "@/lib/hooks";
 import { appointmentHref, patientHref, treatmentHref } from "@/lib/links";
 import { MEDICAL_FIELDS, medicalFlags } from "@/lib/medical";
 import { fillTemplate, whatsappLink } from "@/lib/whatsapp";
@@ -67,6 +73,8 @@ function TodayBoard() {
   const [now, setNow] = useState(() => new Date());
 
   const showMoney = can("view_payments");
+  // For each doctor's photo or drawing above their patients.
+  const doctors = useDoctors();
 
   useEffect(() => {
     let cancelled = false;
@@ -112,7 +120,7 @@ function TodayBoard() {
         const template = templates.find((t) => t.trigger === "24 Hours Before") ?? templates[0] ?? null;
         const ids = [...new Set([...appointments, ...tomorrow].map((a) => a.patient))];
         const rows = ids.length
-          ? await getList<Patient>("Patient", ["name", "phone_number", "total_remaining", ...MEDICAL_FIELDS], {
+          ? await getList<Patient>("Patient", ["name", "phone_number", "total_remaining", "gender", "age", ...MEDICAL_FIELDS], {
               filters: [["name", "in", ids]],
               limit: 0,
             })
@@ -264,10 +272,10 @@ function TodayBoard() {
       {board && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Count label="Still to come" value={counts.toCome} tone="text-primary-700" />
-            <Count label="Late" value={counts.late} tone={counts.late ? "text-amber-600" : "text-gray-500"} />
-            <Count label="Completed" value={counts.done} tone="text-green-700" />
-            <Count label="No show" value={counts.missed} tone={counts.missed ? "text-red-600" : "text-gray-500"} />
+            <Count label="Still to come" value={counts.toCome} icon={Clock} hue="appointments" />
+            <Count label="Late" value={counts.late} icon={AlarmClock} hue={counts.late ? "yellow" : "gray"} />
+            <Count label="Completed" value={counts.done} icon={CheckCheck} hue="green" />
+            <Count label="No show" value={counts.missed} icon={UserX} hue={counts.missed ? "red" : "gray"} />
           </div>
 
           {groups.length === 0 ? (
@@ -285,10 +293,18 @@ function TodayBoard() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-              {groups.map((group) => (
+              {groups.map((group) => {
+                const doctor = doctors.find((d) => d.name === group.doctor);
+                return (
                 <Card
                   key={group.doctor}
-                  title={group.name}
+                  title={
+                    <span className="flex items-center gap-3">
+                      <Avatar name={group.name} gender={doctor?.gender} photo={doctor?.photo} role="doctor" size={40} />
+                      {group.name}
+                    </span>
+                  }
+                  section="appointments"
                   flush
                   actions={
                     <span className="text-xs text-gray-500">
@@ -314,12 +330,13 @@ function TodayBoard() {
                           )}
                         >
                           <div className="flex items-start gap-4">
-                            <div className="w-[5.5rem] shrink-0">
+                            <div className="w-[5.5rem] shrink-0 pt-1">
                               <p className="text-base font-bold text-gray-800 whitespace-nowrap">{formatTime(a.appointment_time)}</p>
                               {late && (
                                 <p className="text-xs font-semibold text-amber-700">{minutesLate(a)} min late</p>
                               )}
                             </div>
+                            <Avatar name={a.patient_name || a.patient} gender={patient?.gender} age={patient?.age} size={40} className="-ms-1" />
                             <div className="flex-1 min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
                                 <Link
@@ -353,7 +370,7 @@ function TodayBoard() {
                           </div>
 
                           {(canEdit || (showMoney && can("add_payments"))) && (
-                            <div className="flex flex-wrap gap-2 sm:ps-[6.5rem]">
+                            <div className="flex flex-wrap gap-2 sm:ps-[9.25rem]">
                               {canEdit && a.status === "Scheduled" && (
                                 <Button size="sm" variant="secondary" icon={Check} loading={busy} onClick={() => setStatus(a, "Confirmed")}>
                                   Confirm
@@ -398,12 +415,15 @@ function TodayBoard() {
                     })}
                   </ul>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           )}
           {settings.enable_whatsapp !== 0 && tomorrowList.length > 0 && (
             <Card
               title={`Tomorrow's reminders (${tomorrowList.filter((a) => !reminded.includes(a.name)).length} to send)`}
+              icon={MessageCircle}
+              section="whatsapp"
               flush
               actions={<span className="text-xs text-gray-500">{board?.template ? board.template.template_name : "Default message"}</span>}
             >
@@ -447,7 +467,7 @@ function TodayBoard() {
           )}
 
           {can("view_treatments") && labDue.length > 0 && (
-            <Card title={`Lab work due (${labDue.length})`} flush actions={<span className="text-xs text-gray-500">Check it is back before the patient comes</span>}>
+            <Card title={`Lab work due (${labDue.length})`} icon={FlaskConical} section="treatments" flush actions={<span className="text-xs text-gray-500">Check it is back before the patient comes</span>}>
               <ul className="divide-y divide-gray-100">
                 {labDue.map((p) => {
                   const state = labState(p, today);
@@ -477,6 +497,8 @@ function TodayBoard() {
           {earlierOpen.length > 0 && (
             <Card
               title={`Earlier, still open (${earlierOpen.length})`}
+              icon={History}
+              section="yellow"
               flush
               actions={<span className="text-xs text-gray-500">Mark what happened, so the records stay right</span>}
             >
@@ -526,11 +548,23 @@ function TodayBoard() {
   );
 }
 
-function Count({ label, value, tone }: { label: string; value: number; tone: string }) {
+/** One of the day's counts, in its own colour (grey while it is zero and nothing needs doing). */
+function Count({ label, value, icon, hue }: { label: string; value: number; icon: LucideIcon; hue: Hue }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3">
-      <p className={cx("text-2xl font-bold", tone)}>{value}</p>
-      <p className="text-sm text-gray-500">{label}</p>
+    <div
+      className={cx(
+        hueClass(hue),
+        "flex items-center gap-3 rounded-2xl px-4 py-3 border motion-safe:animate-rise",
+        "bg-sec-soft border-sec/10",
+        "design-b:bg-white design-b:border-gray-200/80 design-b:shadow-sm",
+        "design-c:bg-white design-c:border-orange-100",
+      )}
+    >
+      <IconTile icon={icon} />
+      <div>
+        <p className="text-2xl font-bold text-sec-ink leading-tight">{value}</p>
+        <p className="text-sm text-gray-600">{label}</p>
+      </div>
     </div>
   );
 }

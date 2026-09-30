@@ -1,17 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
-  BellRing, Calendar, CalendarDays, CalendarX, ChevronRight, CreditCard, MessageCircle, Plus, Stethoscope, TrendingUp, UserPlus,
-  Users, Wallet,
+  BellRing, Calendar, CalendarDays, CalendarRange, CalendarX, ChevronRight, CreditCard, MessageCircle, PieChart, Plus, Stethoscope,
+  TrendingUp, UserPlus, Users, Wallet,
 } from "lucide-react";
+import Avatar from "@/components/Avatar";
+import { BarChart, DonutChart, type ChartPoint } from "@/components/Charts";
 import RequirePermission from "@/components/Guard";
-import { ActionTile, Card, EmptyState, LinkButton, LoadError, PageContainer, PageHeader, Segmented, StatCard, StatusBadge } from "@/components/ui";
+import ToothMascot from "@/components/ToothMascot";
+import {
+  ActionTile, Card, EmptyState, IconTile, LinkButton, LoadError, PageContainer, Segmented, StatCard, StatusBadge, type Hue,
+} from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { errorMessage, getCount, getList, type FilterRow } from "@/lib/frappe";
-import { addDays, formatDate, formatLongDate, formatTime, monthStart, todayISO } from "@/lib/format";
+import { addDays, cx, formatCompact, formatDate, formatLongDate, formatMonth, formatTime, monthStart, todayISO } from "@/lib/format";
+import { usePatientLooks, type PatientLook } from "@/lib/hooks";
 import { appointmentHref } from "@/lib/links";
 import { DEFAULT_RECALL_MONTHS, RECALL_APPOINTMENT_FIELDS, RECALL_PATIENT_FIELDS, dueForRecall } from "@/lib/recall";
 import type { Appointment, Patient, Payment, TreatmentPlan } from "@/lib/types";
@@ -25,6 +31,10 @@ interface DashboardData {
   outstanding: number;
   today: Appointment[];
   upcoming: Appointment[];
+  /** The charts, each null when the user may not see its numbers. */
+  revenueByMonth: ChartPoint[] | null;
+  visitsByMonth: ChartPoint[] | null;
+  plansByType: ChartPoint[] | null;
 }
 
 /** An empty result for sections the user is not allowed to see. */
@@ -32,7 +42,13 @@ function nothing<T>(): Promise<T[]> {
   return Promise.resolve([]);
 }
 
-const APPOINTMENT_FIELDS = ["name", "patient_name", "doctor_name", "appointment_date", "appointment_time", "status", "reason_for_visit"];
+const APPOINTMENT_FIELDS = ["name", "patient", "patient_name", "doctor_name", "appointment_date", "appointment_time", "status", "reason_for_visit"];
+
+/** How many months the charts go back, this month included. */
+const CHART_MONTHS = 6;
+
+/** The treatment types shown one by one in the ring; the rest are added up as "Other". */
+const RING_SLICES = 5;
 
 export default function DashboardPage() {
   return (
@@ -49,12 +65,44 @@ function greeting(): string {
   return "Good evening";
 }
 
+/** The last CHART_MONTHS months, oldest first: "2026-09" keys with "Sep" labels. */
+function chartMonths(today: string): Array<{ key: string; label: string; fullLabel: string }> {
+  return Array.from({ length: CHART_MONTHS }, (_, i) => {
+    const key = monthStart(today, i - (CHART_MONTHS - 1)).slice(0, 7);
+    const fullLabel = formatMonth(key);
+    return { key, label: fullLabel.slice(0, 3), fullLabel };
+  });
+}
+
+/** Adds up `value` of each row into its month (by `date`). */
+function byMonth<T>(rows: T[], months: ReturnType<typeof chartMonths>, date: (row: T) => string, value: (row: T) => number): ChartPoint[] {
+  const totals = new Map(months.map((month) => [month.key, 0]));
+  rows.forEach((row) => {
+    const key = (date(row) || "").slice(0, 7);
+    if (totals.has(key)) totals.set(key, (totals.get(key) ?? 0) + value(row));
+  });
+  return months.map((month) => ({ label: month.label, fullLabel: month.fullLabel, value: totals.get(month.key) ?? 0 }));
+}
+
+/** Plans per treatment type, biggest first, the smallest types together as "Other". */
+function plansByType(plans: TreatmentPlan[]): ChartPoint[] {
+  const counts = new Map<string, number>();
+  plans.forEach((plan) => {
+    const type = plan.treatment_type || "Other";
+    counts.set(type, (counts.get(type) ?? 0) + 1);
+  });
+  const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const shown = sorted.slice(0, RING_SLICES).map(([label, value]) => ({ label, value }));
+  const rest = sorted.slice(RING_SLICES).reduce((sum, [, value]) => sum + value, 0);
+  return rest > 0 ? [...shown, { label: "Other", value: rest }] : shown;
+}
+
 function Dashboard() {
   const { can, displayName, doctor: myDoctor } = useSession();
   // A doctor sees their own patients first; "Everyone" shows the whole clinic.
   const [everyone, setEveryone] = useState(false);
   const mine = myDoctor && !everyone ? myDoctor.name : "";
-  const { money, settings } = useSettings();
+  const { money, settings, currency } = useSettings();
   const [data, setData] = useState<DashboardData | null>(null);
   // A failed load says so (with Try Again) instead of leaving the numbers loading or at zero.
   const [failed, setFailed] = useState("");
@@ -69,19 +117,23 @@ function Dashboard() {
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
+      const months = chartMonths(today);
+      const chartStart = monthStart(today, -(CHART_MONTHS - 1));
+      const myFilter: FilterRow[] = mine ? [["doctor", "=", mine]] : [];
       try {
-        const [patients, activePlans, monthPayments, openPlans, todayList, upcoming] = await Promise.all([
+        const [patients, activePlans, payments, openPlans, todayList, upcoming, visits, plans] = await Promise.all([
           seePatients ? getCount("Patient") : Promise.resolve(0),
           seeTreatments ? getCount("Treatment Plan", [["status", "in", ["Planned", "In Progress"]]]) : Promise.resolve(0),
+          // This month's revenue and the revenue chart come from the same rows.
           seeMoney
-            ? getList<Payment>("Payment", ["amount"], { filters: [["payment_date", ">=", monthStart(today)]], limit: 0 })
+            ? getList<Payment>("Payment", ["amount", "payment_date"], { filters: [["payment_date", ">=", chartStart]], limit: 0 })
             : nothing<Payment>(),
           seeMoney
             ? getList<TreatmentPlan>("Treatment Plan", ["remaining_amount"], { filters: [["remaining_amount", ">", 0]], limit: 0 })
             : nothing<TreatmentPlan>(),
           seeAppointments
             ? getList<Appointment>("Appointment", APPOINTMENT_FIELDS, {
-                filters: [["appointment_date", "=", today], ...(mine ? [["doctor", "=", mine] as FilterRow] : [])],
+                filters: [["appointment_date", "=", today], ...myFilter],
                 orderBy: "appointment_time asc",
                 limit: 50,
               })
@@ -92,29 +144,30 @@ function Dashboard() {
                   ["appointment_date", ">", today],
                   ["appointment_date", "<=", addDays(today, 7)],
                   ["status", "in", ["Scheduled", "Confirmed"]],
-                  ...(mine ? [["doctor", "=", mine] as FilterRow] : []),
+                  ...myFilter,
                 ],
                 orderBy: "appointment_date asc, appointment_time asc",
                 limit: 8,
               })
             : nothing<Appointment>(),
+          seeAppointments
+            ? getList<Appointment>("Appointment", ["appointment_date", "status"], {
+                filters: [["appointment_date", ">=", chartStart], ["appointment_date", "<", monthStart(today, 1)], ...myFilter],
+                limit: 0,
+              })
+            : nothing<Appointment>(),
+          seeTreatments
+            ? getList<TreatmentPlan>("Treatment Plan", ["treatment_type"], { filters: [["status", "!=", "Cancelled"]], limit: 0 })
+            : nothing<TreatmentPlan>(),
         ]);
         // The "Needs attention" counts, each only when the user may see it.
         const [openPast, tomorrowBooked, owing, recall] = await Promise.all([
           seeAppointments
-            ? getCount("Appointment", [
-                ["appointment_date", "<", today],
-                ["status", "in", ["Scheduled", "Confirmed"]],
-                ...(mine ? [["doctor", "=", mine] as FilterRow] : []),
-              ])
+            ? getCount("Appointment", [["appointment_date", "<", today], ["status", "in", ["Scheduled", "Confirmed"]], ...myFilter])
             : Promise.resolve(null),
           seeAppointments && settings.enable_whatsapp !== 0
             ? getList<Appointment>("Appointment", ["name"], {
-                filters: [
-                  ["appointment_date", "=", addDays(today, 1)],
-                  ["status", "in", ["Scheduled", "Confirmed"]],
-                  ...(mine ? [["doctor", "=", mine] as FilterRow] : []),
-                ],
+                filters: [["appointment_date", "=", addDays(today, 1)], ["status", "in", ["Scheduled", "Confirmed"]], ...myFilter],
                 limit: 0,
               })
             : Promise.resolve(null),
@@ -129,6 +182,7 @@ function Dashboard() {
         const reminded = readRemindersOpened();
         if (cancelled) return;
         setFailed("");
+        const thisMonth = monthStart(today);
         setData({
           attention: {
             openPast,
@@ -138,10 +192,18 @@ function Dashboard() {
           },
           patients,
           activePlans,
-          monthRevenue: monthPayments.reduce((sum, row) => sum + (Number(row.amount) || 0), 0),
+          monthRevenue: payments
+            .filter((row) => row.payment_date >= thisMonth)
+            .reduce((sum, row) => sum + (Number(row.amount) || 0), 0),
           outstanding: openPlans.reduce((sum, row) => sum + (Number(row.remaining_amount) || 0), 0),
           today: todayList,
           upcoming,
+          revenueByMonth: seeMoney ? byMonth(payments, months, (row) => row.payment_date, (row) => Number(row.amount) || 0) : null,
+          // Visits that happened or are booked: cancelled ones and no-shows do not count.
+          visitsByMonth: seeAppointments
+            ? byMonth(visits.filter((a) => a.status !== "Cancelled" && a.status !== "No Show"), months, (a) => a.appointment_date, () => 1)
+            : null,
+          plansByType: seeTreatments ? plansByType(plans) : null,
         });
       } catch (err) {
         console.error(err);
@@ -154,21 +216,35 @@ function Dashboard() {
     };
   }, [today, seePatients, seeAppointments, seeTreatments, seeMoney, mine, settings.enable_whatsapp, version]);
 
+  const looks = usePatientLooks([...(data?.today ?? []), ...(data?.upcoming ?? [])].map((a) => a.patient));
   const stillToCome = data?.today.filter((a) => a.status === "Scheduled" || a.status === "Confirmed").length ?? 0;
   const loadingValue = "…";
 
   const quickActions = [
-    can("add_appointments") && { href: "/appointments/new", label: "New Appointment", hint: "Book a visit", icon: CalendarDays },
-    can("add_patients") && { href: "/patients/new", label: "Add Patient", hint: "Register someone new", icon: UserPlus },
-    can("add_treatments") && { href: "/treatments/new", label: "New Treatment", hint: "Start a treatment plan", icon: Stethoscope },
-    can("add_payments") && { href: "/payments/new", label: "Record Payment", hint: "Take a payment", icon: CreditCard },
+    can("add_appointments") && { href: "/appointments/new", label: "New Appointment", hint: "Book a visit", icon: CalendarDays, section: "appointments" as const },
+    can("add_patients") && { href: "/patients/new", label: "Add Patient", hint: "Register someone new", icon: UserPlus, section: "patients" as const },
+    can("add_treatments") && { href: "/treatments/new", label: "New Treatment", hint: "Start a treatment plan", icon: Stethoscope, section: "treatments" as const },
+    can("add_payments") && { href: "/payments/new", label: "Record Payment", hint: "Take a payment", icon: CreditCard, section: "money" as const },
   ].filter((action) => action !== false);
+
+  const summary =
+    seeAppointments && data
+      ? data.today.length === 0
+        ? mine
+          ? "You have no patients booked today."
+          : "No appointments booked today."
+        : `${data.today.length} ${data.today.length === 1 ? "appointment" : "appointments"} today, ${stillToCome} still to come.`
+      : undefined;
+  // Money in charts is written short: "450K" (the currency is in the card's title).
+  const short = (value: number) => formatCompact(value);
+  const showCharts = Boolean(data?.revenueByMonth || data?.visitsByMonth || data?.plansByType);
 
   return (
     <PageContainer>
-      <PageHeader
+      <WelcomeBanner
         title={`${greeting()}, ${displayName}`}
-        subtitle={formatLongDate(today)}
+        date={formatLongDate(today)}
+        summary={summary}
         actions={
           myDoctor && seeAppointments ? (
             <Segmented
@@ -191,8 +267,16 @@ function Dashboard() {
             Quick Actions
           </h2>
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-            {quickActions.map((action) => (
-              <ActionTile key={action.href} href={action.href} label={action.label} hint={action.hint} icon={action.icon} />
+            {quickActions.map((action, index) => (
+              <ActionTile
+                key={action.href}
+                href={action.href}
+                label={action.label}
+                hint={action.hint}
+                icon={action.icon}
+                section={action.section}
+                order={index}
+              />
             ))}
           </div>
         </section>
@@ -218,20 +302,22 @@ function Dashboard() {
                 value={data ? data.today.length : loadingValue}
                 hint={data ? `${stillToCome} still to come` : undefined}
                 icon={Calendar}
-                tone="primary"
+                section="appointments"
                 href="/today"
+                order={0}
               />
             )}
             {seePatients && (
-              <StatCard title="Patients" value={data ? data.patients : loadingValue} icon={Users} tone="green" href="/patients" />
+              <StatCard title="Patients" value={data ? data.patients : loadingValue} icon={Users} section="patients" href="/patients" order={1} />
             )}
             {seeTreatments && (
               <StatCard
                 title="Active treatment plans"
                 value={data ? data.activePlans : loadingValue}
                 icon={Stethoscope}
-                tone="yellow"
+                section="treatments"
                 href="/treatments"
+                order={2}
               />
             )}
             {seeMoney && (
@@ -240,8 +326,9 @@ function Dashboard() {
                 value={data ? money(data.monthRevenue) : loadingValue}
                 hint={data ? `${money(data.outstanding)} still owed` : undefined}
                 icon={TrendingUp}
-                tone="purple"
+                section="money"
                 href="/payments"
+                order={3}
               />
             )}
           </div>
@@ -252,6 +339,8 @@ function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card
                 title={mine ? "My patients today" : "Today"}
+                icon={Calendar}
+                section="appointments"
                 flush
                 actions={
                   <Link href="/today" className="inline-flex items-center pointer-coarse:min-h-11 text-sm text-primary-600 hover:underline">
@@ -259,14 +348,12 @@ function Dashboard() {
                   </Link>
                 }
               >
-                <AppointmentList
-                  rows={data?.today}
-                  empty="No appointments today."
-                  showDate={false}
-                />
+                <AppointmentList rows={data?.today} looks={looks} empty="No appointments today." showDate={false} />
               </Card>
               <Card
                 title={mine ? "My next 7 days" : "Next 7 days"}
+                icon={CalendarRange}
+                section="appointments"
                 flush
                 actions={
                   <Link href="/appointments?date=upcoming" className="inline-flex items-center pointer-coarse:min-h-11 text-sm text-primary-600 hover:underline">
@@ -274,8 +361,41 @@ function Dashboard() {
                   </Link>
                 }
               >
-                <AppointmentList rows={data?.upcoming} empty="Nothing booked for the next 7 days." showDate />
+                <AppointmentList rows={data?.upcoming} looks={looks} empty="Nothing booked for the next 7 days." showDate />
               </Card>
+            </div>
+          )}
+
+          {data && showCharts && (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {data.revenueByMonth && (
+                <Card title={`Revenue, last ${CHART_MONTHS} months`} icon={TrendingUp} section="money">
+                  <BarChart
+                    label={`Revenue in ${currency}, last ${CHART_MONTHS} months`}
+                    data={data.revenueByMonth}
+                    format={short}
+                    highlight={CHART_MONTHS - 1}
+                    empty="No payments in the last six months."
+                  />
+                  <p className="text-xs text-gray-500 mt-3">Amounts in {currency}. This month is the darker bar.</p>
+                </Card>
+              )}
+              {data.visitsByMonth && (
+                <Card title={mine ? "My visits per month" : "Visits per month"} icon={CalendarDays} section="appointments">
+                  <BarChart
+                    label={`Visits, last ${CHART_MONTHS} months`}
+                    data={data.visitsByMonth}
+                    highlight={CHART_MONTHS - 1}
+                    empty="No visits in the last six months."
+                  />
+                  <p className="text-xs text-gray-500 mt-3">Completed and booked visits; cancelled ones and no-shows are left out.</p>
+                </Card>
+              )}
+              {data.plansByType && (
+                <Card title="Treatments by type" icon={PieChart} section="treatments" className="md:col-span-2 xl:col-span-1">
+                  <DonutChart label="Treatment plans by type" data={data.plansByType} centerLabel="plans" empty="No treatment plans yet." />
+                </Card>
+              )}
             </div>
           )}
         </>
@@ -294,12 +414,44 @@ function Dashboard() {
   );
 }
 
+/**
+ * The greeting at the top: the date, "Good morning, …" and a one-line summary of the day, on a soft tint (A), a
+ * bold gradient (B) or a warm glow (C), with a smiling tooth.
+ */
+function WelcomeBanner({ title, date, summary, actions }: { title: string; date: string; summary?: string; actions?: ReactNode }) {
+  return (
+    <div
+      className={cx(
+        "relative overflow-hidden rounded-2xl px-6 py-6 sm:px-8 border",
+        "bg-linear-to-br from-primary-50 via-white to-(--avatar-2) border-primary-100",
+        "design-b:from-primary-800 design-b:via-primary-600 design-b:to-(--sec-appointments) design-b:border-transparent design-b:shadow-lg",
+        "design-c:from-orange-100 design-c:via-amber-50 design-c:to-rose-100 design-c:border-orange-200",
+      )}
+    >
+      {/* Soft circles in the corner. */}
+      <span aria-hidden="true" className="absolute -top-16 -end-10 w-56 h-56 rounded-full bg-primary-100/60 design-b:bg-white/10 design-c:bg-orange-200/40" />
+      <span aria-hidden="true" className="absolute -bottom-20 end-40 w-40 h-40 rounded-full bg-(--avatar-3)/60 design-b:bg-white/5 design-c:bg-rose-200/40" />
+      <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-primary-700 design-b:text-white/85 design-c:text-orange-800">{date}</p>
+          <h1 className="text-2xl font-bold text-gray-900 mt-0.5 break-words design-b:text-white">{title}</h1>
+          {summary && <p className="text-sm text-gray-600 mt-1 design-b:text-white/85 design-c:text-gray-700">{summary}</p>}
+          {actions && <div className="mt-4">{actions}</div>}
+        </div>
+        <ToothMascot size={104} className="hidden sm:block shrink-0 text-primary-600 motion-safe:animate-bob design-b:text-white/90 design-c:text-orange-600" />
+      </div>
+    </div>
+  );
+}
+
 function AppointmentList({
   rows,
+  looks,
   empty,
   showDate,
 }: {
   rows?: Appointment[];
+  looks: Record<string, PatientLook>;
   empty: string;
   showDate: boolean;
 }) {
@@ -315,24 +467,28 @@ function AppointmentList({
     );
   }
   return (
-    <ul className="divide-y divide-gray-50 pb-2">
-      {rows.map((a) => (
-        <li key={a.name}>
-          <Link href={appointmentHref(a.name)} className="flex items-center gap-4 px-6 py-3 hover:bg-gray-50">
-            <span className="w-20 shrink-0">
-              <span className="block text-sm font-semibold text-primary-600">{formatTime(a.appointment_time)}</span>
-              {showDate && <span className="block text-xs text-gray-500">{formatDate(a.appointment_date)}</span>}
-            </span>
-            <span className="flex-1 min-w-0">
-              <span className="block text-sm font-medium text-gray-800 truncate">{a.patient_name || a.name}</span>
-              <span className="block text-xs text-gray-500 truncate">
-                {[a.doctor_name, a.reason_for_visit].filter(Boolean).join(" · ")}
+    <ul className="divide-y divide-gray-100 pb-2">
+      {rows.map((a) => {
+        const look = looks[a.patient];
+        return (
+          <li key={a.name}>
+            <Link href={appointmentHref(a.name)} className="flex items-center gap-3 sm:gap-4 px-5 sm:px-6 py-3 hover:bg-gray-50">
+              <span className="w-20 shrink-0">
+                <span className="block text-sm font-semibold text-sec-ink whitespace-nowrap">{formatTime(a.appointment_time)}</span>
+                {showDate && <span className="block text-xs text-gray-500">{formatDate(a.appointment_date)}</span>}
               </span>
-            </span>
-            <StatusBadge kind="appointment" status={a.status} />
-          </Link>
-        </li>
-      ))}
+              <Avatar name={a.patient_name || a.patient} gender={look?.gender} age={look?.age} size={36} />
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm font-medium text-gray-800 truncate">{a.patient_name || a.name}</span>
+                <span className="block text-xs text-gray-500 truncate">
+                  {[a.doctor_name, a.reason_for_visit].filter(Boolean).join(" · ")}
+                </span>
+              </span>
+              <StatusBadge kind="appointment" status={a.status} />
+            </Link>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -350,41 +506,37 @@ function readRemindersOpened(): string[] {
 /** A short to-do list for the start of the day. Rows with nothing to do are left out. */
 function NeedsAttention({ attention }: { attention: DashboardData["attention"] }) {
   const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
-  const rows = [
+  const rows: Array<{ href: string; icon: typeof CalendarX; hue: Hue; text: string; hint: string } | null> = [
     attention.openPast
-      ? { href: "/today", icon: CalendarX, tone: "text-amber-700 bg-amber-50", text: `${attention.openPast} past ${plural(attention.openPast, "appointment", "appointments")} to close`, hint: "Mark them Completed or No show" }
+      ? { href: "/today", icon: CalendarX, hue: "yellow", text: `${attention.openPast} past ${plural(attention.openPast, "appointment", "appointments")} to close`, hint: "Mark them Completed or No show" }
       : null,
     attention.toRemind
-      ? { href: "/today", icon: MessageCircle, tone: "text-green-700 bg-green-50", text: `${attention.toRemind} ${plural(attention.toRemind, "reminder", "reminders")} to send for tomorrow`, hint: "WhatsApp, one tap each" }
+      ? { href: "/today", icon: MessageCircle, hue: "whatsapp", text: `${attention.toRemind} ${plural(attention.toRemind, "reminder", "reminders")} to send for tomorrow`, hint: "WhatsApp, one tap each" }
       : null,
     attention.recallDue
-      ? { href: "/recall", icon: BellRing, tone: "text-primary-700 bg-primary-50", text: `${attention.recallDue} ${plural(attention.recallDue, "patient", "patients")} due for a check-up`, hint: "Check-up date reached or not seen for 6 months, nothing booked" }
+      ? { href: "/recall", icon: BellRing, hue: "patients", text: `${attention.recallDue} ${plural(attention.recallDue, "patient", "patients")} due for a check-up`, hint: "Check-up date reached or not seen for 6 months, nothing booked" }
       : null,
     attention.owing
-      ? { href: "/patients?balance=owing", icon: Wallet, tone: "text-red-700 bg-red-50", text: `${attention.owing} ${plural(attention.owing, "patient owes", "patients owe")} money`, hint: "See balances and send reminders" }
+      ? { href: "/patients?balance=owing", icon: Wallet, hue: "red", text: `${attention.owing} ${plural(attention.owing, "patient owes", "patients owe")} money`, hint: "See balances and send reminders" }
       : null,
-  ].filter((row) => row !== null);
-  if (rows.length === 0) return null;
+  ];
+  const shown = rows.filter((row) => row !== null);
+  if (shown.length === 0) return null;
   return (
     <Card title="Needs attention" flush>
-      <ul className="divide-y divide-gray-100">
-        {rows.map((row) => {
-          const Icon = row.icon;
-          return (
-            <li key={row.text}>
-              <Link href={row.href} className="flex items-center gap-3 px-5 sm:px-6 py-3 min-h-11 hover:bg-gray-50">
-                <span className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center ${row.tone}`}>
-                  <Icon size={18} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium text-gray-800">{row.text}</span>
-                  <span className="block text-xs text-gray-500">{row.hint}</span>
-                </span>
-                <ChevronRight size={16} className="text-gray-400 rtl:rotate-180" />
-              </Link>
-            </li>
-          );
-        })}
+      <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-2 px-2 pb-2">
+        {shown.map((row) => (
+          <li key={row.text}>
+            <Link href={row.href} className="flex items-center gap-3 px-3 sm:px-4 py-3 min-h-11 rounded-xl hover:bg-gray-50">
+              <IconTile icon={row.icon} hue={row.hue} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-gray-800">{row.text}</span>
+                <span className="block text-xs text-gray-500">{row.hint}</span>
+              </span>
+              <ChevronRight size={16} className="text-gray-400 rtl:rotate-180" />
+            </Link>
+          </li>
+        ))}
       </ul>
     </Card>
   );

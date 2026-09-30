@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Check, Save, Shield } from "lucide-react";
+import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import {
   Alert, Badge, Button, Card, Field, NotFoundCard, PageContainer, PageHeader, PageLoading, SelectInput, Toggle,
@@ -127,9 +128,7 @@ function UserDetail() {
 
       <Card>
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="w-14 h-14 shrink-0 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold text-xl">
-            {(userData.full_name || userData.name).charAt(0).toUpperCase()}
-          </div>
+          <Avatar name={userData.full_name || userData.name} gender={userData.gender} photo={userData.user_image} size={56} />
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-gray-800 text-lg">{userData.full_name || userData.name}</p>
             <p className="text-gray-500 text-sm break-all">{userData.email}</p>

@@ -5,6 +5,26 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
+- **Choose a design: answer "a", "b" or "c".** Three colourful looks are ready to compare (2026-09-30). Open
+  [docs/design-options](docs/design-options/README.md) for pictures of the dashboard, a patient page, the calendar
+  and the Today board in each, or try them in the app: **My Profile → Design Option** (only your computer
+  changes). All three have:
+  - a colour for each part of the clinic (patients, appointments, treatments, money, reports), used in the menu,
+    the number cards, the icons and the charts;
+  - icons in coloured rounded tiles;
+  - friendly drawn avatars: a man, a woman (some with a headscarf), a boy or a girl, from the patient's gender
+    and age; doctors wear a white coat, and a doctor's photo can be uploaded on the Doctors page instead;
+  - a welcome banner with a smiling tooth, and three charts on the dashboard: revenue and visits per month for
+    the last six months, and treatment plans by type;
+  - short, calm animations (cards rise into place, chart bars grow). People who turned animations off on their
+    computer see none.
+
+  Also in this step: each option has its own font (A Plus Jakarta Sans, B Manrope, C Nunito, loaded by Next.js
+  from Google Fonts, no new package), and Settings → Theme colour has a first choice, "Colour of the design";
+  the dummy clinic uses it, so each option shows its own colour. In the dummy data Fatima Salman is now 9 years
+  old, to show a child's avatar. No new package and no change to next.config.ts, so your dev server does not need
+  a restart.
+
 
 ## Backlog
 

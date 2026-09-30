@@ -74,6 +74,10 @@ own `fetch`. That is what makes the dummy-data switch a one-line change.
 
 ## Screens
 
+**New look coming.** Three colourful design options (A Fresh Mint, B Midnight, C Sunrise) are waiting for the
+clinic's choice: see [docs/design-options](docs/design-options/README.md), or switch between them in the app under
+**My Profile → Design Option**. The pictures below will be retaken once one is chosen.
+
 The pictures are taken from the running app with the dummy data (`npm run screenshots:readme`).
 
 <table>
@@ -147,7 +151,7 @@ what they are not allowed to do.
 | Route | What it does |
 |---|---|
 | `/` | Redirects to `/dashboard` |
-| `/dashboard` | Large quick-action tiles at the top (new appointment, patient, treatment, payment), then today's appointments, the next 7 days, patient and plan counts, revenue this month |
+| `/dashboard` | A welcome banner, large quick-action tiles (new appointment, patient, treatment, payment), then today's appointments, the next 7 days, patient and plan counts, revenue this month, and charts of revenue and visits per month and treatments by type |
 | `/today` | The front desk's day: today's patients by doctor, one tap to confirm, complete or mark a no-show, late patients highlighted, medical alerts and balances at a glance, quick payments and walk-ins. Marking a visit Completed (here or on the appointment) asks what was done and saves it on the patient's treatment plan |
 | `/patients` | List with server-side search (name, phone, ID; a phone number is found however it was typed: `0770…`, `+964 770…`, `00964…` or Arabic digits), gender filter and paging |
 | `/recall` | Patients due for a check-up and not booked: the date the dentist chose has come (every 3, 6, 9 or 12 months, set on the patient page or when a visit is finished), or no visit for 6 months. With Call, WhatsApp reminder and Book |
@@ -310,6 +314,7 @@ npx playwright install chromium   # once, before the first test run
 npm run test:e2e          # browser tests (builds, then serves on port 3100)
 npm run screenshots       # every page at desktop, tablet and phone size, into screenshots/
 npm run screenshots:readme   # the pictures in this README, into docs/screenshots/
+npm run screenshots:designs  # the three design options, into docs/design-options/
 ```
 
 The browser tests walk through the daily work: adding a patient, booking an appointment (and the
