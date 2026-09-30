@@ -31,7 +31,7 @@ accurate.
 | `npm run build` | **Passes** (checked 2026-09-30): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-30). `npx tsc --noEmit` passes too. | |
 | Languages | **Arabic (default, right to left) and English.** Every text is in `src/i18n/en/*.ts` and `src/i18n/ar/*.ts`; the switch is in the menu. See **Languages** below. **Every new text must be added in both languages.** | `src/i18n/`, `src/context/LanguageContext.tsx` |
-| Tests | **Playwright tests pass** (171 tests, 14 of them in Arabic, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, expenses and profit, the waiting room, phone numbers, the form dialogs and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (177 tests, 15 of them in Arabic, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, expenses and profit, the waiting room, QR codes, phone numbers, the form dialogs and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -68,6 +68,7 @@ The Frappe address comes from the `FRAPPE_URL` environment variable (for example
 | Font | Poppins for English; IBM Plex Sans Arabic for Arabic text, tables and forms, and El Messiri for Arabic headings, through `next/font/google` in `layout.tsx` (the `--font-poppins`, `--font-arabic` and `--font-arabic-headings` variables, used in `globals.css`) |
 | Icons | `lucide-react` everywhere; the tooth logo is our own SVG in `src/components/ToothLogo.tsx` |
 | HTTP | `axios`, one instance in `src/lib/frappe.ts` |
+| QR codes | `qrcode-generator` makes the grid (`qrMatrix()` in `src/lib/qr.ts`, drawn as our own SVG by `QrCode.tsx`); `jsqr` reads camera frames where the browser has no `BarcodeDetector` (loaded only then) |
 | State | React Context (auth, settings, session, toasts) and per-page `useState`. No global store, no data-fetching library |
 | Installed but unused | `@radix-ui/react-dialog`, `@radix-ui/react-dropdown-menu`, `clsx`. The modal and dropdowns are hand-written; `cx()` in `src/lib/format.ts` does what `clsx` would |
 
@@ -104,6 +105,10 @@ src/lib/frappe.ts   the only module that touches data
 - **One permission guard per page.** Each page wraps its content in `<RequirePermission permission="…">`
   from `src/components/Guard.tsx`. It shows a spinner while the session loads and a "no access" card when the
   user lacks the permission.
+- **Scan.** Beside the search, `ScanPatientButton` (`src/components/ScanPatient.tsx`, `view_patients`) opens a camera
+  dialog (a portal on the page body) that reads a patient's QR code every 250 ms (`BarcodeDetector`, else `jsqr`) and
+  opens their file (`patientIdFromScan()`: a DentClinic patient address or a `PAT-…` ID); without a camera the ID can
+  be typed. The camera stops when the dialog closes.
 - **Global search.** `GlobalSearch` in the top bar (and Ctrl+K / ⌘K anywhere) finds patients (`view_patients`)
   by name, phone, second phone or ID, and lists quick actions filtered by permission. Add new everyday
   actions to `ACTIONS` in `GlobalSearch.tsx`. The top bar itself must not get `backdrop-blur` or a `transform`
@@ -172,6 +177,8 @@ src/
 │   ├── ReceiptSlip.tsx       "Print Slip" and "Slip Settings" under a payment receipt (thermal receipt printers)
 │   ├── CurrencySelect.tsx    the currency picker of plans and payments (only when the clinic takes two currencies)
 │   ├── ToothLogo.tsx         the app logo (inline SVG)
+│   ├── QrCode.tsx            a QR code as one SVG path, black on white (`value`, `label`, `size`)
+│   ├── ScanPatient.tsx       the Scan button and camera dialog of the top bar
 │   ├── MedicalAlerts.tsx     the red/yellow medical alerts band (show it wherever treatment is decided)
 │   ├── RecallDialog.tsx      "Next check-up" on the patient page: every 3-12 months, no recall, or the usual rule
 │   ├── RecordHistory.tsx     the History card: who added a record and who changed what (closed until asked)
@@ -218,6 +225,7 @@ src/
     ├── profit.ts             computeProfit() (clinic and per doctor), previousPeriod(), profitSummary() (the plain sentences)
     ├── receiptSlip.ts        the thermal receipt slip: buildReceiptSlip(), printHtml(), this computer's paper settings
     ├── theme.ts              the clinic colour: presets, contrast fix, applyThemeColor, the boot script
+    ├── qr.ts                 qrMatrix(), patientQrValue() (the address of the patient's file), patientIdFromScan()
     └── links.ts              URL builders for records (always use these)
 docs/
 ├── backend-todo.md           what the back end must provide for this front end
@@ -263,7 +271,8 @@ the dialog to be hidden, and use `openSaved(page, "Payment recorded.")` to follo
 | `/patients/[id]/edit` | `edit_patients` | Shared `PatientForm` |
 | `/patients/[id]/estimate` | `view_patients` and `view_treatments` | Printable treatment estimate on the clinic letterhead: the patient's Planned and In Progress plans with cost, paid and to pay, totals, a 30-day validity note (`VALID_DAYS`) and signature lines. Linked as **Print estimate** above the Treatment Plans tab |
 | `/patients/[id]/statement` | `view_patients` and `view_payments` | Printable statement: every plan that is not Cancelled (cost, paid, left), every payment, total for treatments, total paid and the balance (`total_remaining`). Linked as **Print statement** above the Payments tab |
-| `/patients/[id]/chart` | `view_patients` | Printable dental chart: letterhead, patient, `MedicalAlerts`, the chart read-only (Adult/Child switch and hints hidden on paper) and its Findings. Linked as **Print** in the chart header |
+| `/patients/[id]/card` | `view_patients` | Printable patient ID card at bank-card size (85.6 × 54 mm, sizes in mm, a dashed line to cut along): clinic logo and name, the patient's name, ID and date of birth, the clinic phone, and a QR code of `patientQrValue()` (the address of the patient's file, so a phone camera opens it too). Linked as **ID Card** on the patient page |
+| `/patients/[id]/chart` | `view_patients` | Printable dental chart: letterhead, patient (with a QR code of the file beside it, "Scan to open the patient file"), `MedicalAlerts`, the chart read-only (Adult/Child switch and hints hidden on paper) and its Findings. Linked as **Print** in the chart header |
 | `/xrays/[id]` | `view_patients` | Printable X-ray or photo: letterhead ("Dental image"), patient, date taken, type, teeth, the image with its drawing on top (`SketchCanvas`), and the description. The title is the image's type. Print in the viewer opens it in the same tab |
 | `/appointments` | `view_appointments` | Three views, chosen with `?view=day\|week\|list` (default `day`, or `list` when `?date=` is given). **Day**: one column per active doctor, rows from Clinic Settings opening to closing time (stretched to fit), blocks as long as the appointment and coloured by status, overlapping ones side by side, a red "now" line, and striped shading outside each doctor's `start_time`–`end_time`, which are also shown under the name (and in the week view when one doctor is chosen); `?day=YYYY-MM-DD` and `?doctor=` pick the day and one doctor. On phones (`useMediaQuery("(max-width: 639px)")`) the day view shows one doctor at a time with Previous / Next doctor buttons, starting with the first doctor who has patients. **Week**: one column per day (the week starts on `WEEK_STARTS_ON` in `format.ts`, Sunday). Clicking an empty 15-minute slot opens the booking dialog with date, time and doctor filled in (needs `add_appointments`). With `edit_appointments`, a Scheduled or Confirmed block can be dragged (mouse, pen or touch; pointer events, `touch-none` on the block) to another time, doctor column or day; a dashed preview snaps to 15 minutes, dropping asks "Move this appointment?" (with the same overlap check, then "Move anyway") and saves `appointment_date`, `appointment_time` and `doctor`. A click without moving still opens the appointment. **List**: search, date filter (All/Today/Tomorrow/Upcoming/Past, also `?date=today`), status filter, paging. The grid is `src/components/AppointmentCalendar.tsx` |
 | `/appointments/new` | `add_appointments` | Shared `AppointmentForm`. Reads `?patient=`, `?date=`, `?time=HH:MM`, `?doctor=` and `?reason=`; Back returns to that day in the calendar. Once a doctor and date are chosen, the form shows that doctor's bookings for the day and up to 8 free times that fit the chosen length (within the doctor's own working hours when set, otherwise the clinic hours, and from now for today; tap one to fill in the time) and says when the typed time overlaps. With no `?doctor=`, it starts with the doctor of the last booking made on this computer (`localStorage.last_doctor`). Warns if the doctor already has an overlapping appointment (always checked for a new booking) |
@@ -377,6 +386,7 @@ Rules for data code:
 | `usePatientMedical(patient)` | The patient's medical fields (`MEDICAL_FIELDS`) for `MedicalAlerts` on another record's page |
 | `useDoctorList()` | The same, as `{ doctors, loading }`, for screens that would look empty while doctors load (the calendar) |
 | `useDebounced(value, ms)` | Waits until typing stops |
+| `useSiteOrigin()` | This site's address (`window.location.origin`), empty on the server; for QR codes |
 | `useMediaQuery(query)` | True while a media query matches (false on the server); e.g. phone-only layouts |
 | `useOpenBalances(ids, enabled)` | The plans with something left of a few patients (currency and remaining), for `useSettings().owedText()` |
 

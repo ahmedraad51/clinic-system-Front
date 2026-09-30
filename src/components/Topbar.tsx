@@ -13,6 +13,7 @@ import { cx } from "@/lib/format";
 import { MyAvatar } from "./Avatar";
 import AppearancePanel from "./AppearancePanel";
 import GlobalSearch from "./GlobalSearch";
+import ScanPatientButton from "./ScanPatient";
 import NotificationBell from "./NotificationBell";
 import { TOP_ICON_BUTTON, TOP_DROPDOWN } from "./topbarStyles";
 import { takePanelReopen } from "./appearancePanelState";
@@ -108,6 +109,7 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
               <Menu size={24} />
             </button>
             <GlobalSearch />
+            {can("view_patients") && <ScanPatientButton />}
           </div>
 
           <div className="flex items-center gap-0.5 sm:gap-1">

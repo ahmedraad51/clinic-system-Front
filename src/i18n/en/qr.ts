@@ -1,0 +1,26 @@
+/** QR codes: the patient ID card (/patients/[id]/card), the code on the printed chart, and the Scan button. */
+export const qr = {
+  scanButton: "Scan a patient card",
+  scanTitle: "Scan a Patient Card",
+  scanHint: "Hold the QR code of the patient's card or printed chart in front of the camera.",
+  starting: "Starting the camera…",
+  noCamera: "The camera cannot be used here. Allow the camera for this site, or type the patient ID below.",
+  notPatient: "This QR code is not a DentClinic patient card.",
+  orType: "Or type the patient ID",
+  idLabel: "Patient ID",
+  idInvalid: "Type an ID such as PAT-2026-00001.",
+  open: "Open Patient",
+  video: "Camera",
+  codeLabel: (name: string) => `QR code of the file of ${name}`,
+  chartQr: "Scan to open the patient file",
+  card: {
+    title: "Patient ID Card",
+    button: "ID Card",
+    kind: "Patient card",
+    patientId: "Patient ID",
+    born: "Born",
+    phone: "Clinic phone",
+    scanNote: "Show this card at the front desk.",
+    hint: "Print on card stock and cut along the line. Scanning the code opens this patient's file in DentClinic.",
+  },
+};

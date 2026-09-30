@@ -10,9 +10,18 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Backlog
 
-1. Phase 4 of the redesign plan (the features from the competitor study), items 4 to 8, in both languages.
+1. Phase 4 of the redesign plan (the features from the competitor study), items 5 to 8, in both languages.
 
 ## Done
+
+- 2026-10-01 - **QR codes (Phase 4, item 4).** Each patient has a printable **ID card** the size of a bank card
+  (the **ID Card** button on the patient page) with the clinic's name, the patient's name and ID, and a QR code. The
+  printed dental chart has the same code. The new **Scan** button in the top bar (beside the search) opens the
+  camera; holding a card or printed chart in front of it opens that patient's file. Without a camera the patient ID
+  can be typed. A phone's own camera app also opens the file from the code. English and Arabic.
+  **Please restart the dev server** (`npm run dev`): two small packages were added (`qrcode-generator` to draw
+  the codes and `jsqr` to read them). **What to check:** print a card, then scan it with the Scan button on a
+  tablet or a laptop with a camera.
 
 - 2026-10-01 - **The waiting room (Phase 4, item 3).** The Today board has two new steps for each patient:
   **Arrived** when they report at the desk (the card then says how long they have been waiting) and **In Chair** when

@@ -178,6 +178,13 @@ export function useDocument<T extends BaseDoc>(doctype: string, name: string) {
 }
 
 /** Active doctors, for dropdowns. */
+const noChange = () => () => {};
+
+/** This site's address ("https://clinic.example"), for QR codes; empty during the server render. */
+export function useSiteOrigin(): string {
+  return useSyncExternalStore(noChange, () => window.location.origin, () => "");
+}
+
 export function useDoctors() {
   return useDoctorList().doctors;
 }

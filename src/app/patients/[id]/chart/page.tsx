@@ -6,11 +6,13 @@ import ClinicLetterhead from "@/components/ClinicLetterhead";
 import DentalChart from "@/components/DentalChart";
 import RequirePermission from "@/components/Guard";
 import MedicalAlerts from "@/components/MedicalAlerts";
+import QrCode from "@/components/QrCode";
 import { Button, Card, NotFoundCard, PageContainer, PageHeader, PageLoading } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { display, formatDate, todayISO } from "@/lib/format";
-import { useDocument } from "@/lib/hooks";
+import { useDocument, useSiteOrigin } from "@/lib/hooks";
 import { patientHref, routeId } from "@/lib/links";
+import { patientQrValue } from "@/lib/qr";
 import type { Patient } from "@/lib/types";
 
 export default function ChartPrintPage() {
@@ -27,6 +29,7 @@ function ChartPrint() {
   const params = useParams();
   const id = routeId(params.id);
   const { doc: patient, loading, notFound, error } = useDocument<Patient>("Patient", id);
+  const origin = useSiteOrigin();
 
   if (loading) return <PageLoading />;
   if (notFound || !patient) {
@@ -48,7 +51,8 @@ function ChartPrint() {
 
       <Card className="print:shadow-none print:border-0">
         <ClinicLetterhead kind={t.chart.letterheadKind} reference={patient.name} date={formatDate(todayISO())} />
-        <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 py-5">
+        <div className="flex items-start gap-6 py-5">
+        <dl className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
           <div>
             <dt className="text-xs text-gray-500">{t.common.patient}</dt>
             <dd className="text-sm font-medium text-gray-800 mt-0.5">{patient.full_name}</dd>
@@ -64,6 +68,14 @@ function ChartPrint() {
             </dd>
           </div>
         </dl>
+          {/* Scanning it (the Scan button, or a phone camera) opens this patient's file. */}
+          {origin && (
+            <figure className="shrink-0 text-center">
+              <QrCode value={patientQrValue(patient.name, origin)} label={t.qr.codeLabel(patient.full_name)} size={88} />
+              <figcaption className="mt-1 max-w-[88px] text-xs leading-tight text-gray-500">{t.qr.chartQr}</figcaption>
+            </figure>
+          )}
+        </div>
         <div className="mb-5">
           <MedicalAlerts patient={patient} />
         </div>

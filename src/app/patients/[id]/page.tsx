@@ -6,7 +6,7 @@ import { useDataVersion } from "@/lib/dataVersion";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
-  BellRing, Calendar, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, CreditCard, HeartPulse, History,
+  BellRing, Calendar, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, CreditCard, HeartPulse, History, IdCard,
   MessageCircle, Pencil, Phone, Pill, Plus, Printer, Stethoscope, Trash2, Wallet, type LucideIcon,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
@@ -287,6 +287,9 @@ function PatientDetail() {
           >
             {/* Contact, and the facts a dentist wants before the patient sits down. */}
             <div className="mt-5 flex flex-wrap justify-center gap-2">
+          <LinkButton href={`${patientHref(id)}/card`} variant="secondary" icon={IdCard}>
+            {t.qr.card.button}
+          </LinkButton>
           {patient.phone_number && (
             <a
               href={`tel:${patient.phone_number.replace(/\s/g, "")}`}
