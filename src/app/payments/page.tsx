@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRecordDialogs } from "@/components/RecordDialogs";
+import { useDataVersion } from "@/lib/dataVersion";
 import Link from "next/link";
 import { CreditCard, FileText, Plus, Receipt } from "lucide-react";
 import { PatientLink } from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import {
-  Card, ClearFiltersButton, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination, SearchInput,
-  SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, TextInput, Th, Toolbar,
+  Button, Card, ClearFiltersButton, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination, SearchInput, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, TextInput, Th, Toolbar,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
@@ -54,8 +55,11 @@ function PaymentsList() {
     orderBy: "payment_date desc, name desc",
   });
 
+  const openDialog = useRecordDialogs();
   // The total of every payment that matches, not just this page.
   const sumKey = JSON.stringify({ filters, orFilters });
+  // A dialog saved something: load again.
+  const saved = useDataVersion();
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -76,7 +80,7 @@ function PaymentsList() {
     return () => {
       cancelled = true;
     };
-  }, [sumKey, currency]);
+  }, [sumKey, currency, saved]);
 
   const filtered = Boolean(debounced.trim() || method || from || to);
   const clearFilters = () => {
@@ -106,9 +110,9 @@ function PaymentsList() {
               {p.dayReport}
             </LinkButton>
             {can("add_payments") && (
-              <LinkButton href="/payments/new" icon={Plus}>
+              <Button icon={Plus} onClick={() => openDialog({ kind: "newPayment" })}>
                 {p.add}
-              </LinkButton>
+              </Button>
             )}
           </>
         }

@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import { useRecordDialogs } from "@/components/RecordDialogs";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarDays, CalendarRange, CalendarX, ChevronLeft, ChevronRight, List, Plus } from "lucide-react";
@@ -8,9 +9,7 @@ import { PatientLink } from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import AppointmentCalendar, { type CalendarView } from "@/components/AppointmentCalendar";
 import {
-  Button, Card, ClearFiltersButton, ClickableRow, LinkButton, PageContainer, PageHeader, PageLoading,
-  Pagination, SearchInput, Segmented, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage,
-  Td, TextInput, Th, Toolbar,
+  Button, Card, ClearFiltersButton, ClickableRow, PageContainer, PageHeader, PageLoading, Pagination, SearchInput, Segmented, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, TextInput, Th, Toolbar,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
@@ -99,8 +98,7 @@ function Appointments() {
   const first = view === "week" ? weekStart(day) : day;
   const heading = view === "week" ? t.appointments.weekRange(formatDate(first), formatDate(addDays(first, 6))) : formatLongDate(day);
   const views = VIEWS.map((option) => ({ ...option, label: t.appointments.views[option.value] }));
-  const newParams = new URLSearchParams(view === "list" ? {} : { date: day, ...(doctor ? { doctor } : {}) });
-  const newHref = `/appointments/new${newParams.size ? `?${newParams.toString()}` : ""}`;
+  const openDialog = useRecordDialogs();
 
   return (
     <PageContainer section="appointments">
@@ -109,9 +107,12 @@ function Appointments() {
         subtitle={view === "list" ? t.appointments.listSubtitle : heading}
         actions={
           can("add_appointments") && (
-            <LinkButton href={newHref} icon={Plus}>
+            <Button
+              icon={Plus}
+              onClick={() => openDialog({ kind: "newAppointment", prefill: view === "list" ? {} : { appointment_date: day, doctor: doctor || "" } })}
+            >
               {t.appointments.newAppointment}
-            </LinkButton>
+            </Button>
           )
         }
       />

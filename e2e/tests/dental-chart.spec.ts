@@ -32,9 +32,10 @@ test("mark a tooth on the dental chart and save it", async ({ page }) => {
 
   // From the tooth, start a treatment plan with the tooth filled in.
   await finding.click();
-  await page.getByRole("link", { name: "New treatment for this tooth" }).click();
-  await expect(page.getByRole("heading", { name: "New Treatment Plan" })).toBeVisible();
-  await expect(page.getByLabel("Tooth")).toHaveValue("46");
+  await page.getByRole("button", { name: "New treatment for this tooth" }).click();
+  const dialog = page.getByRole("dialog", { name: "New Treatment Plan" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByLabel("Tooth")).toHaveValue("46");
 });
 
 test("a chart saved in the old format still loads", async ({ page }) => {

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useRecordDialogs } from "@/components/RecordDialogs";
+import { useDataVersion } from "@/lib/dataVersion";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Stethoscope, CalendarCheck, CalendarPlus, ClipboardList, CreditCard, ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
@@ -10,8 +12,7 @@ import RecordHistory from "@/components/RecordHistory";
 import LabWorkCard from "@/components/LabWorkCard";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
-  Alert, Button, Card, DetailList, DetailRow, EmptyState, Field, LinkButton, LoadError, NotFoundCard,
-  PageContainer, PageHeader, PageLoading, RecordLoading, ProgressBar, SelectInput, StatusBadge, Table, Td, TextArea, TextInput, Th,
+  Alert, Button, Card, DetailLayout, EmptyState, Field, IconTile, LoadError, NotFoundCard, PageContainer, PageHeader, PageLoading, ProfileCard, ProgressBar, RecordLoading, SelectInput, StatusBadge, Table, Td, TextArea, TextInput, Th,
 } from "@/components/ui";
 import { ConfirmDialog, Modal } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
@@ -44,6 +45,7 @@ interface Related {
 
 function TreatmentDetail() {
   const { t } = useI18n();
+  const openDialog = useRecordDialogs();
   const params = useParams();
   const router = useRouter();
   const toast = useToast();
@@ -69,6 +71,8 @@ function TreatmentDetail() {
   const showPayments = can("view_payments");
   const relatedKey = `${id}|${relatedVersion}`;
 
+  // A dialog saved something: load again.
+  const saved = useDataVersion();
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -100,7 +104,7 @@ function TreatmentDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, relatedVersion, showPayments]);
+  }, [id, relatedVersion, showPayments, saved]);
 
   if (loading) return <RecordLoading />;
   if (notFound || !plan) {
@@ -157,31 +161,60 @@ function TreatmentDetail() {
   const typeLabel = label(t.enums.treatmentType, plan.treatment_type);
   const title = plan.tooth_number ? t.treatments.titleWithTooth(typeLabel, plan.tooth_number) : typeLabel;
   // The next visit for this plan: patient, the plan's doctor and what it is for.
-  const bookVisitHref = `/appointments/new?${new URLSearchParams({
-    patient: plan.patient,
-    ...(plan.doctor ? { doctor: plan.doctor } : {}),
-    reason: plan.tooth_number ? t.treatments.visitReason(typeLabel, plan.tooth_number) : typeLabel,
-  }).toString()}`;
-  const paymentHrefForPlan = `/payments/new?treatment=${encodeURIComponent(id)}&patient=${encodeURIComponent(plan.patient)}`;
+  const bookVisit = () =>
+    openDialog({
+      kind: "newAppointment",
+      prefill: {
+        patient: plan.patient,
+        doctor: plan.doctor || "",
+        reason_for_visit: plan.tooth_number ? t.treatments.visitReason(typeLabel, plan.tooth_number) : typeLabel,
+      },
+      patientName: plan.patient_name,
+    });
+  const addPayment = () =>
+    openDialog({ kind: "newPayment", prefill: { patient: plan.patient, treatment: id }, patientName: plan.patient_name });
 
   return (
     <PageContainer section="treatments">
-      <PageHeader icon={Stethoscope} section="treatments"
-        title={title}
-        subtitle={`${plan.patient_name || plan.patient}${t.common.dot}${id}`}
-        badge={<StatusBadge kind="treatment" status={plan.status} />}
-        back={{ href: "/treatments", label: t.treatments.title }}
-        actions={
-          <>
+      <PageHeader back={{ href: "/treatments", label: t.treatments.title }} />
+      {/* Above both columns, so it is the first thing on a tablet or phone too. */}
+      <MedicalAlerts patient={medical} />
+
+      <DetailLayout
+        aside={
+          <ProfileCard
+            titleLevel={1}
+            avatar={<IconTile icon={Stethoscope} hue="treatments" size="lg" />}
+            title={title}
+            subtitle={<>{plan.patient_name || plan.patient}{t.common.dot}<span dir="ltr">{id}</span></>}
+            badges={<StatusBadge kind="treatment" status={plan.status} />}
+            detailsTitle={t.common.details}
+            details={[
+              {
+                label: t.common.patient,
+                value: (
+                  <Link href={patientHref(plan.patient)} className="text-primary-600 hover:underline">
+                    {plan.patient_name || plan.patient}
+                  </Link>
+                ),
+              },
+              { label: t.common.doctor, value: plan.doctor_name || plan.doctor },
+              { label: t.treatments.treatment, value: typeLabel },
+              { label: t.treatments.tooth, value: plan.tooth_number },
+              { label: t.treatments.diagnosis, value: plan.diagnosis },
+              { label: t.common.notes, value: plan.treatment_notes },
+            ]}
+            actions={
+              <>
             {can("add_payments") && remaining > 0 && (
-              <LinkButton href={paymentHrefForPlan} variant="success" icon={CreditCard}>
+              <Button variant="success" icon={CreditCard} data-testid="open-new-payment" onClick={addPayment}>
                 {t.treatments.addPayment}
-              </LinkButton>
+              </Button>
             )}
             {canEdit && (
-              <LinkButton href={`/treatments/${encodeURIComponent(id)}/edit`} icon={Pencil}>
+              <Button icon={Pencil} onClick={() => openDialog({ kind: "editTreatment", id })}>
                 {t.common.edit}
-              </LinkButton>
+              </Button>
             )}
             {canEdit && (
               <Button
@@ -193,54 +226,36 @@ function TreatmentDetail() {
                 className="text-red-600 hover:bg-red-50 px-3"
               />
             )}
-          </>
+              </>
+            }
+          >
+            <div className="mt-6 pt-6 border-t border-gray-200 grid grid-cols-1 gap-2 text-start">
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="text-xs text-gray-500">{t.treatments.totalCost}</p>
+                <p className="text-lg font-semibold text-gray-800">{money(total, plan.currency)}</p>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="text-xs text-gray-500">{t.treatments.paid}</p>
+                <p data-testid="plan-paid" className="text-lg font-semibold text-green-600">{money(paid, plan.currency)}</p>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="text-xs text-gray-500">{t.treatments.remaining}</p>
+                <p data-testid="plan-remaining" className={cx("text-lg font-semibold", remaining > 0 ? "text-red-600" : "text-gray-500")}>
+                  {money(remaining, plan.currency)}
+                </p>
+              </div>
+            </div>
+            <div className="mt-5">
+              <ProgressBar value={percent} label={t.treatments.paid} showLabel={false} tone="green" />
+              <p className="text-xs text-gray-500 mt-2">
+                {plan.status === "Cancelled" ? t.treatments.cancelledNothingLeft : t.treatments.paidPercent(percent)}
+              </p>
+            </div>
+              </ProfileCard>
         }
-      />
+      >
 
-      <MedicalAlerts patient={medical} />
-
-      <Card>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
-          <div className="flex items-baseline justify-between gap-3 sm:block">
-            <p className="text-xs text-gray-500">{t.treatments.totalCost}</p>
-            <p className="text-lg sm:text-2xl font-semibold text-gray-800 sm:mt-1">{money(total, plan.currency)}</p>
-          </div>
-          <div className="flex items-baseline justify-between gap-3 sm:block">
-            <p className="text-xs text-gray-500">{t.treatments.paid}</p>
-            <p data-testid="plan-paid" className="text-lg sm:text-2xl font-semibold text-green-600 sm:mt-1">{money(paid, plan.currency)}</p>
-          </div>
-          <div className="flex items-baseline justify-between gap-3 sm:block">
-            <p className="text-xs text-gray-500">{t.treatments.remaining}</p>
-            <p data-testid="plan-remaining" className={cx("text-lg sm:text-2xl font-semibold sm:mt-1", remaining > 0 ? "text-red-600" : "text-gray-500")}>
-              {money(remaining, plan.currency)}
-            </p>
-          </div>
-        </div>
-        <div className="mt-5">
-          <ProgressBar value={percent} label={t.treatments.paid} showLabel={false} tone="green" />
-          <p className="text-xs text-gray-500 mt-2">
-            {plan.status === "Cancelled" ? t.treatments.cancelledNothingLeft : t.treatments.paidPercent(percent)}
-          </p>
-        </div>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card title={t.common.details} icon={ClipboardList}>
-          <DetailList>
-            <DetailRow label={t.common.patient}>
-              <Link href={patientHref(plan.patient)} className="text-primary-600 hover:underline">
-                {plan.patient_name || plan.patient}
-              </Link>
-            </DetailRow>
-            <DetailRow label={t.common.doctor}>{plan.doctor_name || plan.doctor}</DetailRow>
-            <DetailRow label={t.treatments.treatment}>{typeLabel}</DetailRow>
-            <DetailRow label={t.treatments.tooth}>{plan.tooth_number}</DetailRow>
-            <DetailRow label={t.treatments.diagnosis}>{plan.diagnosis}</DetailRow>
-            <DetailRow label={t.common.notes}>{plan.treatment_notes}</DetailRow>
-          </DetailList>
-        </Card>
-
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {canEdit && (
             <Card title={t.treatments.updateStatus} icon={ListChecks}>
               <div className="flex flex-wrap gap-2">
@@ -273,9 +288,9 @@ function TreatmentDetail() {
               actions={
                 can("add_payments") &&
                 remaining > 0 && (
-                  <LinkButton href={paymentHrefForPlan} size="sm" variant="secondary" icon={Plus}>
+                  <Button size="sm" variant="secondary" icon={Plus} onClick={addPayment}>
                     {t.common.add}
-                  </LinkButton>
+                  </Button>
                 )
               }
             >
@@ -310,7 +325,6 @@ function TreatmentDetail() {
               )}
             </Card>
           )}
-        </div>
       </div>
 
       {((LAB_TREATMENT_TYPES as readonly string[]).includes(plan.treatment_type) || plan.lab_sent_date) && (
@@ -341,9 +355,9 @@ function TreatmentDetail() {
         actions={
           <>
             {can("add_appointments") && (plan.status === "Planned" || plan.status === "In Progress") && (
-              <LinkButton href={bookVisitHref} size="sm" variant="secondary" icon={CalendarPlus}>
+              <Button size="sm" variant="secondary" icon={CalendarPlus} onClick={bookVisit}>
                 {t.treatments.bookVisit}
-              </LinkButton>
+              </Button>
             )}
             {canEdit && (
               <Button size="sm" variant="secondary" icon={Plus} onClick={() => setSessionModal({ open: true, session: null })}>
@@ -418,6 +432,7 @@ function TreatmentDetail() {
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
       />
+      </DetailLayout>
     </PageContainer>
   );
 }

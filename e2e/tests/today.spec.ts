@@ -26,9 +26,10 @@ test("the front desk marks today's patients from the Today board", async ({ page
   await expect(rusul.getByRole("button", { name: "Completed" })).toBeVisible();
 
   // Quick payment for the patient.
-  await zainab.getByRole("link", { name: "Add Payment" }).click();
-  await expect(page.getByRole("heading", { name: "New Payment" })).toBeVisible();
-  await expect(page.getByText("Mustafa Jabbar").first()).toBeVisible();
+  await zainab.getByRole("button", { name: "Add Payment" }).click();
+  const dialog = page.getByRole("dialog", { name: "New Payment" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText("Mustafa Jabbar").first()).toBeVisible();
 });
 
 test("past appointments without an outcome are listed to be closed", async ({ page }) => {

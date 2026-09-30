@@ -17,6 +17,8 @@ export const common: Messages["common"] = {
   search: "بحث",
   refresh: "تحديث",
   viewAll: "عرض الكل",
+  /** A link to a record just saved, in its message. */
+  open: "فتح",
   yes: "نعم",
   no: "لا",
   all: "الكل",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Save } from "lucide-react";
 import { Alert, Button, Card, Field, FormActions, LinkButton, NumberInput, focusField, SelectInput, TextArea } from "@/components/ui";
 import MedicalAlerts from "@/components/MedicalAlerts";
@@ -84,6 +84,8 @@ export default function TreatmentForm({
   currencyLocked = false,
   submitLabel,
   cancelHref,
+  onCancel,
+  onDirtyChange,
   onSubmit,
 }: {
   initial: TreatmentFormData;
@@ -94,6 +96,10 @@ export default function TreatmentForm({
   currencyLocked?: boolean;
   submitLabel: string;
   cancelHref: string;
+  /** In a dialog: Cancel closes it instead of following cancelHref. */
+  onCancel?: () => void;
+  /** In a dialog: told whether there are unsaved changes, so closing it can ask first. */
+  onDirtyChange?: (dirty: boolean) => void;
   onSubmit: (data: TreatmentFormData) => Promise<void>;
 }) {
   const { t } = useI18n();
@@ -161,6 +167,9 @@ export default function TreatmentForm({
   const customTooth = form.tooth_number && !ALL_TEETH.has(form.tooth_number);
 
   const dirty = !done && JSON.stringify(form) !== JSON.stringify(initial);
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -271,9 +280,15 @@ export default function TreatmentForm({
         <Button type="submit" icon={Save} loading={saving}>
           {submitLabel}
         </Button>
-        <LinkButton href={cancelHref} variant="secondary">
-          {t.common.cancel}
-        </LinkButton>
+        {onCancel ? (
+          <Button variant="secondary" onClick={onCancel}>
+            {t.common.cancel}
+          </Button>
+        ) : (
+          <LinkButton href={cancelHref} variant="secondary">
+            {t.common.cancel}
+          </LinkButton>
+        )}
       </FormActions>
     </form>
   );

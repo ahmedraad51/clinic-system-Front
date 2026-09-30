@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { FIXED_NOW } from "./fixtures";
 
 /**
@@ -29,9 +29,9 @@ export async function openFromMenu(page: Page, label: string) {
   await waitForData(page);
 }
 
-/** Picks a record in a searchable Link field (the patient picker). */
-export async function pickLink(page: Page, fieldLabel: string, search: string, optionText: string) {
-  const field = page.locator("label").filter({ hasText: fieldLabel }).first();
+/** Picks a record in a searchable Link field (the patient picker), optionally inside a dialog. */
+export async function pickLink(page: Page, fieldLabel: string, search: string, optionText: string, within?: Locator) {
+  const field = (within ?? page).locator("label").filter({ hasText: fieldLabel }).first();
   await field.getByRole("button").first().click();
   await page.locator('input[role="combobox"]').fill(search);
   await page.getByRole("listbox").getByRole("button", { name: new RegExp(optionText) }).click();
@@ -42,4 +42,17 @@ export function today() {
   const d = FIXED_NOW;
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** The form dialog with this title (New Appointment, New Payment ...). */
+export function formDialog(page: Page, title: string | RegExp) {
+  return page.getByRole("dialog", { name: title });
+}
+
+/** After a save in a dialog: waits for the message and follows its "Open" link to the new record. */
+export async function openSaved(page: Page, message: string | RegExp) {
+  const toast = page.getByRole("status").filter({ hasText: message });
+  await expect(toast).toBeVisible();
+  await toast.getByRole("link", { name: /^(Open|فتح)$/ }).click();
+  await waitForData(page);
 }

@@ -1,14 +1,14 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import { useRecordDialogs } from "@/components/RecordDialogs";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Users, HeartPulse, MessageCircle, UserPlus, UserSearch } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import {
-  Card, ClearFiltersButton, ClickableRow, LinkButton, PageContainer, PageHeader, PageLoading, Pagination,
-  SearchInput, SelectInput, Table, TableError, TableLoading, TableMessage, Td, Th, Toolbar,
+  Button, Card, ClearFiltersButton, ClickableRow, PageContainer, PageHeader, PageLoading, Pagination, SearchInput, SelectInput, Table, TableError, TableLoading, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
@@ -57,6 +57,7 @@ function PatientsList() {
     orFilters: searchFilters(debounced, ["full_name", "phone_number", "secondary_phone", "name"]),
     orderBy: owing ? "total_remaining desc" : "full_name asc",
   });
+  const openDialog = useRecordDialogs();
   const columns = 2 + (showNext ? 1 : 0) + (showBalance ? 1 : 0);
   // With two currencies, what is left on each plan, so a dollar balance shows in dollars.
   const balances = useOpenBalances(
@@ -117,9 +118,9 @@ function PatientsList() {
         subtitle={p.subtitle}
         actions={
           can("add_patients") && (
-            <LinkButton href="/patients/new" icon={UserPlus}>
+            <Button icon={UserPlus} data-testid="open-new-patient" onClick={() => openDialog({ kind: "newPatient" })}>
               {p.addPatient}
-            </LinkButton>
+            </Button>
           )
         }
       />

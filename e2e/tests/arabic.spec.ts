@@ -73,6 +73,7 @@ test("take a payment in Arabic and print its receipt", async ({ page }) => {
 test("the clinic can show numbers in Arabic digits", async ({ page }) => {
   await page.goto("/settings");
   await waitForData(page);
+  await page.getByRole("tab", { name: "اللغة" }).click();
   await page.getByRole("switch", { name: /الأرقام العربية/ }).click();
   await page.getByRole("button", { name: "حفظ الإعدادات" }).click();
   // The page is drawn again with the new digits; the confirmation stays on screen.

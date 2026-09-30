@@ -1,21 +1,20 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { UserRound, Check, KeyRound, Users, X } from "lucide-react";
+import { UserRound, Check, KeyRound, LayoutGrid, Shield, Users, X } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import { MyAvatar } from "@/components/Avatar";
 import ScreenSizeCard from "@/components/ScreenSizeCard";
 import {
-  Alert, Badge, Button, Card, DetailList, DetailRow, Field, PageContainer, PageHeader, SelectInput, TextInput,
+  Alert, Badge, Button, Card, DetailLayout, Fraction, Field, PageContainer, PageHeader, ProfileCard, SelectInput, TextInput,
 } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useToast } from "@/context/ToastContext";
 import { changePassword, errorMessage, getList } from "@/lib/frappe";
-import { label } from "@/i18n";
-import { cx } from "@/lib/format";
-import { PERMISSION_GROUPS, type User } from "@/lib/types";
+import { label, num } from "@/i18n";
+import { PERMISSION_ACTIONS, PERMISSION_KEYS, PERMISSION_MATRIX, type User } from "@/lib/types";
 
 /** The shortest new password Frappe accepts. */
 const MIN_PASSWORD = 8;
@@ -33,73 +32,94 @@ function Profile() {
   const { user, authDisabled } = useAuth();
   const { profile, roles, displayName, roleLabel, can, isSuperUser } = useSession();
 
+  const a = t.users.table;
+  const onCount = PERMISSION_KEYS.filter((key) => can(key)).length;
+  const sectionsOpen = PERMISSION_MATRIX.filter((row) => Object.values(row.cells).some((key) => key && can(key))).length;
+
   return (
-    <PageContainer narrow>
+    <PageContainer>
       <PageHeader icon={UserRound} section="primary" title={t.profile.title} />
 
-      <Card>
-        <div className="flex items-center gap-4">
-          <MyAvatar size={56} />
-          <div className="min-w-0">
-            <p className="font-semibold text-gray-800 text-lg">{displayName}</p>
-            <p className="text-sm text-gray-500">{label(t.enums.role, roleLabel)}</p>
-          </div>
-        </div>
-        <div className="mt-5">
-          <DetailList>
-            <DetailRow label={t.profile.username}>
-              <span dir="ltr">{user}</span>
-            </DetailRow>
-            <DetailRow label={t.profile.email}>
-              {profile?.email && <span dir="ltr">{profile.email}</span>}
-            </DetailRow>
-            <DetailRow label={t.profile.roles}>
-              {roles.length > 0 ? (
-                <span className="flex flex-wrap gap-1.5">
-                  {roles.map((role) => (
-                    <Badge key={role} tone="primary">
-                      {label(t.enums.role, role)}
-                    </Badge>
-                  ))}
-                </span>
-              ) : (
-                ""
-              )}
-            </DetailRow>
-          </DetailList>
-        </div>
-      </Card>
-
-      <ScreenSizeCard />
-
-      <Card title={t.profile.whatICanDo}>
-        {isSuperUser && (
-          <div className="mb-4">
-            <Alert tone="blue">{t.profile.superUser}</Alert>
-          </div>
-        )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {PERMISSION_GROUPS.map((group) => (
-            <div key={group.group}>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.enums.permissionGroup[group.group]}</p>
-              <ul className="space-y-1.5">
-                {group.items.map((item) => {
-                  const on = can(item);
-                  return (
-                    <li key={item} className={cx("flex items-center gap-2 text-sm", on ? "text-gray-800" : "text-gray-500")}>
-                      {on ? <Check size={15} className="text-green-600" /> : <X size={15} />}
-                      {t.enums.permission[item]}
-                    </li>
-                  );
-                })}
-              </ul>
+      <DetailLayout
+        aside={
+          <ProfileCard
+            avatar={<MyAvatar size={96} />}
+            title={displayName}
+            subtitle={profile?.email ? <span dir="ltr" className="break-all">{profile.email}</span> : undefined}
+            badges={roles.map((role) => (
+              <Badge key={role} tone="primary">
+                {label(t.enums.role, role)}
+              </Badge>
+            ))}
+            stats={[
+              { icon: Shield, value: <Fraction value={num(onCount)} of={num(PERMISSION_KEYS.length)} />, label: t.users.permissionsOn },
+              { icon: LayoutGrid, value: <Fraction value={num(sectionsOpen)} of={num(PERMISSION_MATRIX.length)} />, label: t.users.sectionsOpen, hue: "blue" },
+            ]}
+            detailsTitle={t.users.details}
+            details={[
+              { label: t.profile.username, value: <span dir="ltr">{user}</span> },
+              { label: t.profile.email, value: profile?.email ? <span dir="ltr" className="break-all">{profile.email}</span> : "" },
+              { label: t.profile.roles, value: label(t.enums.role, roleLabel) },
+            ]}
+          />
+        }
+      >
+        <Card title={t.profile.whatICanDo} icon={Shield} flush>
+          {isSuperUser && (
+            <div className="px-5 sm:px-6 pb-4">
+              <Alert tone="blue">{t.profile.superUser}</Alert>
             </div>
-          ))}
-        </div>
-      </Card>
+          )}
+          {/* The same table as on Manage User, to read only: a tick where the action is allowed. */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-y border-gray-200">
+                  <th scope="col" className="px-4 ps-6 py-3.5 text-start text-xs font-semibold uppercase tracking-wide text-gray-800">
+                    {a.section}
+                  </th>
+                  {PERMISSION_ACTIONS.map((action) => (
+                    <th key={action} scope="col" className="px-3 py-3.5 text-center text-xs font-semibold uppercase tracking-wide text-gray-800">
+                      {a.actions[action]}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {PERMISSION_MATRIX.map((row) => (
+                  <tr key={row.row} className="border-b border-gray-200 last:border-0">
+                    <th scope="row" className="px-4 ps-6 py-3 text-start font-medium text-gray-900">
+                      {a.rows[row.row]}
+                    </th>
+                    {PERMISSION_ACTIONS.map((action) => {
+                      const key = row.cells[action];
+                      return (
+                        <td key={action} className="px-3 py-3 text-center">
+                          {!key ? (
+                            <span role="img" className="text-gray-300" aria-label={a.notAvailable}>—</span>
+                          ) : can(key) ? (
+                            <span role="img" aria-label={a.allowed(t.enums.permission[key])}>
+                              <Check size={18} aria-hidden="true" className="inline text-green-600" />
+                            </span>
+                          ) : (
+                            <span role="img" aria-label={a.notAllowed(t.enums.permission[key])}>
+                              <X size={18} aria-hidden="true" className="inline text-gray-400" />
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
 
-      <ChangePasswordCard demo={authDisabled} />
-      {authDisabled && <DemoUserCard />}
+        <ScreenSizeCard />
+        <ChangePasswordCard demo={authDisabled} />
+        {authDisabled && <DemoUserCard />}
+      </DetailLayout>
     </PageContainer>
   );
 }

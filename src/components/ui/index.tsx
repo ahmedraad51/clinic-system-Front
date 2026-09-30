@@ -10,6 +10,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createContext, useContext } from "react";
 import type {
   ButtonHTMLAttributes,
   ComponentType,
@@ -143,15 +144,16 @@ export function StatusBadge({ kind, status }: { kind: StatusKind; status?: strin
 /* --------------------------------------------------------------- layout -- */
 
 /**
- * The page's frame: up to 1440 px wide (the whole width when the Settings panel says "Wide"), or a narrow column
- * for forms. `section` colours the small tinted icons inside.
+ * The page's frame: up to 1440 px wide (the whole width when the Appearance panel says "Wide"). `narrow` keeps a
+ * narrow column on tablets and phones only: a computer screen always uses the page's width. `section` colours the
+ * small tinted icons inside.
  */
 export function PageContainer({ children, narrow = false, section }: { children: ReactNode; narrow?: boolean; section?: Hue }) {
   return (
     <div
       className={cx(
         "mx-auto px-4 sm:px-6 py-6 space-y-6",
-        narrow ? "max-w-3xl" : "max-w-[90rem] content-wide:max-w-none",
+        narrow ? "max-w-3xl lg:max-w-[90rem] lg:content-wide:max-w-none" : "max-w-[90rem] content-wide:max-w-none",
         hueClass(section),
       )}
     >
@@ -168,7 +170,8 @@ export function PageHeader({
   badge,
   avatar,
 }: {
-  title: ReactNode;
+  /** Leave out on a detail page whose ProfileCard carries the name (titleLevel 1). */
+  title?: ReactNode;
   subtitle?: ReactNode;
   back?: { href: string; label: string };
   actions?: ReactNode;
@@ -190,12 +193,13 @@ export function PageHeader({
           {back.label}
         </Link>
       )}
+      {(title || actions) && (
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="min-w-0 flex items-center gap-4">
           {avatar}
           <div className="min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-medium text-gray-900 break-words">{title}</h1>
+              {title && <h1 className="text-2xl font-medium text-gray-900 break-words">{title}</h1>}
               {badge}
             </div>
             {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
@@ -203,6 +207,7 @@ export function PageHeader({
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2 print:hidden">{actions}</div>}
       </div>
+      )}
     </div>
   );
 }
@@ -297,6 +302,126 @@ export function Card({
   );
 }
 
+/**
+ * A detail page in two columns on a wide screen: `aside` (a ProfileCard, and anything that belongs beside it) on the
+ * start side, a third of the width, and the details or tabs on the other side. They stack on tablets and phones.
+ */
+export function DetailLayout({ aside, children }: { aside: ReactNode; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start print:block">
+      <div data-detail-aside className="xl:col-span-4 space-y-6 min-w-0 print:hidden">{aside}</div>
+      <div className="xl:col-span-8 space-y-6 min-w-0">{children}</div>
+    </div>
+  );
+}
+
+/** "9 / 14", kept left to right on Arabic pages too (a slash between numbers would read backwards). */
+export function Fraction({ value, of }: { value: ReactNode; of: ReactNode }) {
+  return (
+    <span dir="ltr" className="inline-block">
+      {value} / {of}
+    </span>
+  );
+}
+
+/** One of the key numbers on a ProfileCard: a tinted icon, the figure and what it is. */
+export interface ProfileStat {
+  icon: CardIconType;
+  value: ReactNode;
+  label: string;
+  hue?: Hue;
+  /** Shown under the figure, e.g. a link to act on it. */
+  extra?: ReactNode;
+  testId?: string;
+}
+
+/**
+ * The card at the start of a detail page: the picture (a photo or initials), the name, a line under it (email or
+ * phone), chips (role, status), the main actions, a few key numbers, and a short list of details.
+ */
+export function ProfileCard({
+  avatar,
+  title,
+  subtitle,
+  badges,
+  actions,
+  stats,
+  detailsTitle,
+  details,
+  children,
+  titleLevel = 2,
+}: {
+  avatar?: ReactNode;
+  title: ReactNode;
+  /** 1 when the card carries the page's name (a record page), so the name is the page's heading. */
+  titleLevel?: 1 | 2;
+  subtitle?: ReactNode;
+  badges?: ReactNode;
+  actions?: ReactNode;
+  stats?: ProfileStat[];
+  detailsTitle?: string;
+  /** Label and value rows; an empty value shows a dash. */
+  details?: Array<{ label: string; value: ReactNode }>;
+  /** More, right under the name (contact buttons, key facts). */
+  children?: ReactNode;
+}) {
+  const Title = titleLevel === 1 ? "h1" : "h2";
+  return (
+    <section className={cx(CARD_CLASS, "p-5 sm:p-6")}>
+      <div className="flex flex-col items-center text-center">
+        {avatar}
+        <Title className={cx("text-xl font-medium text-gray-900 break-words", avatar ? "mt-4" : undefined)}>{title}</Title>
+        {subtitle && <div className="text-sm text-gray-500 mt-0.5 break-words">{subtitle}</div>}
+        {badges && <div className="flex flex-wrap justify-center gap-2 mt-3">{badges}</div>}
+      </div>
+      {/* The main actions right under the name, where they are seen without scrolling. */}
+      {actions && <div className="flex flex-wrap justify-center gap-2 mt-5 print:hidden">{actions}</div>}
+      {children}
+      {stats && stats.length > 0 && (
+        <div className="grid grid-cols-2 gap-4 mt-6">
+          {stats.map((stat) => (
+            <div key={stat.label} className="flex items-start gap-3 min-w-0">
+              <IconTile icon={stat.icon} hue={stat.hue} />
+              <div className="min-w-0">
+                <div data-testid={stat.testId} className="text-base font-medium text-gray-900 leading-tight break-words">
+                  {stat.value}
+                </div>
+                <div className="text-xs text-gray-500">{stat.label}</div>
+                {stat.extra}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {details && details.length > 0 && (
+        <div className="mt-6">
+          {detailsTitle && (
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-500 pb-2 mb-2 border-b border-gray-200">
+              {detailsTitle}
+            </p>
+          )}
+          <dl className="space-y-2.5 text-sm">
+            {details.map((row) => (
+              <div key={row.label} className="flex flex-wrap gap-x-2">
+                <dt className="font-medium text-gray-900">{row.label}:</dt>
+                <dd className="text-gray-600 min-w-0 break-words">
+                  {row.value === null || row.value === undefined || row.value === "" ? (
+                    <span className="text-gray-400">—</span>
+                  ) : typeof row.value === "string" ? (
+                    <bdi>{row.value}</bdi>
+                  ) : (
+                    row.value
+                  )}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+    </section>
+  );
+}
+
 /** A number on a card: the figure and its name on one side, a small tinted icon on the other. */
 export function StatCard({
   title,
@@ -349,12 +474,15 @@ export function StatCard({
  */
 export function ActionTile({
   href,
+  onClick,
   label,
   hint,
   icon: Icon,
   section,
 }: {
   href: string;
+  /** Opens a dialog instead of following href (href stays for a new tab). */
+  onClick?: () => void;
   label: string;
   hint?: string;
   icon: LucideIcon;
@@ -365,6 +493,15 @@ export function ActionTile({
   return (
     <Link
       href={href}
+      onClick={
+        onClick &&
+        ((event) => {
+          // A plain click opens the dialog; Ctrl / middle click still opens the page in a new tab.
+          if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) return;
+          event.preventDefault();
+          onClick();
+        })
+      }
       className={cx(CARD_CLASS, "group flex items-center gap-3 min-h-[4.5rem] p-3 sm:p-4 transition-shadow hover:shadow-lg")}
     >
       <IconTile icon={Icon} hue={section ?? "primary"} />
@@ -740,11 +877,23 @@ export function Segmented<K extends string>({
   );
 }
 
+/** True inside a dialog or side panel (Modal sets it): the Save / Cancel row then sticks to the dialog's bottom. */
+export const InDialog = createContext(false);
+
 /**
  * The Save / Cancel row at the end of a form. It sticks to the bottom of the screen while the form is taller
- * than the screen, so Save is always one tap away on a phone or tablet. Use it inside PageContainer.
+ * than the screen, so Save is always one tap away on a phone or tablet. Use it inside PageContainer, or in a dialog.
  */
 export function FormActions({ children }: { children: ReactNode }) {
+  const inDialog = useContext(InDialog);
+  if (inDialog) {
+    // -bottom-6: past the dialog body's own bottom padding, so no field shows below the bar.
+    return (
+      <div className="sticky -bottom-6 z-20 -mx-6 -mb-6 px-6 py-4 bg-surface border-t border-gray-200 flex flex-wrap items-center gap-3 print:hidden">
+        {children}
+      </div>
+    );
+  }
   return (
     <div className="sticky bottom-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-[color-mix(in_srgb,var(--page-bg)_94%,transparent)] backdrop-blur-sm border-t border-gray-200 flex flex-wrap items-center gap-3 print:hidden">
       {children}

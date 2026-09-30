@@ -68,12 +68,18 @@ export default function PaymentForm({
   patientLabel,
   submitLabel,
   cancelHref,
+  onCancel,
+  onDirtyChange,
   onSubmit,
 }: {
   initial: PaymentFormData;
   patientLabel?: string;
   submitLabel: string;
   cancelHref: string;
+  /** In a dialog: Cancel closes it instead of following cancelHref. */
+  onCancel?: () => void;
+  /** In a dialog: told whether there are unsaved changes, so closing it can ask first. */
+  onDirtyChange?: (dirty: boolean) => void;
   onSubmit: (data: PaymentFormData) => Promise<void>;
 }) {
   const { t } = useI18n();
@@ -82,6 +88,8 @@ export default function PaymentForm({
   // Editing keeps what was saved; only a new payment gets its plan picked automatically.
   const isNew = initial.amount === "";
   const [form, setForm] = useState<PaymentFormData>(initial);
+  // What the form started from, with the plan it picked by itself: that is not an unsaved change.
+  const [baseline, setBaseline] = useState<PaymentFormData>(initial);
   const [plansFor, setPlansFor] = useState<{ patient: string; plans: TreatmentPlan[] }>({ patient: "", plans: [] });
   const [saving, setSaving] = useState(false);
   // Set once saved, so the page can move on without the unsaved-changes question.
@@ -107,13 +115,15 @@ export default function PaymentForm({
         const open = plans.filter((p) => p.status !== "Cancelled" && Number(p.remaining_amount) > 0);
         // A new payment takes the currency of its plan (one given in the address, or the only one) until an amount is typed.
         if (isNew) {
-          setForm((prev) => {
+          const pick = (prev: PaymentFormData) => {
             if (prev.patient !== patient) return prev;
             const chosen = prev.treatment_plan ? plans.find((p) => p.name === prev.treatment_plan) : open.length === 1 ? open[0] : undefined;
             if (!chosen) return prev;
             const currency = prev.amount === "" ? chosen.currency || "" : prev.currency;
             return chosen.name === prev.treatment_plan && currency === prev.currency ? prev : { ...prev, treatment_plan: chosen.name, currency };
-          });
+          };
+          setForm(pick);
+          setBaseline(pick);
         }
       } catch (err) {
         console.error(err);
@@ -207,7 +217,10 @@ export default function PaymentForm({
     }
   };
 
-  const dirty = !done && JSON.stringify(form) !== JSON.stringify(initial);
+  const dirty = !done && JSON.stringify(form) !== JSON.stringify(baseline);
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -324,9 +337,15 @@ export default function PaymentForm({
         <Button type="submit" icon={Save} loading={saving}>
           {submitLabel}
         </Button>
-        <LinkButton href={cancelHref} variant="secondary">
-          {t.common.cancel}
-        </LinkButton>
+        {onCancel ? (
+          <Button variant="secondary" onClick={onCancel}>
+            {t.common.cancel}
+          </Button>
+        ) : (
+          <LinkButton href={cancelHref} variant="secondary">
+            {t.common.cancel}
+          </LinkButton>
+        )}
       </FormActions>
     </form>
   );

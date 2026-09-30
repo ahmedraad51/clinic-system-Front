@@ -1,10 +1,11 @@
 import { expect, test } from "../fixtures";
-import { openFromMenu, waitForData } from "../helpers";
+import { navigate, openFromMenu, waitForData } from "../helpers";
 
-test("leaving a form with unsaved changes asks first", async ({ page }) => {
+test("leaving a form page with unsaved changes asks first", async ({ page }) => {
   await page.goto("/dashboard");
-  await openFromMenu(page, "Patients");
-  await page.getByRole("link", { name: "Add Patient" }).first().click();
+  await waitForData(page);
+  // The old form pages still work, and still guard what was typed.
+  await navigate(page, "/patients/new");
   await page.getByLabel("Full Name").fill("Half Typed");
 
   // A menu link asks before throwing the typing away.
@@ -19,12 +20,15 @@ test("leaving a form with unsaved changes asks first", async ({ page }) => {
   await expect(page).toHaveURL(/\/patients$/);
 });
 
-test("an untouched form leaves without a question", async ({ page }) => {
+test("an untouched form closes without a question", async ({ page }) => {
   await page.goto("/dashboard");
   await openFromMenu(page, "Patients");
-  await page.getByRole("link", { name: "Add Patient" }).first().click();
-  await expect(page.getByRole("heading", { name: "New Patient" })).toBeVisible();
-  await page.getByRole("link", { name: "Cancel" }).click();
+  await page.getByRole("button", { name: "Add Patient" }).first().click();
+  const panel = page.getByRole("dialog", { name: "New Patient" });
+  await expect(panel).toBeVisible();
+  await panel.getByRole("button", { name: "Cancel" }).click();
+  await expect(panel).toBeHidden();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page).toHaveURL(/\/patients$/);
 });
 

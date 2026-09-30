@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useRecordDialogs, type RecordDialog } from "@/components/RecordDialogs";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   BellRing, CalendarDays, CalendarPlus, ClipboardCheck, CreditCard, Search, Stethoscope, User, UserPlus, type LucideIcon,
 } from "lucide-react";
 import { Spinner } from "@/components/ui";
+import { isDialogOpen } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import type { Messages } from "@/i18n";
@@ -57,6 +59,8 @@ export default function GlobalSearch() {
   useEffect(() => {
     const onKey = (event: globalThis.KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        // Not over an open form: it would be replaced without asking about what was typed.
+        if (isDialogOpen()) return;
         event.preventDefault();
         setOpen(true);
       }
@@ -88,8 +92,17 @@ export default function GlobalSearch() {
   );
 }
 
+/** The actions that open a form in a dialog instead of a page. */
+const ACTION_DIALOGS: Record<string, RecordDialog> = {
+  "/appointments/new": { kind: "newAppointment" },
+  "/patients/new": { kind: "newPatient" },
+  "/treatments/new": { kind: "newTreatment" },
+  "/payments/new": { kind: "newPayment" },
+};
+
 function SearchDialog({ onClose }: { onClose: () => void }) {
   const router = useRouter();
+  const openDialog = useRecordDialogs();
   const { can } = useSession();
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -144,7 +157,9 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
 
   const go = (result: Result) => {
     onClose();
-    router.push(result.href);
+    const dialog = ACTION_DIALOGS[result.href];
+    if (dialog) openDialog(dialog);
+    else router.push(result.href);
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { useRecordDialogs } from "@/components/RecordDialogs";
 import { Plus } from "lucide-react";
-import { Alert, Button, Field, LinkButton, SelectInput, TextArea, Toggle } from "@/components/ui";
+import { Alert, Button, Field, SelectInput, TextArea, Toggle } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
@@ -26,6 +27,7 @@ export default function FinishVisitDialog({
   onClose: () => void;
 }) {
   const { t } = useI18n();
+  const openDialog = useRecordDialogs();
   const toast = useToast();
   const { can } = useSession();
   const canRecall = can("edit_patients");
@@ -141,9 +143,18 @@ export default function FinishVisitDialog({
           {plans.length === 0 ? (
             <div className="space-y-3">
               <p className="text-sm text-gray-600">{t.finishVisit.noPlan(appointment.patient_name || appointment.patient)}</p>
-              <LinkButton href={`/treatments/new?patient=${encodeURIComponent(appointment.patient)}`} variant="secondary" icon={Plus}>
-                {t.finishVisit.newPlan}
-              </LinkButton>
+              {can("add_treatments") && (
+                <Button
+                  variant="secondary"
+                  icon={Plus}
+                  onClick={() => {
+                    onClose();
+                    openDialog({ kind: "newTreatment", prefill: { patient: appointment.patient }, patientName: appointment.patient_name });
+                  }}
+                >
+                  {t.finishVisit.newPlan}
+                </Button>
+              )}
             </div>
           ) : (
             <>

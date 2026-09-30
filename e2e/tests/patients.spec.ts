@@ -1,27 +1,29 @@
 import { expect, test } from "../fixtures";
-import { openFromMenu, pickLink, waitForData } from "../helpers";
+import { formDialog, openFromMenu, openSaved, pickLink, waitForData } from "../helpers";
 
 test("add a patient", async ({ page }) => {
   await page.goto("/dashboard");
   await openFromMenu(page, "Patients");
-  await page.getByRole("link", { name: "Add Patient" }).first().click();
+  await page.getByRole("button", { name: "Add Patient" }).first().click();
 
-  await expect(page.getByRole("heading", { name: "New Patient" })).toBeVisible();
-  await page.getByLabel("Full Name").fill("Laila Test Patient");
-  await page.getByLabel("Phone Number").fill("0790 000 1234");
-  await page.getByLabel("Gender").selectOption("Female");
-  await page.getByLabel("Allergies").fill("Penicillin");
-  await page.getByRole("button", { name: "Save Patient" }).click();
+  // The form slides in from the side, over the list.
+  const panel = formDialog(page, "New Patient");
+  await expect(panel).toBeVisible();
+  await panel.getByLabel("Full Name").fill("Laila Test Patient");
+  await panel.getByLabel("Phone Number").fill("0790 000 1234");
+  await panel.getByLabel("Gender").selectOption("Female");
+  await panel.getByLabel("Allergies").fill("Penicillin");
+  await panel.getByRole("button", { name: "Save Patient" }).click();
+  await expect(panel).toBeHidden();
 
-  // The new patient's page opens, with the allergy warning on top.
-  await expect(page.getByRole("heading", { name: "Laila Test Patient" })).toBeVisible();
-  await waitForData(page);
-  await expect(page.getByRole("alert").filter({ hasText: "Penicillin" })).toBeVisible();
-
-  // And the patient is in the list.
-  await openFromMenu(page, "Patients");
+  // The list behind has the patient at once.
   await page.getByRole("searchbox").fill("Laila Test");
   await expect(page.getByRole("link", { name: "Laila Test Patient" })).toBeVisible();
+
+  // The message opens the new patient's page, with the allergy warning on top.
+  await openSaved(page, "Laila Test Patient was added.");
+  await expect(page.getByRole("heading", { name: "Laila Test Patient" })).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: "Penicillin" })).toBeVisible();
 });
 
 test("medical alerts show on the patient, the appointment and the treatment plan", async ({ page }) => {
@@ -78,26 +80,28 @@ test("the patient list shows medical alerts and the next visit", async ({ page }
 test("adding a patient who is already registered warns first", async ({ page }) => {
   await page.goto("/dashboard");
   await openFromMenu(page, "Patients");
-  await page.getByRole("link", { name: "Add Patient" }).first().click();
-  await page.getByLabel("Full Name").fill("N. Hussein");
+  await page.getByRole("button", { name: "Add Patient" }).first().click();
+  const panel = formDialog(page, "New Patient");
+  await panel.getByLabel("Full Name").fill("N. Hussein");
   // Zahraa Hussein's number, typed the local way without spaces.
-  await page.getByLabel("Phone Number").fill("07702345678");
+  await panel.getByLabel("Phone Number").fill("07702345678");
 
   // A yellow notice (not role=alert, which is kept for red errors).
-  const warning = page.getByText("Already registered?").locator("..");
+  const warning = panel.getByText("Already registered?").locator("..");
   await expect(warning).toContainText("Zahraa Hussein");
   await expect(warning).toContainText("same phone number");
 
-  await page.getByRole("button", { name: "Save Patient" }).click();
+  await panel.getByRole("button", { name: "Save Patient" }).click();
   const ask = page.getByRole("dialog", { name: "This phone number is already registered" });
   await expect(ask).toContainText("Zahraa Hussein");
   await ask.getByRole("button", { name: "Cancel" }).click();
-  await expect(page.getByRole("heading", { name: "New Patient" })).toBeVisible();
+  await expect(panel).toBeVisible();
 
-  // Opening the existing record is one click away.
+  // Opening the existing record is one click away, and the panel goes with the page it was opened on.
   await warning.getByRole("link", { name: "Zahraa Hussein" }).click();
   await page.getByRole("dialog", { name: "Leave without saving?" }).getByRole("button", { name: "Leave without saving" }).click();
   await expect(page.getByRole("heading", { name: "Zahraa Hussein" })).toBeVisible();
+  await expect(panel).toBeHidden();
 });
 
 test("the quick medical checklist fills the medical fields", async ({ page }) => {

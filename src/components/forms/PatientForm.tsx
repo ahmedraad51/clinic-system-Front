@@ -174,6 +174,8 @@ export default function PatientForm({
   currentName,
   submitLabel,
   cancelHref,
+  onCancel,
+  onDirtyChange,
   onSubmit,
 }: {
   initial: PatientFormData;
@@ -181,6 +183,10 @@ export default function PatientForm({
   currentName?: string;
   submitLabel: string;
   cancelHref: string;
+  /** In a dialog: Cancel closes it instead of following cancelHref. */
+  onCancel?: () => void;
+  /** In a dialog: told whether there are unsaved changes, so closing it can ask first. */
+  onDirtyChange?: (dirty: boolean) => void;
   onSubmit: (data: PatientFormData) => Promise<void>;
 }) {
   const { t } = useI18n();
@@ -233,6 +239,9 @@ export default function PatientForm({
   };
 
   const dirty = !done && JSON.stringify(form) !== JSON.stringify(initial);
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -401,9 +410,15 @@ export default function PatientForm({
         <Button type="submit" icon={Save} loading={saving}>
           {submitLabel}
         </Button>
-        <LinkButton href={cancelHref} variant="secondary">
-          {f.cancel}
-        </LinkButton>
+        {onCancel ? (
+          <Button variant="secondary" onClick={onCancel}>
+            {f.cancel}
+          </Button>
+        ) : (
+          <LinkButton href={cancelHref} variant="secondary">
+            {f.cancel}
+          </LinkButton>
+        )}
       </FormActions>
 
       <ConfirmDialog

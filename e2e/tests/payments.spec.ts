@@ -1,18 +1,24 @@
 import { expect, test } from "../fixtures";
-import { openFromMenu, pickLink } from "../helpers";
+import { formDialog, openFromMenu, openSaved, pickLink } from "../helpers";
 
 test("a new payment picks the only open plan and pays the full balance in one tap", async ({ page }) => {
   await page.goto("/dashboard");
   await openFromMenu(page, "Payments");
-  await page.getByRole("link", { name: "Add Payment" }).first().click();
-  await expect(page.getByRole("heading", { name: "New Payment" })).toBeVisible();
+  await page.getByRole("button", { name: "Add Payment" }).first().click();
+  const dialog = formDialog(page, "New Payment");
+  await expect(dialog).toBeVisible();
 
   // Yousif Sattar has one plan with money left: his filling, 25,000 of 50,000.
-  await pickLink(page, "Patient", "Yousif", "Yousif Sattar");
-  await expect(page.getByLabel("Treatment Plan")).toHaveValue("TRT-2026-00015");
-  await page.getByRole("button", { name: "Pay full balance" }).click();
-  await expect(page.getByLabel(/Amount/)).toHaveValue("25000");
-  await page.getByRole("button", { name: "Save Payment" }).click();
+  await pickLink(page, "Patient", "Yousif", "Yousif Sattar", dialog);
+  await expect(dialog.getByLabel("Treatment Plan")).toHaveValue("TRT-2026-00015");
+  await dialog.getByRole("button", { name: "Pay full balance" }).click();
+  await expect(dialog.getByLabel(/Amount/)).toHaveValue("25000");
+  await dialog.getByRole("button", { name: "Save Payment" }).click();
+  await expect(dialog).toBeHidden();
+
+  // The list behind shows it, and the message opens the receipt.
+  await expect(page.getByRole("link", { name: "Yousif Sattar" }).first()).toBeVisible();
+  await openSaved(page, "Payment recorded.");
   await expect(page.getByRole("heading", { name: "Payment Receipt" })).toBeVisible();
 });
 

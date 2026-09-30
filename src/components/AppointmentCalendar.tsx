@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useRecordDialogs } from "@/components/RecordDialogs";
+import { useDataVersion } from "@/lib/dataVersion";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useRouter } from "next/navigation";
 import Avatar from "@/components/Avatar";
 import { Alert, CARD_CLASS, statusLabel, statusTone, type Tone } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
@@ -188,7 +189,7 @@ export default function AppointmentCalendar({
   const { t } = useI18n();
   const c = t.calendar;
   const toast = useToast();
-  const router = useRouter();
+  const openDialog = useRecordDialogs();
   const scrollRef = useRef<HTMLDivElement>(null);
   const today = todayISO();
   const first = view === "day" ? date : weekStart(date);
@@ -206,6 +207,8 @@ export default function AppointmentCalendar({
   // A drag ends with a click on the block; that click must not open the appointment.
   const suppressClick = useRef(false);
 
+  // A dialog saved something: load again.
+  const saved = useDataVersion();
   useEffect(() => {
     let cancelled = false;
     const [from, to, doctor] = rangeKey.split("|");
@@ -229,7 +232,7 @@ export default function AppointmentCalendar({
     return () => {
       cancelled = true;
     };
-  }, [rangeKey]);
+  }, [rangeKey, saved]);
 
   // Move the "now" line every minute.
   useEffect(() => {
@@ -399,9 +402,10 @@ export default function AppointmentCalendar({
   };
 
   const book = (column: Column, minutes: number) => {
-    const params = new URLSearchParams({ date: column.date, time: fromMinutes(minutes) });
-    if (column.doctor) params.set("doctor", column.doctor);
-    router.push(`/appointments/new?${params.toString()}`);
+    openDialog({
+      kind: "newAppointment",
+      prefill: { appointment_date: column.date, appointment_time: fromMinutes(minutes), doctor: column.doctor || "" },
+    });
   };
 
   const hours: number[] = [];

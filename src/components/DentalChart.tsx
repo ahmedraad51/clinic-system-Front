@@ -154,6 +154,7 @@ export default function DentalChart({
   patientAge,
   plans = [],
   newTreatmentHref,
+  onNewTreatment,
   initialTooth,
   printHref,
   images = [],
@@ -172,6 +173,8 @@ export default function DentalChart({
   plans?: PlanOnTooth[];
   /** Link for "New treatment for this tooth", or nothing when the user may not add treatments. */
   newTreatmentHref?: (tooth: number) => string;
+  /** Opens the new treatment dialog for a tooth (wins over newTreatmentHref). */
+  onNewTreatment?: (tooth: number) => void;
   /** Open with this tooth selected, e.g. the tooth of a treatment plan. */
   initialTooth?: number;
   /** Where "Print" goes, e.g. /patients/<id>/chart. */
@@ -470,6 +473,7 @@ export default function DentalChart({
           onClose={() => setSelected(null)}
           plans={plansFor(plans, selected)}
           newTreatmentHref={newTreatmentHref?.(selected)}
+          onNewTreatment={onNewTreatment ? () => onNewTreatment(selected) : undefined}
           images={imagesOf(selected)}
           onOpenImage={(image) => setViewing({ tooth: selected, start: image.name })}
         />
@@ -578,6 +582,7 @@ function ToothPanel({
   onClose,
   plans,
   newTreatmentHref,
+  onNewTreatment,
   images,
   onOpenImage,
 }: {
@@ -593,6 +598,7 @@ function ToothPanel({
   onClose: () => void;
   plans: PlanOnTooth[];
   newTreatmentHref?: string;
+  onNewTreatment?: () => void;
   images: DentalImage[];
   onOpenImage: (image: DentalImage) => void;
 }) {
@@ -777,10 +783,16 @@ function ToothPanel({
             )}
           </div>
 
-          {newTreatmentHref && (
-            <LinkButton href={newTreatmentHref} variant="secondary" icon={Plus}>
+          {onNewTreatment ? (
+            <Button variant="secondary" icon={Plus} onClick={onNewTreatment}>
               {t.chart.newTreatmentForTooth}
-            </LinkButton>
+            </Button>
+          ) : (
+            newTreatmentHref && (
+              <LinkButton href={newTreatmentHref} variant="secondary" icon={Plus}>
+                {t.chart.newTreatmentForTooth}
+              </LinkButton>
+            )
           )}
         </div>
       </div>

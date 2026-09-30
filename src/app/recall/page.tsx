@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRecordDialogs } from "@/components/RecordDialogs";
 import Link from "next/link";
 import { BellRing, CalendarPlus, MessageCircle, Phone } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
-  Card, LinkButton, PageContainer, PageHeader, SelectInput, Table, TableError, TableLoading, TableMessage, Td, Th,
+  Button, Card, PageContainer, PageHeader, SelectInput, Table, TableError, TableLoading, TableMessage, Td, Th,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
@@ -18,6 +19,7 @@ import {
   DEFAULT_RECALL_MONTHS, RECALL_APPOINTMENT_FIELDS, RECALL_PATIENT_FIELDS, RECALL_PERIODS, dueForRecall,
 } from "@/lib/recall";
 import { whatsappLink } from "@/lib/whatsapp";
+import { useDataVersion } from "@/lib/dataVersion";
 import type { Appointment, Patient } from "@/lib/types";
 
 export default function RecallPage() {
@@ -37,11 +39,14 @@ export default function RecallPage() {
 function Recall() {
   const { t } = useI18n();
   const { can } = useSession();
+  const openDialog = useRecordDialogs();
   const { clinicName, countryCode } = useSettings();
   const [months, setMonths] = useState<number>(DEFAULT_RECALL_MONTHS);
   const [data, setData] = useState<{ patients: Patient[]; appointments: Appointment[] } | null>(null);
   const [error, setError] = useState("");
   const [version, setVersion] = useState(0);
+  // A booking made from the Book button takes the patient off the list.
+  const saved = useDataVersion();
 
   useEffect(() => {
     let cancelled = false;
@@ -67,7 +72,7 @@ function Recall() {
     return () => {
       cancelled = true;
     };
-  }, [version]);
+  }, [version, saved]);
 
   const today = todayISO();
   const due = data ? dueForRecall(data.patients, data.appointments, today, months) : [];
@@ -172,14 +177,14 @@ function Recall() {
                           </a>
                         )}
                         {can("add_appointments") && (
-                          <LinkButton
-                            href={`/appointments/new?patient=${encodeURIComponent(patient.name)}`}
+                          <Button
                             size="sm"
                             variant="secondary"
                             icon={CalendarPlus}
+                            onClick={() => openDialog({ kind: "newAppointment", prefill: { patient: patient.name }, patientName: patient.full_name })}
                           >
                             {t.recall.book}
-                          </LinkButton>
+                          </Button>
                         )}
                       </div>
                     </Td>

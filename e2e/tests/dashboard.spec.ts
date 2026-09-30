@@ -37,6 +37,8 @@ test("the everyday jobs are large tiles at the top of the dashboard", async ({ p
   await expect(page.getByText("Clinic Receptionist").first()).toBeVisible();
   await navigate(page, "/dashboard");
   await expect(tiles.getByRole("link", { name: /New Treatment/ })).toHaveCount(0);
+  // A tile opens its form in place: Add Patient slides in a panel over the dashboard.
   await tiles.getByRole("link", { name: /Add Patient/ }).click();
-  await expect(page).toHaveURL(/\/patients\/new$/);
+  await expect(page.getByRole("dialog", { name: "New Patient" })).toBeVisible();
+  await expect(page).toHaveURL(/\/dashboard$/);
 });

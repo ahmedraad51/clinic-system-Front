@@ -16,9 +16,18 @@ test("the recall list shows patients due for a check-up", async ({ page }) => {
 
   // A ready-made WhatsApp reminder and one tap to book.
   await expect(suha.getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", /wa\.me\/9647718764410\?text=Hello%20Suha%20Majeed/);
-  await suha.getByRole("link", { name: "Book" }).click();
-  await expect(page.getByRole("heading", { name: "New Appointment" })).toBeVisible();
-  await expect(page.getByText("Suha Majeed").first()).toBeVisible();
+  await suha.getByRole("button", { name: "Book" }).click();
+  const dialog = page.getByRole("dialog", { name: "New Appointment" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText("Suha Majeed").first()).toBeVisible();
+
+  // Once booked, she leaves the list at once.
+  await dialog.getByLabel("Doctor").selectOption({ label: "Dr. Zainab Al-Hashimi · General Dentist" });
+  await dialog.getByLabel("Date").fill("2026-10-05");
+  await dialog.getByLabel("Time").fill("10:00");
+  await dialog.getByRole("button", { name: "Book Appointment" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(suha).toHaveCount(0);
 });
 
 test("a longer period shows fewer patients", async ({ page }) => {

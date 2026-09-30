@@ -79,4 +79,8 @@ export const settings: Messages["settings"] = {
   other: "لون آخر",
   sampleButton: "زر تجريبي",
   darkened: "تم تغميقه قليلًا ليبقى النص الأبيض عليه سهل القراءة.",
+  nameRequired: "أدخل اسم العيادة.",
+  emailInvalid: "أدخل بريدًا إلكترونيًا كاملًا، مثل clinic@example.com، أو اتركه فارغًا.",
+  openDaysStat: "أيام الدوام",
+  pricesStat: "الأسعار المحددة",
 };

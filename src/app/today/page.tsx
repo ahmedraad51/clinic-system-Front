@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRecordDialogs } from "@/components/RecordDialogs";
+import { useDataVersion } from "@/lib/dataVersion";
 import Link from "next/link";
 import { ClipboardCheck,
   AlarmClock, Check, CheckCheck, Clock, CreditCard, FileText, FlaskConical, HeartPulse, History, MessageCircle, Plus, RefreshCw, UserX,
@@ -11,8 +13,7 @@ import FinishVisitDialog from "@/components/FinishVisitDialog";
 import { LAB_BADGES, labState } from "@/components/LabWorkCard";
 import RequirePermission from "@/components/Guard";
 import {
-  Badge, Button, CARD_CLASS, Card, EmptyState, IconTile, LinkButton, LoadError, PageContainer, PageHeader, PageLoading, Segmented, StatusBadge,
-  hueClass, statusLabel, type Hue,
+  Badge, Button, Card, CARD_CLASS, EmptyState, hueClass, IconTile, LinkButton, LoadError, PageContainer, PageHeader, PageLoading, Segmented, StatusBadge, statusLabel, type Hue,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
@@ -59,6 +60,7 @@ interface Board {
 function TodayBoard() {
   const { t, lang } = useI18n();
   const { can, doctor: myDoctor } = useSession();
+  const openDialog = useRecordDialogs();
   // A doctor sees their own patients first; "Everyone" shows the whole clinic.
   const [everyone, setEveryone] = useState(false);
   const mine = myDoctor && !everyone ? myDoctor.name : "";
@@ -86,6 +88,8 @@ function TodayBoard() {
   // For each doctor's photo or drawing above their patients.
   const doctors = useDoctors();
 
+  // A dialog saved something: load again.
+  const saved = useDataVersion();
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -147,7 +151,7 @@ function TodayBoard() {
     return () => {
       cancelled = true;
     };
-  }, [today, version]);
+  }, [today, version, saved]);
 
   // Keep "late" up to date.
   useEffect(() => {
@@ -258,9 +262,9 @@ function TodayBoard() {
               {t.common.refresh}
             </Button>
             {can("add_appointments") && (
-              <LinkButton href={`/appointments/new?date=${today}&time=${walkInTime}`} icon={Plus}>
+              <Button icon={Plus} onClick={() => openDialog({ kind: "newAppointment", prefill: { appointment_date: today, appointment_time: walkInTime } })}>
                 {t.today.walkIn}
-              </LinkButton>
+              </Button>
             )}
           </>
         }
@@ -410,14 +414,14 @@ function TodayBoard() {
                                 </Button>
                               )}
                               {can("add_payments") && (
-                                <LinkButton
-                                  href={`/payments/new?patient=${encodeURIComponent(a.patient)}`}
+                                <Button
                                   size="sm"
                                   variant="secondary"
                                   icon={CreditCard}
+                                  onClick={() => openDialog({ kind: "newPayment", prefill: { patient: a.patient }, patientName: a.patient_name })}
                                 >
                                   {t.today.addPayment}
-                                </LinkButton>
+                                </Button>
                               )}
                             </div>
                           )}

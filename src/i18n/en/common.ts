@@ -17,6 +17,8 @@ export const common = {
   search: "Search",
   refresh: "Refresh",
   viewAll: "View all",
+  /** A link to a record just saved, in its message. */
+  open: "Open",
   yes: "Yes",
   no: "No",
   all: "All",

@@ -21,6 +21,7 @@ test("closed days are shaded and booking on one asks first", async ({ page }) =>
 test("the working days are chosen in Settings", async ({ page }) => {
   await page.goto("/dashboard");
   await openFromMenu(page, "Settings");
+  await page.getByRole("tab", { name: "Working Hours" }).click();
   const friday = page.getByRole("button", { name: "Fri", exact: true });
   await expect(friday).toHaveAttribute("aria-pressed", "false");
   await friday.click();

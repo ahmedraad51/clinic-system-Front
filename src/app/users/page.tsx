@@ -104,7 +104,9 @@ function UsersList() {
                   <Td>
                     <span className="flex items-center gap-3">
                       <Avatar name={u.full_name || u.name} gender={u.gender} photo={u.user_image} size={36} />
-                      <span className="font-medium text-gray-800">{u.full_name || u.name}</span>
+                      <Link href={userHref(u.name)} className="font-medium text-gray-800 hover:text-primary-600">
+                        {u.full_name || u.name}
+                      </Link>
                     </span>
                   </Td>
                   <Td label={t.users.email}>

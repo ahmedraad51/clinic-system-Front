@@ -87,4 +87,8 @@ export const settings = {
   other: "Other",
   sampleButton: "Sample button",
   darkened: "Made a little darker so white text on it stays easy to read.",
+  nameRequired: "Enter the clinic's name.",
+  emailInvalid: "Enter a full email address, such as clinic@example.com, or leave it empty.",
+  openDaysStat: "Open days",
+  pricesStat: "Prices set",
 };

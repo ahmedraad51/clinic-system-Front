@@ -151,6 +151,9 @@ export default function LinkSelect({
       event.preventDefault();
       if (options[highlight]) choose(options[highlight]);
     } else if (event.key === "Escape") {
+      // Closes only the list, not a dialog the picker is in.
+      event.preventDefault();
+      event.stopPropagation();
       setOpen(false);
       setQuery("");
     }

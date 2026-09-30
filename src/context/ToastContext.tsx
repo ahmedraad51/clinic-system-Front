@@ -1,19 +1,27 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState, ReactNode } from "react";
+import Link from "next/link";
 import { Check, Info, X } from "lucide-react";
 import { messages } from "@/i18n";
 
 type ToastKind = "success" | "error" | "info";
 
+/** A link in the message, e.g. "Open" to the record a dialog just saved. */
+export interface ToastAction {
+  label: string;
+  href: string;
+}
+
 interface ToastItem {
   id: number;
   kind: ToastKind;
   message: string;
+  action?: ToastAction;
 }
 
 interface ToastContextType {
-  success: (message: string) => void;
+  success: (message: string, action?: ToastAction) => void;
   error: (message: string) => void;
   info: (message: string) => void;
 }
@@ -37,17 +45,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const push = useCallback(
-    (kind: ToastKind, message: string) => {
+    (kind: ToastKind, message: string, action?: ToastAction) => {
       const id = nextId.current++;
-      setToasts((list) => [...list.slice(-3), { id, kind, message }]);
-      setTimeout(() => dismiss(id), kind === "error" ? 6000 : 3500);
+      setToasts((list) => [...list.slice(-3), { id, kind, message, action }]);
+      // A message with a link stays longer, so there is time to use it.
+      setTimeout(() => dismiss(id), kind === "error" ? 6000 : action ? 8000 : 3500);
     },
     [dismiss],
   );
 
   const value = useMemo(
     () => ({
-      success: (message: string) => push("success", message),
+      success: (message: string, action?: ToastAction) => push("success", message, action),
       error: (message: string) => push("error", message),
       info: (message: string) => push("info", message),
     }),
@@ -71,7 +80,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <span className="mt-0.5 shrink-0">
               {toast.kind === "success" ? <Check size={16} /> : <Info size={16} />}
             </span>
-            <span className="flex-1">{toast.message}</span>
+            <span className="flex-1">
+              {toast.message}
+              {toast.action && (
+                <Link
+                  href={toast.action.href}
+                  onClick={() => dismiss(toast.id)}
+                  className="ms-2 font-semibold underline underline-offset-2 whitespace-nowrap"
+                >
+                  {toast.action.label}
+                </Link>
+              )}
+            </span>
             <button
               type="button"
               onClick={() => dismiss(toast.id)}

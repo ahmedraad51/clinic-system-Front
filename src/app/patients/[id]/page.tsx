@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { useRecordDialogs } from "@/components/RecordDialogs";
+import { useDataVersion } from "@/lib/dataVersion";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
-  BellRing, Calendar, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, CreditCard, HeartPulse, History, IdCard,
+  BellRing, Calendar, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, CreditCard, HeartPulse, History,
   MessageCircle, Pencil, Phone, Pill, Plus, Printer, Stethoscope, Trash2, Wallet, type LucideIcon,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
@@ -15,8 +17,7 @@ import XraySection from "@/components/xrays/XraySection";
 import RecallDialog from "@/components/RecallDialog";
 import RecordHistory from "@/components/RecordHistory";
 import {
-  Button, Card, ClickableRow, DetailList, DetailRow, EmptyState, IconTile, LinkButton, LoadError, NotFoundCard,
-  PageContainer, PageHeader, PageLoading, RecordLoading, StatusBadge, Table, Tabs, Td, Th, type Hue,
+  Button, Card, ClickableRow, DetailLayout, DetailList, DetailRow, EmptyState, IconTile, LinkButton, LoadError, NotFoundCard, PageContainer, PageHeader, PageLoading, ProfileCard, RecordLoading, StatusBadge, Table, Tabs, Td, Th, type Hue,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
@@ -57,6 +58,7 @@ const isBooked = (a: Appointment) => a.status === "Scheduled" || a.status === "C
 
 function PatientDetail() {
   const { t } = useI18n();
+  const openDialog = useRecordDialogs();
   const p = t.patients;
   const params = useParams();
   const router = useRouter();
@@ -80,6 +82,8 @@ function PatientDetail() {
   const showTreatments = can("view_treatments");
   const showPayments = can("view_payments");
 
+  // A dialog saved something: load again.
+  const saved = useDataVersion();
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -135,7 +139,7 @@ function PatientDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, showAppointments, showTreatments, showPayments, relatedVersion]);
+  }, [id, showAppointments, showTreatments, showPayments, relatedVersion, saved]);
 
   if (loading) return <RecordLoading />;
   if (notFound || !patient) return <NotFoundCard error={error} what={p.what} backHref="/patients" backLabel={p.backToPatients} />;
@@ -229,22 +233,28 @@ function PatientDetail() {
 
   return (
     <PageContainer section="patients">
-      <PageHeader
-        title={patient.full_name}
-        subtitle={subtitle}
-        avatar={<Avatar name={patient.full_name} gender={patient.gender} age={patient.age} size={64} />}
-        back={{ href: "/patients", label: p.title }}
-        actions={
-          <>
+      <PageHeader back={{ href: "/patients", label: p.title }} />
+      {/* Above both columns, so it is the first thing on a tablet or phone too. */}
+      <MedicalAlerts patient={patient} />
+
+      <DetailLayout
+        aside={
+          <ProfileCard
+            titleLevel={1}
+            avatar={<Avatar name={patient.full_name} size={96} />}
+            title={patient.full_name}
+            subtitle={subtitle}
+            actions={
+              <>
             {can("add_appointments") && (
-              <LinkButton href={`/appointments/new?patient=${encodeURIComponent(id)}`} icon={CalendarDays}>
+              <Button icon={CalendarDays} data-testid="open-new-appointment" onClick={() => openDialog({ kind: "newAppointment", prefill: { patient: id }, patientName: patient.full_name })}>
                 {p.newAppointment}
-              </LinkButton>
+              </Button>
             )}
             {can("add_treatments") && (
-              <LinkButton href={`/treatments/new?patient=${encodeURIComponent(id)}`} variant="secondary" icon={Plus}>
+              <Button variant="secondary" icon={Plus} data-testid="open-new-treatment" onClick={() => openDialog({ kind: "newTreatment", prefill: { patient: id }, patientName: patient.full_name })}>
                 {p.newTreatment}
-              </LinkButton>
+              </Button>
             )}
             {can("edit_patients") && (
               <LinkButton href={`${patientHref(id)}/edit`} variant="secondary" icon={Pencil}>
@@ -261,15 +271,22 @@ function PatientDetail() {
                 className="text-red-600 hover:bg-red-50 px-3"
               />
             )}
-          </>
-        }
-      />
-
-      <MedicalAlerts patient={patient} />
-
-      {/* Contact and the facts a dentist wants before the patient sits down. */}
-      <Card>
-        <div className="flex flex-wrap gap-2">
+              </>
+            }
+            detailsTitle={p.contactCard}
+            details={[
+              { label: p.patientId, value: <span dir="ltr">{patient.name}</span> },
+              { label: p.gender, value: label(t.enums.gender, patient.gender) },
+              { label: p.dateOfBirth, value: patient.date_of_birth ? formatDate(patient.date_of_birth) : "" },
+              { label: p.age, value: ageText },
+              { label: p.phone, value: patient.phone_number ? <span dir="ltr">{patient.phone_number}</span> : "" },
+              { label: p.secondaryPhone, value: patient.secondary_phone ? <span dir="ltr">{patient.secondary_phone}</span> : "" },
+              { label: p.email, value: patient.email ? <span dir="ltr" className="break-all">{patient.email}</span> : "" },
+              { label: p.address, value: patient.address },
+            ]}
+          >
+            {/* Contact, and the facts a dentist wants before the patient sits down. */}
+            <div className="mt-5 flex flex-wrap justify-center gap-2">
           {patient.phone_number && (
             <a
               href={`tel:${patient.phone_number.replace(/\s/g, "")}`}
@@ -299,9 +316,8 @@ function PatientDetail() {
               <span dir="ltr">{patient.secondary_phone}</span>
             </a>
           )}
-        </div>
-
-        <dl className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-x-6 gap-y-4 mt-5 pt-5 border-t border-gray-100">
+            </div>
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-5 mt-6 pt-6 border-t border-gray-200 text-start">
           {showAppointments && (
             <Fact icon={History} hue="appointments" label={p.lastVisit}>
               {lastVisit ? (
@@ -373,12 +389,13 @@ function PatientDetail() {
             <Fact icon={Wallet} hue={remaining > 0 ? "red" : "money"} label={p.balanceToPay}>
               <span className={remaining > 0 ? "text-red-600" : "text-gray-500"}>{remainingText}</span>
               {remaining > 0 && can("add_payments") && (
-                <Link
-                  href={`/payments/new?patient=${encodeURIComponent(id)}`}
-                  className="block text-xs font-medium text-primary-700 hover:underline"
+                <button
+                  type="button"
+                  onClick={() => openDialog({ kind: "newPayment", prefill: { patient: id }, patientName: patient.full_name })}
+                  className="block text-xs font-medium text-primary-700 hover:underline pointer-coarse:min-h-11"
                 >
                   {p.addPayment}
-                </Link>
+                </button>
               )}
             </Fact>
           )}
@@ -388,32 +405,18 @@ function PatientDetail() {
             </Fact>
           )}
         </dl>
-      </Card>
+          </ProfileCard>
+        }
+      >
 
       <Tabs tabs={tabs} active={tab} onChange={setTab} />
 
       {tab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <Card title={p.timeline} icon={History} section="patients" className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+          <Card title={p.timeline} icon={History} section="patients" className="lg:col-span-3">
             {!data ? relatedWaiting : <Timeline data={data} today={today} money={money} />}
           </Card>
-          <div className="space-y-6">
-            <Card title={p.contactCard} icon={IdCard} section="patients">
-              <DetailList>
-                <DetailRow label={p.patientId}>
-                  <span dir="ltr">{patient.name}</span>
-                </DetailRow>
-                <DetailRow label={p.gender}>{label(t.enums.gender, patient.gender)}</DetailRow>
-                <DetailRow label={p.dateOfBirth}>{patient.date_of_birth ? formatDate(patient.date_of_birth) : ""}</DetailRow>
-                <DetailRow label={p.age}>{ageText}</DetailRow>
-                <DetailRow label={p.phone}>{patient.phone_number ? <span dir="ltr">{patient.phone_number}</span> : ""}</DetailRow>
-                <DetailRow label={p.secondaryPhone}>
-                  {patient.secondary_phone ? <span dir="ltr">{patient.secondary_phone}</span> : ""}
-                </DetailRow>
-                <DetailRow label={p.email}>{patient.email ? <span dir="ltr">{patient.email}</span> : ""}</DetailRow>
-                <DetailRow label={p.address}>{patient.address}</DetailRow>
-              </DetailList>
-            </Card>
+          <div className="space-y-6 lg:col-span-2">
             <Card title={p.medicalCard} icon={HeartPulse} section="red">
               <DetailList>
                 <DetailRow label={p.allergies}>{patient.allergies}</DetailRow>
@@ -437,9 +440,9 @@ function PatientDetail() {
               title={p.noAppointments}
               action={
                 can("add_appointments") && (
-                  <LinkButton href={`/appointments/new?patient=${encodeURIComponent(id)}`} icon={Plus}>
+                  <Button icon={Plus} onClick={() => openDialog({ kind: "newAppointment", prefill: { patient: id }, patientName: patient.full_name })}>
                     {p.newAppointment}
-                  </LinkButton>
+                  </Button>
                 )
               }
             />
@@ -494,9 +497,9 @@ function PatientDetail() {
               title={p.noPlans}
               action={
                 can("add_treatments") && (
-                  <LinkButton href={`/treatments/new?patient=${encodeURIComponent(id)}`} icon={Plus}>
+                  <Button icon={Plus} onClick={() => openDialog({ kind: "newTreatment", prefill: { patient: id }, patientName: patient.full_name })}>
                     {p.newTreatment}
-                  </LinkButton>
+                  </Button>
                 )
               }
             />
@@ -609,9 +612,9 @@ function PatientDetail() {
               title={p.noPayments}
               action={
                 can("add_payments") && (
-                  <LinkButton href={`/payments/new?patient=${encodeURIComponent(id)}`} icon={Plus}>
+                  <Button icon={Plus} onClick={() => openDialog({ kind: "newPayment", prefill: { patient: id }, patientName: patient.full_name })}>
                     {p.addPaymentButton}
-                  </LinkButton>
+                  </Button>
                 )
               }
             />
@@ -660,9 +663,10 @@ function PatientDetail() {
           onImagesChanged={xrays.reload}
           sketch={patient.chart_sketch}
           onSaveSketch={saveSketch}
-          newTreatmentHref={
+          onNewTreatment={
             can("add_treatments")
-              ? (tooth) => `/treatments/new?patient=${encodeURIComponent(id)}&tooth=${tooth}`
+              ? (tooth: number) =>
+                  openDialog({ kind: "newTreatment", prefill: { patient: id, tooth: String(tooth) }, patientName: patient.full_name })
               : undefined
           }
         />
@@ -704,6 +708,7 @@ function PatientDetail() {
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
       />
+      </DetailLayout>
     </PageContainer>
   );
 }

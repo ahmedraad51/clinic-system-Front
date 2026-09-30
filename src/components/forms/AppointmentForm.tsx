@@ -89,6 +89,8 @@ export default function AppointmentForm({
   showStatus = false,
   submitLabel,
   cancelHref,
+  onCancel,
+  onDirtyChange,
   onSubmit,
 }: {
   initial: AppointmentFormData;
@@ -99,6 +101,10 @@ export default function AppointmentForm({
   showStatus?: boolean;
   submitLabel: string;
   cancelHref: string;
+  /** In a dialog: Cancel closes it instead of following cancelHref. */
+  onCancel?: () => void;
+  /** In a dialog: told whether there are unsaved changes, so closing it can ask first. */
+  onDirtyChange?: (dirty: boolean) => void;
   onSubmit: (data: AppointmentFormData) => Promise<void>;
 }) {
   const { t } = useI18n();
@@ -189,6 +195,9 @@ export default function AppointmentForm({
       : undefined;
 
   const dirty = !done && JSON.stringify(form) !== JSON.stringify(baseline);
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -285,9 +294,15 @@ export default function AppointmentForm({
         <Button type="submit" icon={Save} loading={saving}>
           {submitLabel}
         </Button>
-        <LinkButton href={cancelHref} variant="secondary">
-          {t.common.cancel}
-        </LinkButton>
+        {onCancel ? (
+          <Button variant="secondary" onClick={onCancel}>
+            {t.common.cancel}
+          </Button>
+        ) : (
+          <LinkButton href={cancelHref} variant="secondary">
+            {t.common.cancel}
+          </LinkButton>
+        )}
       </FormActions>
 
       <ConfirmDialog

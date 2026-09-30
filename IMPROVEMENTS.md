@@ -5,17 +5,29 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- **Waiting for the owner:** the new clean look is done (see Done). Please look at it before the work goes on. After
-  your approval: the Arabic version is checked again in the new look, then Phases 2, 3 and 4 continue in the new look
-  (Phase 4 is paused after its first item, two currencies; next are expenses and profit, the waiting room, QR codes,
-  the whole patient file in print, custom prescription paper, restoring deleted records, and installing the app).
+- Phase 4 goes on in the new look: expenses and profit, the waiting room, QR codes, the whole patient file in print,
+  custom prescription paper, restoring deleted records, and installing the app.
 
 ## Backlog
 
-1. Phases 2, 3 and 4 of the redesign plan (the new look on every screen, the X-ray section, the features from the
-   competitor study), after the Arabic version, in both languages.
+1. Phase 4 of the redesign plan (the features from the competitor study), items 2 to 8, in both languages.
 
 ## Done
+
+- 2026-09-30 - **Forms in dialogs, wide pages and a permissions table.** New and edit forms for appointments,
+  treatment plans and payments now open in a dialog over the page you are on, with what the page knows already
+  filled in (the patient, the plan, the tooth, or the time clicked in the calendar); the appointment dialog is wide,
+  so the doctor's day and the free times fit. **Add Patient** slides in from the side (from the right in English, the
+  left in Arabic). After saving you stay on the page, it shows the change at once, and the message has an **Open**
+  link to the new record. Closing with unsaved changes asks first, Escape closes, and on a phone the dialog fills the
+  screen. The old form pages still work. The patient, doctor (new page), appointment, treatment plan, payment,
+  Manage User, My Profile and Settings pages use the whole screen: a profile card on one side (photo or initials,
+  name, contact, role, status, the main buttons and key numbers) and the details or tabs on the other; they stack on
+  tablets and phones. Settings is in tabs. Permissions are a table: a row per section, View / Add / Edit / Delete
+  columns, an empty cell where an action does not exist, and a select-all box for each row and column, with the role
+  presets above. Pictures before and after, in English, Arabic and dark mode:
+  [docs/design-changes/3-dialogs-wide](docs/design-changes/3-dialogs-wide/README.md). **What to check:** book from the
+  calendar, add a patient, pay from a treatment plan, and change a user's permissions, in both languages.
 
 - 2026-09-30 - **Arabic checked again in the new look; a full HD screen shows the day at once.** Arabic text,
   tables and forms now use IBM Plex Sans Arabic, and El Messiri is kept for headings. On a 1920 × 1080 screen at

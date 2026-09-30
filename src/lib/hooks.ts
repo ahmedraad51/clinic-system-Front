@@ -7,6 +7,7 @@ import { MEDICAL_FIELDS, type MedicalFields } from "./medical";
 import { phoneSearchPattern, toLatinDigits } from "./phone";
 import type { BaseDoc, DentalImage, Doctor, Patient, TreatmentPlan } from "./types";
 import { IMAGE_FIELDS, sortImages } from "./xrays";
+import { useDataVersion } from "./dataVersion";
 
 /**
  * True while a CSS media query matches, e.g. useMediaQuery("(max-width: 639px)") for phones.
@@ -67,6 +68,8 @@ export function usePagedList<T extends BaseDoc>(doctype: string, query: PagedQue
   const requestKey = `${key}|${page}|${version}`;
   const [result, setResult] = useState<PagedResult<T> | null>(null);
 
+  // A dialog saved something: load again.
+  const saved = useDataVersion();
   useEffect(() => {
     let cancelled = false;
     const q = JSON.parse(key) as PagedQuery & { doctype: string; pageSize: number };
@@ -100,7 +103,7 @@ export function usePagedList<T extends BaseDoc>(doctype: string, query: PagedQue
     return () => {
       cancelled = true;
     };
-  }, [key, page, version]);
+  }, [key, page, version, saved]);
 
   return {
     rows: result?.rows ?? [],
@@ -142,6 +145,8 @@ export function useDocument<T extends BaseDoc>(doctype: string, name: string) {
   const [version, setVersion] = useState(0);
   const [state, setState] = useState<{ id: string; doc: T | null; error: string } | null>(null);
 
+  // A dialog saved something: load again.
+  const saved = useDataVersion();
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -158,7 +163,7 @@ export function useDocument<T extends BaseDoc>(doctype: string, name: string) {
     return () => {
       cancelled = true;
     };
-  }, [doctype, name, version]);
+  }, [doctype, name, version, saved]);
 
   const reload = useCallback(() => setVersion((v) => v + 1), []);
   const current = state && state.id === id ? state : null;
@@ -271,6 +276,8 @@ export type OpenBalance = Pick<TreatmentPlan, "currency" | "remaining_amount">;
 export function useOpenBalances(ids: string[], enabled: boolean): Record<string, OpenBalance[]> {
   const key = enabled ? [...new Set(ids.filter(Boolean))].sort().join("|") : "";
   const [result, setResult] = useState<{ key: string; plans: Record<string, OpenBalance[]> } | null>(null);
+  // Loads again after a dialog saves (a payment changes what is left); the old result stays until then.
+  const saved = useDataVersion();
   useEffect(() => {
     if (!key) return;
     let cancelled = false;
@@ -292,7 +299,7 @@ export function useOpenBalances(ids: string[], enabled: boolean): Record<string,
     return () => {
       cancelled = true;
     };
-  }, [key]);
+  }, [key, saved]);
   return result && result.key === key ? result.plans : NO_BALANCES;
 }
 

@@ -8,6 +8,7 @@ import { messages } from "@/i18n";
 import { PageLoading } from "@/components/ui";
 import { loginHref } from "@/lib/links";
 import SessionEndedNotice from "./SessionEndedNotice";
+import { RecordDialogsProvider } from "./RecordDialogs";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 
@@ -34,6 +35,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   if (isLoading || !user) return <PageLoading />;
 
   return (
+    <RecordDialogsProvider>
     <div className="min-h-screen app-bg print:bg-white">
       {/* First thing a keyboard user reaches: jump past the menu. */}
       <a
@@ -61,5 +63,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </footer>
       </div>
     </div>
+    </RecordDialogsProvider>
   );
 }

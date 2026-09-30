@@ -1,5 +1,5 @@
 import { expect, test } from "../fixtures";
-import { openFromMenu, pickLink, today, waitForData } from "../helpers";
+import { formDialog, openFromMenu, pickLink, today, waitForData } from "../helpers";
 
 test("book from an empty slot in the day calendar", async ({ page }) => {
   await page.goto("/dashboard");
@@ -9,21 +9,19 @@ test("book from an empty slot in the day calendar", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Day", pressed: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /Mustafa Jabbar, Dr\. Zainab Al-Hashimi/ })).toBeVisible();
 
-  // Clicking 3:00 PM in Dr. Zainab Al-Hashimi's column opens the form with the slot filled in.
+  // Clicking 3:00 PM in Dr. Zainab Al-Hashimi's column opens the booking dialog with the slot filled in.
   await page.getByRole("button", { name: "Book at 3:00 PM with Dr. Zainab Al-Hashimi" }).click();
-  await expect(page.getByRole("heading", { name: "New Appointment" })).toBeVisible();
-  await expect(page.getByLabel("Date")).toHaveValue(today());
-  await expect(page.getByLabel("Time")).toHaveValue("15:00");
-  await expect(page.getByLabel("Doctor")).toHaveValue("DOC-00001");
+  const dialog = formDialog(page, "New Appointment");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByLabel("Date")).toHaveValue(today());
+  await expect(dialog.getByLabel("Time")).toHaveValue("15:00");
+  await expect(dialog.getByLabel("Doctor")).toHaveValue("DOC-00001");
 
-  await pickLink(page, "Patient", "Ruqaya", "Ruqaya Adnan");
-  await page.getByRole("button", { name: "Book Appointment" }).click();
-  // Wait for the new appointment's page (the name is already shown in the picker on the form).
-  await expect(page).toHaveURL(/\/appointments\/APT-/);
-  await expect(page.getByRole("heading", { name: "Ruqaya Adnan" })).toBeVisible();
+  await pickLink(page, "Patient", "Ruqaya", "Ruqaya Adnan", dialog);
+  await dialog.getByRole("button", { name: "Book Appointment" }).click();
+  await expect(dialog).toBeHidden();
 
-  // Back in the calendar, the new booking has its own block.
-  await openFromMenu(page, "Appointments");
+  // The calendar stays open, and the new booking has its own block at once.
   await expect(page.getByRole("link", { name: /3:00 PM, Ruqaya Adnan, Dr\. Zainab Al-Hashimi/ })).toBeVisible();
 });
 
@@ -32,8 +30,9 @@ test("a slot filled in from the calendar still warns about double booking", asyn
   await openFromMenu(page, "Appointments");
   // 12:15 is free on the grid but the 30 minutes run into Mustafa Jabbar's 12:30 appointment.
   await page.getByRole("button", { name: "Book at 12:15 PM with Dr. Zainab Al-Hashimi" }).click();
-  await pickLink(page, "Patient", "Hiba", "Hiba Kadhim");
-  await page.getByRole("button", { name: "Book Appointment" }).click();
+  const dialog = formDialog(page, "New Appointment");
+  await pickLink(page, "Patient", "Hiba", "Hiba Kadhim", dialog);
+  await dialog.getByRole("button", { name: "Book Appointment" }).click();
   await expect(page.getByRole("dialog", { name: "This doctor is already booked" })).toBeVisible();
 });
 

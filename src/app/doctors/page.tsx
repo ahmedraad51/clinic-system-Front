@@ -1,22 +1,22 @@
 "use client";
 
-import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { BriefcaseMedical, Camera, Pencil, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import Link from "next/link";
+import { BriefcaseMedical, Pencil, Plus } from "lucide-react";
 import Avatar from "@/components/Avatar";
+import DoctorDialog from "@/components/DoctorDialog";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Badge, Button, Card, ClearFiltersButton, Field, PageContainer, PageHeader, Pagination, PhoneInput, ProgressBar,
-  SearchInput, SelectInput, Table, TableError, TableLoading, TableMessage, Td, TextInput, Th, Toggle, Toolbar,
+  Badge, Button, Card, ClearFiltersButton, ClickableRow, PageContainer, PageHeader, Pagination, SearchInput, SelectInput, Table,
+  TableError, TableLoading, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
-import { Modal } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
-import { useToast } from "@/context/ToastContext";
 import { label } from "@/i18n";
-import { createDoc, errorMessage, updateDoc, uploadFile, type FilterRow } from "@/lib/frappe";
+import { type FilterRow } from "@/lib/frappe";
 import { display, formatTime } from "@/lib/format";
 import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
-import { toLatinDigits } from "@/lib/phone";
-import { DOCTOR_SPECIALIZATIONS, type Doctor } from "@/lib/types";
+import { doctorHref } from "@/lib/links";
+import { type Doctor } from "@/lib/types";
 
 export default function DoctorsPage() {
   return (
@@ -100,18 +100,14 @@ function DoctorsList() {
               </TableMessage>
             ) : (
               list.rows.map((doctor) => (
-                <tr key={doctor.name} className={list.loading ? "opacity-60" : undefined}>
+                <ClickableRow key={doctor.name} href={doctorHref(doctor.name)} dimmed={list.loading}>
                   <Td>
                     <div className="flex items-center gap-3">
                       <Avatar name={doctor.full_name} gender={doctor.gender} photo={doctor.photo} role="doctor" size={40} />
                       <div className="min-w-0">
-                        <button
-                          type="button"
-                          onClick={() => setEditing(doctor)}
-                          className="font-medium text-gray-800 hover:text-primary-600 text-start"
-                        >
+                        <Link href={doctorHref(doctor.name)} className="font-medium text-gray-800 hover:text-primary-600">
                           {doctor.full_name}
-                        </button>
+                        </Link>
                         {doctor.email && <span className="block text-xs text-gray-500" dir="ltr">{doctor.email}</span>}
                       </div>
                     </div>
@@ -135,7 +131,7 @@ function DoctorsList() {
                       {t.doctors.edit}
                     </Button>
                   </Td>
-                </tr>
+                </ClickableRow>
               ))
             )}
           </tbody>
@@ -154,197 +150,5 @@ function DoctorsList() {
         />
       )}
     </PageContainer>
-  );
-}
-
-interface DoctorForm {
-  full_name: string;
-  specialization: string;
-  phone_number: string;
-  email: string;
-  start_time: string;
-  end_time: string;
-  is_active: boolean;
-  gender: string;
-  photo: string;
-}
-
-/** A doctor's photo is shown small (a circle in lists and the calendar): 5 MB is plenty. */
-const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
-
-function toForm(doctor: Doctor | null): DoctorForm {
-  return {
-    full_name: doctor?.full_name ?? "",
-    specialization: doctor?.specialization ?? "General Dentist",
-    phone_number: doctor?.phone_number ?? "",
-    email: doctor?.email ?? "",
-    start_time: (doctor?.start_time ?? "").slice(0, 5),
-    end_time: (doctor?.end_time ?? "").slice(0, 5),
-    is_active: doctor ? Number(doctor.is_active) === 1 : true,
-    gender: doctor?.gender ?? "",
-    photo: doctor?.photo ?? "",
-  };
-}
-
-function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doctor | null; onClose: () => void; onSaved: () => void }) {
-  const { t } = useI18n();
-  const toast = useToast();
-  const [form, setForm] = useState<DoctorForm>(() => toForm(doctor));
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const photoRef = useRef<HTMLInputElement>(null);
-  // Upload progress 0-100 while a photo is being sent, else null.
-  const [photoProgress, setPhotoProgress] = useState<number | null>(null);
-
-  const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setForm({ ...form, [event.target.name]: event.target.value });
-  };
-
-  const handlePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setError(t.doctors.photoNotImage);
-      return;
-    }
-    if (file.size > MAX_PHOTO_BYTES) {
-      setError(t.doctors.photoTooBig(MAX_PHOTO_BYTES / (1024 * 1024)));
-      return;
-    }
-    setError("");
-    setPhotoProgress(0);
-    try {
-      const url = await uploadFile(file, { onProgress: (fraction) => setPhotoProgress(fraction * 100) });
-      setForm((prev) => ({ ...prev, photo: url }));
-    } catch (err) {
-      setError(errorMessage(err, t.doctors.photoUploadFailed));
-    } finally {
-      setPhotoProgress(null);
-    }
-  };
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if ((form.start_time && !form.end_time) || (!form.start_time && form.end_time)) {
-      setError(t.doctors.bothHours);
-      return;
-    }
-    if (form.start_time && form.end_time && form.end_time <= form.start_time) {
-      setError(t.doctors.endAfterStart);
-      return;
-    }
-    setSaving(true);
-    setError("");
-    const payload = {
-      ...form,
-      full_name: form.full_name.trim(),
-      phone_number: toLatinDigits(form.phone_number),
-      start_time: form.start_time || null,
-      end_time: form.end_time || null,
-      is_active: form.is_active ? 1 : 0,
-      gender: form.gender || null,
-      photo: form.photo || null,
-    };
-    try {
-      if (doctor) {
-        await updateDoc("Doctor", doctor.name, payload);
-        toast.success(t.doctors.saved(payload.full_name));
-      } else {
-        await createDoc("Doctor", payload);
-        toast.success(t.doctors.added(payload.full_name));
-      }
-      onSaved();
-    } catch (err) {
-      setError(errorMessage(err, t.doctors.saveFailed));
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Modal open title={doctor ? t.doctors.editDoctor : t.doctors.addDoctor} onClose={onClose}>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* The photo shows in lists, the calendar and the Today board; without one a drawing is used. */}
-        <div className="flex items-center gap-4">
-          <Avatar name={form.full_name || t.doctors.newDoctor} gender={form.gender} photo={form.photo} role="doctor" size={72} />
-          <div className="flex flex-wrap items-center gap-2">
-            <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} aria-label={t.doctors.photo} />
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Camera}
-              loading={photoProgress !== null}
-              onClick={() => photoRef.current?.click()}
-            >
-              {form.photo ? t.doctors.changePhoto : t.doctors.uploadPhoto}
-            </Button>
-            {form.photo && (
-              <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setForm({ ...form, photo: "" })}>
-                {t.doctors.removePhoto}
-              </Button>
-            )}
-            {photoProgress !== null && (
-              <div className="basis-full max-w-60">
-                <ProgressBar value={photoProgress} label={t.doctors.uploadingPhoto} />
-              </div>
-            )}
-          </div>
-        </div>
-        <Field label={t.doctors.fullName} required hint={t.doctors.fullNameHint}>
-          <TextInput name="full_name" value={form.full_name} onChange={handleChange} required autoComplete="off" />
-        </Field>
-        <Field label={t.doctors.specialization}>
-          <SelectInput name="specialization" value={form.specialization} onChange={handleChange}>
-            {form.specialization && !(DOCTOR_SPECIALIZATIONS as readonly string[]).includes(form.specialization) && (
-              <option value={form.specialization}>{form.specialization}</option>
-            )}
-            {DOCTOR_SPECIALIZATIONS.map((s) => (
-              <option key={s} value={s}>
-                {label(t.enums.specialization, s)}
-              </option>
-            ))}
-          </SelectInput>
-        </Field>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label={t.doctors.gender} hint={t.doctors.genderHint}>
-            <SelectInput name="gender" value={form.gender} onChange={handleChange}>
-              <option value="">{t.doctors.notSet}</option>
-              <option value="Female">{label(t.enums.gender, "Female")}</option>
-              <option value="Male">{label(t.enums.gender, "Male")}</option>
-            </SelectInput>
-          </Field>
-          <div className="max-sm:hidden" />
-          <Field label={t.doctors.phone}>
-            <PhoneInput name="phone_number" value={form.phone_number} onChange={handleChange} />
-          </Field>
-          <Field label={t.doctors.email}>
-            <TextInput type="email" name="email" value={form.email} onChange={handleChange} dir="ltr" />
-          </Field>
-          <Field label={t.doctors.startsAt} hint={t.doctors.startsAtHint}>
-            <TextInput type="time" name="start_time" value={form.start_time} onChange={handleChange} dir="ltr" />
-          </Field>
-          <Field label={t.doctors.finishesAt}>
-            <TextInput type="time" name="end_time" value={form.end_time} onChange={handleChange} dir="ltr" />
-          </Field>
-        </div>
-        <Toggle
-          checked={form.is_active}
-          onChange={(is_active) => setForm({ ...form, is_active })}
-          label={t.doctors.active}
-          description={t.doctors.activeHint}
-        />
-
-        {error && <Alert tone="red">{error}</Alert>}
-
-        <div className="flex flex-wrap gap-2 pt-2">
-          <Button type="submit" loading={saving} disabled={photoProgress !== null}>
-            {doctor ? t.doctors.saveDoctor : t.doctors.addDoctor}
-          </Button>
-          <Button variant="secondary" onClick={onClose} disabled={saving}>
-            {t.doctors.cancel}
-          </Button>
-        </div>
-      </form>
-    </Modal>
   );
 }

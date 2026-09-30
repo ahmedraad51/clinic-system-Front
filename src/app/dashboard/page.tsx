@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { useRecordDialogs, type RecordDialog } from "@/components/RecordDialogs";
+import { useDataVersion } from "@/lib/dataVersion";
 import Link from "next/link";
 import {
   BellRing, Calendar, CalendarDays, CalendarRange, CalendarX, ChevronRight, CreditCard, MessageCircle, PieChart, Plus, Stethoscope,
@@ -10,7 +12,7 @@ import Avatar from "@/components/Avatar";
 import { BarChart, DonutChart, type ChartPoint } from "@/components/Charts";
 import RequirePermission from "@/components/Guard";
 import {
-  ActionTile, CARD_CLASS, Card, EmptyState, IconTile, LinkButton, LoadError, PageContainer, Segmented, StatCard, StatusBadge, type Hue,
+  ActionTile, Button, CARD_CLASS, Card, EmptyState, IconTile, LoadError, PageContainer, Segmented, StatCard, StatusBadge, type Hue,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
@@ -118,6 +120,8 @@ function Dashboard() {
   const seeTreatments = can("view_treatments");
   const seeMoney = can("view_payments");
 
+  // A dialog saved something: load again.
+  const saved = useDataVersion();
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -218,7 +222,7 @@ function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, [today, seePatients, seeAppointments, seeTreatments, seeMoney, mine, settings.enable_whatsapp, version]);
+  }, [today, seePatients, seeAppointments, seeTreatments, seeMoney, mine, settings.enable_whatsapp, version, saved]);
 
   const stillToCome = data?.today.filter((a) => a.status === "Scheduled" || a.status === "Confirmed").length ?? 0;
   const loadingValue = "…";
@@ -226,11 +230,12 @@ function Dashboard() {
   // In the clinic's currency: what is left on a plan in the other currency counts at today's rate.
   const outstanding = (data?.openPlans ?? []).reduce((sum, row) => sum + toMain(row.remaining_amount, row.currency), 0);
 
+  const openDialog = useRecordDialogs();
   const quickActions = [
-    can("add_appointments") && { href: "/appointments/new", ...t.dashboard.actions.newAppointment, icon: CalendarDays, section: "appointments" as const },
-    can("add_patients") && { href: "/patients/new", ...t.dashboard.actions.addPatient, icon: UserPlus, section: "patients" as const },
-    can("add_treatments") && { href: "/treatments/new", ...t.dashboard.actions.newTreatment, icon: Stethoscope, section: "treatments" as const },
-    can("add_payments") && { href: "/payments/new", ...t.dashboard.actions.recordPayment, icon: CreditCard, section: "money" as const },
+    can("add_appointments") && { href: "/appointments/new", open: { kind: "newAppointment" } as RecordDialog, ...t.dashboard.actions.newAppointment, icon: CalendarDays, section: "appointments" as const },
+    can("add_patients") && { href: "/patients/new", open: { kind: "newPatient" } as RecordDialog, ...t.dashboard.actions.addPatient, icon: UserPlus, section: "patients" as const },
+    can("add_treatments") && { href: "/treatments/new", open: { kind: "newTreatment" } as RecordDialog, ...t.dashboard.actions.newTreatment, icon: Stethoscope, section: "treatments" as const },
+    can("add_payments") && { href: "/payments/new", open: { kind: "newPayment" } as RecordDialog, ...t.dashboard.actions.recordPayment, icon: CreditCard, section: "money" as const },
   ].filter((action) => action !== false);
 
   const summary =
@@ -277,6 +282,7 @@ function Dashboard() {
               <ActionTile
                 key={action.href}
                 href={action.href}
+                onClick={() => openDialog(action.open)}
                 label={action.label}
                 hint={action.hint}
                 icon={action.icon}
@@ -459,9 +465,7 @@ function AppointmentList({
     return (
       <div className="px-6 pb-6">
         <p className="text-sm text-gray-500">{empty}</p>
-        <LinkButton href="/appointments/new" size="sm" variant="secondary" icon={Plus} className="mt-3">
-          {t.dashboard.newAppointment}
-        </LinkButton>
+        <NewAppointmentButton label={t.dashboard.newAppointment} />
       </div>
     );
   }
@@ -545,5 +549,17 @@ function NeedsAttention({ attention, className }: { attention: DashboardData["at
         ))}
       </ul>
     </Card>
+  );
+}
+
+/** Book from an empty list: the booking dialog (only for users who may book). */
+function NewAppointmentButton({ label: text }: { label: string }) {
+  const openDialog = useRecordDialogs();
+  const { can } = useSession();
+  if (!can("add_appointments")) return null;
+  return (
+    <Button size="sm" variant="secondary" icon={Plus} className="mt-3" onClick={() => openDialog({ kind: "newAppointment" })}>
+      {text}
+    </Button>
   );
 }

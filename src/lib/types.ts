@@ -426,6 +426,27 @@ export const PERMISSION_KEYS: PermissionKey[] = PERMISSION_GROUPS.flatMap((group
 
 export type ClinicPermission = BaseDoc & { user: string } & Partial<Record<PermissionKey, number>>;
 
+/** The columns of the permissions table (Manage User). */
+export const PERMISSION_ACTIONS = ["view", "add", "edit", "delete"] as const;
+export type PermissionAction = (typeof PERMISSION_ACTIONS)[number];
+
+/**
+ * The rows of the permissions table: one per section, with the permission of each action that exists there. An action
+ * a section does not have is an empty cell. Every PermissionKey is in exactly one cell.
+ */
+export const PERMISSION_MATRIX: Array<{
+  row: "patients" | "appointments" | "treatments" | "payments" | "reports" | "setup";
+  cells: Partial<Record<PermissionAction, PermissionKey>>;
+}> = [
+  { row: "patients", cells: { view: "view_patients", add: "add_patients", edit: "edit_patients", delete: "delete_patients" } },
+  { row: "appointments", cells: { view: "view_appointments", add: "add_appointments", edit: "edit_appointments" } },
+  { row: "treatments", cells: { view: "view_treatments", add: "add_treatments", edit: "edit_treatments" } },
+  { row: "payments", cells: { view: "view_payments", add: "add_payments" } },
+  { row: "reports", cells: { view: "view_reports" } },
+  // Users, doctors, medicines, WhatsApp and settings: one permission that allows changing them all.
+  { row: "setup", cells: { edit: "manage_users" } },
+];
+
 /** Starting points for the permission screen. They only fill the switches; nothing is saved until you press Save. */
 export const ROLE_PRESETS: Record<ClinicRole, PermissionKey[]> = {
   "Clinic Manager": [...PERMISSION_KEYS],

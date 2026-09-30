@@ -2,13 +2,15 @@
 
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import ToothLogo from "@/components/ToothLogo";
-import { Plus, Settings, Save, Sparkles, Trash2, Upload } from "lucide-react";
+import { CalendarDays, Plus, Settings, Save, Sparkles, Tags, Trash2, Upload } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import {
   Alert,
+  Badge,
   Button,
   Card,
+  DetailLayout, Fraction,
   Field,
   FormActions,
   NumberInput,
@@ -16,8 +18,10 @@ import {
   PageHeader,
   PageLoading,
   PhoneInput,
+  ProfileCard,
   ProgressBar,
   SelectInput,
+  Tabs,
   TextInput,
   Toggle,
 } from "@/components/ui";
@@ -25,8 +29,8 @@ import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { errorMessage, getCount, updateDoc, uploadFile, fileHref } from "@/lib/frappe";
-import { isLang, label, LANGS, messages, type Lang } from "@/i18n";
-import { currencyDecimals, cx, formatDate, todayISO } from "@/lib/format";
+import { isLang, label, LANGS, messages, num, type Lang } from "@/i18n";
+import { currencyDecimals, cx, formatDate, formatTime, todayISO } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
 import { DEFAULT_THEME_COLOR, normalizeHex, readableBrand, THEME_PRESETS } from "@/lib/theme";
 import { CURRENCIES, TREATMENT_TYPES, WEEK_DAYS, type ClinicSettings } from "@/lib/types";
@@ -109,7 +113,7 @@ function SettingsView() {
 
   if (loading) return <PageLoading />;
   return (
-    <PageContainer section="system" narrow>
+    <PageContainer section="system">
       <PageHeader icon={Settings} section="system" title={t.settings.title} subtitle={t.settings.subtitle} />
       {doc ? (
         <SettingsFormView initial={doc} onSaved={reload} />
@@ -121,6 +125,10 @@ function SettingsView() {
     </PageContainer>
   );
 }
+
+/** The sections of the settings, one tab each. */
+const SETTINGS_TABS = ["clinic", "currencies", "language", "hours", "prices", "features"] as const;
+type SettingsTab = (typeof SETTINGS_TABS)[number];
 
 function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSaved: () => void }) {
   const { t } = useI18n();
@@ -134,6 +142,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
   const [uploading, setUploading] = useState(false);
   const [logoProgress, setLogoProgress] = useState(0);
   const [error, setError] = useState("");
+  const [tab, setTab] = useState<SettingsTab>("clinic");
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [event.target.name]: event.target.value });
@@ -170,11 +179,24 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
     // second currency the saved rates stay as they were (old payments were counted with them).
     const rates = form.second_currency ? form.exchange_rates : baseline.exchange_rates;
     const dates = rates.map((row) => row.rate_date);
+    if (!form.clinic_name.trim()) {
+      setTab("clinic");
+      setError(t.settings.nameRequired);
+      return;
+    }
+    // Checked here, not by the browser: the box is on a tab that may not be shown.
+    const email = form.email.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setTab("clinic");
+      setError(t.settings.emailInvalid);
+      return;
+    }
     if (
       (form.second_currency && rates.length === 0) ||
       rates.some((row) => !row.rate_date || !(Number(row.rate) > 0)) ||
       new Set(dates).size !== dates.length
     ) {
+      setTab("currencies");
       setError(t.settings.rateInvalid);
       return;
     }
@@ -186,17 +208,19 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
       const inUse = async (code: string) =>
         (await getCount("Treatment Plan", [["currency", "=", code]])) + (await getCount("Payment", [["currency", "=", code]])) > 0;
       if (form.currency !== baseline.currency && ((await getCount("Treatment Plan")) > 0 || (await getCount("Payment")) > 0)) {
+        setTab("clinic");
         setError(e.mainInUse);
         return;
       }
       if (baseline.second_currency && form.second_currency !== baseline.second_currency && (await inUse(baseline.second_currency))) {
+        setTab("currencies");
         setError(e.secondInUse(baseline.second_currency));
         return;
       }
       await updateDoc(SETTINGS, SETTINGS, {
         clinic_name: form.clinic_name.trim(),
         phone: form.phone,
-        email: form.email,
+        email,
         address: form.address,
         tax_number: form.tax_number,
         currency: form.currency,
@@ -241,9 +265,60 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
     ? [...CURRENCIES]
     : [form.currency, ...CURRENCIES];
 
+  const tabLabels: Record<SettingsTab, string> = {
+    clinic: t.settings.clinic,
+    currencies: t.settings.currencies,
+    language: t.settings.language,
+    hours: t.settings.workingHours,
+    prices: t.settings.priceList,
+    features: t.settings.features,
+  };
+  const openDays = form.working_days.length;
+  const pricesSet = TREATMENT_TYPES.filter((type) => Number(form.prices[type]) > 0).length;
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit}>
       <UnsavedChangesGuard when={JSON.stringify(form) !== JSON.stringify(baseline)} />
+      <DetailLayout
+        aside={
+          <ProfileCard
+            avatar={
+              form.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element -- the logo is an uploaded file of unknown size
+                <img src={fileHref(form.logo)} alt="" className="w-24 h-24 rounded-md object-contain bg-gray-50" />
+              ) : (
+                <span className="w-24 h-24 rounded-md bg-primary-100 text-primary-600 flex items-center justify-center">
+                  <ToothLogo size={48} />
+                </span>
+              )
+            }
+            title={form.clinic_name || "DentClinic"}
+            subtitle={form.phone ? <span dir="ltr">{form.phone}</span> : undefined}
+            badges={
+              <>
+                <Badge tone="primary">{form.currency}</Badge>
+                {form.second_currency && <Badge tone="green">{form.second_currency}</Badge>}
+              </>
+            }
+            stats={[
+              { icon: CalendarDays, value: <Fraction value={num(openDays)} of={num(7)} />, label: t.settings.openDaysStat, hue: "blue" },
+              { icon: Tags, value: <Fraction value={num(pricesSet)} of={num(TREATMENT_TYPES.length)} />, label: t.settings.pricesStat, hue: "green" },
+            ]}
+            detailsTitle={t.users.details}
+            details={[
+              { label: t.settings.email, value: form.email ? <span dir="ltr">{form.email}</span> : "" },
+              { label: t.settings.address, value: form.address },
+              { label: t.settings.taxNumber, value: form.tax_number ? <span dir="ltr">{form.tax_number}</span> : "" },
+              {
+                label: t.settings.workingHours,
+                value: form.opening_time && form.closing_time ? t.doctors.hours(formatTime(form.opening_time), formatTime(form.closing_time)) : "",
+              },
+            ]}
+          />
+        }
+      >
+      <Tabs tabs={SETTINGS_TABS.map((key) => ({ key, label: tabLabels[key] }))} active={tab} onChange={setTab} />
+      {tab === "clinic" && (
       <Card title={t.settings.clinic}>
         <div className="flex items-center gap-4 mb-5">
           {form.logo ? (
@@ -320,7 +395,9 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
           </Field>
         </div>
       </Card>
+      )}
 
+      {tab === "currencies" && (
       <Card title={t.settings.currencies}>
         <div className="space-y-5">
           <Field label={t.settings.secondCurrency} hint={t.settings.secondHint}>
@@ -401,7 +478,9 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
           )}
         </div>
       </Card>
+      )}
 
+      {tab === "language" && (
       <Card title={t.settings.language}>
         <div className="space-y-5">
           <Field label={t.settings.defaultLanguage} hint={t.settings.defaultLanguageHint}>
@@ -425,7 +504,9 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
           />
         </div>
       </Card>
+      )}
 
+      {tab === "hours" && (
       <Card title={t.settings.workingHours}>
         <div className="grid grid-cols-2 gap-4">
           <Field label={t.settings.openingTime}>
@@ -465,7 +546,9 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
           </div>
         </div>
       </Card>
+      )}
 
+      {tab === "prices" && (
       <Card title={t.settings.priceList}>
         <p className="text-sm text-gray-500 mb-4">{t.settings.priceListHint}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -480,7 +563,9 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
           ))}
         </div>
       </Card>
+      )}
 
+      {tab === "features" && (
       <Card title={t.settings.features}>
         <div className="space-y-5">
           <Toggle
@@ -504,6 +589,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
           <ThemeColorPicker value={form.theme_color} onChange={(theme_color) => setForm({ ...form, theme_color })} />
         </div>
       </Card>
+      )}
 
       {error && <Alert tone="red">{error}</Alert>}
 
@@ -512,6 +598,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
           {t.settings.saveSettings}
         </Button>
       </FormActions>
+      </DetailLayout>
     </form>
   );
 }

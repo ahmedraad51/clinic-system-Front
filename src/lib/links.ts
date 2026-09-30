@@ -59,3 +59,8 @@ export function safeNextPath(next: string | null | undefined): string {
     return "/dashboard";
   }
 }
+
+/** One doctor's page: their day, their upcoming appointments and open treatment plans. */
+export function doctorHref(name: string): string {
+  return `/doctors/${encodeURIComponent(name)}`;
+}

@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRecordDialogs } from "@/components/RecordDialogs";
+import { useDataVersion } from "@/lib/dataVersion";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { CalendarClock, ClipboardList, ListChecks, MessageCircle, Pencil, Pill, Printer, Stethoscope, Trash2 } from "lucide-react";
+import { CalendarDays, Clock, ListChecks, MessageCircle, Pencil, Pill, Printer, Stethoscope, Trash2 } from "lucide-react";
+import Avatar from "@/components/Avatar";
 import FinishVisitDialog from "@/components/FinishVisitDialog";
 import RecordHistory from "@/components/RecordHistory";
 import SendWhatsAppDialog from "@/components/SendWhatsAppDialog";
@@ -11,8 +14,7 @@ import { useSettings } from "@/context/SettingsContext";
 import RequirePermission from "@/components/Guard";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
-  Button, Card, DetailList, DetailRow, LinkButton, NotFoundCard, PageContainer, PageHeader, RecordLoading, StatusBadge,
-  statusLabel,
+  Button, Card, DetailLayout, LinkButton, NotFoundCard, PageContainer, PageHeader, ProfileCard, RecordLoading, StatusBadge, statusLabel,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
@@ -37,6 +39,7 @@ function AppointmentDetail() {
   const router = useRouter();
   const toast = useToast();
   const { t } = useI18n();
+  const openDialog = useRecordDialogs();
   const { can } = useSession();
   const id = routeId(params.id);
   const { doc: appointment, loading, notFound, error, reload } = useDocument<Appointment>("Appointment", id);
@@ -74,6 +77,8 @@ function AppointmentDetail() {
   }, [id]);
 
   // The prescriptions written at this visit.
+  // A dialog saved something: load again.
+  const saved = useDataVersion();
   useEffect(() => {
     if (!showPrescriptions) return;
     let cancelled = false;
@@ -93,7 +98,7 @@ function AppointmentDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, showPrescriptions]);
+  }, [id, showPrescriptions, saved]);
 
   if (loading) return <RecordLoading />;
   if (notFound || !appointment) {
@@ -140,27 +145,58 @@ function AppointmentDetail() {
   };
 
   return (
-    <PageContainer section="appointments" narrow>
-      <PageHeader icon={CalendarClock} section="appointments"
-        title={appointment.patient_name || appointment.patient}
-        subtitle={t.appointments.subtitle(formatDate(appointment.appointment_date), formatTime(appointment.appointment_time), id)}
-        badge={<StatusBadge kind="appointment" status={appointment.status} />}
-        back={{ href: "/appointments", label: t.appointments.title }}
-        actions={
-          <>
+    <PageContainer section="appointments">
+      <PageHeader back={{ href: "/appointments", label: t.appointments.title }} />
+      {/* Above both columns, so it is the first thing on a tablet or phone too. */}
+      <MedicalAlerts patient={medical} />
+
+      <DetailLayout
+        aside={
+          <ProfileCard
+            titleLevel={1}
+            avatar={<Avatar name={appointment.patient_name || appointment.patient} size={96} />}
+            title={appointment.patient_name || appointment.patient}
+            subtitle={<span dir="ltr">{id}</span>}
+            badges={<StatusBadge kind="appointment" status={appointment.status} />}
+            stats={[
+              { icon: CalendarDays, value: formatDate(appointment.appointment_date), label: t.common.date, hue: "blue" },
+              { icon: Clock, value: formatTime(appointment.appointment_time), label: t.common.time, hue: "blue" },
+            ]}
+            detailsTitle={t.common.details}
+            details={[
+              {
+                label: t.common.patient,
+                value: (
+                  <Link href={patientHref(appointment.patient)} className="text-primary-600 hover:underline">
+                    {appointment.patient_name || appointment.patient}
+                  </Link>
+                ),
+              },
+              { label: t.common.doctor, value: appointment.doctor_name || appointment.doctor },
+              {
+                label: t.appointments.duration,
+                value: appointment.duration_minutes ? t.appointmentForm.minutes(Number(appointment.duration_minutes)) : "",
+              },
+              { label: t.appointments.reason, value: appointment.reason_for_visit },
+              { label: t.common.notes, value: appointment.notes },
+            ]}
+            actions={
+              <>
             {can("add_treatments") && (
-              <LinkButton
-                href={`/treatments/new?patient=${encodeURIComponent(appointment.patient)}`}
+              <Button
                 variant="secondary"
                 icon={Stethoscope}
+                onClick={() =>
+                  openDialog({ kind: "newTreatment", prefill: { patient: appointment.patient }, patientName: appointment.patient_name })
+                }
               >
                 {t.appointments.newTreatment}
-              </LinkButton>
+              </Button>
             )}
             {canEdit && (
-              <LinkButton href={`${appointmentHref(id)}/edit`} icon={Pencil}>
+              <Button icon={Pencil} onClick={() => openDialog({ kind: "editAppointment", id })}>
                 {t.common.edit}
-              </LinkButton>
+              </Button>
             )}
             {canEdit && (
               <Button
@@ -172,37 +208,14 @@ function AppointmentDetail() {
                 className="text-red-600 hover:bg-red-50 px-3"
               />
             )}
-          </>
-        }
-      />
-
-      <MedicalAlerts patient={medical} />
-
-      <Card
-        title={t.common.details}
-        icon={ClipboardList}
-        actions={
-          <LinkButton href={`${appointmentHref(id)}/card`} variant="secondary" size="sm" icon={Printer}>
-            {t.appointments.printCard}
-          </LinkButton>
+                <LinkButton href={`${appointmentHref(id)}/card`} variant="secondary" icon={Printer}>
+                  {t.appointments.printCard}
+                </LinkButton>
+              </>
+            }
+          />
         }
       >
-        <DetailList>
-          <DetailRow label={t.common.patient}>
-            <Link href={patientHref(appointment.patient)} className="text-primary-600 hover:underline">
-              {appointment.patient_name || appointment.patient}
-            </Link>
-          </DetailRow>
-          <DetailRow label={t.common.doctor}>{appointment.doctor_name || appointment.doctor}</DetailRow>
-          <DetailRow label={t.common.date}>{formatDate(appointment.appointment_date)}</DetailRow>
-          <DetailRow label={t.common.time}>{formatTime(appointment.appointment_time)}</DetailRow>
-          <DetailRow label={t.appointments.duration}>
-            {appointment.duration_minutes ? t.appointmentForm.minutes(Number(appointment.duration_minutes)) : ""}
-          </DetailRow>
-          <DetailRow label={t.appointments.reason}>{appointment.reason_for_visit}</DetailRow>
-          <DetailRow label={t.common.notes}>{appointment.notes}</DetailRow>
-        </DetailList>
-      </Card>
 
       {canEdit && (
         <Card title={t.appointments.updateStatus} icon={ListChecks}>
@@ -306,6 +319,7 @@ function AppointmentDetail() {
         <SendWhatsAppDialog appointment={appointment} phone={medical.phone_number} onClose={() => setMessaging(false)} />
       )}
       {finishing && <FinishVisitDialog appointment={appointment} onClose={() => setFinishing(false)} />}
+      </DetailLayout>
     </PageContainer>
   );
 }

@@ -85,6 +85,12 @@ menu and a wide page are chosen per computer in the **Appearance** panel (the pa
 and in Arabic. Before and after, at desktop, tablet and phone size, and in dark mode:
 [docs/design-changes](docs/design-changes/README.md).
 
+**Forms in dialogs, wide pages.** New and edit forms for appointments, treatment plans and payments open in a dialog
+over the page you are on, already filled in with the patient, plan, tooth or time. Add Patient slides in from the side.
+After saving you stay where you were, and a message offers to open the new record. The patient, doctor, appointment,
+treatment plan, payment, user, profile and settings pages use the whole screen: a profile card on one side and the
+details or tabs on the other. Permissions are a table of sections by View, Add, Edit and Delete.
+
 The pictures are taken from the running app with the dummy data (`npm run screenshots:readme`).
 
 <table>
@@ -117,7 +123,8 @@ Revenue by treatment type, recent payments, and every plan still carrying a bala
 ### Users and permissions
 
 Staff accounts map onto Frappe users; each one gets a `Clinic Permission` record with fourteen
-independent switches grouped by area.
+independent switches, shown as a table: a row per section, a column each for View, Add, Edit and Delete, with
+select-all boxes for every row and column and the role presets above.
 
 <table>
 <tr>
@@ -152,6 +159,9 @@ or ID from any page, or to jump to an everyday action such as New Appointment.
 On a phone, every list turns into easy-to-read cards, and the Save button of a form stays at the bottom of the
 screen.
 
+New and edit forms for appointments, treatment plans and payments, and Add Patient, open in a dialog over the page
+you are on (the `/new` and `/edit` pages below still work on their own).
+
 Every screen checks the user's permission (see [Roles and permissions](#roles-and-permissions)) and hides
 what they are not allowed to do.
 
@@ -184,9 +194,10 @@ what they are not allowed to do.
 | `/payments/[id]` | Printable receipt, a receipt slip for 58 or 80 mm thermal receipt printers (paper size set per computer), and the payment's history |
 | `/reports` | Revenue by treatment, method and month for a chosen period (in dinars, dollar payments at their day's rate), outstanding balances, CSV export |
 | `/doctors` | The clinic's doctors: add and edit name, specialization, phone, email, working hours, and switch a doctor off when they leave |
-| `/users`, `/users/[id]` | Staff accounts, roles, enable/disable, and the 14 permission switches with role presets |
+| `/doctors/[id]` | One doctor: their details and working hours, today's patients, the next 30 days and their open treatment plans |
+| `/users`, `/users/[id]` | Staff accounts, roles, enable/disable, and the permissions table (sections by View, Add, Edit and Delete) with role presets |
 | `/whatsapp` | Reminder templates with a live preview, and the message log, with phone numbers partly hidden |
-| `/settings` | Clinic name and logo, contact details, currency (Iraqi dinars are shown without decimals), a second currency (US dollars) with its exchange rates by date, the phone country code (964 for Iraq, added to local numbers such as `0770…` in WhatsApp links), working hours, feature switches, and the clinic colour (the whole app follows it), and a price list that fills in treatment costs |
+| `/settings` | In tabs: clinic name and logo, contact details, currency (Iraqi dinars are shown without decimals), a second currency (US dollars) with its exchange rates by date, the phone country code (964 for Iraq, added to local numbers such as `0770…` in WhatsApp links), working hours, feature switches, and the clinic colour (the whole app follows it), and a price list that fills in treatment costs |
 | `/profile` | Your details and permissions, change password, and the screen size on this computer (bigger text for a reception monitor) |
 
 ### Project structure

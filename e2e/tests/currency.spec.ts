@@ -1,5 +1,5 @@
 import { expect, test } from "../fixtures";
-import { navigate, waitForData } from "../helpers";
+import { navigate, openSaved, waitForData } from "../helpers";
 import { baseAmount, convertMoney, rateOn, roundMoney, settleTolerance, sumByCurrency, totalsOrder } from "../../src/lib/currency";
 
 // The dummy clinic takes dinars and dollars: 1 USD was 1,480 IQD from January 2026 and 1,460 from September.
@@ -102,21 +102,27 @@ test("a plan in dollars keeps its money in dollars, whatever the patient pays in
   await expect(page.getByText("Counts as $100 on this plan.")).toBeVisible();
 
   // A new payment on it starts in dollars, and cannot be more than what is left, in either currency.
-  await page.getByRole("link", { name: "Add Payment" }).first().click();
-  await expect(page.getByRole("heading", { name: "New Payment" })).toBeVisible();
-  await expect(page.getByLabel("Treatment Plan")).toHaveValue(DOLLAR_IMPLANT);
-  const currency = page.getByRole("combobox", { name: "Currency", exact: true });
+  await page.getByRole("button", { name: "Add Payment" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "New Payment" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByLabel("Treatment Plan")).toHaveValue(DOLLAR_IMPLANT);
+  const currency = dialog.getByRole("combobox", { name: "Currency", exact: true });
   await expect(currency).toHaveValue("USD");
-  await page.getByLabel(/Amount/).fill("500");
-  await page.getByRole("button", { name: "Save Payment" }).click();
-  await expect(page.getByText("This plan only has $300 left to pay.")).toBeVisible();
+  await dialog.getByLabel(/Amount/).fill("500");
+  await dialog.getByRole("button", { name: "Save Payment" }).click();
+  await expect(dialog.getByText("This plan only has $300 left to pay.")).toBeVisible();
   await currency.selectOption("IQD");
-  await page.getByLabel(/Amount/).fill("500000");
-  await page.getByRole("button", { name: "Save Payment" }).click();
-  await expect(page.getByText(/This plan only has IQD\s438,000 left to pay\./)).toBeVisible();
-  await page.getByRole("button", { name: "Pay full balance" }).click();
-  await expect(page.getByLabel(/Amount/)).toHaveValue("438000");
-  await page.getByRole("button", { name: "Save Payment" }).click();
+  await dialog.getByLabel(/Amount/).fill("500000");
+  await dialog.getByRole("button", { name: "Save Payment" }).click();
+  await expect(dialog.getByText(/This plan only has IQD\s438,000 left to pay\./)).toBeVisible();
+  await dialog.getByRole("button", { name: "Pay full balance" }).click();
+  await expect(dialog.getByLabel(/Amount/)).toHaveValue("438000");
+  await dialog.getByRole("button", { name: "Save Payment" }).click();
+  await expect(dialog).toBeHidden();
+
+  // The plan behind loads again at once: nothing left.
+  await expect(page.getByTestId("plan-remaining")).toHaveText("$0");
+  await openSaved(page, "Payment recorded.");
   await expect(page.getByRole("heading", { name: "Payment Receipt" })).toBeVisible();
   await expect(page.getByTestId("receipt-rate")).toContainText(/On the plan\s*\$300/);
 
@@ -168,6 +174,7 @@ test("totals keep each currency apart, and the drawer counts dinars only", async
 test("the exchange rate is kept in Settings, one per date", async ({ page }) => {
   await page.goto("/settings");
   await waitForData(page);
+  await page.getByRole("tab", { name: "Currencies" }).click();
   await expect(page.getByRole("combobox", { name: "Second currency" })).toHaveValue("USD");
   await expect(page.getByLabel("1 USD in IQD")).toHaveCount(2);
   // Plans and payments are in dollars: the second currency stays.

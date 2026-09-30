@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRecordDialogs } from "@/components/RecordDialogs";
 import Link from "next/link";
 import { Stethoscope, ClipboardList, Plus } from "lucide-react";
 import { PatientLink } from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import {
-  Card, ClearFiltersButton, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination, SearchInput,
-  SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, Th, Toolbar,
+  Button, Card, ClearFiltersButton, ClickableRow, PageContainer, PageHeader, Pagination, SearchInput, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
@@ -40,6 +40,7 @@ function TreatmentsList() {
     ...(status ? [["status", "=", status] as FilterRow] : []),
     ...(type ? [["treatment_type", "=", type] as FilterRow] : []),
   ];
+  const openDialog = useRecordDialogs();
   const list = usePagedList<TreatmentPlan>("Treatment Plan", {
     fields: [
       "name", "patient", "patient_name", "doctor_name", "treatment_type", "tooth_number",
@@ -63,9 +64,9 @@ function TreatmentsList() {
         subtitle={t.treatments.subtitle}
         actions={
           can("add_treatments") && (
-            <LinkButton href="/treatments/new" icon={Plus}>
+            <Button icon={Plus} onClick={() => openDialog({ kind: "newTreatment" })}>
               {t.treatments.newTreatment}
-            </LinkButton>
+            </Button>
           )
         }
       />

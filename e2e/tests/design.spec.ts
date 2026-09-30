@@ -14,6 +14,8 @@ test("the app is violet with the Poppins font until the clinic picks its own col
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain("Poppins");
   const brand = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--brand").trim());
   expect(await brand()).toBe(DEFAULT_THEME_COLOR);
+  // The clinic colour is on the Features tab.
+  await page.getByRole("tab", { name: "Features" }).click();
   await expect(page.getByRole("button", { name: "Default colour" })).toHaveAttribute("aria-pressed", "true");
 
   // A colour chosen and saved is used at once (darkened for readable white text); the default can be chosen again.
@@ -52,7 +54,7 @@ test("people are shown by their initials, or by a photo when one is uploaded", a
 
   await navigate(page, "/doctors");
   await waitForData(page);
-  const row = page.getByRole("row").filter({ has: page.getByRole("button", { name: "Dr. Ali Al-Jubouri" }) });
+  const row = page.getByRole("row").filter({ has: page.getByRole("link", { name: "Dr. Ali Al-Jubouri" }) });
   await expect(row.locator("[data-avatar]")).toHaveText("AJ");
   await row.getByRole("button", { name: "Edit" }).click();
 

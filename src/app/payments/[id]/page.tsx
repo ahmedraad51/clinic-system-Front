@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRecordDialogs } from "@/components/RecordDialogs";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import ClinicLetterhead from "@/components/ClinicLetterhead";
 import ReceiptSlipControls from "@/components/ReceiptSlip";
 import RecordHistory from "@/components/RecordHistory";
-import { MessageCircle, Pencil, Printer, Trash2 } from "lucide-react";
+import { CalendarDays, MessageCircle, Pencil, Printer, Trash2, Wallet } from "lucide-react";
+import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
-import { Button, Card, LinkButton, NotFoundCard, PageContainer, PageHeader, RecordLoading } from "@/components/ui";
+import {
+  Button, Card, DetailLayout, NotFoundCard, PageContainer, PageHeader, ProfileCard, RecordLoading, StatusBadge,
+} from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
@@ -19,8 +23,9 @@ import { deleteDoc, errorMessage, getDoc, getList } from "@/lib/frappe";
 import { formatDate } from "@/lib/format";
 import { currencyOf, planAmountOf, roundMoney } from "@/lib/currency";
 import { useDocument, useOpenBalances } from "@/lib/hooks";
-import { patientHref, paymentHref, routeId, treatmentHref } from "@/lib/links";
+import { patientHref, routeId, treatmentHref } from "@/lib/links";
 import { whatsappLink } from "@/lib/whatsapp";
+import { useDataVersion } from "@/lib/dataVersion";
 import type { Patient, Payment, TreatmentPlan } from "@/lib/types";
 
 export default function PaymentDetailPage() {
@@ -36,6 +41,7 @@ function PaymentDetail() {
   const router = useRouter();
   const toast = useToast();
   const { t } = useI18n();
+  const openDialog = useRecordDialogs();
   const { can, displayName } = useSession();
   const { money, settings, clinicName, countryCode, currency, secondCurrency, rateText, owedText } = useSettings();
   const id = routeId(params.id);
@@ -44,6 +50,8 @@ function PaymentDetail() {
   const [deleting, setDeleting] = useState(false);
   // The patient's phone and what is left to pay, for sending the receipt on WhatsApp.
   const [patientInfo, setPatientInfo] = useState<{ id: string; row: Patient | null } | null>(null);
+  // An edit in the dialog changes what is left: the balance and the slip's figure load again.
+  const saved = useDataVersion();
   const patientId = payment?.patient ?? "";
   const balances = useOpenBalances(patientId ? [patientId] : [], Boolean(secondCurrency));
 
@@ -65,7 +73,7 @@ function PaymentDetail() {
     return () => {
       cancelled = true;
     };
-  }, [patientId]);
+  }, [patientId, saved]);
 
   // For the receipt slip: what was left on the treatment plan right after this payment (later payments do
   // not count, so a reprint shows the same figure). null when it could not be worked out.
@@ -76,7 +84,7 @@ function PaymentDetail() {
   useEffect(() => {
     if (!planId) return;
     let cancelled = false;
-    const key = `${id}|${planId}|${paidOn}`;
+    const key = `${id}|${planId}|${paidOn}|${saved}`;
     const load = async () => {
       let left: number | null = null;
       let planCurrency = "";
@@ -105,7 +113,7 @@ function PaymentDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, planId, paidOn, currency]);
+  }, [id, planId, paidOn, currency, saved]);
 
   if (loading) return <RecordLoading />;
   if (notFound || !payment)
@@ -145,7 +153,7 @@ function PaymentDetail() {
       : "";
 
   // The same receipt for a thermal receipt printer; Print Slip waits until the plan balance has loaded.
-  const balance = planId && planBalance?.key === `${id}|${planId}|${paidOn}` ? planBalance : null;
+  const balance = planId && planBalance?.key === `${id}|${planId}|${paidOn}|${saved}` ? planBalance : null;
   // Two currencies met: the receipt says at what rate, and what the payment took off the plan.
   const payCurrency = currencyOf(payment, currency);
   const planCurrency = balance ? currencyOf(balance, currency) : payCurrency;
@@ -188,13 +196,26 @@ function PaymentDetail() {
   };
 
   return (
-    <PageContainer section="money" narrow>
-      <PageHeader
-        title={p.receiptTitle}
-        subtitle={id}
-        back={{ href: "/payments", label: p.title }}
-        actions={
-          <>
+    <PageContainer section="money">
+      <PageHeader title={p.receiptTitle} subtitle={id} back={{ href: "/payments", label: p.title }} />
+
+      <DetailLayout
+        aside={
+          <ProfileCard
+            avatar={<Avatar name={payment.patient_name || payment.patient} size={96} />}
+            title={
+              <Link href={patientHref(payment.patient)} className="hover:text-primary-600">
+                {payment.patient_name || payment.patient}
+              </Link>
+            }
+            subtitle={<span dir="ltr">{id}</span>}
+            badges={<StatusBadge kind="method" status={payment.payment_method} />}
+            stats={[
+              { icon: Wallet, value: money(payment.amount, payment.currency), label: r.amountPaid, hue: "green" },
+              { icon: CalendarDays, value: formatDate(payment.payment_date), label: r.date, hue: "blue" },
+            ]}
+            actions={
+              <>
             <Button variant="secondary" icon={Printer} onClick={() => window.print()}>
               {t.common.print}
             </Button>
@@ -210,9 +231,9 @@ function PaymentDetail() {
               </a>
             )}
             {canChange && (
-              <LinkButton href={`${paymentHref(id)}/edit`} icon={Pencil}>
+              <Button icon={Pencil} onClick={() => openDialog({ kind: "editPayment", id })}>
                 {t.common.edit}
-              </LinkButton>
+              </Button>
             )}
             {canChange && (
               <Button
@@ -224,10 +245,11 @@ function PaymentDetail() {
                 className="text-red-600 hover:bg-red-50 px-3"
               />
             )}
-          </>
+              </>
+            }
+          />
         }
-      />
-
+      >
       <Card className="print:shadow-none print:border-0">
         <ClinicLetterhead kind={r.kind} reference={id} date={formatDate(payment.payment_date)} />
 
@@ -303,6 +325,7 @@ function PaymentDetail() {
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
       />
+      </DetailLayout>
     </PageContainer>
   );
 }

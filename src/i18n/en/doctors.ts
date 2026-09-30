@@ -48,4 +48,17 @@ export const doctors = {
   finishesAt: "Finishes at",
   activeHint: "Only active doctors can be booked and show in the calendar.",
   cancel: "Cancel",
+  // One doctor's page
+  todayCard: "Today",
+  upcomingCard: "Next 30 days",
+  openPlansCard: "Open treatment plans",
+  noToday: "No appointments today.",
+  noUpcoming: "Nothing booked in the next 30 days.",
+  noOpenPlans: "No open treatment plans.",
+  statToday: "Today",
+  statUpcoming: "Next 30 days",
+  statOpenPlans: "Open plans",
+  inCalendar: "Open in the calendar",
+  newAppointment: "New Appointment",
+  notFoundWhat: "Doctor",
 };
