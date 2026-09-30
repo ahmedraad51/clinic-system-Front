@@ -17,6 +17,12 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Done
 
+- 2026-09-30 - **Arabic checked again in the new look; a full HD screen shows the day at once.** Arabic text,
+  tables and forms now use IBM Plex Sans Arabic, and El Messiri is kept for headings. On a 1920 × 1080 screen at
+  100 % the whole menu fits without scrolling, and the dashboard shows "Needs attention" and today's appointments
+  side by side without scrolling, in English and in Arabic (a browser test checks both). Arabic chart notes say
+  "د.ع" instead of "IQD".
+
 - 2026-09-30 - **A clean, professional look, like the pet store app.** The owner found the "Midnight" design
   AI-made, so it is replaced everywhere by a calm admin look rebuilt in DentClinic's own code (no template files, no
   Vuetify): white cards with small rounded corners and soft shadows on a light grey page, a white menu with the

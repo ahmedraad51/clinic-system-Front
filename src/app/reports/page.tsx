@@ -200,6 +200,8 @@ function Reports() {
     );
 
   const stale = data.key !== key;
+  // "د.ع" in Arabic, the code (IQD) in English.
+  const currencyName = t.dates.currencySymbols[currency] ?? currency;
   const payments = data.payments;
   // Totals in the clinic's currency (each payment at the rate of its day), and what came in, per currency.
   const revenue = payments.reduce((sum, row) => sum + baseAmount(row), 0);
@@ -328,13 +330,13 @@ function Reports() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <Card title={r.revenueChart} icon={TrendingUp} section="money">
             <BarChart
-              label={r.revenueChartLabel(settings.currency || "IQD")}
+              label={r.revenueChartLabel(currencyName)}
               data={revenueSeries}
               format={(value) => formatCompact(value)}
               empty={r.noPayments}
             />
             <p className="text-xs text-gray-500 mt-3">
-              {daily ? r.byDayNote(settings.currency || "IQD") : r.byMonthNote(settings.currency || "IQD")}
+              {daily ? r.byDayNote(currencyName) : r.byMonthNote(currencyName)}
             </p>
           </Card>
           <Card title={daily ? r.visitsChart : r.visitsChartMonths} icon={CalendarDays} section="appointments">

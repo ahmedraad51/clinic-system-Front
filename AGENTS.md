@@ -31,7 +31,7 @@ accurate.
 | `npm run build` | **Passes** (checked 2026-09-30): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-30). `npx tsc --noEmit` passes too. | |
 | Languages | **Arabic (default, right to left) and English.** Every text is in `src/i18n/en/*.ts` and `src/i18n/ar/*.ts`; the switch is in the menu. See **Languages** below. **Every new text must be added in both languages.** | `src/i18n/`, `src/context/LanguageContext.tsx` |
-| Tests | **Playwright tests pass** (147 tests, 10 of them in Arabic, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (149 tests, 11 of them in Arabic, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, phone numbers and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -65,7 +65,7 @@ The Frappe address comes from the `FRAPPE_URL` environment variable (for example
 | Framework | Next.js **16.2.9**, App Router, Turbopack |
 | UI | React **19.2.4**, TypeScript 5 with `strict: true`, path alias `@/*` → `src/*` |
 | Styling | Tailwind CSS **v4** via `@tailwindcss/postcss`. It is CSS-first: no `tailwind.config.*`; the design tokens (the `primary-*` palette and the text scale) are an `@theme` block in `src/app/globals.css` |
-| Font | Poppins for English and El Messiri for Arabic, through `next/font/google` in `layout.tsx` (the `--font-poppins` and `--font-arabic` variables, used by `body` in `globals.css`) |
+| Font | Poppins for English; IBM Plex Sans Arabic for Arabic text, tables and forms, and El Messiri for Arabic headings, through `next/font/google` in `layout.tsx` (the `--font-poppins`, `--font-arabic` and `--font-arabic-headings` variables, used in `globals.css`) |
 | Icons | `lucide-react` everywhere; the tooth logo is our own SVG in `src/components/ToothLogo.tsx` |
 | HTTP | `axios`, one instance in `src/lib/frappe.ts` |
 | State | React Context (auth, settings, session, toasts) and per-page `useState`. No global store, no data-fetching library |
@@ -121,7 +121,7 @@ src/lib/frappe.ts   the only module that touches data
 ```
 src/
 ├── app/
-│   ├── layout.tsx                 root layout: fonts (Poppins, El Messiri), boot scripts, providers, MainLayout
+│   ├── layout.tsx                 root layout: fonts (Poppins, IBM Plex Sans Arabic, El Messiri), boot scripts, providers, MainLayout
 │   ├── page.tsx                   redirect("/dashboard")
 │   ├── not-found.tsx              404 page
 │   ├── globals.css                Tailwind import, body colours, print background
@@ -242,7 +242,7 @@ on the form, and a click made while the save is still running is overridden by t
 | Route | Permission | What it does |
 |---|---|---|
 | `/` | none | Server redirect to `/dashboard` |
-| `/dashboard` | none (cards appear per permission) | A **welcome card** (date, greeting, "2 appointments today, 2 still to come."); right under it the **quick actions** as large `ActionTile`s (New Appointment, Add Patient, New Treatment, Record Payment, each by permission, with a one-line hint from `sm` up); counts for today's appointments, patients, active plans; revenue this month and amount owed; today's list and the next 7 days; a **Needs attention** card (hidden when empty) with past appointments still open, tomorrow's reminders not yet opened, patients due for recall (`dueForRecall` in `src/lib/recall.ts`: the dentist's date, else 6 months) and patients who owe money, each linking to where it is handled; the appointment lists show each patient's initials (`Avatar`). Below, three **charts** (`Charts.tsx`), each by permission: revenue per month for the last 6 months (`view_payments`, amounts written short, "450K"), visits per month (`view_appointments`, cancelled ones and no-shows left out) and treatment plans by type (`view_treatments`, a ring with the 5 biggest types and "Other") |
+| `/dashboard` | none (cards appear per permission) | A **welcome card** (date, greeting, "2 appointments today, 2 still to come."); on a wide screen (xl) today's appointments and **Needs attention** sit side by side right under the numbers, so on a full HD screen (1920 × 1080 at 100 %) they show without scrolling, and the whole menu fits too (`e2e/tests/full-hd.spec.ts`); right under it the **quick actions** as large `ActionTile`s (New Appointment, Add Patient, New Treatment, Record Payment, each by permission, with a one-line hint from `sm` up); counts for today's appointments, patients, active plans; revenue this month and amount owed; today's list and the next 7 days; a **Needs attention** card (hidden when empty) with past appointments still open, tomorrow's reminders not yet opened, patients due for recall (`dueForRecall` in `src/lib/recall.ts`: the dentist's date, else 6 months) and patients who owe money, each linking to where it is handled; the appointment lists show each patient's initials (`Avatar`). Below, three **charts** (`Charts.tsx`), each by permission: revenue per month for the last 6 months (`view_payments`, amounts written short, "450K"), visits per month (`view_appointments`, cancelled ones and no-shows left out) and treatment plans by type (`view_treatments`, a ring with the 5 biggest types and "Other") |
 | `/today` | `view_appointments` | The front desk board: counts (still to come, late, completed, no show), today's appointments grouped by doctor with one-tap **Confirm**, **Completed**, **No show** and **Undo** (`edit_appointments`), late patients (still open `LATE_AFTER` = 10 minutes after the start) highlighted, a red chip for high medical alerts, what the patient owes (`view_payments`), **Add Payment** (`add_payments`), **Walk-in** (books now, rounded up to the quarter hour) and Refresh. **Tomorrow's reminders** (when `enable_whatsapp` is on) lists tomorrow's booked patients with **Send reminder**, which opens `wa.me` with the active "24 Hours Before" template (or the first active one) filled in; opened reminders are remembered on that computer (`localStorage.reminders_opened`). **Lab work due** lists plans sent to a lab and not back that are late or due within two days (`view_treatments`). Below, **Earlier, still open** lists up to 50 past appointments still Scheduled or Confirmed, with Completed / No show / Cancelled buttons; resolved ones drop off. The dashboard and the bell link here |
 | `/patients` | `view_patients` | Server-side search (name, phone, second phone, ID), gender filter, paging. Each row: name with ID, age and gender, medical-alert chips (`medicalFlags`), phone, next booked visit (`view_appointments`, loaded for the rows on the page) and balance (`view_payments`). With `view_payments`, a **Balance** filter ("Owes money": `total_remaining > 0`, biggest first; `?balance=owing` opens on it) adds a WhatsApp **Remind** link with the balance written in |
 | `/recall` | `view_patients` and `view_appointments` | Patients due for a check-up and with nothing Scheduled or Confirmed from today on: a patient with `next_recall_date` (the dentist's choice) is due from that date whatever the period, one with `no_recall` never is, and everyone else is due when no Completed visit falls within the chosen period (3, 6, 9 or 12 months; default 6). A **Check-up due** column says when and why ("Dentist: every 3 months" or "6 months after the last visit"); longest overdue first, never-seen patients last. Tap to call, a WhatsApp link with a ready reminder text (`wa.me/<digits>?text=`), and Book (`add_appointments`). Worked out in the browser from all appointments |
@@ -704,7 +704,7 @@ writing new class lists.
   solid with `shadow-primary`, 40 px (44 px on touch screens), 6 px corners, medium weight; the secondary one outlined.
   Fields outlined (the text colour at 26 %), 2 px clinic colour and a lift on focus, the label small and above.
   Tables plain: small-capital headers in the text colour, thin rows. Pill tabs. Violet clinic colour (#6a5fdd, the
-  design's #7367f0 a touch deeper for readable white text). Poppins, El Messiri for Arabic. No gradients, glows,
+  design's #7367f0 a touch deeper for readable white text). Poppins; IBM Plex Sans Arabic, with El Messiri for Arabic headings. No gradients, glows,
   mascots, drawings or cartoon avatars: people are shown by their initials, or a photo.
 - **Dark mode and the other appearance choices** are per computer (`src/lib/appearance.ts`, `localStorage.appearance`):
   light, dark or the computer's own setting (the theme menu in the top bar, or the Appearance panel), a menu collapsed
@@ -899,9 +899,10 @@ from the translation files, never from text typed in a component.
   `border-s` …), give sideways arrows `rtl:rotate-180`, and slide things in from the start side
   (`-translate-x-full rtl:translate-x-full`). Phone numbers, record IDs, amounts and times in inputs, and the dental
   chart's teeth (anatomical: the patient's right is always on the left) keep `dir="ltr"`.
-- **Fonts.** Poppins for English, El Messiri for Arabic (`next/font`, `--font-poppins` and `--font-arabic`). On
-  Arabic screens `body` lists Poppins first: it has no Arabic letters, so Arabic text is El Messiri and names typed
-  in English stay Poppins (Poppins has `adjustFontFallback: false`: its Arial fallback would otherwise draw the Arabic).
+- **Fonts.** Poppins for English. In Arabic, IBM Plex Sans Arabic for text, tables and forms, and El Messiri only for
+  headings (`h1`-`h4`) (`next/font`: `--font-poppins`, `--font-arabic`, `--font-arabic-headings`). On Arabic screens
+  Poppins comes first: it has no Arabic letters, so Arabic text reaches the Arabic font and names typed in English stay
+  Poppins. The fonts have `adjustFontFallback: false`: an Arial fallback would otherwise draw the Arabic.
 - **WhatsApp templates** have a `language` (`ar`, `en` or empty): `pickTemplate(templates, trigger, lang)` in
   `src/lib/whatsapp.ts` prefers the screen's language. The dummy data has each template in both languages.
 - **Tests.** The browser tests run in English: `e2e/fixtures.ts` sets the language chosen on the computer to `en`

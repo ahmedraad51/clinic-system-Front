@@ -196,7 +196,7 @@
 }
 
 @theme {
-  /* Poppins for English, El Messiri for Arabic (next/font in layout.tsx). */
+  /* Poppins for English; IBM Plex Sans Arabic and El Messiri (headings) for Arabic (next/font in layout.tsx). */
   --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
 
   /* One text scale: 13 px small text, 15 px body. */
@@ -278,10 +278,16 @@ body {
   font-size: 0.9375rem;
 }
 
-/* Arabic screens: El Messiri for Arabic letters; Poppins (which has none) still draws names typed in English. */
+/*
+ * Arabic screens: IBM Plex Sans Arabic for text, tables and forms, El Messiri for headings. Poppins comes first in
+ * both (it has no Arabic letters), so names typed in English keep the English font.
+ */
 :root[lang="ar"] body {
   font-family: var(--font-poppins), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
   letter-spacing: 0;
+}
+:root[lang="ar"] :where(h1, h2, h3, h4) {
+  font-family: var(--font-poppins), var(--font-arabic-headings), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* The page behind the cards. */

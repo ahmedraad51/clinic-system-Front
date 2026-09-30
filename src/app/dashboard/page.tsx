@@ -222,6 +222,7 @@ function Dashboard() {
 
   const stillToCome = data?.today.filter((a) => a.status === "Scheduled" || a.status === "Confirmed").length ?? 0;
   const loadingValue = "…";
+  const attentionShown = Boolean(data && attentionRows(data.attention).length > 0);
   // In the clinic's currency: what is left on a plan in the other currency counts at today's rate.
   const outstanding = (data?.openPlans ?? []).reduce((sum, row) => sum + toMain(row.remaining_amount, row.currency), 0);
 
@@ -338,11 +339,19 @@ function Dashboard() {
             )}
           </div>
 
-          {data && <NeedsAttention attention={data.attention} />}
-
+          {/*
+            What needs doing today. On a wide screen today's appointments and the to-do list sit side by side under the
+            numbers, so both show on a full HD screen without scrolling; the next 7 days follow. On a medium screen the
+            to-do list comes first, then today and the next 7 days side by side.
+          */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-6">
+            {attentionShown && data && (
+              <NeedsAttention attention={data.attention} className="lg:col-span-2 xl:col-span-2 xl:order-2" />
+            )}
           {seeAppointments && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <>
               <Card
+                className={cx("xl:order-1", attentionShown ? "xl:col-span-3" : "xl:col-span-5")}
                 title={mine ? t.dashboard.myTodayCard : t.dashboard.todayCard}
                 icon={Calendar}
                 section="appointments"
@@ -356,6 +365,7 @@ function Dashboard() {
                 <AppointmentList rows={data?.today} empty={t.dashboard.noAppointmentsToday} showDate={false} />
               </Card>
               <Card
+                className="xl:col-span-5 xl:order-3"
                 title={mine ? t.dashboard.myNext7 : t.dashboard.next7}
                 icon={CalendarRange}
                 section="appointments"
@@ -368,21 +378,22 @@ function Dashboard() {
               >
                 <AppointmentList rows={data?.upcoming} empty={t.dashboard.nothingNext7} showDate />
               </Card>
-            </div>
+            </>
           )}
+          </div>
 
           {data && showCharts && (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {data.revenueByMonth && (
                 <Card title={t.dashboard.revenueChart(CHART_MONTHS)} icon={TrendingUp} section="money">
                   <BarChart
-                    label={t.dashboard.revenueChartLabel(currency, CHART_MONTHS)}
+                    label={t.dashboard.revenueChartLabel(t.dates.currencySymbols[currency] ?? currency, CHART_MONTHS)}
                     data={data.revenueByMonth}
                     format={short}
                     highlight={CHART_MONTHS - 1}
                     empty={t.dashboard.noRevenue}
                   />
-                  <p className="text-xs text-gray-500 mt-3">{t.dashboard.revenueNote(currency)}</p>
+                  <p className="text-xs text-gray-500 mt-3">{t.dashboard.revenueNote(t.dates.currencySymbols[currency] ?? currency)}</p>
                 </Card>
               )}
               {data.visitsByMonth && (
@@ -422,7 +433,7 @@ function Dashboard() {
 /** The greeting at the top: the date, "Good morning, …" and a one-line summary of the day, on a plain card. */
 function WelcomeBanner({ title, date, summary, actions }: { title: string; date: string; summary?: string; actions?: ReactNode }) {
   return (
-    <div className={cx(CARD_CLASS, "px-5 py-5 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4")}>
+    <div className={cx(CARD_CLASS, "px-5 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4")}>
       <div className="min-w-0">
         <p className="text-sm text-gray-500">{date}</p>
         <h1 className="text-2xl font-medium text-gray-900 mt-0.5 break-words">{title}</h1>
@@ -490,10 +501,12 @@ function readRemindersOpened(): string[] {
   }
 }
 
-/** A short to-do list for the start of the day. Rows with nothing to do are left out. */
-function NeedsAttention({ attention }: { attention: DashboardData["attention"] }) {
+type AttentionRow = { href: string; icon: typeof CalendarX; hue: Hue; text: string; hint: string };
+
+/** The rows of the to-do list; rows with nothing to do are left out. */
+function attentionRows(attention: DashboardData["attention"]): AttentionRow[] {
   const t = messages().dashboard.attention;
-  const rows: Array<{ href: string; icon: typeof CalendarX; hue: Hue; text: string; hint: string } | null> = [
+  const rows: Array<AttentionRow | null> = [
     attention.openPast
       ? { href: "/today", icon: CalendarX, hue: "yellow", text: t.openPast(attention.openPast), hint: t.openPastHint }
       : null,
@@ -507,11 +520,17 @@ function NeedsAttention({ attention }: { attention: DashboardData["attention"] }
       ? { href: "/patients?balance=owing", icon: Wallet, hue: "red", text: t.owing(attention.owing), hint: t.owingHint }
       : null,
   ];
-  const shown = rows.filter((row) => row !== null);
+  return rows.filter((row) => row !== null);
+}
+
+/** A short to-do list for the start of the day. One column beside today's appointments on a wide screen. */
+function NeedsAttention({ attention, className }: { attention: DashboardData["attention"]; className?: string }) {
+  const t = messages().dashboard.attention;
+  const shown = attentionRows(attention);
   if (shown.length === 0) return null;
   return (
-    <Card title={t.title} flush>
-      <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-2 px-2 pb-2">
+    <Card title={t.title} flush className={className}>
+      <ul className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-x-2 px-2 pb-2">
         {shown.map((row) => (
           <li key={row.text}>
             <Link href={row.href} className="flex items-center gap-3 px-3 sm:px-4 py-3 min-h-11 rounded-xl hover:bg-gray-50">
