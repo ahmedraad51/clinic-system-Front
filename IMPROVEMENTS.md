@@ -10,9 +10,15 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Backlog
 
-1. Phase 4 of the redesign plan (the features from the competitor study), items 5 to 8, in both languages.
+1. Phase 4 of the redesign plan (the features from the competitor study), items 6 to 8, in both languages.
 
 ## Done
+
+- 2026-10-01 - **Print the whole patient file (Phase 4, item 5).** **Print File** on the patient page prints
+  everything about the patient on the clinic letterhead: details, medical information and alerts, the dental chart,
+  treatment plans and sessions, appointments, prescriptions, payments with what is still to pay, and, if ticked, the
+  X-rays and photos. Tick boxes above the page choose what goes on paper; staff only see the parts their
+  permissions allow. English and Arabic. **What to check:** print a patient's file for a referral.
 
 - 2026-10-01 - **QR codes (Phase 4, item 4).** Each patient has a printable **ID card** the size of a bank card
   (the **ID Card** button on the patient page) with the clinic's name, the patient's name and ID, and a QR code. The

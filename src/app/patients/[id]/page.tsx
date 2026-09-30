@@ -290,6 +290,9 @@ function PatientDetail() {
           <LinkButton href={`${patientHref(id)}/card`} variant="secondary" icon={IdCard}>
             {t.qr.card.button}
           </LinkButton>
+          <LinkButton href={`${patientHref(id)}/file`} variant="secondary" icon={Printer}>
+            {t.patientFile.button}
+          </LinkButton>
           {patient.phone_number && (
             <a
               href={`tel:${patient.phone_number.replace(/\s/g, "")}`}

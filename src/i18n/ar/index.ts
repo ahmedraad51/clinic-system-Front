@@ -19,6 +19,7 @@ import { notifications } from "./notifications";
 import { today } from "./today";
 import { waitingRoom } from "./waitingRoom";
 import { qr } from "./qr";
+import { patientFile } from "./patientFile";
 import { whatsapp } from "./whatsapp";
 import { sendWhatsapp } from "./sendWhatsapp";
 import { treatments } from "./treatments";
@@ -67,6 +68,7 @@ export const ar: Messages = {
   today,
   waitingRoom,
   qr,
+  patientFile,
   whatsapp,
   sendWhatsapp,
   treatments,

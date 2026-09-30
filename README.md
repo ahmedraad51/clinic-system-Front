@@ -181,6 +181,7 @@ what they are not allowed to do.
 | `/patients/[id]` | Medical alerts (allergies, blood thinners, diabetes, heart problems, pregnancy), tap-to-call and WhatsApp buttons, last visit, next appointment, the next check-up the dentist chose, and balance, a timeline of visits, treatment sessions and payments, and tabs for appointments, treatment plans, prescriptions, payments and the dental chart, plus X-rays and photos (take a photo with the tablet camera or add files, with a progress bar while they upload), and a History tab (who added and changed the record) |
 | `/patients/[id]/estimate` | A printable treatment estimate of the patient's open plans, with totals and signature lines |
 | `/patients/[id]/statement` | A printable statement of all treatments, payments and the balance |
+| `/patients/[id]/file` | The whole patient file, ready to print: details, medical information, the dental chart, treatment plans and sessions, appointments, prescriptions, payments and, if chosen, the X-rays |
 | `/patients/[id]/card` | A patient ID card the size of a bank card, with a QR code; the **Scan** button in the top bar (or a phone camera) opens the patient's file from it |
 | `/patients/[id]/chart` | The dental chart and its findings, with the patient's QR code, ready to print for the patient file or a referral |
 | `/appointments/[id]/card` | A printable appointment card to hand to the patient |
