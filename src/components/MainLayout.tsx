@@ -10,6 +10,7 @@ import { PageLoading } from "@/components/ui";
 import { loginHref } from "@/lib/links";
 import ReadOnlyBanner from "./ReadOnlyBanner";
 import SessionEndedNotice from "./SessionEndedNotice";
+import SubscriptionNotice from "./SubscriptionNotice";
 import { RecordDialogsProvider } from "./RecordDialogs";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
@@ -70,6 +71,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           {sessionEnded && <SessionEndedNotice />}
           {/* Nothing can be changed (a view-only copy …): said once, above every page. */}
           <ReadOnlyBanner />
+          {/* The plan ends soon, or has ended (still in its grace days). */}
+          <SubscriptionNotice />
           {/* Keyed by the path, so each new page fades in (only for people who have not asked for less motion). */}
           <div key={pathname} className="motion-safe:animate-page-in print:animate-none">
             {children}

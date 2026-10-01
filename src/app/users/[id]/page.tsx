@@ -10,6 +10,7 @@ import {
   SelectInput, Toggle,
 } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { useLimit } from "@/components/LimitDialog";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useToast } from "@/context/ToastContext";
@@ -75,6 +76,7 @@ function UserDetail() {
   const toast = useToast();
   const { user: currentUser } = useAuth();
   const session = useSession();
+  const limit = useLimit();
   const userId = userIdFromRoute(params.id);
   const { doc: userData, loading, notFound, error, reload } = useDocument<User>("User", userId);
 
@@ -200,6 +202,7 @@ function UserDetail() {
           />
         }
       >
+        {limit.dialog}
         <Card title={t.users.account} icon={UserCog}>
           {/* On a view-only copy the account and the permissions can be read, not changed. */}
           <fieldset disabled={Boolean(session.readOnly)} className="min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -217,7 +220,10 @@ function UserDetail() {
               <Toggle
                 checked={enabled}
                 disabled={savingUser || isSelf}
-                onChange={(value) => saveUser({ enabled: value ? 1 : 0 }, value ? t.users.userEnabled : t.users.userDisabled)}
+                onChange={(value) => {
+                  if (value && !limit.check("users")) return;
+                  saveUser({ enabled: value ? 1 : 0 }, value ? t.users.userEnabled : t.users.userDisabled);
+                }}
                 label={enabled ? t.users.accountActive : t.users.accountDisabled}
                 description={isSelf ? t.users.cannotDisableSelf : t.users.disabledCannotLogIn}
               />

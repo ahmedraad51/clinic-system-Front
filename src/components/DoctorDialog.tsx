@@ -5,6 +5,7 @@ import { Camera, Trash2 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import { Alert, Button, Field, PhoneInput, ProgressBar, SelectInput, TextInput, TimeInput, Toggle } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
+import { useSubscription } from "@/context/SubscriptionContext";
 import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
 import { label } from "@/i18n";
@@ -45,6 +46,7 @@ function toForm(doctor: Doctor | null): DoctorForm {
 export default function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doctor | null; onClose: () => void; onSaved: () => void }) {
   const { t } = useI18n();
   const toast = useToast();
+  const { subscription, overLimit } = useSubscription();
   const [form, setForm] = useState<DoctorForm>(() => toForm(doctor));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -88,6 +90,12 @@ export default function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doc
     }
     if (form.start_time && form.end_time && form.end_time <= form.start_time) {
       setError(t.doctors.endAfterStart);
+      return;
+    }
+    // One more active doctor (a new one, or one switched back on) must fit in the plan.
+    const becomesActive = form.is_active && (!doctor || Number(doctor.is_active) !== 1);
+    if (becomesActive && subscription && overLimit("doctors")) {
+      setError(t.plan.limitDoctors(subscription.limits.doctors ?? 0, t.site.plans[subscription.plan].name));
       return;
     }
     setSaving(true);

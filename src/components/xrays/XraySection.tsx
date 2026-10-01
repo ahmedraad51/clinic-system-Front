@@ -6,6 +6,7 @@ import AddImagesDialog from "./AddImagesDialog";
 import CompareView from "./CompareView";
 import ImageViewer from "./ImageViewer";
 import { Button, Card, EmptyState, LoadError, PageLoading, SelectInput, tooltip } from "@/components/ui";
+import { useLimit } from "@/components/LimitDialog";
 import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
 import { label } from "@/i18n";
@@ -49,6 +50,7 @@ export default function XraySection({
   const [dragging, setDragging] = useState(false);
   const [comparing, setComparing] = useState<string[] | null>(null);
   const [showCompare, setShowCompare] = useState(false);
+  const limit = useLimit();
 
   /** Checks the chosen files (kind and size), then asks for their details. */
   const take = (list: File[], fromCamera: boolean) => {
@@ -58,6 +60,8 @@ export default function XraySection({
     const tooBig = list.filter((file) => isAccepted(file) && file.size > MAX_BYTES);
     if (tooBig.length) toast.error(t.files.tooBig(tooBig.map((file) => file.name).join(t.files.separator), MAX_IMAGE_MB));
     const ok = list.filter((file) => isAccepted(file) && file.size <= MAX_BYTES);
+    // They must fit in the plan's room for files.
+    if (ok.length && !limit.check("storage", ok.reduce((sum, file) => sum + file.size, 0) / (1024 * 1024))) return;
     if (ok.length) setAdding({ files: ok, fromCamera });
   };
 
@@ -268,6 +272,7 @@ export default function XraySection({
       {showCompare && pairChosen && (
         <CompareView images={[pairChosen[0], pairChosen[1]]} onClose={() => setShowCompare(false)} />
       )}
+      {limit.dialog}
       {adding && (
         <AddImagesDialog
           patient={patient}

@@ -11,6 +11,7 @@ import {
   TableError, TableLoading, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
+import { useLimit } from "@/components/LimitDialog";
 import { useI18n } from "@/context/LanguageContext";
 import { label } from "@/i18n";
 import { type FilterRow } from "@/lib/frappe";
@@ -33,6 +34,7 @@ export default function DoctorsPage() {
  */
 function DoctorsList() {
   const { readOnly } = useSession();
+  const limit = useLimit();
   const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -58,7 +60,7 @@ function DoctorsList() {
         subtitle={t.doctors.subtitle}
         actions={
           !readOnly && (
-            <Button icon={Plus} onClick={() => setEditing("new")}>
+            <Button icon={Plus} onClick={() => limit.check("doctors") && setEditing("new")}>
               {t.doctors.addDoctor}
             </Button>
           )
@@ -145,6 +147,7 @@ function DoctorsList() {
         {!list.error && <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />}
       </Card>
 
+      {limit.dialog}
       {editing && (
         <DoctorDialog
           doctor={editing === "new" ? null : editing}

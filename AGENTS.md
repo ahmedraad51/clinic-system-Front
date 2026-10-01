@@ -90,7 +90,8 @@ helpers, and `useDeployment()` (`src/context/DeploymentContext.tsx`, the outermo
   reminder marked as sent by `onOpen` stays in its list until it can really be sent; the Today board's reminders card and
   the Send Message dialog also say so in an `Alert`. `internet` comes from the server (`SERVER_METHODS.status` →
   `internet`) in clinic-server mode, and is simply the browser's network everywhere else.
-- **View-only (`useSession().readOnly`):** a reason (`"copy"` on the cloud copy; more come later) or null. While it is
+- **View-only (`useSession().readOnly`):** a reason or null: `"copy"` on the cloud copy, `"subscription"` when the
+  plan ended and its grace days are over (`subscriptionState()` `locked`), `"suspended"` when the platform suspended the clinic. While it is
   set, `can()` refuses every permission that changes data (`add_*`, `edit_*`, `delete_*`), so buttons gated by them
   disappear by themselves. Pages that need only `manage_users` stay readable and check `readOnly` themselves: Doctors,
   Medicines, Users and WhatsApp hide Add and Edit, the activity log hides Restore, Settings and a user's account and
@@ -100,6 +101,15 @@ helpers, and `useDeployment()` (`src/context/DeploymentContext.tsx`, the outermo
   `cloud_copy.last_sync`. As a safety net `createDoc`, `updateDoc`, `deleteDoc`, uploads, Restore and the password
   change throw `ReadOnlyError` before sending anything on a cloud copy. **A new button that changes data must be gated by
   an add/edit/delete permission, or check `readOnly`.**
+- **Plan limits and an ending plan:** `useLimit()` (`src/components/LimitDialog.tsx`) gives `check(kind, addMb)`, true
+  when one more doctor, user or `addMb` of files fits (`useSubscription().overLimit()`), else it opens `LimitDialog`
+  ("Your plan's limit", why, and for the manager **Request an Upgrade** and **See Your Plan**); render its `dialog`.
+  Checked on Add Doctor and Add User (their pages and the setup wizard), switching a user back on, X-ray uploads (the
+  files' size), and in `DoctorDialog` when a doctor becomes active. `SubscriptionNotice` (in `MainLayout`): the
+  manager sees when the plan or trial ends within `WARN_DAYS` (closable for the day, `localStorage.plan_notice_hidden`),
+  and everyone sees an ended plan in its `GRACE_DAYS` with the day it becomes view-only; after that `ReadOnlyBanner`
+  says "View-only: the plan has ended" (with **Renew** for the manager) or "this clinic is suspended". Tests set
+  `window.__mockPlanLimits` and `window.__mockSubscription` before the app loads (`e2e/tests/limits.spec.ts`).
 - **Connectivity** (`src/context/ConnectivityContext.tsx`, `useConnectivity()`): `browserOnline`, `server` (`ok`,
   `unreachable`, `checking`: every request reports through `onConnectionChange()` in `src/lib/frappe.ts`), `internet`,
   and `status` (the server's answer about itself: its clock, the internet, the cloud copy), asked every 30 seconds (10
@@ -247,6 +257,8 @@ src/
 │   ├── AddUserDialog.tsx     add a staff user (name, email, password, role and its usual permissions); Users and the setup wizard
 │   ├── SettingsNav.tsx       the pills above the Settings pages (Settings, Plan …)
 │   ├── UpgradeDialog.tsx     ask the platform for another plan (Plan page, and every "plan's limit" notice)
+│   ├── LimitDialog.tsx       "Your plan's limit" and useLimit() (check before adding a doctor, user or files)
+│   ├── SubscriptionNotice.tsx the plan ends soon (manager) or has ended and is in its grace days (everyone)
 │   ├── WhatsAppButton.tsx    every wa.me link: "Needs internet" (and nothing marked as sent) while there is none
 │   ├── ReadOnlyBanner.tsx    "View-only copy, last updated …" above every page while useSession().readOnly is set
 │   ├── SendWhatsAppDialog.tsx a WhatsApp message by hand from a template (opens wa.me)

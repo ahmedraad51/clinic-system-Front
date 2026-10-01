@@ -12,6 +12,7 @@ import {
   SearchInput, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
 import { useSession } from "@/context/SessionContext";
+import { useLimit } from "@/components/LimitDialog";
 import { useI18n } from "@/context/LanguageContext";
 import type { FilterRow } from "@/lib/frappe";
 import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
@@ -31,6 +32,7 @@ const HIDDEN_USERS: FilterRow = ["name", "not in", ["Administrator", "Guest"]];
 function UsersList() {
   const { readOnly } = useSession();
   const router = useRouter();
+  const limit = useLimit();
   const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -55,7 +57,7 @@ function UsersList() {
         subtitle={t.users.subtitle}
         actions={
           !readOnly && (
-            <Button icon={UserPlus} onClick={() => setShowAdd(true)}>
+            <Button icon={UserPlus} onClick={() => limit.check("users") && setShowAdd(true)}>
               {t.users.addUser}
             </Button>
           )
@@ -127,6 +129,7 @@ function UsersList() {
         {!list.error && <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />}
       </Card>
 
+      {limit.dialog}
       {showAdd && <AddUserDialog onClose={() => setShowAdd(false)} onAdded={(user) => router.push(userHref(user.name))} />}
     </PageContainer>
   );

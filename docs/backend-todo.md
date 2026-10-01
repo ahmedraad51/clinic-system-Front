@@ -1105,3 +1105,15 @@ serves all three; what each mode needs from the back end is listed below, item b
   (a Plan Change Request: clinic, from plan, plan, note, date) and tells the platform owner.
 - The published plans and prices are in `src/config/sales.ts`; a clinic's own `limits` and `price` may differ (a
   discount, a bigger limit) and are the ones that count.
+
+### Plan limits and an ended plan (every mode)
+
+- **The server must refuse what goes over the limits**, whatever the screens do: a new active Doctor (or one switched
+  back on) beyond `limits.doctors`, a new enabled User beyond `limits.users`, and a File upload that takes
+  `usage.storage_mb` beyond `limits.storageGb × 1024` ("Your plan has room for … "). The front end checks first and
+  explains, with a Request an Upgrade button.
+- **An ended plan:** from `paid_until` (or `trial_ends_on`) + 1 day the status is `ended`; for `grace_days` (7) after
+  that everything still works and every user sees when it becomes view-only; after them the site refuses every
+  insert, update and delete (the same hook as the cloud copy, see above), but still allows reading, logging in,
+  `request_change`, and the Plan page. `suspended` (set by the platform owner) is view-only at once. Nothing is ever
+  deleted because a plan ended.

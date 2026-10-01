@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { useAuth } from "./AuthContext";
 import { useDeployment } from "./DeploymentContext";
+import { useSubscription } from "./SubscriptionContext";
 import { getDoc, getList } from "@/lib/frappe";
 import { CLINIC_ROLES, PERMISSION_KEYS, type ClinicPermission, type Doctor, type PermissionKey, type User } from "@/lib/types";
 
@@ -20,9 +21,11 @@ type Perms = Record<PermissionKey, boolean>;
 
 /**
  * Why nothing can be changed right now, or null when things can be changed:
- * - "copy": this is the cloud copy of a clinic server (DEPLOYMENT_MODE=cloud-copy), for viewing only.
+ * - "copy": this is the cloud copy of a clinic server (DEPLOYMENT_MODE=cloud-copy), for viewing only;
+ * - "subscription": the clinic's plan ended and its grace days are over (subscriptionState() "locked");
+ * - "suspended": the platform suspended the clinic.
  */
-export type ReadOnlyReason = "copy";
+export type ReadOnlyReason = "copy" | "subscription" | "suspended";
 
 /** The permissions that change data (add_, edit_, delete_ …): all off while the app is read-only. */
 const changesData = (permission: PermissionKey) => /^(add|edit|delete)_/.test(permission);
@@ -72,6 +75,7 @@ const allPerms = (value: boolean): Perms =>
 export function SessionProvider({ children }: { children: ReactNode }) {
   const { user, loginCount } = useAuth();
   const { mode } = useDeployment();
+  const { state: plan } = useSubscription();
   const [state, setState] = useState<SessionState | null>(null);
   const [version, setVersion] = useState(0);
 
@@ -126,7 +130,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const roles = current?.roles ?? [];
     const isSuperUser = user === "Administrator" || roles.includes("System Manager");
     const clinicRole = CLINIC_ROLES.find((role) => roles.includes(role));
-    const readOnly: ReadOnlyReason | null = mode === "cloud-copy" ? "copy" : null;
+    const readOnly: ReadOnlyReason | null =
+      mode === "cloud-copy" ? "copy" : plan?.suspended ? "suspended" : plan?.phase === "locked" ? "subscription" : null;
     return {
       profile: current?.profile ?? null,
       roles,
@@ -139,7 +144,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       loading: Boolean(user) && !current,
       refresh,
     };
-  }, [state, user, refresh, mode]);
+  }, [state, user, refresh, mode, plan]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

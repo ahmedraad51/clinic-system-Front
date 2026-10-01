@@ -14,6 +14,7 @@ import {
   Alert, Button, Card, EmptyState, Field, LinkButton, NumberInput, PageContainer, PageHeader, PhoneInput, ProgressBar,
   SelectInput, SuggestInput, TextInput, TimeInput,
 } from "@/components/ui";
+import { useLimit } from "@/components/LimitDialog";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -414,6 +415,7 @@ function HoursStep({ settings, footer }: StepProps) {
 
 function DoctorsStep({ footer }: StepProps) {
   const { t } = useI18n();
+  const limit = useLimit();
   const [doctors, setDoctors] = useState<Doctor[] | null>(null);
   const [adding, setAdding] = useState(false);
   const [version, setVersion] = useState(0);
@@ -443,9 +445,10 @@ function DoctorsStep({ footer }: StepProps) {
           avatar: <Avatar name={d.full_name} gender={d.gender} photo={d.photo} role="doctor" size={36} />,
         }))}
       />
-      <Button variant="secondary" icon={Plus} onClick={() => setAdding(true)}>
+      <Button variant="secondary" icon={Plus} onClick={() => limit.check("doctors") && setAdding(true)}>
         {t.doctors.addDoctor}
       </Button>
+      {limit.dialog}
       {adding && (
         <DoctorDialog
           doctor={null}
@@ -493,6 +496,7 @@ function PricesStep({ settings, footer }: StepProps) {
 
 function StaffStep({ footer }: StepProps) {
   const { t } = useI18n();
+  const limit = useLimit();
   const [users, setUsers] = useState<User[] | null>(null);
   const [adding, setAdding] = useState(false);
   const [version, setVersion] = useState(0);
@@ -523,13 +527,14 @@ function StaffStep({ footer }: StepProps) {
         }))}
       />
       <div className="flex flex-wrap gap-3">
-        <Button variant="secondary" icon={UserPlus} onClick={() => setAdding(true)}>
+        <Button variant="secondary" icon={UserPlus} onClick={() => limit.check("users") && setAdding(true)}>
           {t.users.addUser}
         </Button>
         <Link href="/users" className="inline-flex items-center min-h-11 px-2 text-sm text-primary-700 hover:underline">
           {t.nav.users}
         </Link>
       </div>
+      {limit.dialog}
       {adding && (
         <AddUserDialog
           onClose={() => setAdding(false)}
