@@ -43,5 +43,8 @@ export const license = {
   whatsapp: "WhatsApp Us",
   whatsappText: (clinic: string, serverId: string) => `Hello, this is ${clinic}. We would like to renew our DentClinic license. Server ID: ${serverId}`,
   loadFailed: "Could not load the license.",
+  /** The banner across the app once a clinic server's licence has ended past its grace days. */
+  lockedTitle: "View-only: the license has ended",
+  lockedBanner: "Everything can still be seen, but nothing can be added or changed until a new license key is entered. No data is lost.",
   cloudOnly: "Your clinic runs in the DentClinic cloud and needs no license: see Plan.",
 };

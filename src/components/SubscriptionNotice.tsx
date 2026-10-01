@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { CalendarClock, X } from "lucide-react";
 import { LinkButton } from "@/components/ui";
+import { useDeployment } from "@/context/DeploymentContext";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useSubscription } from "@/context/SubscriptionContext";
@@ -31,6 +32,8 @@ const hiddenToday = () => {
  */
 export default function SubscriptionNotice() {
   const { t } = useI18n();
+  // A clinic server renews with a new licence key; the cloud through the Plan page.
+  const renewHref = useDeployment().mode === "cloud" ? "/settings/plan" : "/settings/license";
   const p = t.plan;
   const { can, readOnly } = useSession();
   const { subscription, state } = useSubscription();
@@ -70,7 +73,7 @@ export default function SubscriptionNotice() {
         <CalendarClock size={20} className={urgent ? "shrink-0 text-red-700" : "shrink-0 text-yellow-800"} aria-hidden="true" />
         <p className="flex-1 min-w-[12rem] text-sm text-gray-900">{text}</p>
         {manager && (
-          <LinkButton href="/settings/plan" size="sm" variant={urgent ? "primary" : "secondary"}>
+          <LinkButton href={renewHref} size="sm" variant={urgent ? "primary" : "secondary"}>
             {p.renew}
           </LinkButton>
         )}

@@ -3,6 +3,7 @@
 import { Eye, Lock } from "lucide-react";
 import { LinkButton } from "@/components/ui";
 import { useConnectivity } from "@/context/ConnectivityContext";
+import { useDeployment } from "@/context/DeploymentContext";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { formatDateTime } from "@/lib/format";
@@ -16,6 +17,8 @@ export default function ReadOnlyBanner() {
   const { readOnly, can } = useSession();
   const { status } = useConnectivity();
   const { t } = useI18n();
+  // A clinic server renews with a new licence key; the cloud through the Plan page.
+  const renewHref = useDeployment().mode === "cloud" ? "/settings/plan" : "/settings/license";
   if (!readOnly) return null;
   const a = t.access;
   const copy = status?.cloud_copy;
@@ -29,6 +32,10 @@ export default function ReadOnlyBanner() {
   } else if (readOnly === "suspended") {
     title = t.plan.suspendedTitle;
     lines = [t.plan.suspendedText];
+  } else if (renewHref === "/settings/license") {
+    // A clinic server runs on its licence.
+    title = t.license.lockedTitle;
+    lines = [t.license.lockedBanner];
   } else {
     title = t.plan.lockedTitle;
     lines = [t.plan.lockedText];
@@ -54,7 +61,7 @@ export default function ReadOnlyBanner() {
           ))}
         </div>
         {readOnly === "subscription" && can("manage_users") && (
-          <LinkButton href="/settings/plan" size="sm">
+          <LinkButton href={renewHref} size="sm">
             {t.plan.renew}
           </LinkButton>
         )}

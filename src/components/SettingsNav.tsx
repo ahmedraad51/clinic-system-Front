@@ -2,17 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useDeployment } from "@/context/DeploymentContext";
 import { useI18n } from "@/context/LanguageContext";
 import { cx } from "@/lib/format";
 
-/** The pages under Settings, as pills above each of them. */
+/** The pages under Settings, as pills above each of them. License is only for a clinic server (and its copy). */
 export default function SettingsNav() {
   const { t } = useI18n();
   const pathname = usePathname();
+  const { mode } = useDeployment();
   const pages = [
     { href: "/settings", label: t.plan.nav.settings },
     { href: "/settings/plan", label: t.plan.nav.plan },
     { href: "/settings/server", label: t.backup.nav },
+    ...(mode === "cloud" ? [] : [{ href: "/settings/license", label: t.license.nav }]),
   ];
   return (
     <nav aria-label={t.plan.navLabel} className="flex flex-wrap gap-1 mb-6 print:hidden">

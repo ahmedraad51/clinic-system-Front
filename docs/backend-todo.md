@@ -1165,3 +1165,23 @@ only (a new Role; a clinic's System Manager must not have it), and refuses every
   patient's data.
 - **`dent_app.api.server.status`** (see above) also gives the Server card its clock and version, and the Cloud Copy card
   its status, last update, error and address.
+
+### The licence of a clinic server (clinic server and its cloud copy)
+
+- A clinic server runs on a **licence key** (`DCL-XXXX-XXXX-XXXX-XXXX`, `LICENSE_KEY_PATTERN` in `src/lib/license.ts`)
+  that the platform makes for one computer: a signed token (for example Ed25519; the clinic server holds only the
+  public key) of the clinic name, plan, limits, issue date, last valid day and the **server ID** (a fingerprint of that
+  computer, e.g. from its machine ID and disk serial, shown as `SRV-XXXX-XXXX`). It is checked **on the server, with no
+  internet**: the signature, the server ID, and the day (keep the latest date ever seen, so turning the clock back does
+  not help). The 20-character key is a reference the platform can turn into the full token when the server is online;
+  if keys must work fully offline, make them longer or offer a licence file as well.
+- **`dent_app.api.license.status`** (any logged-in user on a clinic server or its copy): `LicenseStatus`: `key` with its
+  middle hidden, `clinic_name`, `plan`, `issued_on`, `expires_on`, `status` (`valid`, `expired`, `invalid`: not this
+  server's, or tampered with), `grace_days` (7), `server_id`.
+- **`dent_app.api.license.activate`** (`key`; `manage_users`; **allowed while the app is view-only** because the licence
+  ended, refused on the cloud copy): checks the key as above, saves it, and answers the new `LicenseStatus`; a wrong
+  key or one for another computer is refused in words ("This license key is not right for this server…").
+- The clinic server's **subscription** (`dent_app.api.subscription.status`) comes from its licence: `plan`, `limits`,
+  `status` `active` or `ended`, `paid_until` = `expires_on`, `grace_days`. So the notices 14 days before, the grace
+  days and view-only after work as in the cloud (see Plan limits and an ended plan), and the cloud copy shows the
+  same. The screens send the manager to Settings → License to renew there.
