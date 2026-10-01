@@ -5,7 +5,7 @@ import { demoFlag } from "./demo";
 import { addDays, todayISO } from "./format";
 import { mockGetCount, mockGetList } from "./mockData";
 import {
-  PAYMENT_CHANNELS, PLATFORM_METHODS, type ChangeRequest, type ClinicAccount, type PaymentChannel, type PlatformPayment,
+  PAYMENT_CHANNELS, PLATFORM_METHODS, paidUntilAfter, type ChangeRequest, type ClinicAccount, type PaymentChannel, type PlatformPayment,
   type TrialRequest, type TrialRequestDoc,
 } from "./platform";
 import { SERVER_METHODS, type ServerStatus } from "./server";
@@ -27,16 +27,6 @@ export function frappeDateTime(date: Date): string {
 }
 
 const minutesAgo = (minutes: number) => frappeDateTime(new Date(Date.now() - minutes * 60_000));
-
-/** A date a number of months later, kept inside the month ("2026-01-31" + 1 → "2026-02-28"). */
-export function addMonths(iso: string, months: number): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  const total = y * 12 + (m - 1) + months;
-  const year = Math.floor(total / 12);
-  const month = (total % 12) + 1;
-  const last = new Date(year, month, 0).getDate();
-  return `${year}-${String(month).padStart(2, "0")}-${String(Math.min(d, last)).padStart(2, "0")}`;
-}
 
 /* --- The server --------------------------------------------------------------------------------------------------- */
 
@@ -66,6 +56,7 @@ let clinics: ClinicAccount[] | null = null;
 let payments: PlatformPayment[] = [];
 const trialRequests: TrialRequestDoc[] = [];
 const changeRequests: ChangeRequest[] = [];
+let changeCount = 1;
 
 /** Made on first use, so the dates count from "today" (the tests fix the clock). */
 function platformClinics(): ClinicAccount[] {
@@ -75,25 +66,34 @@ function platformClinics(): ClinicAccount[] {
   clinics = [
     {
       name: CURRENT, clinic_name: "DentClinic", address: "demo", plan: "cloud", status: "active", manager_email: "laith.hamid@dentclinic.test",
-      created_on: "2026-01-10", trial_ends_on: "2026-01-24", paid_until: addDays(today, 40), usage: usage(0, 0, 0), last_payment_on: addDays(today, -20),
+      created_on: "2026-01-10", trial_ends_on: "2026-01-24", paid_until: addDays(today, 40), limits: PLANS["cloud"].limits, usage: usage(0, 0, 0), last_payment_on: addDays(today, -20),
     },
     {
       name: "CLN-00002", clinic_name: "عيادة النور لطب الأسنان", address: "alnoor", plan: "server-cloud", status: "active", manager_email: "manager@alnoor.example",
-      created_on: "2025-11-02", trial_ends_on: null, paid_until: "2027-03-31", usage: usage(6, 12, 8400), last_payment_on: "2026-04-01",
+      created_on: "2025-11-02", trial_ends_on: null, paid_until: "2027-03-31", limits: PLANS["server-cloud"].limits, usage: usage(6, 12, 8400), last_payment_on: "2026-04-01",
     },
     {
       name: "CLN-00003", clinic_name: "مركز بسمة لطب الأسنان", address: "basma", plan: "cloud", status: "trial", manager_email: "basma.center@example.com",
-      created_on: addDays(today, -9), trial_ends_on: addDays(today, TRIAL_DAYS - 9), paid_until: null, usage: usage(2, 3, 120), last_payment_on: null,
+      created_on: addDays(today, -9), trial_ends_on: addDays(today, TRIAL_DAYS - 9), paid_until: null, limits: PLANS["cloud"].limits, usage: usage(2, 3, 120), last_payment_on: null,
     },
     {
       name: "CLN-00004", clinic_name: "عيادة الرافدين", address: "rafidain", plan: "cloud", status: "suspended", manager_email: "rafidain@example.com",
-      created_on: "2025-12-15", trial_ends_on: null, paid_until: addDays(today, -30), usage: usage(3, 4, 950), last_payment_on: "2026-07-26",
+      created_on: "2025-12-15", trial_ends_on: null, paid_until: addDays(today, -30), limits: PLANS["cloud"].limits, usage: usage(3, 4, 950), last_payment_on: "2026-07-26",
     },
     {
       name: "CLN-00005", clinic_name: "Smile Dental Erbil", address: "smile-erbil", plan: "cloud", status: "ended", manager_email: "owner@smile-erbil.example",
-      created_on: "2026-03-01", trial_ends_on: null, paid_until: addDays(today, -3), usage: usage(4, 6, 2300), last_payment_on: addDays(today, -33),
+      created_on: "2026-03-01", trial_ends_on: null, paid_until: addDays(today, -3), limits: PLANS["cloud"].limits, usage: usage(4, 6, 2300), last_payment_on: addDays(today, -33),
     },
   ];
+  trialRequests.push({
+    name: "TRQ-00001", clinic_name: "عيادة الكرادة لطب الأسنان", contact_name: "د. سارة جميل", phone: "0771 456 7788", city: "بغداد",
+    email: "sara.jameel@example.com", plan: "cloud", address: "karrada", message: "نريد تجربة النظام في عيادتنا قبل نهاية الشهر.",
+    language: "ar", creation: minutesAgo(26 * 60), status: "New",
+  });
+  changeRequests.push({
+    name: "PCR-00001", clinic: "CLN-00003", clinic_name: "مركز بسمة لطب الأسنان", from_plan: "cloud", plan: "server-cloud",
+    note: "نريد أن تعمل العيادة بلا إنترنت.", requested_on: addDays(today, -2),
+  });
   payments = [
     { name: "PPY-00003", clinic: CURRENT, clinic_name: "DentClinic", amount: 90_000, currency: "IQD", method: "Qi Card", paid_on: addDays(today, -20), periods: 2, reference: "QI-73001", paid_until: addDays(today, 40) },
     { name: "PPY-00002", clinic: "CLN-00004", clinic_name: "عيادة الرافدين", amount: 45_000, currency: "IQD", method: "Zain Cash", paid_on: "2026-07-26", periods: 1, reference: "ZC-55102", paid_until: addDays(today, -30) },
@@ -137,7 +137,7 @@ async function subscriptionStatus(): Promise<Subscription> {
     trial_ends_on: account.trial_ends_on,
     paid_until: account.paid_until,
     grace_days: GRACE_DAYS,
-    limits: { ...plan.limits, ...overrides.limits },
+    limits: { ...account.limits, ...overrides.limits },
     usage: await currentUsage(),
     price: plan.price,
     currency: plan.currency,
@@ -154,7 +154,7 @@ function requestChange(args: Args): string {
   const account = platformClinics().find((c) => c.name === CURRENT)!;
   const index = changeRequests.findIndex((r) => r.clinic === CURRENT);
   if (index >= 0) changeRequests.splice(index, 1);
-  const name = `PCR-${String(changeRequests.length + 1).padStart(5, "0")}`;
+  const name = `PCR-${String(++changeCount).padStart(5, "0")}`;
   changeRequests.unshift({
     name, clinic: CURRENT, clinic_name: account.clinic_name, from_plan: account.plan, plan, note: String(args.note ?? ""), requested_on: todayISO(),
   });
@@ -181,9 +181,12 @@ function createClinic(args: Args): ClinicAccount {
   const account: ClinicAccount = {
     name: `CLN-${String(platformClinics().length + 1).padStart(5, "0")}`,
     clinic_name: clinicName, address, plan, status: "trial", manager_email: email, created_on: today,
-    trial_ends_on: addDays(today, TRIAL_DAYS), paid_until: null, usage: { doctors: 0, users: 1, storage_mb: 0 }, last_payment_on: null,
+    trial_ends_on: addDays(today, TRIAL_DAYS), paid_until: null, limits: PLANS[plan].limits, usage: { doctors: 0, users: 1, storage_mb: 0 }, last_payment_on: null,
   };
   platformClinics().push(account);
+  // Made from a free-trial request: that request has now started.
+  const request = trialRequests.find((r) => r.name === args.trial_request);
+  if (request) request.status = "Started";
   return account;
 }
 
@@ -198,9 +201,7 @@ function recordPayment(args: Args): PlatformPayment {
   if (!(amount > 0)) throw new Error(e.amount);
   if (!PAYMENT_CHANNELS.includes(method)) throw new Error(e.method);
   if (!(periods >= 1 && periods <= 36)) throw new Error(e.periods);
-  // From the end of what is paid already, or from the payment's day when that has passed.
-  const from = account.paid_until && account.paid_until >= paidOn ? account.paid_until : addDays(paidOn, -1);
-  const paidUntil = addMonths(from, periods * (PLANS[account.plan].period === "year" ? 12 : 1));
+  const paidUntil = paidUntilAfter(account, paidOn, periods);
   account.paid_until = paidUntil;
   account.last_payment_on = paidOn;
   if (account.status !== "suspended") account.status = "active";
@@ -230,6 +231,7 @@ function requestTrial(args: Args): string {
   if (!String(request.clinic_name ?? "").trim() || !String(request.contact_name ?? "").trim() || !String(request.phone ?? "").trim()) {
     throw new Error(e.required);
   }
+  platformClinics();
   const name = `TRQ-${String(trialRequests.length + 1).padStart(5, "0")}`;
   trialRequests.unshift({ ...request, name, creation: frappeDateTime(new Date()), status: "New" });
   return name;
@@ -260,8 +262,10 @@ export async function mockPlatformCall(method: string, args: Args): Promise<unkn
       platformClinics();
       return args.clinic ? payments.filter((p) => p.clinic === args.clinic) : payments;
     case PLATFORM_METHODS.trialRequests:
+      platformClinics();
       return trialRequests;
     case PLATFORM_METHODS.changeRequests:
+      platformClinics();
       return changeRequests;
     default:
       throw new Error(messages().errors.mock.noMethod(method));

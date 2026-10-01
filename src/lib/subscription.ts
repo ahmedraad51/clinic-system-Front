@@ -57,7 +57,10 @@ export interface SubscriptionState {
 
 const daysBetween = (from: string, to: string) => Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);
 
-export function subscriptionState(sub: Subscription | null, today = todayISO()): SubscriptionState | null {
+export function subscriptionState(
+  sub: Pick<Subscription, "status" | "trial_ends_on" | "paid_until" | "grace_days"> | null,
+  today = todayISO(),
+): SubscriptionState | null {
   if (!sub) return null;
   if (sub.status === "suspended") return { phase: "locked", endsOn: null, daysLeft: null, lockOn: null, suspended: true };
   const endsOn = sub.status === "trial" ? sub.trial_ends_on : sub.paid_until;

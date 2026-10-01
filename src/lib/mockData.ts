@@ -303,7 +303,7 @@ const payments: MockDoc[] = [
 ];
 
 const users: MockDoc[] = [
-  { name: "Administrator", full_name: "Administrator", first_name: "Administrator", email: "admin@dentclinic.test", enabled: 1, roles: [{ role: "System Manager" }] },
+  { name: "Administrator", full_name: "Administrator", first_name: "Administrator", email: "admin@dentclinic.test", enabled: 1, roles: [{ role: "System Manager" }, { role: "Platform Owner" }] },
   { name: "Guest", full_name: "Guest", first_name: "Guest", email: "guest@dentclinic.test", enabled: 1, roles: [] },
   { name: "laith.hamid@dentclinic.test", full_name: "ليث حامد", first_name: "ليث", gender: "Male", email: "laith.hamid@dentclinic.test", enabled: 1, roles: [{ role: "Clinic Manager" }] },
   { name: "dalia.jawad@dentclinic.test", full_name: "داليا جواد", first_name: "داليا", gender: "Female", email: "dalia.jawad@dentclinic.test", enabled: 1, roles: [{ role: "Clinic Receptionist" }] },

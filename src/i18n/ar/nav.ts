@@ -18,6 +18,7 @@ export const nav: Messages["nav"] = {
   activity: "سجل النشاط",
   exportData: "تصدير البيانات",
   settings: "الإعدادات",
+  platform: "المنصة",
   profile: "الملف الشخصي",
   logout: "تسجيل الخروج",
   openMenu: "فتح القائمة",

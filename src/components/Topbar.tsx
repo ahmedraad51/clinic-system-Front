@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Languages, LogOut, Menu, Monitor, Moon, Palette, Settings, Sun, User, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useDeployment } from "@/context/DeploymentContext";
 import { useSession } from "@/context/SessionContext";
 import { useI18n } from "@/context/LanguageContext";
 import { LANG_NAMES, LANGS, label } from "@/i18n";
@@ -84,6 +85,7 @@ const MODE_ICONS: Record<ThemeMode, LucideIcon> = { light: Sun, dark: Moon, syst
 export default function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
   const { logout, authDisabled } = useAuth();
   const { can, displayName, roleLabel } = useSession();
+  const { mainAddress } = useDeployment();
   const router = useRouter();
   const [profileOpen, setProfileOpen] = useState(false);
   // Open again when the panel itself changed the language (which drew the top bar again).
@@ -110,8 +112,9 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
             <button type="button" onClick={onOpenMenu} className={cx(TOP_ICON_BUTTON, "lg:hidden")} aria-label={t.nav.openMenu}>
               <Menu size={24} />
             </button>
-            <GlobalSearch />
-            {can("view_patients") && <ScanPatientButton />}
+            {/* The cloud's main address has no patients: only the platform's pages are there. */}
+            {!mainAddress && <GlobalSearch />}
+            {!mainAddress && can("view_patients") && <ScanPatientButton />}
           </div>
 
           <div className="flex items-center gap-0.5 sm:gap-1">
@@ -164,7 +167,7 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
               )}
             </Dropdown>
 
-            {can("view_appointments") && <NotificationBell />}
+            {!mainAddress && can("view_appointments") && <NotificationBell />}
 
             <button
               type="button"

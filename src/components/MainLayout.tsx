@@ -17,7 +17,10 @@ import Topbar from "./Topbar";
 
 /** Pages anyone may open, with no login and no menu: the public website. */
 export const PUBLIC_PATHS = ["/site"];
-const isPublicPath = (path: string) => PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
+/** The pages of the cloud's main address besides the website: the platform owner's (they log in there). */
+export const PLATFORM_PATHS = ["/platform", "/profile"];
+const under = (paths: string[], path: string) => paths.some((p) => path === p || path.startsWith(`${p}/`));
+const isPublicPath = (path: string) => under(PUBLIC_PATHS, path);
 
 /**
  * The shell around every page, and the one place that sends logged-out visitors to /login.
@@ -33,8 +36,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const isLoginPage = pathname === "/login";
   const isPublic = isPublicPath(pathname);
-  // The cloud's main address names no clinic: only the public website lives there.
-  const offSite = mainAddress && !isPublic;
+  // The cloud's main address names no clinic: only the public website and the platform owner's pages live there.
+  const offSite = mainAddress && !isPublic && !isLoginPage && !under(PLATFORM_PATHS, pathname);
   const mustLogin = !isLoading && !user && !isLoginPage && !isPublic && !offSite;
 
   useEffect(() => {

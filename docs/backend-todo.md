@@ -1117,3 +1117,31 @@ serves all three; what each mode needs from the back end is listed below, item b
   insert, update and delete (the same hook as the cloud copy, see above), but still allows reading, logging in,
   `request_change`, and the Plan page. `suspended` (set by the platform owner) is view-only at once. Nothing is ever
   deleted because a plan ended.
+
+### The platform owner's area (the platform's site)
+
+Every method below is on the platform's own site (`PLATFORM_SITE_URL`), whitelisted for the **Platform Owner** role
+only (a new Role; a clinic's System Manager must not have it), and refuses everyone else. The shapes are in
+`src/lib/platform.ts`.
+
+- **`dent_app.platform.clinics`**: every **Clinic Account** (`CLN-.#####`): `clinic_name`, `address` (the web address
+  name, unique, `isValidClinicAddress()`), `plan`, `status` (`trial`, `active`, `ended`, `suspended`, worked out for
+  today: a trial or paid time that is over is `ended`), `manager_email`, `created_on`, `trial_ends_on`, `paid_until`,
+  `limits` (`doctors`, `users`, `storageGb`; the plan's unless changed for this clinic), `usage` (asked from each clinic
+  site, or kept by a nightly job) and `last_payment_on`.
+- **`dent_app.platform.create_clinic`** (`clinic_name`, `address`, `plan`, `manager_email`, optional `trial_request`):
+  checks the address (rule and not taken), makes the bench site `<address>.CLOUD_DOMAIN` with `dent_app` installed
+  (a background job: `bench new-site`, then `install-app`), its Clinic Subscription (trial of `TRIAL_DAYS` = 14 days)
+  and the manager's User with the Clinic Manager role and full Clinic Permission, and emails them a link to set a
+  password. Marks the Trial Request `Started`. Returns the Clinic Account.
+- **`dent_app.platform.record_payment`** (`clinic`, `amount` > 0, `currency`, `method`: Zain Cash, FastPay, Qi Card,
+  Bank Transfer or Cash, `paid_on`, `periods` 1-36, `reference`): saves a **Platform Payment** (`PPY-.#####`) and moves
+  `paid_until` on by `periods` months (years on a yearly plan) from the last paid day, or from the day before
+  `paid_on` when that has passed (`paidUntilAfter()` in `src/lib/platform.ts`, the same rule); a clinic on trial
+  becomes `active`; a suspended one stays suspended. Writes the clinic site's Clinic Subscription. Returns the payment
+  with its new `paid_until`.
+- **`dent_app.platform.set_suspended`** (`clinic`, `suspended` 0 or 1): suspended is view-only at once (see Plan limits);
+  reactivating gives back `active`, `trial` or `ended` by the dates.
+- **`dent_app.platform.payments`** (optional `clinic`), newest first; **`trial_requests`** and **`change_requests`**,
+  newest first.
+- Log every one of these changes (who, when) and keep payments forever: they are the platform's accounts.

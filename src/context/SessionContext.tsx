@@ -5,6 +5,7 @@ import { useAuth } from "./AuthContext";
 import { useDeployment } from "./DeploymentContext";
 import { useSubscription } from "./SubscriptionContext";
 import { getDoc, getList } from "@/lib/frappe";
+import { PLATFORM_ROLE } from "@/lib/platform";
 import { CLINIC_ROLES, PERMISSION_KEYS, type ClinicPermission, type Doctor, type PermissionKey, type User } from "@/lib/types";
 
 /**
@@ -54,6 +55,8 @@ interface SessionContextType {
   /** The role shown under the user's name, e.g. "Clinic Receptionist". */
   roleLabel: string;
   isSuperUser: boolean;
+  /** Has the "Platform Owner" role: runs the platform (/platform). Being a System Manager is not enough. */
+  isPlatformOwner: boolean;
   /** Set when the user is one of the clinic's doctors: screens then open on their own patients. */
   doctor: MyDoctor | null;
   can: (permission: PermissionKey) => boolean;
@@ -138,6 +141,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       displayName: current?.profile.full_name || current?.profile.first_name || user || "",
       roleLabel: clinicRole ?? (isSuperUser ? "System Manager" : "Staff"),
       isSuperUser,
+      isPlatformOwner: roles.includes(PLATFORM_ROLE),
       doctor: current?.doctor ?? null,
       can: (permission) => Boolean(current?.perms[permission]) && !(readOnly && changesData(permission)),
       readOnly,

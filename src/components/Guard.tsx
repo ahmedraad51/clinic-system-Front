@@ -22,3 +22,14 @@ export default function RequirePermission({
   if (!needed.every((key) => can(key))) return <NoAccess />;
   return <>{children}</>;
 }
+
+/**
+ * Shows its children only to the platform owner (the "Platform Owner" role; being a System Manager is not enough).
+ * The platform's server must refuse its methods to everyone else too.
+ */
+export function RequirePlatformOwner({ children }: { children: ReactNode }) {
+  const { isPlatformOwner, loading } = useSession();
+  if (loading) return <PageLoading />;
+  if (!isPlatformOwner) return <NoAccess />;
+  return <>{children}</>;
+}

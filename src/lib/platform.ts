@@ -1,5 +1,6 @@
-import type { PlanKey } from "@/config/sales";
-import type { SubscriptionStatus } from "./subscription";
+import { GRACE_DAYS, PLANS, type PlanKey, type PlanLimits } from "@/config/sales";
+import { addDays, addMonths } from "./format";
+import { subscriptionState, type SubscriptionState, type SubscriptionStatus } from "./subscription";
 
 /**
  * The platform: the part of DentClinic that sells it and keeps the clinics (the cloud's main address, PLATFORM_SITE_URL).
@@ -56,8 +57,24 @@ export interface ClinicAccount {
   trial_ends_on: string | null;
   /** The last day that is paid for. */
   paid_until: string | null;
+  /** Its own limits (usually its plan's, see src/config/sales.ts). */
+  limits: PlanLimits;
   usage: { doctors: number; users: number; storage_mb: number };
   last_payment_on: string | null;
+}
+
+/** Where a clinic's subscription stands today (trial, active, ending, grace, locked; suspended). */
+export function accountState(account: ClinicAccount, today?: string): SubscriptionState {
+  return subscriptionState({ ...account, grace_days: GRACE_DAYS }, today)!;
+}
+
+/**
+ * The new last paid day after a payment for `periods` months (years for a yearly plan): counted on from the last paid
+ * day, or from the payment's day when that has already passed. The server must count the same way.
+ */
+export function paidUntilAfter(account: Pick<ClinicAccount, "plan" | "paid_until">, paidOn: string, periods: number): string {
+  const from = account.paid_until && account.paid_until >= paidOn ? account.paid_until : addDays(paidOn, -1);
+  return addMonths(from, periods * (PLANS[account.plan].period === "year" ? 12 : 1));
 }
 
 /** Ways a clinic pays the platform by hand. */

@@ -17,6 +17,7 @@ export const nav = {
   activity: "Activity",
   exportData: "Export Data",
   settings: "Settings",
+  platform: "Platform",
   profile: "Profile",
   logout: "Log out",
   openMenu: "Open menu",

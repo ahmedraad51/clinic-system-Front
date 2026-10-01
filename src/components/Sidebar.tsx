@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import ToothLogo from "@/components/ToothLogo";
 import {
   Archive,
+  Building2,
   LayoutDashboard,
   BellRing,
   BriefcaseMedical,
@@ -26,6 +27,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { useDeployment } from "@/context/DeploymentContext";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -36,7 +38,7 @@ import type { Messages } from "@/i18n";
 import type { PermissionKey } from "@/lib/types";
 
 /** A menu entry's text in the translation files (nav.*). */
-type MenuKey = "dashboard" | "today" | "patients" | "recall" | "appointments" | "treatments" | "payments" | "expenses" | "reports" | "doctors" | "medicines" | "users" | "whatsapp" | "activity" | "exportData" | "settings";
+type MenuKey = "dashboard" | "today" | "patients" | "recall" | "appointments" | "treatments" | "payments" | "expenses" | "reports" | "doctors" | "medicines" | "users" | "whatsapp" | "activity" | "exportData" | "settings" | "platform";
 
 interface MenuItem {
   key: MenuKey;
@@ -44,6 +46,8 @@ interface MenuItem {
   path: string;
   /** Hidden unless the user has this permission. */
   permission?: PermissionKey;
+  /** Only for the platform owner, and only in the cloud (the platform is not part of a clinic server). */
+  platform?: boolean;
 }
 
 const menuGroups: Array<{ group: keyof Messages["nav"]["groups"]; items: MenuItem[] }> = [
@@ -76,6 +80,7 @@ const menuGroups: Array<{ group: keyof Messages["nav"]["groups"]; items: MenuIte
       { key: "activity", icon: History, path: "/activity", permission: "manage_users" },
       { key: "exportData", icon: Archive, path: "/export", permission: "manage_users" },
       { key: "settings", icon: Settings, path: "/settings", permission: "manage_users" },
+      { key: "platform", icon: Building2, path: "/platform", platform: true },
     ],
   },
 ];
@@ -87,7 +92,8 @@ const menuGroups: Array<{ group: keyof Messages["nav"]["groups"]; items: MenuIte
  */
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
-  const { can } = useSession();
+  const { can, isPlatformOwner } = useSession();
+  const { mode, mainAddress } = useDeployment();
   const { settings, clinicName } = useSettings();
   const { t } = useI18n();
   const appearance = useAppearance();
@@ -95,7 +101,10 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
 
   const reportsOn = settings.enable_financial_reports !== 0;
   const visible = (item: MenuItem) =>
-    (!item.permission || can(item.permission)) && (item.path !== "/reports" || reportsOn);
+    item.platform
+      ? isPlatformOwner && mode === "cloud"
+      : // The cloud's main address has no clinic: only the platform's pages are there.
+        !mainAddress && (!item.permission || can(item.permission)) && (item.path !== "/reports" || reportsOn);
 
   // Hidden while the menu is collapsed to icons, shown again while it is pointed at or a keyboard user is in it (not
   // after a mouse click: the clicked link keeps the focus, and the menu would stay open over the page).
@@ -159,18 +168,18 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
 
         {/* Menu */}
         <nav className="thin-scroll flex-1 overflow-y-auto overflow-x-hidden pb-4">
-          {menuGroups.map((group, index) => {
-            const items = group.items.filter(visible);
-            if (items.length === 0) return null;
-            return (
-              <div key={group.group}>
+          {menuGroups
+            .map((group) => ({ group: group.group, items: group.items.filter(visible) }))
+            .filter((group) => group.items.length > 0)
+            .map(({ group, items }, index) => (
+              <div key={group}>
                 <p
                   className={cx(
                     "relative h-5 px-[1.375rem] mb-1.5 text-xs uppercase tracking-[0.025rem] text-gray-500 whitespace-nowrap",
                     index > 0 && "mt-4",
                   )}
                 >
-                  <span className={hideWhenCollapsed}>{t.nav.groups[group.group]}</span>
+                  <span className={hideWhenCollapsed}>{t.nav.groups[group]}</span>
                   {/* While collapsed, a short line stands for the group's name. */}
                   <Minus
                     size={18}
@@ -201,8 +210,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                   })}
                 </ul>
               </div>
-            );
-          })}
+            ))}
         </nav>
       </aside>
     </>
