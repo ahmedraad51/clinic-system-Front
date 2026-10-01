@@ -6,8 +6,9 @@
  * - Each page of the app (its HTML) is kept when it is opened, and is always asked from the network first. The pages
  *   hold no patient data: every record is loaded by the page itself from /frappe/…, which this worker never touches
  *   (the last copy of what was read lives in the tab's memory and sessionStorage, see src/lib/frappe.ts).
- * - Opened by moving inside the app, a page's HTML is fetched in the background (at most every 10 minutes), so it is
- *   there too when the connection is lost and the browser has to load it whole.
+ * - Opened by moving inside the app, a page's HTML is fetched in the background (the page says which, with the files
+ *   it loaded; at most every 10 minutes per page), so it is there too when the connection is lost and the browser has
+ *   to load it whole.
  * - With no connection and no kept copy, the friendly offline page shows.
  * Bump the version below when this file or the offline page changes.
  */
@@ -112,10 +113,6 @@ self.addEventListener("fetch", (event) => {
   if (request.mode === "navigate" && isAppPage(url)) {
     event.respondWith(pageNetworkFirst(request, url));
     return;
-  }
-  // Moving inside the app (Next asks for the page's data, not a prefetch): keep the page's HTML too, after.
-  if (request.headers.get("RSC") === "1" && !request.headers.get("Next-Router-Prefetch") && isAppPage(url)) {
-    event.waitUntil(warmPage(url));
   }
   // Everything else, and all data (/frappe/…), goes to the network untouched.
 });

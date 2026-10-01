@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
 import { Download, MonitorSmartphone } from "lucide-react";
 import { Button, Card } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
@@ -45,23 +46,33 @@ const useApple = () => useSyncExternalStore(noChange, () => /iPad|iPhone|iPod|Ma
  * Registers the service worker (public/sw.js) in the production build only, so the dev server is never cached. It
  * makes the app installable, and keeps the app's files and the pages opened so they still open offline.
  */
+/** The app's files already sent to the worker to keep. */
+const sentFiles = new Set<string>();
+
 export function ServiceWorkerRegister() {
   useEffect(() => {
     if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) return;
     navigator.serviceWorker.register("/sw.js").catch((err) => console.error(err));
-    // The files this page loaded before the worker took over, and the page itself, so they work offline too.
+  }, []);
+
+  // Each page opened, with the files it loaded, is kept by the worker so it opens offline too (moving inside the app
+  // may use a prefetched page, which the worker never sees being asked for).
+  const pathname = usePathname();
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) return;
     navigator.serviceWorker.ready
       .then((registration) => {
         const urls = performance
           .getEntriesByType("resource")
           .map((entry) => entry.name)
-          .filter((name) => name.startsWith(`${location.origin}/_next/static/`) || name.startsWith(`${location.origin}/fonts/`));
-        registration.active?.postMessage({ type: "keep", urls: [...urls, location.pathname] });
+          .filter((name) => (name.startsWith(`${location.origin}/_next/static/`) || name.startsWith(`${location.origin}/fonts/`)) && !sentFiles.has(name));
+        urls.forEach((name) => sentFiles.add(name));
+        registration.active?.postMessage({ type: "keep", urls: [...urls, pathname] });
       })
       .catch(() => {
         // No worker: nothing to keep.
       });
-  }, []);
+  }, [pathname]);
   return null;
 }
 

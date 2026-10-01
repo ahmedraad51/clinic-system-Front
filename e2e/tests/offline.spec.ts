@@ -48,6 +48,7 @@ test("a patient opened before still opens offline, even when the browser loads t
   await expect.poll(() => page.evaluate(async () => Boolean(await caches.match("/patients/PAT-2026-00001")))).toBe(true);
   await navigate(page, "/today");
   await waitForData(page);
+  await expect.poll(() => page.evaluate(async () => Boolean(await caches.match("/today")))).toBe(true);
 
   await context.setOffline(true);
   // A full load of the page, as the browser does when the app's own navigation cannot reach the server.

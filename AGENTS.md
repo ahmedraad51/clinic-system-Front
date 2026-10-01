@@ -196,7 +196,7 @@ src/lib/frappe.ts   the only module that touches data
   each page opened (asked from the network first; a page opened by moving inside the app is fetched in the background,
   at most every 10 minutes) and `public/offline.html` (Arabic and English) with its icon. With no connection a page
   opened before still loads, and any other shows the offline page. It never touches the data (`/frappe/…`): the pages
-  hold no patient data. `ServiceWorkerRegister` also sends it the files loaded before it took over. Bump `VERSION` in
+  hold no patient data. `ServiceWorkerRegister` tells it each page opened (also by moving inside the app, which may use a prefetched page the worker never sees) with the files it loaded. Bump `VERSION` in
   `sw.js` when it or the offline page changes. `InstallAppCard` on `/profile` shows **Install the App** when the
   browser offers it (`beforeinstallprompt`, kept for the button), how to install otherwise (Share → Add to Home
   Screen on iPhone and iPad), or that it is installed. The PNG icons are rendered from `icon.svg` and
