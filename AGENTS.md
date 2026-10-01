@@ -60,6 +60,26 @@ The Frappe address comes from the `FRAPPE_URL` environment variable (for example
 
 ---
 
+## Three ways to install: `DEPLOYMENT_MODE`
+
+One app, sold three ways. The mode is an environment variable read by `next.config.ts` when the app is **built**
+(`env` there puts it into the browser code; a wrong value stops the build). `src/lib/deployment.ts` has the modes and
+helpers, and `useDeployment()` (`src/context/DeploymentContext.tsx`, the outermost provider) gives screens the mode.
+
+| Mode | What it is | What changes in the app |
+|---|---|---|
+| `cloud` (default) | Online, one Frappe site per clinic | (see below) |
+| `clinic-server` | A small computer inside the clinic, no internet needed | (see below) |
+| `cloud-copy` | The online copy of a clinic server, for the owner at home | (see below) |
+
+- **Previewing a mode (dummy data only):** `/profile` → **Preview a Way of Installing** saves the mode in
+  `localStorage.demo_deployment_mode` and reloads; `currentMode(MOCK_DATA)` and `useDeploymentMode(MOCK_DATA)` read
+  it. With a real back end only the built mode counts. Tests set the same key with `page.addInitScript`.
+- Never read `process.env.DEPLOYMENT_MODE` in a component: use `useDeployment().mode` (the preview, and the first
+  render matching the server's).
+
+---
+
 ## Stack
 
 | Concern | Choice |
@@ -107,7 +127,7 @@ src/lib/frappe.ts   the only module that touches data
   Screen on iPhone and iPad), or that it is installed. The PNG icons are rendered from `icon.svg` and
   `icon-maskable.svg`; redraw them from the SVGs (at 192, 512, maskable 512 and Apple 180) when the logo changes.
   Installing needs HTTPS (or localhost).
-- **Provider tree** (in `layout.tsx`): `AuthProvider` → `SettingsProvider` → `SessionProvider` →
+- **Provider tree** (in `layout.tsx`): `DeploymentProvider` → `AuthProvider` → `SettingsProvider` → `SessionProvider` →
   `ToastProvider` → `LanguageProvider` → `MainLayout` → page. `LanguageProvider` keys its children by the language,
   so everything below is drawn again when it changes.
 - **Shell.** `MainLayout` draws the `Sidebar` (fixed, z-50, 16.25rem wide or 4.375rem collapsed to icons; a slide-in
@@ -216,6 +236,7 @@ src/
 │       └── LinkSelect.tsx    searchable picker for Link fields (used for patients)
 ├── context/
 │   ├── AuthContext.tsx       who is logged in, the AUTH_DISABLED switch, useAuth()
+│   ├── DeploymentContext.tsx how this copy is installed (DEPLOYMENT_MODE, previewed with dummy data) and the clinic of the web address, useDeployment()
 │   ├── SettingsContext.tsx   Clinic Settings (currency, clinic name, feature switches), useSettings()
 │   ├── LanguageContext.tsx   the language (Arabic or English), useI18n() → { t, lang, dir, setLang }
 │   ├── SessionContext.tsx    the user's profile, roles and permission flags, useSession()
@@ -232,6 +253,7 @@ src/
     ├── hooks.ts              usePagedList, useDocument, useDoctors, useDebounced, searchFilters
     ├── dataVersion.ts        bumpData() / useDataVersion(): lists and record pages load again after a dialog saves
     ├── format.ts             money (IQD without decimals, currencyDecimals()), cleanNumberText(), dates, times, week helpers, cx(), CSV download
+    ├── deployment.ts         the three ways to install: DEPLOYMENT_MODES, clinicFromHost(), isMainAddress(), the clinic address rule, the mode preview
     ├── currency.ts           two currencies: rateOn() (the rate of a day), convertMoney(), roundMoney(), sumByCurrency(), baseAmount()
     ├── dentalChart.ts        parseDentalChart (both shapes), cleanChart, tooth names, surface layout, labels
     ├── medical.ts            medicalFlags(): allergy, blood thinner, diabetes, heart, pregnancy from the medical text

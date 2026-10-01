@@ -47,7 +47,8 @@ import { login } from "./login";
 import { session } from "./session";
 import { history } from "./history";
 import { xrays } from "./xrays";
-import { money } from "./money";
+import { money } from "./money";
+import { deployment } from "./deployment";
 
 export const en = {
   common,
@@ -99,6 +100,7 @@ export const en = {
   history,
   xrays,
   money,
+  deployment,
 };
 
 export type Messages = typeof en;

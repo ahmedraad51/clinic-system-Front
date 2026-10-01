@@ -3,6 +3,7 @@ import { preload } from "react-dom";
 import "./fonts.css";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { DeploymentProvider } from "@/context/DeploymentContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { SettingsProvider } from "@/context/SettingsContext";
 import { SessionProvider } from "@/context/SessionContext";
@@ -56,6 +57,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: LANG_BOOT_SCRIPT + THEME_BOOT_SCRIPT + ZOOM_BOOT_SCRIPT + APPEARANCE_BOOT_SCRIPT }} />
       </head>
       <body className="antialiased">
+        <DeploymentProvider>
         <AuthProvider>
           <SettingsProvider>
             <SessionProvider>
@@ -70,6 +72,7 @@ export default function RootLayout({
             </SessionProvider>
           </SettingsProvider>
         </AuthProvider>
+        </DeploymentProvider>
       </body>
     </html>
   );

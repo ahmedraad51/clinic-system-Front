@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { UserRound, Check, KeyRound, LayoutGrid, Shield, Users, X } from "lucide-react";
+import { UserRound, Check, KeyRound, LayoutGrid, Server, Shield, Users, X } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import { MyAvatar } from "@/components/Avatar";
 import ScreenSizeCard from "@/components/ScreenSizeCard";
@@ -10,10 +10,12 @@ import {
   Alert, Badge, Button, Card, DetailLayout, Fraction, Field, PageContainer, PageHeader, ProfileCard, SelectInput, TextInput,
 } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { useDeployment } from "@/context/DeploymentContext";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useToast } from "@/context/ToastContext";
-import { changePassword, errorMessage, getList } from "@/lib/frappe";
+import { changePassword, errorMessage, getList, MOCK_DATA } from "@/lib/frappe";
+import { BUILT_MODE, DEPLOYMENT_MODES, setDemoMode, type DeploymentMode } from "@/lib/deployment";
 import { label, num } from "@/i18n";
 import { PERMISSION_ACTIONS, PERMISSION_KEYS, PERMISSION_MATRIX, type User } from "@/lib/types";
 
@@ -121,6 +123,7 @@ function Profile() {
         <InstallAppCard />
         <ChangePasswordCard demo={authDisabled} />
         {authDisabled && <DemoUserCard />}
+        {MOCK_DATA && <DemoModeCard />}
       </DetailLayout>
     </PageContainer>
   );
@@ -193,6 +196,35 @@ function ChangePasswordCard({ demo }: { demo: boolean }) {
           {t.profile.changePassword}
         </Button>
       </form>
+    </Card>
+  );
+}
+
+/** Only with the dummy data: preview another way of installing (cloud, clinic server, cloud copy) on this computer. */
+function DemoModeCard() {
+  const { t } = useI18n();
+  const d = t.deployment;
+  const { mode } = useDeployment();
+  return (
+    <Card title={d.previewTitle} icon={Server}>
+      <p className="text-sm text-gray-500 mb-4">{d.previewText}</p>
+      <Field label={d.previewLabel} hint={d.modeHints[mode]}>
+        <SelectInput
+          name="deployment_mode"
+          value={mode}
+          onChange={(e) => {
+            setDemoMode(e.target.value as DeploymentMode);
+            // The whole app starts again in the new mode (and with fresh dummy data).
+            window.location.reload();
+          }}
+        >
+          {DEPLOYMENT_MODES.map((option) => (
+            <option key={option} value={option}>
+              {option === BUILT_MODE ? d.builtIn(d.modes[option]) : d.modes[option]}
+            </option>
+          ))}
+        </SelectInput>
+      </Field>
     </Card>
   );
 }

@@ -988,3 +988,10 @@ restore every doctype in the list (for example a Payment, without `add_payments`
 - **Language:** `ar` and `en` (`User.language`).
 - **Currency:** the ten codes above, if the currency fields are Links.
 - **Clinic Treatment Price** and **Clinic Exchange Rate**: the child doctypes of Clinic Settings (section 1).
+
+## 10. Three ways to install
+
+The front end is built in one of three modes (`DEPLOYMENT_MODE`, see `AGENTS.md` and `src/lib/deployment.ts`):
+**cloud** (online, one Frappe site per clinic), **clinic-server** (a small computer inside the clinic, no internet
+needed) and **cloud-copy** (the online copy of a clinic server, view-only, for the owner at home). The same `dent_app`
+serves all three; what each mode needs from the back end is listed below, item by item.

@@ -31,6 +31,7 @@ calculations, role-based access, scheduled reports and WhatsApp appointment remi
   - [Roles and permissions](#roles-and-permissions)
   - [Reports, dashboards and WhatsApp](#reports-dashboards-and-whatsapp)
 - [Getting started](#getting-started)
+- [Three ways to install](#three-ways-to-install)
 - [Running against the real backend](#running-against-the-real-backend)
 - [Known gaps](#known-gaps)
 
@@ -387,6 +388,26 @@ the backend first. Its last section lists every doctype and field the front end 
 whether it is required.
 
 ---
+
+## Three ways to install
+
+DentClinic is one app that can be sold and installed three ways. Choose with the `DEPLOYMENT_MODE` environment
+variable **before** `npm run build` (it is built into the app; a wrong value stops the build):
+
+| `DEPLOYMENT_MODE` | What it is |
+|---|---|
+| `cloud` (the default) | Online. Each clinic has its own Frappe site. |
+| `clinic-server` | On a small computer inside the clinic. Works with no internet at all. |
+| `cloud-copy` | The online copy of a clinic server, which the owner views from home. Everything is view-only. |
+
+```bash
+DEPLOYMENT_MODE=clinic-server npm run build
+npm run start
+```
+
+With the dummy data you do not need three builds: **My Profile → Preview a Way of Installing** shows the app as
+another mode on that computer. [`docs/backend-todo.md`](docs/backend-todo.md) lists what the back end must provide
+for each mode.
 
 ## Running against the real backend
 

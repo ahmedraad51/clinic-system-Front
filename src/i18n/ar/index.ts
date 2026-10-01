@@ -47,7 +47,8 @@ import { login } from "./login";
 import { session } from "./session";
 import { history } from "./history";
 import { xrays } from "./xrays";
-import { money } from "./money";
+import { money } from "./money";
+import { deployment } from "./deployment";
 
 /** The Arabic texts: Modern Standard Arabic as clinic staff in Iraq use it. */
 export const ar: Messages = {
@@ -100,4 +101,5 @@ export const ar: Messages = {
   history,
   xrays,
   money,
+  deployment,
 };
