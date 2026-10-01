@@ -51,7 +51,8 @@ import { money } from "./money";
 import { deployment } from "./deployment";
 import { site } from "./site";
 import { connection } from "./connection";
-import { access } from "./access";
+import { access } from "./access";
+import { setup } from "./setup";
 
 export const en = {
   common,
@@ -107,6 +108,7 @@ export const en = {
   site,
   connection,
   access,
+  setup,
 };
 
 export type Messages = typeof en;

@@ -341,6 +341,13 @@ export interface ClinicSettings extends BaseDoc {
   default_language?: string;
   /** 1: Arabic screens write numbers ٠-٩ instead of 0-9. */
   arabic_digits?: number;
+  /**
+   * The first-run setup wizard (/setup): "" (a new clinic: the manager is sent to it once), "skipped" (the dashboard
+   * offers to finish it) or "done".
+   */
+  setup_status?: "" | "skipped" | "done";
+  /** The wizard step reached (0-6), to come back to it. */
+  setup_step?: number;
 }
 
 export interface WhatsAppTemplate extends BaseDoc {

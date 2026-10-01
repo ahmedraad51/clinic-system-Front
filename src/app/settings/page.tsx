@@ -2,7 +2,7 @@
 
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import ToothLogo from "@/components/ToothLogo";
-import { CalendarDays, Plus, Settings, Save, Sparkles, Tags, Trash2, Upload } from "lucide-react";
+import { CalendarDays, Plus, Settings, Save, Sparkles, Tags, Trash2, Upload, Wand2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import {
@@ -15,6 +15,7 @@ import {
   DetailLayout,
   Field,
   FormActions,
+  LinkButton,
   Fraction,
   NumberInput,
   PageContainer,
@@ -115,12 +116,25 @@ export default function SettingsPage() {
 
 function SettingsView() {
   const { t } = useI18n();
+  const { readOnly } = useSession();
   const { doc, loading, error, reload } = useDocument<ClinicSettings>(SETTINGS, SETTINGS);
 
   if (loading) return <PageLoading />;
   return (
     <PageContainer section="system">
-      <PageHeader icon={Settings} section="system" title={t.settings.title} subtitle={t.settings.subtitle} />
+      <PageHeader
+        icon={Settings}
+        section="system"
+        title={t.settings.title}
+        subtitle={t.settings.subtitle}
+        actions={
+          !readOnly && (
+            <LinkButton href="/setup" variant="secondary" icon={Wand2}>
+              {t.setup.runWizard}
+            </LinkButton>
+          )
+        }
+      />
       {doc ? (
         <SettingsFormView initial={doc} onSaved={reload} />
       ) : (

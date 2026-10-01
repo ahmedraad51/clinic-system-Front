@@ -1060,3 +1060,13 @@ serves all three; what each mode needs from the back end is listed below, item b
   Returns the record's name.
 - The website's prices are the published ones in `src/config/sales.ts`; a clinic's own plan, price and limits are
   kept by the platform (see Plans).
+
+### The first-run setup wizard (every mode)
+
+- **Clinic Settings** gets two fields: `setup_status` (Select: empty, `skipped`, `done`) and `setup_step` (Int, 0-6: how
+  many of the wizard's steps are saved). A **new** clinic site starts with both empty, so its manager is sent to
+  `/setup` on the first visit. **Existing sites must be patched to `setup_status = "done"`**, or their managers would be
+  sent to the wizard after the update.
+- The wizard saves with the usual `PUT` on Clinic Settings (only the fields of the step, plus `setup_step`, and
+  `setup_status` at the end), creates Doctors and Users (with a Clinic Permission) as their own pages do. The manager
+  needs the same rights as on Settings, Doctors and Users.

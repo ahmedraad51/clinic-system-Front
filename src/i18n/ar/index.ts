@@ -51,7 +51,8 @@ import { money } from "./money";
 import { deployment } from "./deployment";
 import { site } from "./site";
 import { connection } from "./connection";
-import { access } from "./access";
+import { access } from "./access";
+import { setup } from "./setup";
 
 /** The Arabic texts: Modern Standard Arabic as clinic staff in Iraq use it. */
 export const ar: Messages = {
@@ -108,4 +109,5 @@ export const ar: Messages = {
   site,
   connection,
   access,
+  setup,
 };

@@ -363,6 +363,9 @@ const clinicSettings: MockDoc[] = [
     phone_country_code: "964",
     default_language: "ar",
     arabic_digits: 0,
+    // This clinic went through the first-run setup wizard already.
+    setup_status: "done",
+    setup_step: 6,
     // The usual price of each treatment, in Iraqi dinars.
     treatment_prices: [
       { treatment_type: "Filling", price: 40000 },
@@ -573,6 +576,15 @@ const deletedDocuments: MockDoc[] = [
     }),
   },
 ];
+
+/**
+ * For tests only: `window.__mockNewClinic = true` (set before the app loads) makes the clinic brand new, its first-run
+ * setup never started, so the manager is sent to the setup wizard. Nothing in the app sets it.
+ */
+if (typeof window !== "undefined" && (window as unknown as { __mockNewClinic?: boolean }).__mockNewClinic) {
+  clinicSettings[0].setup_status = "";
+  clinicSettings[0].setup_step = 0;
+}
 
 const store: Store = {
   Patient: patients,

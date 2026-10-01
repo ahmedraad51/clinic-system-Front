@@ -1,25 +1,22 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { UserCog, Shield, UserPlus, UserSearch } from "lucide-react";
+import AddUserDialog from "@/components/AddUserDialog";
 import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Button, Card, ClearFiltersButton, ClickableRow, Field, PageContainer, PageHeader, Pagination,
-  SearchInput, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, TextInput, Th,
-  Toggle, Toolbar,
+  Button, Card, ClearFiltersButton, ClickableRow, PageContainer, PageHeader, Pagination,
+  SearchInput, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
-import { Modal } from "@/components/ui/Modal";
 import { useSession } from "@/context/SessionContext";
 import { useI18n } from "@/context/LanguageContext";
-import { useToast } from "@/context/ToastContext";
-import { label } from "@/i18n";
-import { createDoc, errorMessage, type FilterRow } from "@/lib/frappe";
+import type { FilterRow } from "@/lib/frappe";
 import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
 import { userHref } from "@/lib/links";
-import { CLINIC_ROLES, PERMISSION_KEYS, ROLE_PRESETS, type ClinicRole, type User } from "@/lib/types";
+import type { User } from "@/lib/types";
 
 export default function UsersPage() {
   return (
@@ -31,11 +28,9 @@ export default function UsersPage() {
 
 const HIDDEN_USERS: FilterRow = ["name", "not in", ["Administrator", "Guest"]];
 
-/** The shortest password Frappe accepts for a new user. */
-const MIN_PASSWORD = 8;
-
 function UsersList() {
   const { readOnly } = useSession();
+  const router = useRouter();
   const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -132,96 +127,7 @@ function UsersList() {
         {!list.error && <Pagination page={list.page} pageSize={list.pageSize} total={list.total} onPage={list.setPage} />}
       </Card>
 
-      {showAdd && <AddUserModal onClose={() => setShowAdd(false)} />}
+      {showAdd && <AddUserDialog onClose={() => setShowAdd(false)} onAdded={(user) => router.push(userHref(user.name))} />}
     </PageContainer>
-  );
-}
-
-function AddUserModal({ onClose }: { onClose: () => void }) {
-  const { t } = useI18n();
-  const router = useRouter();
-  const toast = useToast();
-  const [form, setForm] = useState({ first_name: "", email: "", password: "", role: "Clinic Receptionist" as ClinicRole });
-  const [applyPreset, setApplyPreset] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSaving(true);
-    setError("");
-    let created: User;
-    try {
-      created = await createDoc<User>("User", {
-        email: form.email.trim(),
-        first_name: form.first_name.trim(),
-        new_password: form.password,
-        send_welcome_email: 0,
-        roles: [{ role: form.role }],
-      });
-    } catch (err) {
-      setError(errorMessage(err, t.users.createFailed));
-      setSaving(false);
-      return;
-    }
-
-    if (applyPreset) {
-      const preset = ROLE_PRESETS[form.role];
-      const flags = Object.fromEntries(PERMISSION_KEYS.map((key) => [key, preset.includes(key) ? 1 : 0]));
-      try {
-        await createDoc("Clinic Permission", { user: created.name, ...flags });
-      } catch (err) {
-        toast.error(errorMessage(err, t.users.permissionsNotSaved));
-      }
-    }
-    toast.success(t.users.added(form.first_name));
-    router.push(userHref(created.name));
-  };
-
-  return (
-    <Modal open title={t.users.addUser} onClose={onClose}>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Field label={t.users.fullName} required>
-          <TextInput value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} required />
-        </Field>
-        <Field label={t.users.email} required hint={t.users.emailHint}>
-          <TextInput type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required dir="ltr" />
-        </Field>
-        <Field label={t.users.password} required hint={t.users.passwordHint(MIN_PASSWORD)}>
-          <TextInput
-            type="password"
-            minLength={MIN_PASSWORD}
-            autoComplete="new-password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            required
-          />
-        </Field>
-        <Field label={t.users.role} required>
-          <SelectInput value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as ClinicRole })}>
-            {CLINIC_ROLES.map((role) => (
-              <option key={role} value={role}>
-                {label(t.enums.role, role)}
-              </option>
-            ))}
-          </SelectInput>
-        </Field>
-        <Toggle
-          checked={applyPreset}
-          onChange={setApplyPreset}
-          label={t.users.applyPreset}
-          description={t.users.applyPresetHint}
-        />
-        {error && <Alert tone="red">{error}</Alert>}
-        <div className="flex gap-3 pt-2">
-          <Button type="submit" loading={saving} className="flex-1">
-            {t.users.addUser}
-          </Button>
-          <Button variant="secondary" onClick={onClose} disabled={saving} className="flex-1">
-            {t.users.cancel}
-          </Button>
-        </div>
-      </form>
-    </Modal>
   );
 }

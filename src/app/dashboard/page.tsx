@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import { BarChart, DonutChart, type ChartPoint } from "@/components/Charts";
+import SetupCard from "@/components/SetupCard";
 import RequirePermission from "@/components/Guard";
 import {
   ActionTile, Button, CARD_CLASS, Card, EmptyState, IconTile, LoadError, PageContainer, Segmented, StatCard, StatusBadge, type Hue,
@@ -270,6 +271,9 @@ function Dashboard() {
           ) : undefined
         }
       />
+
+      {/* A new clinic's setup that is not finished yet (the manager only). */}
+      <SetupCard />
 
       {/* The everyday jobs first, one tap away as soon as the app opens. */}
       {quickActions.length > 0 && (
