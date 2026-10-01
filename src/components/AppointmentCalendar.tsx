@@ -6,7 +6,7 @@ import { useDataVersion } from "@/lib/dataVersion";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Avatar from "@/components/Avatar";
-import { Alert, CARD_CLASS, statusLabel, statusTone, type Tone } from "@/components/ui";
+import { Alert, CARD_CLASS, statusLabel, statusTone, tooltip, type Tone } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
@@ -496,7 +496,7 @@ export default function AppointmentCalendar({
                   {view === "day" ? (
                     <>
                       <Avatar name={column.title} gender={column.person?.gender} photo={column.person?.photo} role="doctor" size={40} className="mb-1" />
-                      <p className="text-sm font-semibold text-gray-800 truncate" title={column.title}>
+                      <p className="text-sm font-semibold text-gray-800 truncate" {...tooltip(column.title)}>
                         {column.title}
                       </p>
                       <p className="text-xs text-gray-500">{column.subtitle}</p>
@@ -611,7 +611,7 @@ export default function AppointmentCalendar({
                         }}
                         draggable={false}
                         aria-label={c.blockLabel(formatTime(a.appointment_time), who, a.doctor_name || "", statusLabel("appointment", a.status))}
-                        title={c.blockTitle(formatTime(a.appointment_time), who, a.reason_for_visit || "", statusLabel("appointment", a.status))}
+                        {...tooltip(c.blockTitle(formatTime(a.appointment_time), who, a.reason_for_visit || "", statusLabel("appointment", a.status)))}
                         className={cx(
                           "absolute z-10 overflow-hidden rounded-lg border-s-4 px-2 py-1 text-start shadow-sm transition hover:shadow-md hover:z-20",
                           "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",

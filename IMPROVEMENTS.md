@@ -6,9 +6,7 @@ Each finished item says what changed, when, and which commit holds it.
 ## Now
 
 - **Waiting for the owner:** the front end is checked and ready for the back end (see Done). What comes next is the
-  owner's choice. No restart of the dev server is needed; just reload the page once (Ctrl+F5) so it picks up the fonts.
-- **Open choice:** the small hint labels that appear when the mouse rests on an icon button or a tooth are still the
-  browser's own. Replacing them means a new tooltip component, which this round did not add (no new features).
+  owner's choice. No restart of the dev server is needed; just reload the page once (Ctrl+F5) so it picks up the changes.
 
 ## Backlog
 
@@ -17,6 +15,13 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Done
 
+- 2026-10-01 - **Our own hints.** The small labels that appear when the mouse rests on an icon button, a tooth, a
+  calendar visit, a chart bar or a medical alert are now the app's own instead of the browser's yellow box: the same
+  font, a dark bubble with a small arrow on a light page and a light one in dark mode, right to left in Arabic. They
+  also show when the button is reached with the Tab key, and Escape closes them without closing the window they are
+  in. On a touch screen there are none (there is nothing to rest the finger on). The visit hint in the calendar now
+  keeps its parts in order on an English screen with Arabic names. A ticked checklist box in the patient form that can
+  only be changed in the text now explains why from the keyboard too.
 - 2026-10-01 - **Font chosen: IBM Plex.** The owner picked IBM Plex Sans Arabic (with IBM Plex Sans for English) from the
   four fonts in [docs/fonts](docs/fonts/README.md). The app already used it, so nothing in the app changed.
 - 2026-10-01 - **Final check before the back end.** Every page and every dialog was opened as a receptionist, a

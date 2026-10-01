@@ -5,7 +5,7 @@ import { Camera, Columns2, FileText, ImageIcon, PenLine, Upload } from "lucide-r
 import AddImagesDialog from "./AddImagesDialog";
 import CompareView from "./CompareView";
 import ImageViewer from "./ImageViewer";
-import { Button, Card, EmptyState, LoadError, PageLoading, SelectInput } from "@/components/ui";
+import { Button, Card, EmptyState, LoadError, PageLoading, SelectInput, tooltip } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
 import { label } from "@/i18n";
@@ -226,7 +226,7 @@ export default function XraySection({
                                 <img src={fileHref(image.image || "")} alt="" className="w-full h-full object-contain" />
                               )}
                               {drawn && (
-                                <span className="absolute top-2 end-2 w-7 h-7 rounded-full bg-black/60 text-yellow-300 flex items-center justify-center" title={x.hasDrawing}>
+                                <span className="absolute top-2 end-2 w-7 h-7 rounded-full bg-black/60 text-yellow-300 flex items-center justify-center" {...tooltip(x.hasDrawing)}>
                                   <PenLine size={14} aria-hidden="true" />
                                   <span className="sr-only">{x.hasDrawing}</span>
                                 </span>

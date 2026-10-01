@@ -11,7 +11,16 @@ import { CalendarDays, MessageCircle, Pencil, Printer, Trash2, Wallet } from "lu
 import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import {
-  Button, Card, DetailLayout, NotFoundCard, PageContainer, PageHeader, ProfileCard, RecordLoading, StatusBadge,
+  Button,
+  Card,
+  DetailLayout,
+  NotFoundCard,
+  PageContainer,
+  PageHeader,
+  ProfileCard,
+  RecordLoading,
+  StatusBadge,
+  tooltip,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
@@ -241,7 +250,7 @@ function PaymentDetail() {
                 icon={Trash2}
                 onClick={() => setConfirmDelete(true)}
                 aria-label={p.deleteLabel}
-                title={p.deleteLabel}
+                {...tooltip(p.deleteLabel)}
                 className="text-red-600 hover:bg-red-50 px-3"
               />
             )}

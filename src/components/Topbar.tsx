@@ -17,6 +17,7 @@ import ScanPatientButton from "./ScanPatient";
 import NotificationBell from "./NotificationBell";
 import { TOP_ICON_BUTTON, TOP_DROPDOWN } from "./topbarStyles";
 import { takePanelReopen } from "./appearancePanelState";
+import { tooltip } from "@/components/ui";
 
 
 /** A dropdown under a top-bar button: the surface colour, 6 px corners and a deeper shadow. */
@@ -36,7 +37,8 @@ function Dropdown({
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      // An Escape a hint already used leaves the menu open.
+      if (event.key === "Escape" && !event.defaultPrevented) {
         setOpen(false);
         buttonRef.current?.focus();
       }
@@ -54,7 +56,7 @@ function Dropdown({
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         aria-label={name}
-        title={name}
+        {...tooltip(name)}
         className={TOP_ICON_BUTTON}
       >
         <Icon size={22} />
@@ -168,7 +170,7 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
               type="button"
               onClick={() => setPanelOpen(true)}
               aria-label={t.nav.appearance.open}
-              title={t.nav.appearance.open}
+              {...tooltip(t.nav.appearance.open)}
               className={TOP_ICON_BUTTON}
             >
               <Palette size={22} />

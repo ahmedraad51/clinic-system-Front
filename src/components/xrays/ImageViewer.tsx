@@ -18,6 +18,7 @@ import { cx } from "@/lib/format";
 import { parseSketch, sketchToSave, SKETCH_COLOURS, type SketchData, type SketchTool } from "@/lib/sketch";
 import { imageTeeth, imageTitle, isPdf, joinTeeth } from "@/lib/xrays";
 import type { DentalImage } from "@/lib/types";
+import { tooltip } from "@/components/ui";
 
 /** A round button on the dark viewer. */
 function ViewerButton({
@@ -42,7 +43,7 @@ function ViewerButton({
       disabled={disabled}
       aria-label={label}
       aria-pressed={pressed}
-      title={label}
+      {...tooltip(label)}
       className={cx(
         "w-10 h-10 pointer-coarse:w-11 pointer-coarse:h-11 shrink-0 inline-flex items-center justify-center rounded-xl transition",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 disabled:opacity-35",
@@ -140,6 +141,8 @@ export default function ImageViewer({
       const onSlider = Boolean(target?.closest("input[type=range]"));
       if (editingDetails || confirmDelete) return;
       if (event.key === "Escape") {
+        // A hint that just closed used this Escape: the viewer stays.
+        if (event.defaultPrevented) return;
         event.preventDefault();
         if (drawing) setDrawing(null);
         else onClose();
@@ -229,7 +232,7 @@ export default function ImageViewer({
           type="button"
           onClick={onClose}
           aria-label={x.close}
-          title={x.close}
+          {...tooltip(x.close)}
           className="w-10 h-10 pointer-coarse:w-11 pointer-coarse:h-11 inline-flex items-center justify-center rounded-xl text-white/90 hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
         >
           <X size={20} />
@@ -246,7 +249,7 @@ export default function ImageViewer({
           <ViewerButton icon={ZoomIn} label={x.zoomIn} onClick={() => zoomBy(1.25)} />
           <ViewerButton icon={Scan} label={x.fit} onClick={() => setView({ ...view, zoom: 1, x: 0, y: 0 })} className="max-sm:hidden" />
           <ViewerButton icon={RotateCw} label={x.rotate} onClick={() => setView({ ...view, rotation: (view.rotation + 90) % 360 })} />
-          <label className="flex items-center gap-2 px-2 text-xs text-white/85" title={x.brightness}>
+          <label className="flex items-center gap-2 px-2 text-xs text-white/85" {...tooltip(x.brightness)}>
             <Sun size={16} aria-hidden="true" />
             <input
               type="range"
@@ -258,7 +261,7 @@ export default function ImageViewer({
               className="w-20 sm:w-28 text-white"
             />
           </label>
-          <label className="flex items-center gap-2 px-2 text-xs text-white/85" title={x.contrast}>
+          <label className="flex items-center gap-2 px-2 text-xs text-white/85" {...tooltip(x.contrast)}>
             <Contrast size={16} aria-hidden="true" />
             <input
               type="range"
@@ -294,7 +297,7 @@ export default function ImageViewer({
           <Link
             href={`/xrays/${encodeURIComponent(image.name)}`}
             aria-label={x.print}
-            title={x.print}
+            {...tooltip(x.print)}
             className="w-10 h-10 pointer-coarse:w-11 pointer-coarse:h-11 inline-flex items-center justify-center rounded-xl text-white/90 hover:bg-white/15"
           >
             <Printer size={19} />
@@ -334,6 +337,7 @@ export default function ImageViewer({
       {pdf ? (
         <div className="flex-1 min-h-0 flex flex-col gap-3 p-3 sm:p-4">
           <p className="text-sm text-white/80">{x.pdfNote}</p>
+          {/* eslint-disable-next-line react/forbid-dom-props -- an iframe's title is its name for screen readers, not a hint */}
           <iframe src={fileHref(image.image || "")} title={title} className="flex-1 w-full rounded-xl bg-white" />
           <a
             href={fileHref(image.image || "")}

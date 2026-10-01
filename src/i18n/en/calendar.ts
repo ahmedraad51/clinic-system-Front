@@ -1,4 +1,4 @@
-import { num, plural } from "../runtime";
+import { joinParts, num, plural } from "../runtime";
 
 /** The day and week time grid of the appointment book (src/components/AppointmentCalendar.tsx). */
 export const calendar = {
@@ -22,9 +22,9 @@ export const calendar = {
   /** An appointment block, read aloud: "10:00 AM, Zahraa Ali, Dr. Zainab, Scheduled" */
   blockLabel: (time: string, who: string, doctor: string, status: string) =>
     `${time}, ${who}${doctor ? `, ${doctor}` : ""}, ${status}`,
-  /** An appointment block's tooltip: "10:00 AM · Zahraa Ali · Filling · Scheduled" */
+  /** An appointment block's hint: "10:00 AM · Zahraa Ali · Filling · Scheduled" (each part kept whole in mixed text) */
   blockTitle: (time: string, who: string, reason: string, status: string) =>
-    `${time} · ${who}${reason ? ` · ${reason}` : ""} · ${status}`,
+    joinParts([time, who, reason, status], " · "),
   moved: (who: string, time: string) => `${who} moved to ${time}.`,
   moveFailed: "Could not move the appointment.",
   now: "Now",

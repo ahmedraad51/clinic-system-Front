@@ -12,7 +12,30 @@ import RecordHistory from "@/components/RecordHistory";
 import LabWorkCard from "@/components/LabWorkCard";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
-  Alert, Button, Card, DateInput, DetailLayout, EmptyState, Field, IconTile, LoadError, NotFoundCard, PageContainer, PageHeader, PageLoading, ProfileCard, ProgressBar, RecordLoading, SelectInput, StatusBadge, Table, Td, TextArea, Th, TimeInput,
+  Alert,
+  Button,
+  Card,
+  DateInput,
+  DetailLayout,
+  EmptyState,
+  Field,
+  IconTile,
+  LoadError,
+  NotFoundCard,
+  PageContainer,
+  PageHeader,
+  PageLoading,
+  ProfileCard,
+  ProgressBar,
+  RecordLoading,
+  SelectInput,
+  StatusBadge,
+  Table,
+  Td,
+  TextArea,
+  Th,
+  TimeInput,
+  tooltip,
 } from "@/components/ui";
 import { ConfirmDialog, Modal } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
@@ -223,7 +246,7 @@ function TreatmentDetail() {
                 icon={Trash2}
                 onClick={() => setConfirmDelete(true)}
                 aria-label={t.treatments.deletePlan}
-                title={t.treatments.deletePlan}
+                {...tooltip(t.treatments.deletePlan)}
                 className="text-red-600 hover:bg-red-50 px-3"
               />
             )}

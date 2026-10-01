@@ -8,7 +8,7 @@ import {
   Columns2, Monitor, Moon, PanelLeft, PanelLeftClose, RectangleHorizontal, RotateCcw, Square, SquareDashed, Sun, X,
   type LucideIcon,
 } from "lucide-react";
-import { Toggle } from "@/components/ui";
+import { Toggle, tooltip } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { LANG_NAMES, LANGS } from "@/i18n";
@@ -97,7 +97,8 @@ export default function AppearancePanel({ onClose }: { onClose: () => void }) {
     document.body.style.overflow = "hidden";
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onCloseRef.current();
+        // An Escape something else already used (a hint closing, a list inside) leaves this open.
+        if (!event.defaultPrevented) onCloseRef.current();
         return;
       }
       // Tab stays inside the panel.
@@ -144,7 +145,7 @@ export default function AppearancePanel({ onClose }: { onClose: () => void }) {
               onClick={() => saveAppearance(DEFAULT_APPEARANCE)}
               className="w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100"
               aria-label={a.reset}
-              title={a.reset}
+              {...tooltip(a.reset)}
             >
               <RotateCcw size={18} />
             </button>

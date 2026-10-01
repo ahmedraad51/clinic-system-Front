@@ -5,6 +5,15 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    rules: {
+      // Hover hints are the app's own (tooltip() in the UI kit), never the browser's title tooltip.
+      "react/forbid-dom-props": [
+        "error",
+        { forbid: [{ propName: "title", message: "Use {...tooltip(text)} from the UI kit, not the browser's title hint." }] },
+      ],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

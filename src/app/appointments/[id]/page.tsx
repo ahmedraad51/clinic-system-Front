@@ -14,7 +14,18 @@ import { useSettings } from "@/context/SettingsContext";
 import RequirePermission from "@/components/Guard";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
-  Button, Card, DetailLayout, LinkButton, NotFoundCard, PageContainer, PageHeader, ProfileCard, RecordLoading, StatusBadge, statusLabel,
+  Button,
+  Card,
+  DetailLayout,
+  LinkButton,
+  NotFoundCard,
+  PageContainer,
+  PageHeader,
+  ProfileCard,
+  RecordLoading,
+  StatusBadge,
+  statusLabel,
+  tooltip,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
@@ -204,7 +215,7 @@ function AppointmentDetail() {
                 icon={Trash2}
                 onClick={() => setConfirmDelete(true)}
                 aria-label={t.appointments.deleteAppointment}
-                title={t.appointments.deleteAppointment}
+                {...tooltip(t.appointments.deleteAppointment)}
                 className="text-red-600 hover:bg-red-50 px-3"
               />
             )}

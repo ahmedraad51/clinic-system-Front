@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { ScanQrCode } from "lucide-react";
-import { Alert, Button, Field, TextInput } from "@/components/ui";
+import { Alert, Button, Field, TextInput, tooltip } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
 import { patientHref } from "@/lib/links";
@@ -26,7 +26,7 @@ export default function ScanPatientButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} aria-label={t.qr.scanButton} title={t.qr.scanButton} className={TOP_ICON_BUTTON}>
+      <button type="button" onClick={() => setOpen(true)} aria-label={t.qr.scanButton} {...tooltip(t.qr.scanButton)} className={TOP_ICON_BUTTON}>
         <ScanQrCode size={22} />
       </button>
       {/* On the page body: inside the top bar, the menu would cover it. */}

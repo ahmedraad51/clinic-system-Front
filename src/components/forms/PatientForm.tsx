@@ -3,7 +3,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { Check, Save, Users } from "lucide-react";
-import { Alert, Button, Card, DateInput, Field, focusField, FormActions, LinkButton, NumberInput, PhoneInput, SelectInput, SuggestInput, TextArea, TextInput } from "@/components/ui";
+import { Alert, Button, Card, DateInput, Field, focusField, FormActions, LinkButton, NumberInput, PhoneInput, SelectInput, SuggestInput, TextArea, TextInput, tooltip } from "@/components/ui";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
@@ -358,16 +358,19 @@ export default function PatientForm({
                   key={item.key}
                   type="button"
                   aria-pressed={on}
-                  disabled={fixed}
-                  title={fixed ? f.checklistFixed : undefined}
-                  onClick={() =>
+                  // aria-disabled, not disabled: it can still take the focus, so its hint (why it cannot be changed here)
+                  // shows from the keyboard and the mouse too.
+                  aria-disabled={fixed || undefined}
+                  {...tooltip(fixed ? f.checklistFixed : undefined)}
+                  onClick={() => {
+                    if (fixed) return;
                     setForm({
                       ...form,
                       [item.field]: on ? removeTerm(text, terms) : addTerm(text, f.checklist[item.key].term),
-                    })
-                  }
+                    });
+                  }}
                   className={cx(
-                    "inline-flex items-center gap-1.5 min-h-11 px-3.5 rounded-xl border text-sm font-medium transition disabled:cursor-default",
+                    "inline-flex items-center gap-1.5 min-h-11 px-3.5 rounded-xl border text-sm font-medium transition aria-disabled:cursor-default",
                     on ? "bg-red-50 border-red-200 text-red-800" : "bg-surface border-gray-200 text-gray-700 hover:border-primary-300",
                   )}
                 >

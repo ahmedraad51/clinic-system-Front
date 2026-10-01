@@ -3,7 +3,7 @@
 import { useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUpRight, Circle, Pencil, Trash2, Type, Undo2, type LucideIcon } from "lucide-react";
-import { Button } from "@/components/ui";
+import { Button, tooltip } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { cx } from "@/lib/format";
 import {
@@ -279,7 +279,7 @@ export function SketchToolbar({
               type="button"
               aria-pressed={tool === option}
               aria-label={x.toolNames[option]}
-              title={x.toolNames[option]}
+              {...tooltip(x.toolNames[option])}
               onClick={() => onTool(option)}
               className={toolButton(tool === option)}
             >
@@ -295,7 +295,7 @@ export function SketchToolbar({
             type="button"
             aria-pressed={color === option}
             aria-label={x.colourNames[option] ?? option}
-            title={x.colourNames[option] ?? option}
+            {...tooltip(x.colourNames[option] ?? option)}
             onClick={() => onColor(option)}
             className={cx(
               "w-8 h-8 pointer-coarse:w-10 pointer-coarse:h-10 rounded-full border-2 transition",
@@ -305,10 +305,10 @@ export function SketchToolbar({
           />
         ))}
       </div>
-      <button type="button" onClick={onUndo} disabled={!canUndo} aria-label={x.undo} title={x.undo} className={cx(toolButton(false), "disabled:opacity-40")}>
+      <button type="button" onClick={onUndo} disabled={!canUndo} aria-label={x.undo} {...tooltip(x.undo)} className={cx(toolButton(false), "disabled:opacity-40")}>
         <Undo2 size={18} />
       </button>
-      <button type="button" onClick={onClear} disabled={!canUndo} aria-label={x.clearDrawing} title={x.clearDrawing} className={cx(toolButton(false), "disabled:opacity-40")}>
+      <button type="button" onClick={onClear} disabled={!canUndo} aria-label={x.clearDrawing} {...tooltip(x.clearDrawing)} className={cx(toolButton(false), "disabled:opacity-40")}>
         <Trash2 size={18} />
       </button>
       {extra}

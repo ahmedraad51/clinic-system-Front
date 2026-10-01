@@ -17,7 +17,30 @@ import XraySection from "@/components/xrays/XraySection";
 import RecallDialog from "@/components/RecallDialog";
 import RecordHistory from "@/components/RecordHistory";
 import {
-  Button, Card, ClickableRow, DetailLayout, DetailList, DetailRow, EmptyState, IconTile, LinkButton, LoadError, NotFoundCard, PageContainer, PageHeader, PageLoading, Parts, ProfileCard, RecordLoading, StatusBadge, Table, Tabs, Td, Th, type Hue,
+  Button,
+  Card,
+  ClickableRow,
+  DetailLayout,
+  DetailList,
+  DetailRow,
+  EmptyState,
+  IconTile,
+  LinkButton,
+  LoadError,
+  NotFoundCard,
+  PageContainer,
+  PageHeader,
+  PageLoading,
+  Parts,
+  ProfileCard,
+  RecordLoading,
+  StatusBadge,
+  Table,
+  Tabs,
+  Td,
+  Th,
+  tooltip,
+  type Hue,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
@@ -268,7 +291,7 @@ function PatientDetail() {
                 icon={Trash2}
                 onClick={() => setConfirmDelete(true)}
                 aria-label={p.deletePatient}
-                title={p.deletePatient}
+                {...tooltip(p.deletePatient)}
                 className="text-red-600 hover:bg-red-50 px-3"
               />
             )}

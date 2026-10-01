@@ -1,5 +1,5 @@
 import type { Messages } from "../en";
-import { num, plural } from "../runtime";
+import { joinParts, num, plural } from "../runtime";
 
 export const calendar: Messages["calendar"] = {
   loadFailed: "تعذّر تحميل المواعيد.",
@@ -18,7 +18,7 @@ export const calendar: Messages["calendar"] = {
   blockLabel: (time: string, who: string, doctor: string, status: string) =>
     `${time}، ${who}${doctor ? `، ${doctor}` : ""}، ${status}`,
   blockTitle: (time: string, who: string, reason: string, status: string) =>
-    `${time} · ${who}${reason ? ` · ${reason}` : ""} · ${status}`,
+    joinParts([time, who, reason, status], " · "),
   moved: (who: string, time: string) => `تم نقل موعد ${who} إلى الساعة ${time}.`,
   moveFailed: "تعذّر نقل الموعد.",
   now: "الآن",

@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import { messages, num } from "@/i18n";
 import { cx } from "@/lib/format";
+import { tooltip } from "@/components/ui";
 
 /**
  * Small charts drawn in code (no chart library): bars and a ring. They take the colour of the section they sit in
@@ -60,7 +61,7 @@ export function BarChart({
             )}
             <div className="w-full max-w-14 flex-1 flex items-end border-b border-gray-100">
               <div
-                title={`${point.fullLabel ?? point.label}: ${format(point.value)}`}
+                {...tooltip(`${point.fullLabel ?? point.label}: ${format(point.value)}`)}
                 style={style}
                 className={cx(
                   // Plain bars: the strongest (this month) in the full colour, the others in a soft tint of it.

@@ -8,7 +8,24 @@ import { Users, HeartPulse, MessageCircle, UserPlus, UserSearch } from "lucide-r
 import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import {
-  Button, Card, ClearFiltersButton, ClickableRow, PageContainer, PageHeader, PageLoading, Pagination, SearchInput, SelectInput, Table, TableError, TableLoading, TableMessage, Td, Th, Toolbar,
+  Button,
+  Card,
+  ClearFiltersButton,
+  ClickableRow,
+  PageContainer,
+  PageHeader,
+  PageLoading,
+  Pagination,
+  SearchInput,
+  SelectInput,
+  Table,
+  TableError,
+  TableLoading,
+  TableMessage,
+  Td,
+  Th,
+  Toolbar,
+  tooltip,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
@@ -223,7 +240,7 @@ function PatientsList() {
                               href={reminder(patient)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              title={p.remindTitle}
+                              {...tooltip(p.remindTitle)}
                               className="inline-flex items-center gap-1 min-h-9 pointer-coarse:min-h-11 px-2.5 rounded-lg bg-green-50 border border-green-200 text-xs font-medium text-green-800 hover:bg-green-100"
                             >
                               <MessageCircle size={13} />
@@ -258,14 +275,16 @@ function MedicalChips({ patient }: { patient: Patient }) {
       {flags.map((flag) => (
         <span
           key={flag.kind}
-          title={`${flag.label}${t.medical.detailSeparator}${flag.detail}`}
+          {...tooltip(`${flag.label}${t.medical.detailSeparator}${flag.detail}`)}
           className={cx(
             "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap",
             flag.severity === "high" ? "bg-red-50 text-red-700" : "bg-yellow-50 text-yellow-800",
           )}
         >
           <HeartPulse size={12} />
-          {short[flag.kind] ?? flag.label}
+          {/* The hint is for the mouse; a screen reader reads the whole alert. */}
+          <span aria-hidden="true">{short[flag.kind] ?? flag.label}</span>
+          <span className="sr-only">{`${flag.label}${t.medical.detailSeparator}${flag.detail}`}</span>
         </span>
       ))}
     </span>

@@ -7,7 +7,7 @@ import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import ImageViewer from "@/components/xrays/ImageViewer";
 import { SketchCanvas, SketchToolbar } from "@/components/xrays/Sketch";
 import ToothLogo from "@/components/ToothLogo";
-import { Alert, Button, CardIcon, LinkButton, Segmented, StatusBadge, TextArea } from "@/components/ui";
+import { Alert, Button, CardIcon, LinkButton, Segmented, StatusBadge, TextArea, tooltip } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { label } from "@/i18n";
 import {
@@ -300,9 +300,9 @@ export default function DentalChart({
     const number = (
       <span className="flex items-center gap-0.5 text-xs font-semibold text-gray-600">
         {tooth}
-        {active && <span className="w-1.5 h-1.5 rounded-full bg-primary-500" title={t.chart.openPlan} />}
+        {active && <span className="w-1.5 h-1.5 rounded-full bg-primary-500" {...tooltip(t.chart.openPlan)} />}
         {withImages && (
-          <span data-xray-marker className="text-sky-600" title={t.xrays.ofTooth}>
+          <span data-xray-marker className="text-sky-600" {...tooltip(t.xrays.ofTooth)}>
             <ImageIcon size={10} aria-hidden="true" />
           </span>
         )}
@@ -316,7 +316,7 @@ export default function DentalChart({
         aria-pressed={selected === tooth}
         data-tooth={tooth}
         aria-label={t.chart.toothButton(tooth, toothName(tooth), spoken)}
-        title={`${tooth} · ${toothName(tooth)}${description ? ` · ${description}` : ""}`}
+        {...tooltip(`${tooth} · ${toothName(tooth)}${description ? ` · ${description}` : ""}`)}
         className={cx(
           "flex flex-col items-center gap-1 w-10 xl:w-12 py-1.5 rounded-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
           selected === tooth ? "bg-primary-50 ring-2 ring-primary-400" : "hover:bg-gray-50",
@@ -765,7 +765,7 @@ function ToothPanel({
                       type="button"
                       onClick={() => onOpenImage(image)}
                       aria-label={t.xrays.openImage(imageTitle(image))}
-                      title={imageTitle(image)}
+                      {...tooltip(imageTitle(image))}
                       className="block w-20 h-16 rounded-lg overflow-hidden bg-gray-950 ring-1 ring-gray-200 hover:ring-primary-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                     >
                       {isPdf(image) ? (

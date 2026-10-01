@@ -31,7 +31,7 @@ accurate.
 | `npm run build` | **Passes** (checked 2026-10-01): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-10-01). `npx tsc --noEmit` passes too. | |
 | Languages | **Arabic (default, right to left) and English.** Every text is in `src/i18n/en/*.ts` and `src/i18n/ar/*.ts`; the switch is in the menu. See **Languages** below. **Every new text must be added in both languages.** | `src/i18n/`, `src/context/LanguageContext.tsx` |
-| Tests | **Playwright tests pass** (208 tests, 23 of them in Arabic, checked 2026-10-01; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, expenses and profit, the waiting room, QR codes, the printed patient file, prescription paper, the activity log, the installable app, Arabic typography, the app's own form controls, phone numbers, the form dialogs and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (214 tests, 24 of them in Arabic, checked 2026-10-01; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, expenses and profit, the waiting room, QR codes, the printed patient file, prescription paper, the activity log, the installable app, Arabic typography, the app's own form controls and hints, phone numbers, the form dialogs and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 | Screen review | **Done 2026-10-01, before the back end:** every page and dialog as a receptionist, a dentist and a manager, in Arabic and English, light and dark, at desktop, tablet and phone size, checked in the page (cut off, sticking out, untranslated, drawn by the browser, contrast, touch size) and by eye. The script is `e2e/screens/final.local.spec.ts` (git-ignored, local only; 36 combinations, about 2 hours with 2 workers, and it needs free memory: on the owner's machine it was stopped once for low memory). Arabic names on English screens are expected (the data is Arabic). | `screenshots/final/` (git-ignored) |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
@@ -212,6 +212,7 @@ src/
 │       ├── TimeInput.tsx     the app's own time field and picker
 │       ├── SuggestInput.tsx  a text box with suggestions (the app's own <datalist>)
 │       ├── ColorInput.tsx    the app's own colour field (palette and colour code)
+│       ├── Tooltip.tsx       tooltip(text), the app's own hover and focus hint, and TooltipLayer (in layout.tsx)
 │       └── LinkSelect.tsx    searchable picker for Link fields (used for patients)
 ├── context/
 │   ├── AuthContext.tsx       who is logged in, the AUTH_DISABLED switch, useAuth()
@@ -787,7 +788,7 @@ whatsapp, trigger, user) and `statusTone(kind, status)` for other views that mus
 the newest reacts to Escape and Tab; `priority` puts it above other dialogs; `size` md, lg or xl; `side` for a panel
 from the end side; `fullScreenOnPhone`; the page's scroll lock is counted, so dialogs closing together in any order
 unlock it; an Escape that a control inside already used (`preventDefault`, as the patient picker's list does) does not
-close it; `isDialogOpen()`, and the Ctrl+K search does not open over a dialog) and `ConfirmDialog` (focus starts on Cancel) in `Modal.tsx`, and `LinkSelect` for searchable Link fields (its list is a `Popover`, with initials before patients and doctors and a check mark on the chosen one). Use these instead of
+close it; `isDialogOpen()`, and the Ctrl+K search does not open over a dialog) and `ConfirmDialog` (focus starts on Cancel) in `Modal.tsx`, and `LinkSelect` for searchable Link fields (its list is a `Popover`, with initials before patients and doctors and a check mark on the chosen one), and `tooltip(text)` (`Tooltip.tsx`) for a hint. Use these instead of
 writing new class lists.
 
 ### Styling
@@ -865,6 +866,20 @@ writing new class lists.
   first (the row's name or date) and action cells `label="…"` with the same text as its `Th`; empty cells
   are hidden. End every form with `<FormActions>` (a Save / Cancel bar that sticks to the bottom of the
   screen). Inputs use 16 px text on phones so iPhones do not zoom in.
+- **Hints are ours too, never `title`.** Spread `{...tooltip(text)}` on the element (`<button aria-label={x.zoomIn}
+  {...tooltip(x.zoomIn)}>`; `Button` and `Link` pass it on). It sets `data-tooltip`, and the one `TooltipLayer` in
+  `layout.tsx` shows it: after 350 ms of the mouse resting on it (at once when a hint is already showing), and at once
+  on a keyboard focus (`:focus-visible`, not a click). A bubble in the text colour with the page colour as its text
+  (dark on a light page, light in dark mode), in the page's font and direction, above the element or below it when
+  there is no room, kept on screen and following it on scroll (a portal on the body at z-[70], over dialogs and lists).
+  It stays while the mouse moves onto it; Escape closes only the hint (`preventDefault`: a dialog, menu or the X-ray
+  viewer checks `defaultPrevented` and stays open); a press anywhere closes it; touch screens get none. While it
+  shows, the element gets `aria-describedby="app-tooltip"` unless the hint only repeats its name. A hint is for the
+  mouse: give the element an `aria-label`, and put extra facts a screen reader needs in an `sr-only` span (the medical
+  alert chips). A disabled button gets no mouse or focus events, so one that explains why it is off uses
+  `aria-disabled` and ignores the click (the patient form's checklist). ESLint refuses `title` on DOM elements
+  (`react/forbid-dom-props`); an `<iframe>` keeps its `title` with a disable comment (it is its name).
+  `e2e/tests/tooltips.spec.ts` checks that no page has a `title` hint.
 - **No control the browser draws itself.** Every dropdown, date, time, colour and suggestion box is one of ours, used
   like the native element (`value`, `onChange` with a real event, `name`, `required`):
   - `SelectInput` (`Select.tsx`) takes `<option>` and `<optgroup>` children as before. A real `<select>` stays

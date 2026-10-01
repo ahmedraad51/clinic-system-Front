@@ -5,9 +5,32 @@ import Link from "next/link";
 import { MessageCircle, Pencil, Plus, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import {
-  Alert, Badge, Button, Card, ClearFiltersButton, EmptyState, Field, PageContainer, PageHeader, PageLoading,
-  Pagination, SearchInput, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Tabs, Td,
-  TextArea, TextInput, Th, Toggle, Toolbar,
+  Alert,
+  Badge,
+  Button,
+  Card,
+  ClearFiltersButton,
+  EmptyState,
+  Field,
+  PageContainer,
+  PageHeader,
+  PageLoading,
+  Pagination,
+  SearchInput,
+  SelectInput,
+  StatusBadge,
+  Table,
+  TableError,
+  TableLoading,
+  TableMessage,
+  Tabs,
+  Td,
+  TextArea,
+  TextInput,
+  Th,
+  Toggle,
+  Toolbar,
+  tooltip,
 } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
@@ -282,7 +305,7 @@ function TemplateModal({
                 key={key}
                 type="button"
                 dir="ltr"
-                title={t.whatsapp.placeholderHelp[key]}
+                {...tooltip(t.whatsapp.placeholderHelp[key])}
                 onClick={() => insertPlaceholder(key)}
                 className="px-2 py-1 rounded-lg bg-gray-100 text-xs font-mono text-gray-700 hover:bg-primary-50 hover:text-primary-700"
               >

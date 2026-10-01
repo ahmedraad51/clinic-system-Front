@@ -14,7 +14,23 @@ import FinishVisitDialog from "@/components/FinishVisitDialog";
 import { LAB_BADGES, labState } from "@/components/LabWorkCard";
 import RequirePermission from "@/components/Guard";
 import {
-  Badge, Button, Card, CARD_CLASS, EmptyState, hueClass, IconTile, LinkButton, LoadError, PageContainer, PageHeader, PageLoading, Segmented, StatusBadge, statusLabel, type Hue,
+  Badge,
+  Button,
+  Card,
+  CARD_CLASS,
+  EmptyState,
+  hueClass,
+  IconTile,
+  LinkButton,
+  LoadError,
+  PageContainer,
+  PageHeader,
+  PageLoading,
+  Segmented,
+  StatusBadge,
+  statusLabel,
+  tooltip,
+  type Hue,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
@@ -395,10 +411,11 @@ function TodayBoard() {
                                 {urgent.length > 0 && (
                                   <span
                                     className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 px-2 py-0.5 text-xs font-medium"
-                                    title={urgent.map((f) => t.today.flagDetail(f.label, f.detail)).join(t.common.dot)}
+                                    {...tooltip(urgent.map((f) => t.today.flagDetail(f.label, f.detail)).join(t.common.dot))}
                                   >
                                     <HeartPulse size={13} />
-                                    {urgent.map((f) => f.label).join(t.today.listSeparator)}
+                                    <span aria-hidden="true">{urgent.map((f) => f.label).join(t.today.listSeparator)}</span>
+                                    <span className="sr-only">{urgent.map((f) => t.today.flagDetail(f.label, f.detail)).join(t.common.dot)}</span>
                                   </span>
                                 )}
                               </div>

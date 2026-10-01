@@ -8,6 +8,7 @@ import { SettingsProvider } from "@/context/SettingsContext";
 import { SessionProvider } from "@/context/SessionContext";
 import { ToastProvider } from "@/context/ToastContext";
 import MainLayout from "@/components/MainLayout";
+import { TooltipLayer } from "@/components/ui/Tooltip";
 import { ServiceWorkerRegister } from "@/components/InstallApp";
 import { DEFAULT_LANG, dirOf, LANG_BOOT_SCRIPT } from "@/i18n/runtime";
 import { ZOOM_BOOT_SCRIPT } from "@/lib/display";
@@ -61,6 +62,8 @@ export default function RootLayout({
               <ToastProvider>
                 <LanguageProvider>
                   <MainLayout>{children}</MainLayout>
+                  {/* The hover and focus hints of every page (tooltip() in the UI kit), the waiting room and login too. */}
+                  <TooltipLayer />
                   <ServiceWorkerRegister />
                 </LanguageProvider>
               </ToastProvider>

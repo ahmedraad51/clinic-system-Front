@@ -6,7 +6,29 @@ import { CalendarDays, Plus, Settings, Save, Sparkles, Tags, Trash2, Upload } fr
 import RequirePermission from "@/components/Guard";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import {
-  Alert, Badge, Button, Card, ColorInput, DateInput, DetailLayout, Field, FormActions, Fraction, NumberInput, PageContainer, PageHeader, PageLoading, PhoneInput, ProfileCard, ProgressBar, SelectInput, Tabs, TextInput, TimeInput, Toggle,
+  Alert,
+  Badge,
+  Button,
+  Card,
+  ColorInput,
+  DateInput,
+  DetailLayout,
+  Field,
+  FormActions,
+  Fraction,
+  NumberInput,
+  PageContainer,
+  PageHeader,
+  PageLoading,
+  PhoneInput,
+  ProfileCard,
+  ProgressBar,
+  SelectInput,
+  Tabs,
+  TextInput,
+  TimeInput,
+  Toggle,
+  tooltip,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -609,7 +631,7 @@ function ThemeColorPicker({ value, onChange }: { value: string; onChange: (value
           onClick={() => onChange("")}
           aria-label={t.settings.defaultColour}
           aria-pressed={!chosen}
-          title={t.settings.defaultColour}
+          {...tooltip(t.settings.defaultColour)}
           className={cx(
             "relative w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11 rounded-full border-2 transition",
             !chosen ? "border-gray-800 scale-110" : "border-white shadow-sm hover:scale-105",
@@ -625,7 +647,7 @@ function ThemeColorPicker({ value, onChange }: { value: string; onChange: (value
             onClick={() => onChange(preset.value)}
             aria-label={t.settings.themeNames[preset.key]}
             aria-pressed={chosen === preset.value}
-            title={t.settings.themeNames[preset.key]}
+            {...tooltip(t.settings.themeNames[preset.key])}
             className={cx(
               "w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11 rounded-full border-2 transition",
               chosen === preset.value ? "border-gray-800 scale-110" : "border-white shadow-sm hover:scale-105",

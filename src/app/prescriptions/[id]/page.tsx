@@ -7,7 +7,7 @@ import { Pencil, Pill, Printer, Trash2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import PrescriptionWarnings from "@/components/PrescriptionWarnings";
 import { RxFooter, RxHeader, RxSignature } from "@/components/RxPaper";
-import { Button, Card, LinkButton, NotFoundCard, PageContainer, PageHeader, RecordLoading } from "@/components/ui";
+import { Button, Card, LinkButton, NotFoundCard, PageContainer, PageHeader, RecordLoading, tooltip } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
@@ -183,7 +183,7 @@ function PrescriptionDetail() {
                 icon={Trash2}
                 onClick={() => setConfirmDelete(true)}
                 aria-label={p.deleteLabel}
-                title={p.deleteLabel}
+                {...tooltip(p.deleteLabel)}
                 className="text-red-600 hover:bg-red-50 px-3"
               />
             )}

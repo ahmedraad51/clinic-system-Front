@@ -809,6 +809,7 @@ export { ColorInput } from "./ColorInput";
 /** The app's own date and time fields (DateInput.tsx, TimeInput.tsx), used like <input type="date"> and type="time". */
 export { DateInput } from "./DateInput";
 export { TimeInput } from "./TimeInput";
+export { tooltip, TooltipLayer } from "./Tooltip";
 
 export function TextArea({
   className,
