@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useDeployment } from "@/context/DeploymentContext";
 import { useSettings } from "@/context/SettingsContext";
 import { messages } from "@/i18n";
 import { PageLoading } from "@/components/ui";
@@ -11,6 +12,10 @@ import SessionEndedNotice from "./SessionEndedNotice";
 import { RecordDialogsProvider } from "./RecordDialogs";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+
+/** Pages anyone may open, with no login and no menu: the public website. */
+export const PUBLIC_PATHS = ["/site"];
+const isPublicPath = (path: string) => PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
 
 /**
  * The shell around every page, and the one place that sends logged-out visitors to /login.
@@ -22,16 +27,25 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { user, isLoading, sessionEnded } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const { clinicName } = useSettings();
+  const { mainAddress } = useDeployment();
 
   const isLoginPage = pathname === "/login";
-  const mustLogin = !isLoading && !user && !isLoginPage;
+  const isPublic = isPublicPath(pathname);
+  // The cloud's main address names no clinic: only the public website lives there.
+  const offSite = mainAddress && !isPublic;
+  const mustLogin = !isLoading && !user && !isLoginPage && !isPublic && !offSite;
 
   useEffect(() => {
     // Remember the page, so logging in comes back to it.
     if (mustLogin) router.replace(loginHref(window.location.pathname + window.location.search, sessionEnded));
   }, [mustLogin, sessionEnded, router]);
 
-  if (isLoginPage) return <>{children}</>;
+  useEffect(() => {
+    if (offSite) router.replace("/site");
+  }, [offSite, router]);
+
+  if (isLoginPage || isPublic) return <>{children}</>;
+  if (offSite) return <PageLoading />;
   if (isLoading || !user) return <PageLoading />;
   // The waiting room screen fills a TV: no menu, top bar or footer.
   if (pathname === "/waiting-room") return <>{children}</>;

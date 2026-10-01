@@ -5,8 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import ToothLogo from "@/components/ToothLogo";
 import { Alert, Button, Field, PageLoading, TextInput, Toggle } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { useDeployment } from "@/context/DeploymentContext";
 import { useI18n } from "@/context/LanguageContext";
 import { LANG_NAMES, LANGS } from "@/i18n";
+import { clinicAddress } from "@/lib/deployment";
 import { cx } from "@/lib/format";
 import { errorMessage, sessionEndedMessage } from "@/lib/frappe";
 import { safeNextPath } from "@/lib/links";
@@ -26,6 +28,7 @@ export default function LoginPage() {
 function LoginForm() {
   const { login, user, isLoading, sessionEnded } = useAuth();
   const { t, lang, setLang } = useI18n();
+  const { clinic } = useDeployment();
   const router = useRouter();
   const params = useSearchParams();
   // The page to return to (MainLayout adds ?next=), checked so it cannot lead off the site.
@@ -82,6 +85,12 @@ function LoginForm() {
           </span>
           <h1 className="text-2xl font-semibold text-gray-800 mt-4">{t.common.appName}</h1>
           <p className="text-gray-500 text-sm mt-1">{t.login.subtitle}</p>
+          {/* In the cloud: which clinic this login is for. */}
+          {clinic && (
+            <p className="text-sm font-medium text-gray-700 mt-2" dir="ltr">
+              {clinicAddress(clinic)}
+            </p>
+          )}
         </div>
 
         {ended && !error && (

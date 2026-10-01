@@ -1,5 +1,3 @@
-import { useSyncExternalStore } from "react";
-
 /**
  * How this copy of DentClinic is installed. One app, three ways to sell it:
  *
@@ -85,7 +83,8 @@ export function setDemoMode(mode: DeploymentMode | null): void {
   listeners.forEach((listener) => listener());
 }
 
-function subscribe(listener: () => void) {
+/** Calls the listener when the previewed mode changes (here or in another tab). */
+export function subscribeDemoMode(listener: () => void) {
   listeners.add(listener);
   const onStorage = (event: StorageEvent) => {
     if (event.key === DEMO_MODE_KEY) listener();
@@ -101,13 +100,4 @@ function subscribe(listener: () => void) {
 export function currentMode(allowDemo: boolean): DeploymentMode {
   if (!allowDemo || typeof window === "undefined") return BUILT_MODE;
   return readDemoMode() ?? BUILT_MODE;
-}
-
-/** The mode in effect, in a component. The first render matches the server's (the built mode). */
-export function useDeploymentMode(allowDemo: boolean): DeploymentMode {
-  return useSyncExternalStore(
-    subscribe,
-    () => currentMode(allowDemo),
-    () => BUILT_MODE,
-  );
 }

@@ -405,6 +405,19 @@ DEPLOYMENT_MODE=clinic-server npm run build
 npm run start
 ```
 
+**Cloud with many clinics.** Set `CLOUD_DOMAIN` to the main web address, and `CLINIC_SITE_URL` to where each
+clinic's Frappe site is, with `{clinic}` for its name. `alnoor.dentclinic.example` is then the "alnoor" clinic, with its
+requests sent to its own site, and the main address shows the public website (its requests go to
+`PLATFORM_SITE_URL`). Without `CLOUD_DOMAIN`, the app serves the one clinic at `FRAPPE_URL`.
+
+| Variable | Example | Used for |
+|---|---|---|
+| `DEPLOYMENT_MODE` | `cloud` | The way of installing (above) |
+| `FRAPPE_URL` | `http://dent_clinic.localhost:8000` | The one clinic's Frappe site (clinic server, cloud copy, a single cloud clinic) |
+| `CLOUD_DOMAIN` | `dentclinic.example` | The cloud's main address; clinics are `<name>.dentclinic.example` |
+| `CLINIC_SITE_URL` | `https://{clinic}.sites.dentclinic.example` | Each cloud clinic's Frappe site |
+| `PLATFORM_SITE_URL` | `https://platform.sites.dentclinic.example` | The platform's Frappe site, for the main address |
+
 With the dummy data you do not need three builds: **My Profile → Preview a Way of Installing** shows the app as
 another mode on that computer. [`docs/backend-todo.md`](docs/backend-todo.md) lists what the back end must provide
 for each mode.

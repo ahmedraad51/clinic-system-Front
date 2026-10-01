@@ -995,3 +995,21 @@ The front end is built in one of three modes (`DEPLOYMENT_MODE`, see `AGENTS.md`
 **cloud** (online, one Frappe site per clinic), **clinic-server** (a small computer inside the clinic, no internet
 needed) and **cloud-copy** (the online copy of a clinic server, view-only, for the owner at home). The same `dent_app`
 serves all three; what each mode needs from the back end is listed below, item by item.
+
+### Cloud: one site per clinic, found from the web address
+
+- **One Frappe site per clinic** on the same bench, all with `dent_app`. The front end sends the requests of
+  `<name>.CLOUD_DOMAIN` to `CLINIC_SITE_URL` with `{clinic}` replaced by the name (for example
+  `https://alnoor.sites.dentclinic.example`). The proxy in front of the bench (nginx) must send each of those host names
+  to its site; Frappe picks the site from the `Host` header, so the simplest setup names each site after its host.
+- **The clinic's name** follows `isValidClinicAddress()` in `src/lib/deployment.ts`: 3-30 lowercase letters, digits and
+  hyphens, starting with a letter; `www`, `admin`, `api`, `app` and `mail` are never clinics. Creating a clinic (Part 3,
+  the platform owner) must check the same rule and that the name is free.
+- **A name with no site** should get a clear 404 from the proxy, not a 502, so the app can say "no clinic here".
+- **Cookies:** each clinic's session cookie belongs to its own host name (Frappe sets it for the host of the request);
+  do not set a cookie domain shared by all clinics, or a login would leak from one clinic to another.
+- **The main address** (`CLOUD_DOMAIN` and `www.`) shows the public website; its requests go to `PLATFORM_SITE_URL`,
+  the platform's own Frappe site (a `dent_platform` app or a separate site with `dent_app`), which keeps the trial
+  requests, the clinics and their subscriptions (Parts 2 and 3).
+- **HTTPS** with a wildcard certificate for `*.CLOUD_DOMAIN` (Let's Encrypt DNS challenge), so every new clinic works at
+  once.

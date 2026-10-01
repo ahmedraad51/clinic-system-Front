@@ -68,12 +68,23 @@ helpers, and `useDeployment()` (`src/context/DeploymentContext.tsx`, the outermo
 
 | Mode | What it is | What changes in the app |
 |---|---|---|
-| `cloud` (default) | Online, one Frappe site per clinic | (see below) |
+| `cloud` (default) | Online, one Frappe site per clinic | With `CLOUD_DOMAIN`, the clinic comes from the web address and the main address is the public website (below) |
 | `clinic-server` | A small computer inside the clinic, no internet needed | (see below) |
 | `cloud-copy` | The online copy of a clinic server, for the owner at home | (see below) |
 
+- **Cloud, many clinics:** `CLOUD_DOMAIN` (e.g. `dentclinic.example`) is the main address; each clinic is
+  `<name>.CLOUD_DOMAIN`. `next.config.ts` matches the host (`has: [{ type: "host" }]`, the name captured as `:clinic`)
+  and sends that clinic's `/frappe/…` to `CLINIC_SITE_URL` with `{clinic}` filled in (default
+  `http://{clinic}.localhost:8000`, one bench site per clinic); the main address, `www.` and anything else go to
+  `PLATFORM_SITE_URL` (the platform's own site; default `FRAPPE_URL`). A clinic name is 3-30 lowercase letters, digits
+  and hyphens, starting with a letter (`isValidClinicAddress()`; `www`, `admin`, `api`, `app` and `mail` are kept
+  back); `CLINIC_SLUG` in `next.config.ts` is the same rule, keep them equal. Without `CLOUD_DOMAIN` the cloud serves the
+  one clinic at `FRAPPE_URL`, like before. `/` redirects the main address to `/site` (the public website, in
+  `PUBLIC_PATHS` of `MainLayout`: no login, no menu), and `MainLayout` sends any other page there too; the login page
+  shows the clinic's address. To try it locally: `CLOUD_DOMAIN=localhost`, then `localhost:3000` is the main address
+  and `alnoor.localhost:3000` the alnoor clinic (`allowedDevOrigins` lets the dev server accept them).
 - **Previewing a mode (dummy data only):** `/profile` → **Preview a Way of Installing** saves the mode in
-  `localStorage.demo_deployment_mode` and reloads; `currentMode(MOCK_DATA)` and `useDeploymentMode(MOCK_DATA)` read
+  `localStorage.demo_deployment_mode` and reloads; `currentMode(MOCK_DATA)` (and `useDeployment()`) read
   it. With a real back end only the built mode counts. Tests set the same key with `page.addInitScript`.
 - Never read `process.env.DEPLOYMENT_MODE` in a component: use `useDeployment().mode` (the preview, and the first
   render matching the server's).
@@ -312,7 +323,8 @@ the dialog to be hidden, and use `openSaved(page, "Payment recorded.")` to follo
 
 | Route | Permission | What it does |
 |---|---|---|
-| `/` | none | Server redirect to `/dashboard` |
+| `/` | none | Server redirect to `/dashboard`; on the cloud's main address (`CLOUD_DOMAIN`) to `/site` |
+| `/site` | none (public) | The public website (no login, no menu): what DentClinic is, and **Go to Your Clinic** (a clinic's address, `<name>.CLOUD_DOMAIN`; a single-clinic install just opens the clinic) |
 | `/dashboard` | none (cards appear per permission) | A **welcome card** (date, greeting, "2 appointments today, 2 still to come."); on a wide screen (xl) today's appointments and **Needs attention** sit side by side right under the numbers, so on a full HD screen (1920 × 1080 at 100 %) they show without scrolling, and the whole menu fits too (`e2e/tests/full-hd.spec.ts`); right under it the **quick actions** as large `ActionTile`s (New Appointment, Add Patient, New Treatment, Record Payment, each by permission, with a one-line hint from `sm` up); counts for today's appointments, patients, active plans; revenue this month and amount owed; today's list and the next 7 days; a **Needs attention** card (hidden when empty) with past appointments still open, tomorrow's reminders not yet opened, patients due for recall (`dueForRecall` in `src/lib/recall.ts`: the dentist's date, else 6 months) and patients who owe money, each linking to where it is handled; the appointment lists show each patient's initials (`Avatar`). Below, three **charts** (`Charts.tsx`), each by permission: revenue per month for the last 6 months (`view_payments`, amounts written short, "450K"), visits per month (`view_appointments`, cancelled ones and no-shows left out) and treatment plans by type (`view_treatments`, a ring with the 5 biggest types and "Other") |
 | `/today` | `view_appointments` | The front desk board: counts (still to come (not arrived), waiting, in the chair, late, completed, no show), today's appointments grouped by doctor with one-tap **Confirm**, **Arrived** (sets `arrived_at` to now: the badge becomes "Waiting 12 min"), **In Chair** (sets `in_chair_at`: "In the chair since 10:05 AM"), **Undo step** (clears the last step), **Completed**, **No show** and **Undo** (`edit_appointments`; the steps are `visitStep()` in `src/lib/waitingRoom.ts`, only for Scheduled or Confirmed visits), late patients (still open and not arrived `LATE_AFTER` = 10 minutes after the start) highlighted, **Waiting Room Screen** (a link to `/waiting-room`), a red chip for high medical alerts, what the patient owes (`view_payments`), **Add Payment** (`add_payments`), **Walk-in** (books now, rounded up to the quarter hour) and Refresh. **Tomorrow's reminders** (when `enable_whatsapp` is on) lists tomorrow's booked patients with **Send reminder**, which opens `wa.me` with the active "24 Hours Before" template (or the first active one) filled in; opened reminders are remembered on that computer (`localStorage.reminders_opened`). **Lab work due** lists plans sent to a lab and not back that are late or due within two days (`view_treatments`). Below, **Earlier, still open** lists up to 50 past appointments still Scheduled or Confirmed, with Completed / No show / Cancelled buttons; resolved ones drop off. The dashboard and the bell link here |
 | `/waiting-room` | `view_appointments` | The waiting room TV screen, with no menu or top bar: the clinic logo and name, a big clock and the date, and three columns: **In the chair**, **Waiting** (longest first, with the minutes) and **Coming up** (the next 6 not arrived, from a quarter of an hour ago on), each patient as first name and initial only (`shortName()`, in a `<bdi>`) with the doctor. Loads today's open appointments again every 20 seconds (`REFRESH_SECONDS`) and after a dialog saves; a failed load keeps the last list and says so. **Full Screen** and **Back to Today** hide in full screen. The only screen with larger text sizes (it is read from across the room). In dummy mode a new tab starts from the seed data, so tests open it from the Today board in the same tab |
