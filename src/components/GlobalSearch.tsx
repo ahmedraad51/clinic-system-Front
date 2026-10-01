@@ -79,12 +79,14 @@ export default function GlobalSearch() {
         aria-keyshortcuts="Control+K"
         className={cx(
           "flex items-center gap-2 h-[2.375rem] pointer-coarse:h-11 rounded-full sm:rounded-md text-gray-500 hover:text-gray-800 transition-colors",
-          "w-[2.375rem] pointer-coarse:w-11 justify-center sm:w-auto sm:justify-start sm:px-2",
+          // A round icon on a phone (44 px on a touch screen); from sm up as wide as its text.
+          "w-[2.375rem] max-sm:pointer-coarse:w-11 justify-center sm:w-auto sm:justify-start sm:px-2",
         )}
       >
         <Search size={22} className="shrink-0 text-primary-600" />
-        <span className="hidden sm:inline text-sm">{t.nav.search.short}</span>
-        <kbd className="hidden md:inline ms-2 rounded-md border border-gray-300 px-1.5 py-0.5 text-xs font-sans text-gray-500">
+        <span className="hidden sm:inline text-sm whitespace-nowrap">{t.nav.search.short}</span>
+        {/* Touch screens have no Ctrl key: the hint only takes room there. */}
+        <kbd className="hidden md:inline pointer-coarse:hidden whitespace-nowrap ms-2 rounded-md border border-gray-300 px-1.5 py-0.5 text-xs font-sans text-gray-500">
           {t.nav.search.shortcut}
         </kbd>
       </button>

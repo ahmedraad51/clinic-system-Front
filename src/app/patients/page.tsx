@@ -234,7 +234,8 @@ function PatientsList() {
                   {showBalance && (
                     <Td label={p.balance} className="text-end whitespace-nowrap">
                       {Number(patient.total_remaining) > 0 ? (
-                        <span className="inline-flex items-center gap-2">
+                        // Wraps on a phone card: "Remind (Needs internet)" does not fit beside the amount.
+                        <span className="inline-flex flex-wrap items-center justify-end gap-2">
                           <span className="font-medium text-red-700">{owed(patient)}</span>
                           {owing && settings.enable_whatsapp !== 0 && reminder(patient) && (
                             <WhatsAppButton href={reminder(patient)!} size="xs">
