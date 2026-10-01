@@ -477,6 +477,7 @@ Worth knowing before you pick this up:
   [`docs/backend-todo.md`](docs/backend-todo.md), including the CSRF token after login.
 - **Totals are added up in the browser** for the dashboard and reports. Fine for one clinic; backend
   report methods would be faster for very large data.
-- **English only for now.** The layout uses start/end spacing, so an Arabic right-to-left version can be
-  added without redoing the screens.
+- **Selling DentClinic is ready on screen only.** The public website, free trials, plans and their limits, the
+  platform owner's area, backups, licences, the cloud copy and offline viewing all work with the dummy data; the
+  server parts come with the back end (`docs/backend-todo.md`, section 10).
 - The patient portal switch is saved in Settings but not used yet.

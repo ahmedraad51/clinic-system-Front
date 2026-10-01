@@ -5,8 +5,9 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- **Waiting for the owner:** the front end is checked and ready for the back end (see Done). What comes next is the
-  owner's choice. No restart of the dev server is needed; just reload the page once (Ctrl+F5) so it picks up the changes.
+- **Waiting for the owner:** the front end is ready to be sold three ways (see Done, "Selling DentClinic"). What comes
+  next is the owner's choice. **Please restart your `npm run dev` once**: `next.config.ts` changed (the three ways to
+  install) and a package was added (fflate).
 
 ## Backlog
 
@@ -15,6 +16,23 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Done
 
+- 2026-10-01 - **Selling DentClinic, three ways.** One app, set by `DEPLOYMENT_MODE` when it is built: **cloud** (each
+  clinic at its own web address, `alnoor.<domain>`), **clinic server** (on a small computer in the clinic, nothing
+  fetched from the internet, WhatsApp says "Needs internet" and keeps the reminder in its list) and **cloud copy**
+  (the clinic server's copy online, view-only, with a banner saying when it was last updated). My Profile → Preview a
+  Way of Installing shows each one with the dummy data. Added: the public website with the three plans (prices in one
+  file, `src/config/sales.ts`), a free-trial form and a WhatsApp button; a first-run setup wizard; importing patients
+  from Excel or CSV; exporting all data as Excel or CSV in one ZIP; Settings → Plan (usage against the limits, Request
+  an Upgrade); the limits in the screens (adding a doctor, a user or X-rays beyond the plan explains why), notices
+  before a plan ends and view-only after its grace days; the **Platform** page for you only (every clinic with its plan,
+  status, usage and renewal; new clinic; record a Zain Cash, FastPay, Qi Card, bank or cash payment; suspend and
+  reactivate; trial and plan requests); Settings → **Server & Backup** (the connection, the cloud copy, the backup
+  history, Back Up Now, Save to USB); Settings → **License** on a clinic server (key, plan, expiry, a warning 14 days
+  before, a new key works without internet); a connection icon in the top bar; and **offline viewing**: when the
+  connection is lost, the Today board, today's appointments and the patients already opened keep showing, view-only,
+  with a clear banner, and everything refreshes by itself when it is back. What the server must still do for each mode
+  is in docs/backend-todo.md, section 10. In the commits from "feat: DEPLOYMENT_MODE, one app for three ways to
+  install" to "fix: keep every page opened for offline use". **Please restart your `npm run dev` once.**
 - 2026-10-01 - **Our own hints.** The small labels that appear when the mouse rests on an icon button, a tooth, a
   calendar visit, a chart bar or a medical alert are now the app's own instead of the browser's yellow box: the same
   font, a dark bubble with a small arrow on a light page and a light one in dark mode, right to left in Arabic. They
