@@ -13,6 +13,7 @@ import { saveAppearance, useAppearance, type ThemeMode } from "@/lib/appearance"
 import { cx } from "@/lib/format";
 import { MyAvatar } from "./Avatar";
 import AppearancePanel from "./AppearancePanel";
+import ConnectionStatus from "./ConnectionStatus";
 import GlobalSearch from "./GlobalSearch";
 import ScanPatientButton from "./ScanPatient";
 import NotificationBell from "./NotificationBell";
@@ -27,11 +28,13 @@ function Dropdown({
   icon: Icon,
   children,
   width = "w-44",
+  className,
 }: {
   label: string;
   icon: LucideIcon;
   children: (close: () => void) => ReactNode;
   width?: string;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -50,7 +53,7 @@ function Dropdown({
   return (
     // Not closed when the focus leaves it: the unsaved-changes question takes the focus, and its "Leave" clicks the
     // language button in this menu again.
-    <div className="relative">
+    <div className={cx("relative", className)}>
       <button
         ref={buttonRef}
         type="button"
@@ -118,7 +121,9 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
           </div>
 
           <div className="flex items-center gap-0.5 sm:gap-1">
-            <Dropdown label={t.nav.theme} icon={ModeIcon}>
+            <ConnectionStatus />
+            {/* On a phone the bar has no room for it: the Appearance panel has the same choice. */}
+            <Dropdown label={t.nav.theme} icon={ModeIcon} className="max-sm:hidden">
               {(close) =>
                 (["light", "dark", "system"] as const).map((mode) => {
                   const Icon = MODE_ICONS[mode];

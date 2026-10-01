@@ -113,7 +113,12 @@ helpers, and `useDeployment()` (`src/context/DeploymentContext.tsx`, the outermo
 - **Connectivity** (`src/context/ConnectivityContext.tsx`, `useConnectivity()`): `browserOnline`, `server` (`ok`,
   `unreachable`, `checking`: every request reports through `onConnectionChange()` in `src/lib/frappe.ts`), `internet`,
   and `status` (the server's answer about itself: its clock, the internet, the cloud copy), asked every 30 seconds (10
-  while unreachable). A failed request that never reached the server is `isConnectionLost(err)`.
+  while unreachable). A failed request that never reached the server is `isConnectionLost(err)`. The top bar's
+  **status icon** (`ConnectionStatus.tsx`, `data-health` good, warn, bad or unknown) says the worst of: offline (no
+  network here), the server cannot be reached, checking, then per mode: online (cloud), connected to the clinic server
+  or connected without internet, or on the copy whether it is up to date (`COPY_STALE_MINUTES` = 60). A click shows
+  the server, the internet and the cloud copy with how long ago, Check Now, and Server & Backup for the manager. On a
+  phone the theme menu is hidden to make room (the Appearance panel has it).
 - **Pretend switches (dummy data only, `src/lib/demo.ts`):** `demo_no_internet` (the clinic server has no internet) and
   `demo_server_down` (every request fails as if the network were down), on My Profile, read only when `MOCK_DATA`.
   Every dummy-data call goes through `viaMock()` in `frappe.ts`, which reports the connection and fails while the
@@ -260,6 +265,7 @@ src/
 │   ├── UpgradeDialog.tsx     ask the platform for another plan (Plan page, and every "plan's limit" notice)
 │   ├── LimitDialog.tsx       "Your plan's limit" and useLimit() (check before adding a doctor, user or files)
 │   ├── SubscriptionNotice.tsx the plan ends soon (manager) or has ended and is in its grace days (everyone)
+│   ├── ConnectionStatus.tsx  the status icon in the top bar: online, offline, server unreachable, no internet, cloud copy up to date
 │   ├── WhatsAppButton.tsx    every wa.me link: "Needs internet" (and nothing marked as sent) while there is none
 │   ├── ReadOnlyBanner.tsx    "View-only copy, last updated …" above every page while useSession().readOnly is set
 │   ├── SendWhatsAppDialog.tsx a WhatsApp message by hand from a template (opens wa.me)
