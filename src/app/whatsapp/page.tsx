@@ -33,6 +33,7 @@ import {
   tooltip,
 } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
+import { useSession } from "@/context/SessionContext";
 import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
@@ -95,6 +96,7 @@ function languageName(language: string | undefined, t: Messages): string {
 }
 
 function Templates() {
+  const { readOnly } = useSession();
   const { t } = useI18n();
   const [templates, setTemplates] = useState<WhatsAppTemplate[] | null>(null);
   const [version, setVersion] = useState(0);
@@ -125,11 +127,13 @@ function Templates() {
 
   return (
     <>
-      <div className="flex justify-end">
-        <Button icon={Plus} onClick={() => setEditing({ open: true, template: null })}>
-          {t.whatsapp.newTemplate}
-        </Button>
-      </div>
+      {!readOnly && (
+        <div className="flex justify-end">
+          <Button icon={Plus} onClick={() => setEditing({ open: true, template: null })}>
+            {t.whatsapp.newTemplate}
+          </Button>
+        </div>
+      )}
 
       {templates === null ? (
         <PageLoading />
@@ -150,9 +154,11 @@ function Templates() {
                     <Badge tone="blue">{languageName(template.language, t)}</Badge>
                   </div>
                 </div>
-                <Button size="sm" variant="ghost" icon={Pencil} onClick={() => setEditing({ open: true, template })}>
-                  {t.common.edit}
-                </Button>
+                {!readOnly && (
+                  <Button size="sm" variant="ghost" icon={Pencil} onClick={() => setEditing({ open: true, template })}>
+                    {t.common.edit}
+                  </Button>
+                )}
               </div>
               {/* dir="auto": an Arabic message reads right to left on an English screen, and the other way round. */}
               <p className="text-sm text-gray-600 mt-4 whitespace-pre-line line-clamp-4 text-start" dir="auto">{template.message}</p>

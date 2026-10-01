@@ -8,6 +8,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { messages } from "@/i18n";
 import { PageLoading } from "@/components/ui";
 import { loginHref } from "@/lib/links";
+import ReadOnlyBanner from "./ReadOnlyBanner";
 import SessionEndedNotice from "./SessionEndedNotice";
 import { RecordDialogsProvider } from "./RecordDialogs";
 import Sidebar from "./Sidebar";
@@ -67,6 +68,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <main id="main" tabIndex={-1} className="flex-1 print:pt-0 focus:outline-none">
           {/* The login ended while this page was open: ask for the password again without leaving it. */}
           {sessionEnded && <SessionEndedNotice />}
+          {/* Nothing can be changed (a view-only copy …): said once, above every page. */}
+          <ReadOnlyBanner />
           {/* Keyed by the path, so each new page fades in (only for people who have not asked for less motion). */}
           <div key={pathname} className="motion-safe:animate-page-in print:animate-none">
             {children}

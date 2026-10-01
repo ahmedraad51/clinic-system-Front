@@ -201,7 +201,8 @@ function UserDetail() {
         }
       >
         <Card title={t.users.account} icon={UserCog}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* On a view-only copy the account and the permissions can be read, not changed. */}
+          <fieldset disabled={Boolean(session.readOnly)} className="min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label={t.users.clinicRole}>
               <SelectInput value={clinicRole} onChange={(e) => changeRole(e.target.value)} disabled={savingUser}>
                 <option value="">{t.users.noClinicRole}</option>
@@ -221,14 +222,14 @@ function UserDetail() {
                 description={isSelf ? t.users.cannotDisableSelf : t.users.disabledCannotLogIn}
               />
             </div>
-          </div>
+          </fieldset>
         </Card>
 
         <Card title={t.users.permissions} icon={Shield} flush>
           {!current ? (
             <PageLoading />
           ) : (
-            <div className="space-y-5">
+            <fieldset disabled={Boolean(session.readOnly)} className="min-w-0 space-y-5">
               <div className="px-5 sm:px-6 space-y-4">
                 {isSuper && <Alert tone="blue">{t.users.superUserNote}</Alert>}
                 {!current.exists && <Alert tone="yellow">{t.users.noPermissionsYet}</Alert>}
@@ -325,11 +326,13 @@ function UserDetail() {
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 sm:px-6 pb-5 sm:pb-6">
                 <span className="text-sm text-gray-600">{t.users.switchedOn(onCount, PERMISSION_KEYS.length)}</span>
-                <Button icon={Save} onClick={savePerms} loading={saving}>
-                  {t.users.savePermissions}
-                </Button>
+                {!session.readOnly && (
+                  <Button icon={Save} onClick={savePerms} loading={saving}>
+                    {t.users.savePermissions}
+                  </Button>
+                )}
               </div>
-            </div>
+            </fieldset>
           )}
         </Card>
       </DetailLayout>

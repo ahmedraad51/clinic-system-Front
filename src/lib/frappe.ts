@@ -17,6 +17,7 @@ import {
 } from "./mockData";
 import { mockPlatformCall } from "./mockPlatform";
 import { demoFlag } from "./demo";
+import { currentMode } from "./deployment";
 
 /**
  * TEMPORARY: serve every read and write from src/lib/mockData.ts instead of Frappe,
@@ -103,6 +104,19 @@ export class ConnectionLostError extends Error {
     super(messages().errors.noConnection);
     this.name = "ConnectionLostError";
   }
+}
+
+/** Refused before it is sent: this is the view-only cloud copy of a clinic server. Its server refuses it too. */
+export class ReadOnlyError extends Error {
+  constructor() {
+    super(messages().access.readOnlyRefused);
+    this.name = "ReadOnlyError";
+  }
+}
+
+/** Every save, upload and delete starts here: nothing is written from a view-only copy (DEPLOYMENT_MODE=cloud-copy). */
+function assertWritable() {
+  if (currentMode(MOCK_DATA) === "cloud-copy") throw new ReadOnlyError();
 }
 
 /** True when a failed request never reached the server (no network, the server off), not a refusal or a bad value. */
@@ -377,6 +391,7 @@ export function setSessionUser(user: string | null): void {
 }
 
 export async function createDoc<T extends BaseDoc = Doc>(doctype: string, data: object): Promise<T> {
+  assertWritable();
   if (MOCK_DATA) return (await viaMock(() => mockCreateDoc(doctype, data as DocData))) as unknown as T;
   initAuth();
   const res = await api.post(resource(doctype), data);
@@ -384,6 +399,7 @@ export async function createDoc<T extends BaseDoc = Doc>(doctype: string, data: 
 }
 
 export async function updateDoc<T extends BaseDoc = Doc>(doctype: string, name: string, data: object): Promise<T> {
+  assertWritable();
   if (MOCK_DATA) return (await viaMock(() => mockUpdateDoc(doctype, name, data as DocData))) as unknown as T;
   initAuth();
   const res = await api.put(resource(doctype, name), data);
@@ -391,6 +407,7 @@ export async function updateDoc<T extends BaseDoc = Doc>(doctype: string, name: 
 }
 
 export async function deleteDoc(doctype: string, name: string): Promise<void> {
+  assertWritable();
   if (MOCK_DATA) return viaMock(() => mockDeleteDoc(doctype, name));
   initAuth();
   await api.delete(resource(doctype, name));
@@ -409,6 +426,7 @@ export async function callMethod<T = unknown>(method: string, args: object = {})
 }
 
 export async function changePassword(oldPassword: string, newPassword: string): Promise<void> {
+  assertWritable();
   await callMethod("frappe.core.doctype.user.user.update_password", {
     old_password: oldPassword,
     new_password: newPassword,
@@ -420,6 +438,7 @@ export async function changePassword(oldPassword: string, newPassword: string): 
  * checks as a new record. Refused when it was restored already, its name is taken, or a record it links to is gone.
  */
 export async function restoreDeleted(deletedDocument: string): Promise<void> {
+  assertWritable();
   await callMethod("frappe.core.doctype.deleted_document.deleted_document.restore", { name: deletedDocument });
 }
 
@@ -444,6 +463,7 @@ export function uploadRequestConfig({ onProgress }: UploadOptions = {}): AxiosRe
 
 /** Uploads a file (e.g. the clinic logo) and returns its URL. */
 export async function uploadFile(file: File, options: UploadOptions = {}): Promise<string> {
+  assertWritable();
   if (MOCK_DATA) return viaMock(() => mockUpload(file, options.onProgress));
   initAuth();
   const form = new FormData();
@@ -470,6 +490,7 @@ export interface FileDoc {
  * logged-in staff can open them. Returns the new File record.
  */
 export async function attachFile(file: File, doctype: string, name: string, options: UploadOptions = {}): Promise<FileDoc> {
+  assertWritable();
   if (MOCK_DATA) return (await viaMock(() => mockAttach(file, doctype, name, options.onProgress))) as unknown as FileDoc;
   initAuth();
   const form = new FormData();

@@ -10,6 +10,7 @@ import {
   Badge, Button, Card, ClearFiltersButton, ClickableRow, PageContainer, PageHeader, Pagination, SearchInput, SelectInput, Table,
   TableError, TableLoading, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
+import { useSession } from "@/context/SessionContext";
 import { useI18n } from "@/context/LanguageContext";
 import { label } from "@/i18n";
 import { type FilterRow } from "@/lib/frappe";
@@ -31,6 +32,7 @@ export default function DoctorsPage() {
  * while Active is on. A doctor who leaves is switched off, never deleted, so old records keep their name.
  */
 function DoctorsList() {
+  const { readOnly } = useSession();
   const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -55,9 +57,11 @@ function DoctorsList() {
         title={t.doctors.title}
         subtitle={t.doctors.subtitle}
         actions={
-          <Button icon={Plus} onClick={() => setEditing("new")}>
-            {t.doctors.addDoctor}
-          </Button>
+          !readOnly && (
+            <Button icon={Plus} onClick={() => setEditing("new")}>
+              {t.doctors.addDoctor}
+            </Button>
+          )
         }
       />
 
@@ -127,9 +131,11 @@ function DoctorsList() {
                     </Badge>
                   </Td>
                   <Td className="text-end">
-                    <Button size="sm" variant="ghost" icon={Pencil} onClick={() => setEditing(doctor)}>
-                      {t.doctors.edit}
-                    </Button>
+                    {!readOnly && (
+                      <Button size="sm" variant="ghost" icon={Pencil} onClick={() => setEditing(doctor)}>
+                        {t.doctors.edit}
+                      </Button>
+                    )}
                   </Td>
                 </ClickableRow>
               ))

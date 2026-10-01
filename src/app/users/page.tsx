@@ -12,6 +12,7 @@ import {
   Toggle, Toolbar,
 } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
+import { useSession } from "@/context/SessionContext";
 import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
 import { label } from "@/i18n";
@@ -34,6 +35,7 @@ const HIDDEN_USERS: FilterRow = ["name", "not in", ["Administrator", "Guest"]];
 const MIN_PASSWORD = 8;
 
 function UsersList() {
+  const { readOnly } = useSession();
   const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -57,9 +59,11 @@ function UsersList() {
         title={t.users.title}
         subtitle={t.users.subtitle}
         actions={
-          <Button icon={UserPlus} onClick={() => setShowAdd(true)}>
-            {t.users.addUser}
-          </Button>
+          !readOnly && (
+            <Button icon={UserPlus} onClick={() => setShowAdd(true)}>
+              {t.users.addUser}
+            </Button>
+          )
         }
       />
 

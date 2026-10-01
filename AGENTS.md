@@ -70,7 +70,7 @@ helpers, and `useDeployment()` (`src/context/DeploymentContext.tsx`, the outermo
 |---|---|---|
 | `cloud` (default) | Online, one Frappe site per clinic | With `CLOUD_DOMAIN`, the clinic comes from the web address and the main address is the public website (below) |
 | `clinic-server` | A small computer inside the clinic, no internet needed | Nothing is fetched from other websites; WhatsApp buttons say "Needs internet" while the server has none (below) |
-| `cloud-copy` | The online copy of a clinic server, for the owner at home | (see below) |
+| `cloud-copy` | The online copy of a clinic server, for the owner at home | Everything view-only: a banner says so and when the copy was last updated; no add, edit or delete anywhere (below) |
 
 - **Cloud, many clinics:** `CLOUD_DOMAIN` (e.g. `dentclinic.example`) is the main address; each clinic is
   `<name>.CLOUD_DOMAIN`. `next.config.ts` matches the host (`has: [{ type: "host" }]`, the name captured as `:clinic`)
@@ -90,6 +90,16 @@ helpers, and `useDeployment()` (`src/context/DeploymentContext.tsx`, the outermo
   reminder marked as sent by `onOpen` stays in its list until it can really be sent; the Today board's reminders card and
   the Send Message dialog also say so in an `Alert`. `internet` comes from the server (`SERVER_METHODS.status` →
   `internet`) in clinic-server mode, and is simply the browser's network everywhere else.
+- **View-only (`useSession().readOnly`):** a reason (`"copy"` on the cloud copy; more come later) or null. While it is
+  set, `can()` refuses every permission that changes data (`add_*`, `edit_*`, `delete_*`), so buttons gated by them
+  disappear by themselves. Pages that need only `manage_users` stay readable and check `readOnly` themselves: Doctors,
+  Medicines, Users and WhatsApp hide Add and Edit, the activity log hides Restore, Settings and a user's account and
+  permissions sit in a `<fieldset disabled>` (the tabs above still switch) with no Save bar, and My Profile says
+  passwords are changed at the clinic. The language choice is kept on the computer only. `ReadOnlyBanner` (in
+  `MainLayout`, above every page) says why; for the copy: "View-only copy. Last updated …" from the server's
+  `cloud_copy.last_sync`. As a safety net `createDoc`, `updateDoc`, `deleteDoc`, uploads, Restore and the password
+  change throw `ReadOnlyError` before sending anything on a cloud copy. **A new button that changes data must be gated by
+  an add/edit/delete permission, or check `readOnly`.**
 - **Connectivity** (`src/context/ConnectivityContext.tsx`, `useConnectivity()`): `browserOnline`, `server` (`ok`,
   `unreachable`, `checking`: every request reports through `onConnectionChange()` in `src/lib/frappe.ts`), `internet`,
   and `status` (the server's answer about itself: its clock, the internet, the cloud copy), asked every 30 seconds (10
@@ -226,6 +236,7 @@ src/
 │   ├── DoctorDialog.tsx      the add / edit doctor dialog (Doctors list and the doctor's page)
 │   ├── SessionEndedNotice.tsx  "Log in again" dialog (and banner) when the server ended the login; the page stays
 │   ├── WhatsAppButton.tsx    every wa.me link: "Needs internet" (and nothing marked as sent) while there is none
+│   ├── ReadOnlyBanner.tsx    "View-only copy, last updated …" above every page while useSession().readOnly is set
 │   ├── SendWhatsAppDialog.tsx a WhatsApp message by hand from a template (opens wa.me)
 │   ├── FinishVisitDialog.tsx "What was done in this visit?" after an appointment is marked Completed
 │   ├── xrays/                the X-ray section: XraySection (the tab: drop zone, filters, tiles, compare), ImageViewer

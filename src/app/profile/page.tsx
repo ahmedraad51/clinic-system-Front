@@ -34,7 +34,7 @@ export default function ProfilePage() {
 function Profile() {
   const { t } = useI18n();
   const { user, authDisabled } = useAuth();
-  const { profile, roles, displayName, roleLabel, can, isSuperUser } = useSession();
+  const { profile, roles, displayName, roleLabel, can, isSuperUser, readOnly } = useSession();
 
   const a = t.users.table;
   const onCount = PERMISSION_KEYS.filter((key) => can(key)).length;
@@ -122,7 +122,13 @@ function Profile() {
 
         <ScreenSizeCard />
         <InstallAppCard />
-        <ChangePasswordCard demo={authDisabled} />
+        {readOnly ? (
+          <Card title={t.profile.changePassword} icon={KeyRound}>
+            <p className="text-sm text-gray-600">{t.access.passwordAtClinic}</p>
+          </Card>
+        ) : (
+          <ChangePasswordCard demo={authDisabled} />
+        )}
         {authDisabled && <DemoUserCard />}
         {MOCK_DATA && <DemoModeCard />}
       </DetailLayout>

@@ -30,6 +30,7 @@ import {
   Toggle,
   tooltip,
 } from "@/components/ui";
+import { useSession } from "@/context/SessionContext";
 import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
@@ -137,6 +138,7 @@ type SettingsTab = (typeof SETTINGS_TABS)[number];
 
 function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSaved: () => void }) {
   const { t } = useI18n();
+  const { readOnly } = useSession();
   const { refresh } = useSettings();
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -329,6 +331,8 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
         }
       >
       <Tabs tabs={SETTINGS_TABS.map((key) => ({ key, label: tabLabels[key] }))} active={tab} onChange={setTab} />
+      {/* On a view-only copy every box below can be read but not changed (the tabs above still switch). */}
+      <fieldset disabled={Boolean(readOnly)} className="min-w-0 space-y-6">
       {tab === "clinic" && (
       <Card title={t.settings.clinic}>
         <div className="flex items-center gap-4 mb-5">
@@ -601,13 +605,17 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
       </Card>
       )}
 
+      </fieldset>
+
       {error && <Alert tone="red">{error}</Alert>}
 
-      <FormActions>
-        <Button type="submit" icon={Save} loading={saving} disabled={uploading}>
-          {t.settings.saveSettings}
-        </Button>
-      </FormActions>
+      {!readOnly && (
+        <FormActions>
+          <Button type="submit" icon={Save} loading={saving} disabled={uploading}>
+            {t.settings.saveSettings}
+          </Button>
+        </FormActions>
+      )}
       </DetailLayout>
     </form>
   );

@@ -1030,3 +1030,21 @@ serves all three; what each mode needs from the back end is listed below, item b
   must keep unsent ones in the queue (WhatsApp Log `status = "Pending"`) and send them when the internet is back.
 - **Date and time** come from the server's clock (`server_time`); a clinic server must keep its clock right without
   the internet (a real-time clock, or NTP when online).
+
+### Cloud copy: the clinic server's data online, view-only
+
+- **What it is:** a second site in the cloud (`DEPLOYMENT_MODE=cloud-copy` on its front end) that holds a copy of one
+  clinic server's data, so the owner can look at it from home. The clinic server is the only place where data changes.
+- **Bringing it up to date:** a scheduled job on the clinic server (for example every 15 minutes, and after a backup)
+  sends the changes to the copy: simplest is a database backup (`bench backup`, with files) uploaded and restored on the
+  copy site, or, for less traffic, the changed records since the last run. While the clinic has no internet it waits
+  and tries again; the copy simply stays older.
+- **Status:** both sites answer `dent_app.api.server.status` with `cloud_copy: { status: "ok" | "syncing" | "failed" |
+  "never", last_sync: "2026-09-26 08:18:00", error: "…", address: "alnoor-copy.dentclinic.example" }`. On the copy,
+  `last_sync` is when its data was last brought up to date; the front end shows it in the "View-only copy" banner and
+  the top bar.
+- **Everything is refused on the copy:** the front end hides every add, edit and delete and refuses to send one, but
+  the copy's server must refuse them too (a `before_insert`, `on_update` and `on_trash` hook on every doctype, or the
+  site's read-only mode, `maintenance_mode`/`allow_writes` off), except the session itself (login, logout).
+- **Users** on the copy are the clinic's own (copied with the data); a password change is made at the clinic and
+  arrives with the next update.

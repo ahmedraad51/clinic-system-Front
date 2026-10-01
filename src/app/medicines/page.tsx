@@ -8,6 +8,7 @@ import {
   SearchInput, SelectInput, Table, TableError, TableLoading, TableMessage, Td, TextArea, TextInput, Th, Toggle, Toolbar,
 } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
+import { useSession } from "@/context/SessionContext";
 import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
 import { joinParts, label } from "@/i18n";
@@ -30,6 +31,7 @@ export default function MedicinesPage() {
  * prescriptions keep their rows.
  */
 function MedicinesList() {
+  const { readOnly } = useSession();
   const { t } = useI18n();
   const m = t.medicines;
   const [search, setSearch] = useState("");
@@ -54,9 +56,11 @@ function MedicinesList() {
         title={m.title}
         subtitle={m.subtitle}
         actions={
-          <Button icon={Plus} onClick={() => setEditing("new")}>
-            {m.addMedicine}
-          </Button>
+          !readOnly && (
+            <Button icon={Plus} onClick={() => setEditing("new")}>
+              {m.addMedicine}
+            </Button>
+          )
         }
       />
 
@@ -114,13 +118,17 @@ function MedicinesList() {
                 return (
                   <tr key={medicine.name} className={list.loading ? "opacity-60" : undefined}>
                     <Td>
-                      <button
-                        type="button"
-                        onClick={() => setEditing(medicine)}
-                        className="font-medium text-gray-800 hover:text-primary-600 text-start"
-                      >
-                        {medicineLabel(medicine)}
-                      </button>
+                      {readOnly ? (
+                        <span className="font-medium text-gray-800">{medicineLabel(medicine)}</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setEditing(medicine)}
+                          className="font-medium text-gray-800 hover:text-primary-600 text-start"
+                        >
+                          {medicineLabel(medicine)}
+                        </button>
+                      )}
                       {kind.length > 0 && <span className="block text-xs text-gray-500">{joinParts(kind, t.common.dot)}</span>}
                     </Td>
                     <Td label={m.columns.usualDose}>
@@ -139,9 +147,11 @@ function MedicinesList() {
                       </Badge>
                     </Td>
                     <Td className="text-end">
-                      <Button size="sm" variant="ghost" icon={Pencil} onClick={() => setEditing(medicine)}>
-                        {m.edit}
-                      </Button>
+                      {!readOnly && (
+                        <Button size="sm" variant="ghost" icon={Pencil} onClick={() => setEditing(medicine)}>
+                          {m.edit}
+                        </Button>
+                      )}
                     </Td>
                   </tr>
                 );

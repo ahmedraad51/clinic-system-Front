@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { useAuth } from "./AuthContext";
+import { useDeployment } from "./DeploymentContext";
 import { getDoc, getList } from "@/lib/frappe";
 import { CLINIC_ROLES, PERMISSION_KEYS, type ClinicPermission, type Doctor, type PermissionKey, type User } from "@/lib/types";
 
@@ -16,6 +17,15 @@ import { CLINIC_ROLES, PERMISSION_KEYS, type ClinicPermission, type Doctor, type
  */
 
 type Perms = Record<PermissionKey, boolean>;
+
+/**
+ * Why nothing can be changed right now, or null when things can be changed:
+ * - "copy": this is the cloud copy of a clinic server (DEPLOYMENT_MODE=cloud-copy), for viewing only.
+ */
+export type ReadOnlyReason = "copy";
+
+/** The permissions that change data (add_, edit_, delete_ …): all off while the app is read-only. */
+const changesData = (permission: PermissionKey) => /^(add|edit|delete)_/.test(permission);
 
 interface SessionState {
   forUser: string;
@@ -44,6 +54,11 @@ interface SessionContextType {
   /** Set when the user is one of the clinic's doctors: screens then open on their own patients. */
   doctor: MyDoctor | null;
   can: (permission: PermissionKey) => boolean;
+  /**
+   * Set while nothing may be changed (a view-only copy …). can() then refuses every add, edit and delete permission;
+   * a page that only needs manage_users (Settings, Doctors, Users …) hides its own Save, Add and Edit buttons.
+   */
+  readOnly: ReadOnlyReason | null;
   loading: boolean;
   /** Call after changing the current user's permissions. */
   refresh: () => void;
@@ -56,6 +71,7 @@ const allPerms = (value: boolean): Perms =>
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const { user, loginCount } = useAuth();
+  const { mode } = useDeployment();
   const [state, setState] = useState<SessionState | null>(null);
   const [version, setVersion] = useState(0);
 
@@ -110,6 +126,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const roles = current?.roles ?? [];
     const isSuperUser = user === "Administrator" || roles.includes("System Manager");
     const clinicRole = CLINIC_ROLES.find((role) => roles.includes(role));
+    const readOnly: ReadOnlyReason | null = mode === "cloud-copy" ? "copy" : null;
     return {
       profile: current?.profile ?? null,
       roles,
@@ -117,11 +134,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       roleLabel: clinicRole ?? (isSuperUser ? "System Manager" : "Staff"),
       isSuperUser,
       doctor: current?.doctor ?? null,
-      can: (permission) => Boolean(current?.perms[permission]),
+      can: (permission) => Boolean(current?.perms[permission]) && !(readOnly && changesData(permission)),
+      readOnly,
       loading: Boolean(user) && !current,
       refresh,
     };
-  }, [state, user, refresh]);
+  }, [state, user, refresh, mode]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

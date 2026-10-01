@@ -46,7 +46,7 @@ function DoctorView() {
   const id = routeId(params.id);
   const { t } = useI18n();
   const d = t.doctors;
-  const { can } = useSession();
+  const { can, readOnly } = useSession();
   const { doc: doctor, loading, notFound, error, reload } = useDocument<Doctor>("Doctor", id);
   const [editing, setEditing] = useState(false);
   const [editingPaper, setEditingPaper] = useState(false);
@@ -186,9 +186,11 @@ function DoctorView() {
             ]}
             actions={
               <>
-                <Button icon={Pencil} onClick={() => setEditing(true)}>
-                  {d.edit}
-                </Button>
+                {!readOnly && (
+                  <Button icon={Pencil} onClick={() => setEditing(true)}>
+                    {d.edit}
+                  </Button>
+                )}
                 {can("add_appointments") && active && (
                   <Button variant="secondary" icon={Plus} onClick={() => openDialog({ kind: "newAppointment", prefill: { doctor: id } })}>
                     {d.newAppointment}
@@ -261,9 +263,11 @@ function DoctorView() {
           title={t.rxPaper.title}
           icon={FileText}
           actions={
-            <Button size="sm" variant="secondary" icon={Pencil} onClick={() => setEditingPaper(true)}>
-              {t.rxPaper.edit}
-            </Button>
+            !readOnly && (
+              <Button size="sm" variant="secondary" icon={Pencil} onClick={() => setEditingPaper(true)}>
+                {t.rxPaper.edit}
+              </Button>
+            )
           }
         >
           <p data-testid="rx-paper-summary" className="text-sm text-gray-700">

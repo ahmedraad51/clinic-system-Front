@@ -7,6 +7,7 @@ import RequirePermission from "@/components/Guard";
 import {
   Badge, Button, Card, EmptyState, hueClass, LoadError, PageContainer, PageHeader, PageLoading, SelectInput, Toolbar, type Hue,
 } from "@/components/ui";
+import { useSession } from "@/context/SessionContext";
 import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
@@ -51,6 +52,7 @@ interface Loaded {
  * happened and by the kind of record. A deleted record has Restore, which puts it back under its old name.
  */
 function ActivityLog() {
+  const { readOnly } = useSession();
   const { t } = useI18n();
   const a = t.activity;
   const toast = useToast();
@@ -242,6 +244,8 @@ function ActivityLog() {
                       <p className="mt-1 text-xs text-gray-500">{formatDateTime(entry.at.slice(0, 19))}</p>
                     </div>
                     {entry.deleted &&
+                      // Nothing comes back on a view-only copy.
+                      !readOnly &&
                       (restored ? (
                         <Badge tone="green">{entry.deleted.new_name && entry.deleted.new_name !== entry.name ? a.restoredAs(entry.deleted.new_name) : a.restored}</Badge>
                       ) : (

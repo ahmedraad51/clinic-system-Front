@@ -58,7 +58,7 @@ const serverChosen = () => null;
  */
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const { profile, refresh, loading: profileLoading } = useSession();
+  const { profile, refresh, readOnly, loading: profileLoading } = useSession();
   const { settings, loaded: settingsLoaded } = useSettings();
   const chosenHere = useSyncExternalStore(subscribeChosen, readChosen, serverChosen);
   // A switch made in this visit wins until the saved User record catches up.
@@ -98,14 +98,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         // Storage is blocked: the choice still lasts for this visit and on the User record.
       }
       listeners.forEach((listener) => listener());
-      // Frappe's User.language: the choice follows the user to other computers.
-      if (user) {
+      // Frappe's User.language: the choice follows the user to other computers (not from a view-only copy).
+      if (user && !readOnly) {
         updateDoc("User", user, { language: next })
           .then(refresh)
           .catch((err) => console.error("Could not save the language on the user", err));
       }
     },
-    [user, refresh],
+    [user, refresh, readOnly],
   );
 
   const value = useMemo(
