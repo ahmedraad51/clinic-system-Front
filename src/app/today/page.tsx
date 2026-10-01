@@ -13,6 +13,8 @@ import Avatar from "@/components/Avatar";
 import FinishVisitDialog from "@/components/FinishVisitDialog";
 import { LAB_BADGES, labState } from "@/components/LabWorkCard";
 import RequirePermission from "@/components/Guard";
+import WhatsAppButton from "@/components/WhatsAppButton";
+import { useConnectivity } from "@/context/ConnectivityContext";
 import {
   Badge,
   Button,
@@ -21,6 +23,7 @@ import {
   EmptyState,
   hueClass,
   IconTile,
+  Alert,
   LinkButton,
   LoadError,
   PageContainer,
@@ -83,6 +86,7 @@ function TodayBoard() {
   const [everyone, setEveryone] = useState(false);
   const mine = myDoctor && !everyone ? myDoctor.name : "";
   const { settings, clinicName, countryCode, secondCurrency, owedText } = useSettings();
+  const { internet } = useConnectivity();
   // Reminders opened from this computer, so nobody gets two.
   const [reminded, setReminded] = useState<string[]>(() => readReminded());
   const toast = useToast();
@@ -523,6 +527,13 @@ function TodayBoard() {
               flush
               actions={<span className="text-xs text-gray-500">{template ? template.template_name : t.today.defaultMessage}</span>}
             >
+              {!internet && (
+                <div className="px-5 pt-1 pb-3">
+                  <Alert tone="yellow" title={t.connection.noInternetTitle}>
+                    {t.connection.noInternetReminders}
+                  </Alert>
+                </div>
+              )}
               <ul className="divide-y divide-gray-100">
                 {tomorrowList.map((a) => {
                   const link = whatsappLink(board?.patients[a.patient]?.phone_number, reminderText(a), countryCode);
@@ -542,16 +553,10 @@ function TodayBoard() {
                           {t.today.reminderOpened}
                         </span>
                       ) : link ? (
-                        <a
-                          href={link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => markReminded(a.name)}
-                          className="inline-flex items-center gap-1.5 min-h-9 pointer-coarse:min-h-11 px-3 rounded-xl bg-green-50 border border-green-200 text-sm font-medium text-green-800 hover:bg-green-100"
-                        >
-                          <MessageCircle size={15} />
+                        // Marked as sent only when WhatsApp really opens: with no internet it stays in the list.
+                        <WhatsAppButton href={link} onOpen={() => markReminded(a.name)}>
                           {t.today.sendReminder}
-                        </a>
+                        </WhatsAppButton>
                       ) : (
                         <span className="text-sm text-gray-500">{t.today.noPhone}</span>
                       )}

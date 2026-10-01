@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import { UserRound, Check, KeyRound, LayoutGrid, Server, Shield, Users, X } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import { MyAvatar } from "@/components/Avatar";
 import ScreenSizeCard from "@/components/ScreenSizeCard";
 import { InstallAppCard } from "@/components/InstallApp";
 import {
-  Alert, Badge, Button, Card, DetailLayout, Fraction, Field, PageContainer, PageHeader, ProfileCard, SelectInput, TextInput,
+  Alert, Badge, Button, Card, DetailLayout, Fraction, Field, PageContainer, PageHeader, ProfileCard, SelectInput, TextInput, Toggle,
 } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useDeployment } from "@/context/DeploymentContext";
@@ -16,6 +16,7 @@ import { useSession } from "@/context/SessionContext";
 import { useToast } from "@/context/ToastContext";
 import { changePassword, errorMessage, getList, MOCK_DATA } from "@/lib/frappe";
 import { BUILT_MODE, DEPLOYMENT_MODES, setDemoMode, type DeploymentMode } from "@/lib/deployment";
+import { demoFlag, setDemoFlag, subscribeDemoFlags } from "@/lib/demo";
 import { label, num } from "@/i18n";
 import { PERMISSION_ACTIONS, PERMISSION_KEYS, PERMISSION_MATRIX, type User } from "@/lib/types";
 
@@ -205,6 +206,7 @@ function DemoModeCard() {
   const { t } = useI18n();
   const d = t.deployment;
   const { mode } = useDeployment();
+  const noInternet = useSyncExternalStore(subscribeDemoFlags, () => demoFlag("noInternet"), () => false);
   return (
     <Card title={d.previewTitle} icon={Server}>
       <p className="text-sm text-gray-500 mb-4">{d.previewText}</p>
@@ -225,6 +227,17 @@ function DemoModeCard() {
           ))}
         </SelectInput>
       </Field>
+      {/* A clinic server checks its internet; with the dummy data it can be switched off here. */}
+      {mode === "clinic-server" && (
+        <div className="mt-4">
+          <Toggle
+            checked={noInternet}
+            onChange={(on) => setDemoFlag("noInternet", on)}
+            label={d.pretendNoInternet}
+            description={d.pretendNoInternetHint}
+          />
+        </div>
+      )}
     </Card>
   );
 }

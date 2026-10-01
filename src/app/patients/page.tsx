@@ -4,9 +4,10 @@ import { Suspense, useEffect, useState } from "react";
 import { useRecordDialogs } from "@/components/RecordDialogs";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Users, HeartPulse, MessageCircle, UserPlus, UserSearch } from "lucide-react";
+import { Users, HeartPulse, UserPlus, UserSearch } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
+import WhatsAppButton from "@/components/WhatsAppButton";
 import {
   Button,
   Card,
@@ -236,16 +237,9 @@ function PatientsList() {
                         <span className="inline-flex items-center gap-2">
                           <span className="font-medium text-red-700">{owed(patient)}</span>
                           {owing && settings.enable_whatsapp !== 0 && reminder(patient) && (
-                            <a
-                              href={reminder(patient)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              {...tooltip(p.remindTitle)}
-                              className="inline-flex items-center gap-1 min-h-9 pointer-coarse:min-h-11 px-2.5 rounded-lg bg-green-50 border border-green-200 text-xs font-medium text-green-800 hover:bg-green-100"
-                            >
-                              <MessageCircle size={13} />
+                            <WhatsAppButton href={reminder(patient)!} size="xs">
                               {p.remind}
-                            </a>
+                            </WhatsAppButton>
                           )}
                         </span>
                       ) : (

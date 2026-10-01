@@ -69,7 +69,7 @@ helpers, and `useDeployment()` (`src/context/DeploymentContext.tsx`, the outermo
 | Mode | What it is | What changes in the app |
 |---|---|---|
 | `cloud` (default) | Online, one Frappe site per clinic | With `CLOUD_DOMAIN`, the clinic comes from the web address and the main address is the public website (below) |
-| `clinic-server` | A small computer inside the clinic, no internet needed | (see below) |
+| `clinic-server` | A small computer inside the clinic, no internet needed | Nothing is fetched from other websites; WhatsApp buttons say "Needs internet" while the server has none (below) |
 | `cloud-copy` | The online copy of a clinic server, for the owner at home | (see below) |
 
 - **Cloud, many clinics:** `CLOUD_DOMAIN` (e.g. `dentclinic.example`) is the main address; each clinic is
@@ -83,6 +83,22 @@ helpers, and `useDeployment()` (`src/context/DeploymentContext.tsx`, the outermo
   `PUBLIC_PATHS` of `MainLayout`: no login, no menu), and `MainLayout` sends any other page there too; the login page
   shows the clinic's address. To try it locally: `CLOUD_DOMAIN=localhost`, then `localhost:3000` is the main address
   and `alnoor.localhost:3000` the alnoor clinic (`allowedDevOrigins` lets the dev server accept them).
+- **Clinic server, no internet:** the app never loads anything from another website (fonts, scripts and images are
+  its own; `e2e/tests/clinic-server.spec.ts` records every request and fails on one that leaves the app). The only link
+  out is WhatsApp (`wa.me`): always use `<WhatsAppButton href onOpen size>` (`src/components/WhatsAppButton.tsx`). When
+  `useConnectivity().internet` is false it is a disabled button that says "(Needs internet)" and runs nothing, so a
+  reminder marked as sent by `onOpen` stays in its list until it can really be sent; the Today board's reminders card and
+  the Send Message dialog also say so in an `Alert`. `internet` comes from the server (`SERVER_METHODS.status` →
+  `internet`) in clinic-server mode, and is simply the browser's network everywhere else.
+- **Connectivity** (`src/context/ConnectivityContext.tsx`, `useConnectivity()`): `browserOnline`, `server` (`ok`,
+  `unreachable`, `checking`: every request reports through `onConnectionChange()` in `src/lib/frappe.ts`), `internet`,
+  and `status` (the server's answer about itself: its clock, the internet, the cloud copy), asked every 30 seconds (10
+  while unreachable). A failed request that never reached the server is `isConnectionLost(err)`.
+- **Pretend switches (dummy data only, `src/lib/demo.ts`):** `demo_no_internet` (the clinic server has no internet) and
+  `demo_server_down` (every request fails as if the network were down), on My Profile, read only when `MOCK_DATA`.
+  Every dummy-data call goes through `viaMock()` in `frappe.ts`, which reports the connection and fails while the
+  server is "down". The parts that sell and run DentClinic (`dent_app.*` methods) are answered by
+  `src/lib/mockPlatform.ts`, the clinic's own records by `mockData.ts`.
 - **Previewing a mode (dummy data only):** `/profile` → **Preview a Way of Installing** saves the mode in
   `localStorage.demo_deployment_mode` and reloads; `currentMode(MOCK_DATA)` (and `useDeployment()`) read
   it. With a real back end only the built mode counts. Tests set the same key with `page.addInitScript`.
@@ -138,7 +154,7 @@ src/lib/frappe.ts   the only module that touches data
   Screen on iPhone and iPad), or that it is installed. The PNG icons are rendered from `icon.svg` and
   `icon-maskable.svg`; redraw them from the SVGs (at 192, 512, maskable 512 and Apple 180) when the logo changes.
   Installing needs HTTPS (or localhost).
-- **Provider tree** (in `layout.tsx`): `DeploymentProvider` → `AuthProvider` → `SettingsProvider` → `SessionProvider` →
+- **Provider tree** (in `layout.tsx`): `DeploymentProvider` → `AuthProvider` → `SettingsProvider` → `ConnectivityProvider` → `SessionProvider` →
   `ToastProvider` → `LanguageProvider` → `MainLayout` → page. `LanguageProvider` keys its children by the language,
   so everything below is drawn again when it changes.
 - **Shell.** `MainLayout` draws the `Sidebar` (fixed, z-50, 16.25rem wide or 4.375rem collapsed to icons; a slide-in
@@ -209,6 +225,7 @@ src/
 │   ├── RecordDialogs.tsx     new / edit forms in a dialog (appointment, plan, payment) or side panel (patient); useRecordDialogs()
 │   ├── DoctorDialog.tsx      the add / edit doctor dialog (Doctors list and the doctor's page)
 │   ├── SessionEndedNotice.tsx  "Log in again" dialog (and banner) when the server ended the login; the page stays
+│   ├── WhatsAppButton.tsx    every wa.me link: "Needs internet" (and nothing marked as sent) while there is none
 │   ├── SendWhatsAppDialog.tsx a WhatsApp message by hand from a template (opens wa.me)
 │   ├── FinishVisitDialog.tsx "What was done in this visit?" after an appointment is marked Completed
 │   ├── xrays/                the X-ray section: XraySection (the tab: drop zone, filters, tiles, compare), ImageViewer
@@ -247,6 +264,7 @@ src/
 │       └── LinkSelect.tsx    searchable picker for Link fields (used for patients)
 ├── context/
 │   ├── AuthContext.tsx       who is logged in, the AUTH_DISABLED switch, useAuth()
+│   ├── ConnectivityContext.tsx the connection to the server and the internet (status asked every 30 s), useConnectivity()
 │   ├── DeploymentContext.tsx how this copy is installed (DEPLOYMENT_MODE, previewed with dummy data) and the clinic of the web address, useDeployment()
 │   ├── SettingsContext.tsx   Clinic Settings (currency, clinic name, feature switches), useSettings()
 │   ├── LanguageContext.tsx   the language (Arabic or English), useI18n() → { t, lang, dir, setLang }
@@ -264,6 +282,9 @@ src/
     ├── hooks.ts              usePagedList, useDocument, useDoctors, useDebounced, searchFilters
     ├── dataVersion.ts        bumpData() / useDataVersion(): lists and record pages load again after a dialog saves
     ├── format.ts             money (IQD without decimals, currencyDecimals()), cleanNumberText(), dates, times, week helpers, cx(), CSV download
+    ├── demo.ts               the dummy data's pretend switches (no internet, server down), demoFlag(), setDemoFlag()
+    ├── server.ts             what the server says about itself: SERVER_METHODS, ServerStatus, CloudCopyStatus
+    ├── mockPlatform.ts       the dummy back end of the dent_app.* methods (server status, cloud copy, plans, platform …)
     ├── deployment.ts         the three ways to install: DEPLOYMENT_MODES, clinicFromHost(), isMainAddress(), the clinic address rule, the mode preview
     ├── currency.ts           two currencies: rateOn() (the rate of a day), convertMoney(), roundMoney(), sumByCurrency(), baseAmount()
     ├── dentalChart.ts        parseDentalChart (both shapes), cleanChart, tooth names, surface layout, labels

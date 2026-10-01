@@ -3,6 +3,7 @@ import { preload } from "react-dom";
 import "./fonts.css";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { ConnectivityProvider } from "@/context/ConnectivityContext";
 import { DeploymentProvider } from "@/context/DeploymentContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { SettingsProvider } from "@/context/SettingsContext";
@@ -60,6 +61,7 @@ export default function RootLayout({
         <DeploymentProvider>
         <AuthProvider>
           <SettingsProvider>
+            <ConnectivityProvider>
             <SessionProvider>
               <ToastProvider>
                 <LanguageProvider>
@@ -70,6 +72,7 @@ export default function RootLayout({
                 </LanguageProvider>
               </ToastProvider>
             </SessionProvider>
+            </ConnectivityProvider>
           </SettingsProvider>
         </AuthProvider>
         </DeploymentProvider>

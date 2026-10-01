@@ -7,10 +7,11 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   BellRing, Calendar, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, CreditCard, HeartPulse, History, IdCard,
-  MessageCircle, Pencil, Phone, Pill, Plus, Printer, Stethoscope, Trash2, Wallet, type LucideIcon,
+  Pencil, Phone, Pill, Plus, Printer, Stethoscope, Trash2, Wallet, type LucideIcon,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
+import WhatsAppButton from "@/components/WhatsAppButton";
 import DentalChart from "@/components/DentalChart";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import XraySection from "@/components/xrays/XraySection";
@@ -327,15 +328,9 @@ function PatientDetail() {
             </a>
           )}
           {whatsapp && (
-            <a
-              href={`https://wa.me/${whatsapp}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 min-h-11 px-4 rounded-xl bg-green-50 border border-green-200 text-sm font-medium text-green-800 hover:bg-green-100"
-            >
-              <MessageCircle size={16} />
+            <WhatsAppButton href={`https://wa.me/${whatsapp}`} size="md">
               {p.whatsapp}
-            </a>
+            </WhatsAppButton>
           )}
           {patient.secondary_phone && (
             <a

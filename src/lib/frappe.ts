@@ -15,6 +15,8 @@ import {
   mockAttach,
   setMockUser,
 } from "./mockData";
+import { mockPlatformCall } from "./mockPlatform";
+import { demoFlag } from "./demo";
 
 /**
  * TEMPORARY: serve every read and write from src/lib/mockData.ts instead of Frappe,
@@ -77,6 +79,55 @@ export class SessionEndedError extends Error {
   }
 }
 
+/* ------------------------------------------------------------------------------------------------------
+   The connection to the server. Every answer says the server is there; a request that got no answer (or found the
+   server down) says it is not. ConnectivityContext listens: the status icon, the offline banner, WhatsApp.
+   ------------------------------------------------------------------------------------------------------ */
+
+type ConnectionListener = (reachable: boolean) => void;
+const connectionListeners = new Set<ConnectionListener>();
+
+/** Calls the listener after every request: true when the server answered (even with an error), false when not. */
+export function onConnectionChange(listener: ConnectionListener): () => void {
+  connectionListeners.add(listener);
+  return () => connectionListeners.delete(listener);
+}
+
+function reportConnection(reachable: boolean) {
+  connectionListeners.forEach((listener) => listener(reachable));
+}
+
+/** A request that could not reach the server at all (the dummy data throws it while "the server is down" is pretended). */
+export class ConnectionLostError extends Error {
+  constructor() {
+    super(messages().errors.noConnection);
+    this.name = "ConnectionLostError";
+  }
+}
+
+/** True when a failed request never reached the server (no network, the server off), not a refusal or a bad value. */
+export function isConnectionLost(err: unknown): boolean {
+  if (err instanceof ConnectionLostError) return true;
+  return isRetriableReadError(err);
+}
+
+/**
+ * Every dummy-data call goes through here, so it reports the connection like a real request, and fails like a lost
+ * connection while My Profile pretends the server cannot be reached (DEMO_FLAGS.serverDown).
+ */
+async function viaMock<T>(call: () => Promise<T> | T): Promise<T> {
+  if (demoFlag("serverDown")) {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    reportConnection(false);
+    throw new ConnectionLostError();
+  }
+  try {
+    return await call();
+  } finally {
+    reportConnection(true);
+  }
+}
+
 const LOGGED_USER_METHOD = "/frappe/api/method/frappe.auth.get_logged_user";
 const AUTH_CALLS = ["/api/method/login", "/api/method/logout", "frappe.auth.get_logged_user"];
 const sessionListeners = new Set<() => void>();
@@ -126,6 +177,7 @@ function sessionIsGone(): Promise<boolean> {
 
 api.interceptors.response.use(
   (response) => {
+    reportConnection(true);
     // Any answer means the session works (again), so a later end is reported afresh.
     if (sessionEndReported) {
       sessionEndReported = false;
@@ -134,6 +186,8 @@ api.interceptors.response.use(
     return response;
   },
   async (error: unknown) => {
+    if (isConnectionLost(error)) reportConnection(false);
+    else if (axios.isAxiosError(error) && error.response) reportConnection(true);
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       const url = error.config?.url ?? "";
@@ -236,7 +290,7 @@ export async function getList<T extends BaseDoc = Doc>(
 ): Promise<T[]> {
   const { filters, orFilters, orderBy, limit = 100, start = 0 } = options;
   if (MOCK_DATA) {
-    const rows = await mockGetList(doctype, fields, { filters, orFilters, orderBy, limit, start });
+    const rows = await viaMock(() => mockGetList(doctype, fields, { filters, orFilters, orderBy, limit, start }));
     return rows as unknown as T[];
   }
   initAuth();
@@ -259,7 +313,7 @@ export async function getList<T extends BaseDoc = Doc>(
 
 /** How many docs match. Used for paging and dashboard counts. */
 export async function getCount(doctype: string, filters?: Filters, orFilters?: FilterRow[]): Promise<number> {
-  if (MOCK_DATA) return mockGetCount(doctype, filters, orFilters);
+  if (MOCK_DATA) return viaMock(() => mockGetCount(doctype, filters, orFilters));
   initAuth();
   if (orFilters?.length) {
     // frappe.client.get_count has no or_filters, so searches use the list view's count method.
@@ -285,7 +339,7 @@ export async function getCount(doctype: string, filters?: Filters, orFilters?: F
 }
 
 export async function getDoc<T extends BaseDoc = Doc>(doctype: string, name: string): Promise<T> {
-  if (MOCK_DATA) return (await mockGetDoc(doctype, name)) as unknown as T;
+  if (MOCK_DATA) return (await viaMock(() => mockGetDoc(doctype, name))) as unknown as T;
   initAuth();
   const res = await withReadRetry(() => api.get(resource(doctype, name)));
   return res.data.data;
@@ -299,7 +353,7 @@ export async function getDocHistory(doctype: string, name: string): Promise<DocH
   let doc: { owner?: string; creation?: string } | undefined;
   let docinfo: RawDocInfo | undefined;
   if (MOCK_DATA) {
-    const raw = await mockGetDocInfo(doctype, name);
+    const raw = await viaMock(() => mockGetDocInfo(doctype, name));
     doc = raw.docs[0] as { owner?: string; creation?: string };
     docinfo = raw.docinfo as unknown as RawDocInfo;
   } else {
@@ -323,28 +377,32 @@ export function setSessionUser(user: string | null): void {
 }
 
 export async function createDoc<T extends BaseDoc = Doc>(doctype: string, data: object): Promise<T> {
-  if (MOCK_DATA) return (await mockCreateDoc(doctype, data as DocData)) as unknown as T;
+  if (MOCK_DATA) return (await viaMock(() => mockCreateDoc(doctype, data as DocData))) as unknown as T;
   initAuth();
   const res = await api.post(resource(doctype), data);
   return res.data.data;
 }
 
 export async function updateDoc<T extends BaseDoc = Doc>(doctype: string, name: string, data: object): Promise<T> {
-  if (MOCK_DATA) return (await mockUpdateDoc(doctype, name, data as DocData)) as unknown as T;
+  if (MOCK_DATA) return (await viaMock(() => mockUpdateDoc(doctype, name, data as DocData))) as unknown as T;
   initAuth();
   const res = await api.put(resource(doctype, name), data);
   return res.data.data;
 }
 
 export async function deleteDoc(doctype: string, name: string): Promise<void> {
-  if (MOCK_DATA) return mockDeleteDoc(doctype, name);
+  if (MOCK_DATA) return viaMock(() => mockDeleteDoc(doctype, name));
   initAuth();
   await api.delete(resource(doctype, name));
 }
 
 /** Calls a whitelisted Frappe method and returns its `message`. */
 export async function callMethod<T = unknown>(method: string, args: object = {}): Promise<T> {
-  if (MOCK_DATA) return (await mockCall(method, args as DocData)) as T;
+  if (MOCK_DATA) {
+    // The parts that sell and run DentClinic (dent_app.*) have their own dummy back end.
+    const call = method.startsWith("dent_app.") ? () => mockPlatformCall(method, args as Record<string, unknown>) : () => mockCall(method, args as DocData);
+    return (await viaMock(call)) as T;
+  }
   initAuth();
   const res = await api.post(`/frappe/api/method/${method}`, args);
   return res.data.message;
@@ -386,7 +444,7 @@ export function uploadRequestConfig({ onProgress }: UploadOptions = {}): AxiosRe
 
 /** Uploads a file (e.g. the clinic logo) and returns its URL. */
 export async function uploadFile(file: File, options: UploadOptions = {}): Promise<string> {
-  if (MOCK_DATA) return mockUpload(file, options.onProgress);
+  if (MOCK_DATA) return viaMock(() => mockUpload(file, options.onProgress));
   initAuth();
   const form = new FormData();
   form.append("file", file, file.name);
@@ -412,7 +470,7 @@ export interface FileDoc {
  * logged-in staff can open them. Returns the new File record.
  */
 export async function attachFile(file: File, doctype: string, name: string, options: UploadOptions = {}): Promise<FileDoc> {
-  if (MOCK_DATA) return (await mockAttach(file, doctype, name, options.onProgress)) as unknown as FileDoc;
+  if (MOCK_DATA) return (await viaMock(() => mockAttach(file, doctype, name, options.onProgress))) as unknown as FileDoc;
   initAuth();
   const form = new FormData();
   form.append("file", file, file.name);

@@ -17,4 +17,6 @@ export const deployment: Messages["deployment"] = {
   previewLabel: "طريقة التثبيت",
   builtIn: (mode: string) => `${mode} (المبنية في التطبيق)`,
   previewing: (mode: string) => `معاينة: ${mode}`,
+  pretendNoInternet: "افترض أن العيادة بلا إنترنت",
+  pretendNoInternetHint: "عندها تُظهر أزرار واتساب أنها تحتاج إلى الإنترنت، وتبقى التذكيرات في قائمتها.",
 };

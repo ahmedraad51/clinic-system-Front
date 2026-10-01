@@ -49,7 +49,8 @@ import { history } from "./history";
 import { xrays } from "./xrays";
 import { money } from "./money";
 import { deployment } from "./deployment";
-import { site } from "./site";
+import { site } from "./site";
+import { connection } from "./connection";
 
 export const en = {
   common,
@@ -103,6 +104,7 @@ export const en = {
   money,
   deployment,
   site,
+  connection,
 };
 
 export type Messages = typeof en;

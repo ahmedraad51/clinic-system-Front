@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRecordDialogs } from "@/components/RecordDialogs";
 import Link from "next/link";
-import { BellRing, CalendarPlus, MessageCircle, Phone } from "lucide-react";
+import { BellRing, CalendarPlus, Phone } from "lucide-react";
 import RequirePermission from "@/components/Guard";
+import WhatsAppButton from "@/components/WhatsAppButton";
 import {
   Button, Card, PageContainer, PageHeader, SelectInput, Table, TableError, TableLoading, TableMessage, Td, Th,
 } from "@/components/ui";
@@ -166,15 +167,9 @@ function Recall() {
                     <Td className="text-end">
                       <div className="flex flex-wrap justify-end gap-2">
                         {wa && (
-                          <a
-                            href={wa}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 min-h-9 pointer-coarse:min-h-11 px-3 rounded-xl bg-green-50 border border-green-200 text-xs font-medium text-green-800 hover:bg-green-100"
-                          >
-                            <MessageCircle size={14} />
+                          <WhatsAppButton href={wa} size="xs">
                             {t.recall.whatsapp}
-                          </a>
+                          </WhatsAppButton>
                         )}
                         {can("add_appointments") && (
                           <Button

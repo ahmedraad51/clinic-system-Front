@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, WifiOff } from "lucide-react";
 import { Alert, Button, Field, SelectInput, TextArea } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
+import { useConnectivity } from "@/context/ConnectivityContext";
 import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
 import { currentLang, isLang } from "@/i18n";
@@ -70,6 +71,7 @@ export default function SendWhatsAppDialog({
     };
   }, [valuesKey]);
 
+  const { internet } = useConnectivity();
   const link = whatsappLink(phone, text.trim(), countryCode);
 
   // Templates in the screen's language first, then those for any language, then the others (stable, so by name within each).
@@ -116,8 +118,14 @@ export default function SendWhatsAppDialog({
               <TextArea rows={5} value={text} onChange={(event) => setText(event.target.value)} dir="auto" />
             </Field>
             {!link && <Alert tone="yellow">{t.sendWhatsapp.noPhone}</Alert>}
+            {link && !internet && <Alert tone="yellow">{t.connection.whatsappNeedsInternet}</Alert>}
             <div className="flex flex-wrap gap-2 pt-1">
-              {link && (
+              {link && !internet && (
+                <Button icon={WifiOff} disabled>
+                  {t.connection.needsInternet}
+                </Button>
+              )}
+              {link && internet && (
                 <a
                   href={link}
                   target="_blank"

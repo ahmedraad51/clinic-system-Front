@@ -17,4 +17,7 @@ export const deployment = {
   previewLabel: "Installed as",
   builtIn: (mode: string) => `${mode} (built in)`,
   previewing: (mode: string) => `Previewing: ${mode}`,
+  // Pretending something is wrong (dummy data only)
+  pretendNoInternet: "Pretend the clinic has no internet",
+  pretendNoInternetHint: "WhatsApp buttons then say they need the internet, and reminders stay in their list.",
 };

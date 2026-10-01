@@ -1013,3 +1013,20 @@ serves all three; what each mode needs from the back end is listed below, item b
   requests, the clinics and their subscriptions (Parts 2 and 3).
 - **HTTPS** with a wildcard certificate for `*.CLOUD_DOMAIN` (Let's Encrypt DNS challenge), so every new clinic works at
   once.
+
+### Clinic server: no internet needed
+
+- **Nothing from other websites.** The front end loads no outside fonts, scripts or images (checked by
+  `e2e/tests/clinic-server.spec.ts`). The back end must not need any either for normal work: Frappe's desk assets and
+  any print format must use local files, and nothing may wait on an outside service when the clinic is offline.
+- **`dent_app.api.server.status`** (GET or POST, any logged-in user; also the cloud's sites): returns
+  `{ server_time: "2026-09-26 08:30:00", version: "1.0.0", internet: true, cloud_copy: null | { status, last_sync,
+  error, address } }` (`ServerStatus` in `src/lib/server.ts`). The front end asks every 30 seconds (10 while the server
+  cannot be reached), so keep it cheap: check the internet in a scheduled job (for example every minute, a HEAD request
+  to a well-known address with a 3-second timeout) and return the stored answer. `cloud_copy` is the copy's state
+  (see "Cloud copy" below); `null` when there is none.
+- **WhatsApp needs the internet.** While `internet` is false, the front end disables every WhatsApp link and says why,
+  and the reminders on the Today board stay unsent. When the server sends reminders itself (the scheduled job), it
+  must keep unsent ones in the queue (WhatsApp Log `status = "Pending"`) and send them when the internet is back.
+- **Date and time** come from the server's clock (`server_time`); a clinic server must keep its clock right without
+  the internet (a real-time clock, or NTP when online).

@@ -7,9 +7,10 @@ import { useParams, useRouter } from "next/navigation";
 import ClinicLetterhead from "@/components/ClinicLetterhead";
 import ReceiptSlipControls from "@/components/ReceiptSlip";
 import RecordHistory from "@/components/RecordHistory";
-import { CalendarDays, MessageCircle, Pencil, Printer, Trash2, Wallet } from "lucide-react";
+import { CalendarDays, Pencil, Printer, Trash2, Wallet } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
+import WhatsAppButton from "@/components/WhatsAppButton";
 import {
   Button,
   Card,
@@ -229,15 +230,9 @@ function PaymentDetail() {
               {t.common.print}
             </Button>
             {receiptLink && (
-              <a
-                href={receiptLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-xl border border-green-200 bg-green-50 text-sm font-medium text-green-800 hover:bg-green-100"
-              >
-                <MessageCircle size={16} />
+              <WhatsAppButton href={receiptLink} size="md" className="justify-center">
                 {p.whatsapp}
-              </a>
+              </WhatsAppButton>
             )}
             {canChange && (
               <Button icon={Pencil} onClick={() => openDialog({ kind: "editPayment", id })}>
