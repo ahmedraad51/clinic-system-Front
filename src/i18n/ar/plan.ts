@@ -1,0 +1,62 @@
+import type { Messages } from "../en";
+import { num, plural } from "../runtime";
+
+export const plan: Messages["plan"] = {
+  nav: { settings: "الإعدادات", plan: "الباقة" },
+  navLabel: "صفحات الإعدادات",
+  title: "الباقة",
+  subtitle: "باقتك في DentClinic، وما تشمله، وكم تستخدم منها.",
+  current: "باقتك",
+  statuses: { trial: "تجربة مجانية", active: "فعّالة", ending: "تنتهي قريبًا", grace: "منتهية", locked: "للعرض فقط", suspended: "موقوفة" },
+  price: (amount: string, period: "month" | "year") => `${amount} ${period === "month" ? "شهريًا" : "سنويًا"}`,
+  trialEnds: (date: string) => `تجربة مجانية حتى ${date}.`,
+  renews: (date: string) => `مدفوعة حتى ${date}.`,
+  ended: (date: string, lock: string) => `انتهت في ${date}. التغييرات ممكنة حتى ${lock}، وبعدها يصبح التطبيق للعرض فقط.`,
+  locked: (date: string) => `انتهت في ${date}. التطبيق للعرض فقط حتى تجديد الباقة، ولا يضيع شيء.`,
+  suspended: "هذه العيادة موقوفة. يرجى التواصل مع DentClinic.",
+  daysLeft: (n: number) =>
+    plural(n, { zero: "تنتهي اليوم", one: "بقي يوم واحد", two: "بقي يومان", few: "بقيت # أيام", many: "بقي # يومًا", other: "بقي # يوم" }),
+  usageTitle: "ما تستخدمه",
+  usage: {
+    doctors: "الأطباء",
+    users: "حسابات الدخول",
+    storage: "الأشعة والصور",
+  },
+  of: (used: string, limit: string) => `${used} من ${limit}`,
+  unlimited: "بلا حد",
+  gb: (value: number) => `${num(Math.round(value * 10) / 10)} غيغابايت`,
+  mb: (value: number) => `${num(Math.round(value))} ميغابايت`,
+  nearLimit: "قاربت الحد.",
+  atLimit: "بلغت الحد.",
+  plansTitle: "الباقات",
+  yourPlan: "باقتك",
+  requestUpgrade: "طلب ترقية",
+  upgradeTitle: "طلب تغيير الباقة",
+  upgradeText: "اختر الباقة التي تريدها، وسنتواصل معك لترتيبها؛ لا يتغير شيء قبل ذلك.",
+  newPlan: "الباقة",
+  note: "ملاحظة (اختيارية)",
+  send: "إرسال الطلب",
+  sent: "أُرسل الطلب، وسنتواصل معك قريبًا.",
+  pending: (planName: string, date: string) => `طلبتَ باقة ${planName} في ${date}، وسنتواصل معك.`,
+  contact: "أسئلة عن باقتك؟",
+  whatsapp: "راسلنا على واتساب",
+  whatsappText: (clinic: string) => `مرحبًا، معك ${clinic}. لديّ سؤال عن باقتنا في DentClinic.`,
+  loadFailed: "تعذّر تحميل باقتك.",
+  limitTitle: "حد باقتك",
+  limitDoctors: (limit: number, planName: string) =>
+    `باقتك (${planName}) تتسع لـ${plural(limit, { one: "طبيب فعّال واحد", two: "طبيبين فعّالين", few: "# أطباء فعّالين", many: "# طبيبًا فعّالًا", other: "# طبيب فعّال" })}، وكلها مستخدمة. أوقِف طبيبًا، أو اطلب باقة أكبر.`,
+  limitUsers: (limit: number, planName: string) =>
+    `باقتك (${planName}) تتسع لـ${plural(limit, { one: "حساب دخول واحد", two: "حسابَي دخول", few: "# حسابات دخول", many: "# حساب دخول", other: "# حساب دخول" })}، وكلها مستخدمة. عطّل حساب من غادر، أو اطلب باقة أكبر.`,
+  limitStorage: (limit: string, planName: string) =>
+    `باقتك (${planName}) تتسع لـ${limit} من الأشعة والصور، وهذه الملفات تتجاوزها. اطلب باقة أكبر لإضافة المزيد.`,
+  seePlan: "عرض باقتك",
+  endingNotice: (date: string, days: string) => `تنتهي باقتك في DentClinic في ${date} (${days}). جدّدها لتستمر في العمل دون انقطاع.`,
+  trialNotice: (date: string, days: string) => `تنتهي تجربتك المجانية في ${date} (${days}). اختر باقة لتحتفظ ببياناتك وتستمر في العمل.`,
+  graceNotice: (date: string, lock: string) =>
+    `انتهت باقتك في DentClinic في ${date}. جدّدها قبل ${lock}، وإلا يصبح التطبيق للعرض فقط (لا يضيع شيء).`,
+  lockedTitle: "للعرض فقط: انتهت الباقة",
+  lockedText: "يمكن رؤية كل شيء، لكن لا يمكن إضافة شيء أو تغييره حتى تُجدَّد الباقة. لا تضيع أي بيانات.",
+  suspendedTitle: "للعرض فقط: هذه العيادة موقوفة",
+  suspendedText: "يمكن رؤية كل شيء، لكن لا يمكن تغيير شيء. يرجى التواصل مع DentClinic.",
+  renew: "تجديد",
+};

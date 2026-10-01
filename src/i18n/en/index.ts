@@ -54,7 +54,9 @@ import { connection } from "./connection";
 import { access } from "./access";
 import { setup } from "./setup";
 import { importer } from "./importer";
-import { exporter } from "./exporter";
+import { exporter } from "./exporter";
+import { plan } from "./plan";
+import { platform } from "./platform";
 
 export const en = {
   common,
@@ -113,6 +115,8 @@ export const en = {
   setup,
   importer,
   exporter,
+  plan,
+  platform,
 };
 
 export type Messages = typeof en;

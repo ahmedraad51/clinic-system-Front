@@ -171,7 +171,7 @@ src/lib/frappe.ts   the only module that touches data
   Screen on iPhone and iPad), or that it is installed. The PNG icons are rendered from `icon.svg` and
   `icon-maskable.svg`; redraw them from the SVGs (at 192, 512, maskable 512 and Apple 180) when the logo changes.
   Installing needs HTTPS (or localhost).
-- **Provider tree** (in `layout.tsx`): `DeploymentProvider` → `AuthProvider` → `SettingsProvider` → `ConnectivityProvider` → `SessionProvider` →
+- **Provider tree** (in `layout.tsx`): `DeploymentProvider` → `AuthProvider` → `SettingsProvider` → `ConnectivityProvider` → `SubscriptionProvider` → `SessionProvider` →
   `ToastProvider` → `LanguageProvider` → `MainLayout` → page. `LanguageProvider` keys its children by the language,
   so everything below is drawn again when it changes.
 - **Shell.** `MainLayout` draws the `Sidebar` (fixed, z-50, 16.25rem wide or 4.375rem collapsed to icons; a slide-in
@@ -245,6 +245,8 @@ src/
 │   ├── site/                 the public website: SiteHeader, SitePlans, TrialForm, ClinicFinder
 │   ├── SetupCard.tsx         "Finish setting up your clinic" on the dashboard; sends a new clinic's manager to /setup once
 │   ├── AddUserDialog.tsx     add a staff user (name, email, password, role and its usual permissions); Users and the setup wizard
+│   ├── SettingsNav.tsx       the pills above the Settings pages (Settings, Plan …)
+│   ├── UpgradeDialog.tsx     ask the platform for another plan (Plan page, and every "plan's limit" notice)
 │   ├── WhatsAppButton.tsx    every wa.me link: "Needs internet" (and nothing marked as sent) while there is none
 │   ├── ReadOnlyBanner.tsx    "View-only copy, last updated …" above every page while useSession().readOnly is set
 │   ├── SendWhatsAppDialog.tsx a WhatsApp message by hand from a template (opens wa.me)
@@ -288,6 +290,7 @@ src/
 ├── context/
 │   ├── AuthContext.tsx       who is logged in, the AUTH_DISABLED switch, useAuth()
 │   ├── ConnectivityContext.tsx the connection to the server and the internet (status asked every 30 s), useConnectivity()
+│   ├── SubscriptionContext.tsx the clinic's plan, limits and use (SUBSCRIPTION_METHODS.status; again after every save and every 10 min), useSubscription()
 │   ├── DeploymentContext.tsx how this copy is installed (DEPLOYMENT_MODE, previewed with dummy data) and the clinic of the web address, useDeployment()
 │   ├── SettingsContext.tsx   Clinic Settings (currency, clinic name, feature switches), useSettings()
 │   ├── LanguageContext.tsx   the language (Arabic or English), useI18n() → { t, lang, dir, setLang }
@@ -310,6 +313,7 @@ src/
     ├── spreadsheet.ts        CSV and .xlsx in and out (readTable, writeXlsx, writeCsv), ZIP, downloadBytes
     ├── patientImport.ts      importing patients: IMPORT_FIELDS, guessColumns(), readDate(), readGender(), checkRows()
     ├── exportData.ts         the data export: EXPORTS (doctype, fields, order), NUMBER_FIELDS
+    ├── subscription.ts       the clinic's plan: Subscription, SUBSCRIPTION_METHODS, subscriptionState() (trial, active, ending, grace, locked), overLimit()
     ├── server.ts             what the server says about itself: SERVER_METHODS, ServerStatus, CloudCopyStatus
     ├── mockPlatform.ts       the dummy back end of the dent_app.* methods (server status, cloud copy, plans, platform …)
     ├── deployment.ts         the three ways to install: DEPLOYMENT_MODES, clinicFromHost(), isMainAddress(), the clinic address rule, the mode preview
@@ -417,6 +421,7 @@ the dialog to be hidden, and use `openSaved(page, "Payment recorded.")` to follo
 | `/whatsapp` | `manage_users` | Templates (add, edit, delete, placeholders, live preview) and the message log (phone numbers shown with the middle hidden, `maskPhone()`; the full number is on the patient's page) Each template has a **Language** (Arabic, English or any; `language`), shown on its card; reminders and the Send Message dialog prefer the screen's language (`pickTemplate`). |
 | `/setup` | `manage_users` (not on a view-only copy) | The first-run **setup wizard** of a new clinic, six steps beside a step list (above it on a phone, with a progress bar): Clinic (name, logo, phone, address), Currency, Open Days and Hours, Doctors (the active ones, Add Doctor in `DoctorDialog`), Price List, Staff (Add User in `AddUserDialog`); then "Your clinic is ready". **Save and Continue** saves that step to Clinic Settings with `setup_step` (how many are done) and a step can be opened again; **Skip for Now** sets `setup_status: "skipped"`, **Finish** `"done"`. On the dashboard `SetupCard` offers to finish (manager only, until done), and a brand-new clinic (`setup_status` empty) sends its manager here once a visit (`sessionStorage.setup_offered`). Settings has a **Setup Wizard** link. Tests: `window.__mockNewClinic = true` makes the dummy clinic new |
 | `/settings` | `manage_users` | A clinic card (logo, name, phone, currencies, open days, prices set, contact details) beside the settings in tabs: **Clinic**, **Currencies**, **Language**, **Working Hours**, **Price List**, **Features**; one Save Settings for all of them, and a failed check opens the tab that has the problem. Clinic Settings: name, logo upload, contact, tax number, currency, working hours, feature switches, theme colour, **Phone Country Code** (`phone_country_code`, digits only, empty means 964; added to local numbers in WhatsApp links, `useSettings().countryCode`), **Currencies** (a **Second currency** such as USD, `second_currency`, and its **Exchange rates**, `exchange_rates`: rows of a date and "1 USD in IQD", each counting from its date; Add Rate, a remove button per row; every row needs a date and an amount above zero, one per date), **Price List** (a usual price per treatment type, saved in `treatment_prices`), and **Open on** day toggles saved as `working_days` (`useSettings().isOpenOn(iso)`; nothing set means open every day; saving with no day ticked is refused). Closed days are shaded "Closed" in the calendar, the day view shows a notice, and booking on one shows a note and asks "Book anyway?" The **Language** card: **Default language** (`default_language`, Arabic or English: the language of users who did not choose one) and **Arabic digits** (`arabic_digits`: Arabic screens write ٠-٩). |
+| `/settings/plan` | `manage_users` | **Plan** (the `SettingsNav` pills above Settings and Plan): the clinic's plan with its status (Free trial, Active, Ending soon, Ended, View-only, Suspended: `subscriptionState()`), price, until when it is paid or the trial runs and the days left, any plan change asked for; **What You Use**: active doctors, staff logins and X-ray storage against the plan's limits (bars, "Almost at the limit" from 80 %); the three plans with the current one marked; **Request an Upgrade** (`UpgradeDialog`: plan and note, `SUBSCRIPTION_METHODS.requestChange`) and WhatsApp us. From `useSubscription()` |
 | `/profile` | none | A profile card beside the rest; what I can do is the permissions table, read only. My details (with `MyAvatar`), **Screen Size on This Computer** (80, 90, 100, 110 or 120 %: `saveZoom()` sets the root font size, and every size is in rem, so text and spacing scale together; kept in `localStorage.screen_zoom` and applied before the first paint by `ZOOM_BOOT_SCRIPT` in `layout.tsx`), what I can do, change password, **Install DentClinic** (`InstallAppCard`), and (login off only) Try Another User |
 
 **Forms in dialogs.** New and edit forms for appointments, treatment plans and payments open in a dialog over the

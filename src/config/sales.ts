@@ -40,7 +40,7 @@ export const PLANS: Record<PlanKey, Plan> = {
     currency: "IQD",
     period: "month",
     setupFee: 0,
-    limits: { doctors: 5, users: 10, storageGb: 20 },
+    limits: { doctors: 8, users: 15, storageGb: 20 },
     highlight: true,
   },
   server: {

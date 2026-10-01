@@ -4,6 +4,7 @@ import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import ToothLogo from "@/components/ToothLogo";
 import { CalendarDays, Plus, Settings, Save, Sparkles, Tags, Trash2, Upload, Wand2 } from "lucide-react";
 import RequirePermission from "@/components/Guard";
+import SettingsNav from "@/components/SettingsNav";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import {
   Alert,
@@ -135,6 +136,7 @@ function SettingsView() {
           )
         }
       />
+      <SettingsNav />
       {doc ? (
         <SettingsFormView initial={doc} onSaved={reload} />
       ) : (

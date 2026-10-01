@@ -1,13 +1,21 @@
 import { messages } from "@/i18n";
-import { currentMode } from "./deployment";
+import { GRACE_DAYS, PLAN_KEYS, PLANS, TRIAL_DAYS, type PlanKey, type PlanLimits } from "@/config/sales";
+import { currentMode, isValidClinicAddress } from "./deployment";
 import { demoFlag } from "./demo";
+import { addDays, todayISO } from "./format";
+import { mockGetCount, mockGetList } from "./mockData";
+import {
+  PAYMENT_CHANNELS, PLATFORM_METHODS, type ChangeRequest, type ClinicAccount, type PaymentChannel, type PlatformPayment,
+  type TrialRequest, type TrialRequestDoc,
+} from "./platform";
 import { SERVER_METHODS, type ServerStatus } from "./server";
-import { PLATFORM_METHODS, type TrialRequest } from "./platform";
+import { SUBSCRIPTION_METHODS, type Subscription } from "./subscription";
 
 /**
- * The dummy back end for the parts that sell and run DentClinic: the server's status, the cloud copy, backups, the
- * licence, the clinic's plan and the platform owner's clinics. Kept apart from mockData.ts (the clinic's own records).
- * Like Frappe, every method is called with callMethod("dent_app…", args).
+ * The dummy back end for the parts that sell and run DentClinic: the server's status, the cloud copy, the clinic's
+ * plan and the platform owner's clinics, payments and requests. Kept apart from mockData.ts (the clinic's own records).
+ * Like Frappe, every method is called with callMethod("dent_app…", args). The clinic these screens run as is the
+ * platform's "demo" clinic, so the platform owner's changes (a payment, a suspension) show in its Plan page at once.
  */
 
 type Args = Record<string, unknown>;
@@ -19,6 +27,18 @@ export function frappeDateTime(date: Date): string {
 }
 
 const minutesAgo = (minutes: number) => frappeDateTime(new Date(Date.now() - minutes * 60_000));
+
+/** A date a number of months later, kept inside the month ("2026-01-31" + 1 → "2026-02-28"). */
+export function addMonths(iso: string, months: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const total = y * 12 + (m - 1) + months;
+  const year = Math.floor(total / 12);
+  const month = (total % 12) + 1;
+  const last = new Date(year, month, 0).getDate();
+  return `${year}-${String(month).padStart(2, "0")}-${String(Math.min(d, last)).padStart(2, "0")}`;
+}
+
+/* --- The server --------------------------------------------------------------------------------------------------- */
 
 function serverStatus(): ServerStatus {
   const mode = currentMode(true);
@@ -37,16 +57,172 @@ function serverStatus(): ServerStatus {
   };
 }
 
-/** The platform's own records (the cloud's main site): trial requests, and in time the clinics and their payments. */
-export interface TrialRequestDoc extends TrialRequest {
-  name: string;
-  creation: string;
-  status: "New" | "Contacted" | "Started" | "Declined";
+/* --- The platform's records ----------------------------------------------------------------------------------------- */
+
+/** The clinic this app runs as, among the platform's clinics. */
+const CURRENT = "CLN-00001";
+
+let clinics: ClinicAccount[] | null = null;
+let payments: PlatformPayment[] = [];
+const trialRequests: TrialRequestDoc[] = [];
+const changeRequests: ChangeRequest[] = [];
+
+/** Made on first use, so the dates count from "today" (the tests fix the clock). */
+function platformClinics(): ClinicAccount[] {
+  if (clinics) return clinics;
+  const today = todayISO();
+  const usage = (doctors: number, users: number, storage_mb: number) => ({ doctors, users, storage_mb });
+  clinics = [
+    {
+      name: CURRENT, clinic_name: "DentClinic", address: "demo", plan: "cloud", status: "active", manager_email: "laith.hamid@dentclinic.test",
+      created_on: "2026-01-10", trial_ends_on: "2026-01-24", paid_until: addDays(today, 40), usage: usage(0, 0, 0), last_payment_on: addDays(today, -20),
+    },
+    {
+      name: "CLN-00002", clinic_name: "عيادة النور لطب الأسنان", address: "alnoor", plan: "server-cloud", status: "active", manager_email: "manager@alnoor.example",
+      created_on: "2025-11-02", trial_ends_on: null, paid_until: "2027-03-31", usage: usage(6, 12, 8400), last_payment_on: "2026-04-01",
+    },
+    {
+      name: "CLN-00003", clinic_name: "مركز بسمة لطب الأسنان", address: "basma", plan: "cloud", status: "trial", manager_email: "basma.center@example.com",
+      created_on: addDays(today, -9), trial_ends_on: addDays(today, TRIAL_DAYS - 9), paid_until: null, usage: usage(2, 3, 120), last_payment_on: null,
+    },
+    {
+      name: "CLN-00004", clinic_name: "عيادة الرافدين", address: "rafidain", plan: "cloud", status: "suspended", manager_email: "rafidain@example.com",
+      created_on: "2025-12-15", trial_ends_on: null, paid_until: addDays(today, -30), usage: usage(3, 4, 950), last_payment_on: "2026-07-26",
+    },
+    {
+      name: "CLN-00005", clinic_name: "Smile Dental Erbil", address: "smile-erbil", plan: "cloud", status: "ended", manager_email: "owner@smile-erbil.example",
+      created_on: "2026-03-01", trial_ends_on: null, paid_until: addDays(today, -3), usage: usage(4, 6, 2300), last_payment_on: addDays(today, -33),
+    },
+  ];
+  payments = [
+    { name: "PPY-00003", clinic: CURRENT, clinic_name: "DentClinic", amount: 90_000, currency: "IQD", method: "Qi Card", paid_on: addDays(today, -20), periods: 2, reference: "QI-73001", paid_until: addDays(today, 40) },
+    { name: "PPY-00002", clinic: "CLN-00004", clinic_name: "عيادة الرافدين", amount: 45_000, currency: "IQD", method: "Zain Cash", paid_on: "2026-07-26", periods: 1, reference: "ZC-55102", paid_until: addDays(today, -30) },
+    { name: "PPY-00001", clinic: "CLN-00002", clinic_name: "عيادة النور لطب الأسنان", amount: 650_000, currency: "IQD", method: "Bank Transfer", paid_on: "2026-04-01", periods: 1, reference: "TRF-88123", paid_until: "2027-03-31" },
+  ];
+  return clinics;
 }
 
-const platform = {
-  trialRequests: [] as TrialRequestDoc[],
-};
+/** The current clinic's real use, counted from the dummy data: active doctors, staff who can log in, files. */
+async function currentUsage() {
+  const doctors = await mockGetCount("Doctor", [["is_active", "=", 1]]);
+  const users = await mockGetCount("User", [["name", "not in", ["Administrator", "Guest"]], ["enabled", "=", 1]]);
+  const images = await mockGetList("Dental Image", ["name"], { limit: 0 });
+  // The demo X-rays stand for about 2.4 MB each.
+  return { doctors, users, storage_mb: Math.round(images.length * 2.4 * 10) / 10 };
+}
+
+/** For tests only (set before the app loads): `window.__mockPlanLimits` and `window.__mockSubscription` change the current clinic. */
+function testOverrides(): { limits?: Partial<PlanLimits>; subscription?: Partial<Subscription> } {
+  if (typeof window === "undefined") return {};
+  const w = window as unknown as { __mockPlanLimits?: Partial<PlanLimits>; __mockSubscription?: Partial<Subscription> };
+  return { limits: w.__mockPlanLimits, subscription: w.__mockSubscription };
+}
+
+/** The account's status as it stands today (one whose paid days or trial are over has ended). */
+function liveStatus(account: ClinicAccount): ClinicAccount["status"] {
+  const today = todayISO();
+  if (account.status === "suspended") return "suspended";
+  if (account.status === "trial") return account.trial_ends_on && account.trial_ends_on < today ? "ended" : "trial";
+  return account.paid_until && account.paid_until < today ? "ended" : "active";
+}
+
+async function subscriptionStatus(): Promise<Subscription> {
+  const account = platformClinics().find((c) => c.name === CURRENT)!;
+  const plan = PLANS[account.plan];
+  const overrides = testOverrides();
+  const pending = changeRequests.find((r) => r.clinic === CURRENT);
+  return {
+    plan: account.plan,
+    status: liveStatus(account),
+    trial_ends_on: account.trial_ends_on,
+    paid_until: account.paid_until,
+    grace_days: GRACE_DAYS,
+    limits: { ...plan.limits, ...overrides.limits },
+    usage: await currentUsage(),
+    price: plan.price,
+    currency: plan.currency,
+    period: plan.period,
+    pending_request: pending ? { plan: pending.plan, requested_on: pending.requested_on } : null,
+    ...overrides.subscription,
+  };
+}
+
+function requestChange(args: Args): string {
+  const e = messages().platform.errors;
+  const plan = String(args.plan ?? "") as PlanKey;
+  if (!PLAN_KEYS.includes(plan)) throw new Error(e.plan);
+  const account = platformClinics().find((c) => c.name === CURRENT)!;
+  const index = changeRequests.findIndex((r) => r.clinic === CURRENT);
+  if (index >= 0) changeRequests.splice(index, 1);
+  const name = `PCR-${String(changeRequests.length + 1).padStart(5, "0")}`;
+  changeRequests.unshift({
+    name, clinic: CURRENT, clinic_name: account.clinic_name, from_plan: account.plan, plan, note: String(args.note ?? ""), requested_on: todayISO(),
+  });
+  return name;
+}
+
+async function listClinics(): Promise<ClinicAccount[]> {
+  const usage = await currentUsage();
+  return platformClinics().map((c) => ({ ...c, status: liveStatus(c), usage: c.name === CURRENT ? usage : c.usage }));
+}
+
+function createClinic(args: Args): ClinicAccount {
+  const e = messages().platform.errors;
+  const clinicName = String(args.clinic_name ?? "").trim();
+  const address = String(args.address ?? "").trim().toLowerCase();
+  const plan = String(args.plan ?? "") as PlanKey;
+  const email = String(args.manager_email ?? "").trim();
+  if (!clinicName) throw new Error(e.clinicName);
+  if (!isValidClinicAddress(address)) throw new Error(e.address);
+  if (platformClinics().some((c) => c.address === address)) throw new Error(e.addressTaken(address));
+  if (!PLAN_KEYS.includes(plan)) throw new Error(e.plan);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error(e.email);
+  const today = todayISO();
+  const account: ClinicAccount = {
+    name: `CLN-${String(platformClinics().length + 1).padStart(5, "0")}`,
+    clinic_name: clinicName, address, plan, status: "trial", manager_email: email, created_on: today,
+    trial_ends_on: addDays(today, TRIAL_DAYS), paid_until: null, usage: { doctors: 0, users: 1, storage_mb: 0 }, last_payment_on: null,
+  };
+  platformClinics().push(account);
+  return account;
+}
+
+function recordPayment(args: Args): PlatformPayment {
+  const e = messages().platform.errors;
+  const account = platformClinics().find((c) => c.name === args.clinic);
+  if (!account) throw new Error(e.clinic);
+  const amount = Number(args.amount);
+  const periods = Math.floor(Number(args.periods));
+  const method = String(args.method ?? "") as PaymentChannel;
+  const paidOn = String(args.paid_on || todayISO());
+  if (!(amount > 0)) throw new Error(e.amount);
+  if (!PAYMENT_CHANNELS.includes(method)) throw new Error(e.method);
+  if (!(periods >= 1 && periods <= 36)) throw new Error(e.periods);
+  // From the end of what is paid already, or from the payment's day when that has passed.
+  const from = account.paid_until && account.paid_until >= paidOn ? account.paid_until : addDays(paidOn, -1);
+  const paidUntil = addMonths(from, periods * (PLANS[account.plan].period === "year" ? 12 : 1));
+  account.paid_until = paidUntil;
+  account.last_payment_on = paidOn;
+  if (account.status !== "suspended") account.status = "active";
+  const payment: PlatformPayment = {
+    name: `PPY-${String(payments.length + 1).padStart(5, "0")}`,
+    clinic: account.name, clinic_name: account.clinic_name, amount, currency: String(args.currency || "IQD"), method, paid_on: paidOn, periods,
+    reference: String(args.reference ?? ""), paid_until: paidUntil,
+  };
+  payments.unshift(payment);
+  return payment;
+}
+
+function setSuspended(args: Args): ClinicAccount {
+  const account = platformClinics().find((c) => c.name === args.clinic);
+  if (!account) throw new Error(messages().platform.errors.clinic);
+  if (Number(args.suspended) === 1) account.status = "suspended";
+  else {
+    const today = todayISO();
+    account.status = account.paid_until && account.paid_until >= today ? "active" : account.trial_ends_on && account.trial_ends_on >= today ? "trial" : "ended";
+  }
+  return account;
+}
 
 function requestTrial(args: Args): string {
   const e = messages().errors.mock;
@@ -54,8 +230,8 @@ function requestTrial(args: Args): string {
   if (!String(request.clinic_name ?? "").trim() || !String(request.contact_name ?? "").trim() || !String(request.phone ?? "").trim()) {
     throw new Error(e.required);
   }
-  const name = `TRQ-${String(platform.trialRequests.length + 1).padStart(5, "0")}`;
-  platform.trialRequests.unshift({ ...request, name, creation: frappeDateTime(new Date()), status: "New" });
+  const name = `TRQ-${String(trialRequests.length + 1).padStart(5, "0")}`;
+  trialRequests.unshift({ ...request, name, creation: frappeDateTime(new Date()), status: "New" });
   return name;
 }
 
@@ -66,8 +242,27 @@ export async function mockPlatformCall(method: string, args: Args): Promise<unkn
   switch (method) {
     case SERVER_METHODS.status:
       return serverStatus();
+    case SUBSCRIPTION_METHODS.status:
+      return subscriptionStatus();
+    case SUBSCRIPTION_METHODS.requestChange:
+      return requestChange(args);
     case PLATFORM_METHODS.requestTrial:
       return requestTrial(args);
+    case PLATFORM_METHODS.clinics:
+      return listClinics();
+    case PLATFORM_METHODS.createClinic:
+      return createClinic(args);
+    case PLATFORM_METHODS.recordPayment:
+      return recordPayment(args);
+    case PLATFORM_METHODS.setSuspended:
+      return setSuspended(args);
+    case PLATFORM_METHODS.payments:
+      platformClinics();
+      return args.clinic ? payments.filter((p) => p.clinic === args.clinic) : payments;
+    case PLATFORM_METHODS.trialRequests:
+      return trialRequests;
+    case PLATFORM_METHODS.changeRequests:
+      return changeRequests;
     default:
       throw new Error(messages().errors.mock.noMethod(method));
   }

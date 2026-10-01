@@ -8,6 +8,7 @@ import { DeploymentProvider } from "@/context/DeploymentContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { SettingsProvider } from "@/context/SettingsContext";
 import { SessionProvider } from "@/context/SessionContext";
+import { SubscriptionProvider } from "@/context/SubscriptionContext";
 import { ToastProvider } from "@/context/ToastContext";
 import MainLayout from "@/components/MainLayout";
 import { TooltipLayer } from "@/components/ui/Tooltip";
@@ -62,6 +63,7 @@ export default function RootLayout({
         <AuthProvider>
           <SettingsProvider>
             <ConnectivityProvider>
+            <SubscriptionProvider>
             <SessionProvider>
               <ToastProvider>
                 <LanguageProvider>
@@ -72,6 +74,7 @@ export default function RootLayout({
                 </LanguageProvider>
               </ToastProvider>
             </SessionProvider>
+            </SubscriptionProvider>
             </ConnectivityProvider>
           </SettingsProvider>
         </AuthProvider>

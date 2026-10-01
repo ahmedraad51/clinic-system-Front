@@ -1090,3 +1090,18 @@ serves all three; what each mode needs from the back end is listed below, item b
 - **Later, for big clinics:** a whitelisted `dent_app.api.export.all_data(format)` that builds the same ZIP on the server
   (in a background job, with a link when ready), so tens of thousands of rows do not travel as JSON first. Log every
   export (who, when) in the Activity, since the file holds medical data.
+
+### Plans: the clinic's subscription (every mode)
+
+- **`dent_app.api.subscription.status`** on every clinic site (any logged-in user; the screens need it for the limits
+  and the notices): `Subscription` in `src/lib/subscription.ts`: `plan` (`cloud`, `server`, `server-cloud`), `status`
+  (`trial`, `active`, `ended`, `suspended`), `trial_ends_on`, `paid_until` (the last paid day), `grace_days` (7),
+  `limits` (`doctors`, `users`: null for no limit, `storageGb`), `usage` (`doctors`: active Doctors; `users`: enabled
+  Users except Administrator and Guest; `storage_mb`: the size of the site's File records), `price`, `currency`,
+  `period` (`month` or `year`) and `pending_request` (`{ plan, requested_on }` or null). Keep a **Clinic Subscription**
+  single on each site that the platform writes (in the cloud) or that the licence fills in (a clinic server, see
+  License), and work out `usage` when asked (cache it for a minute).
+- **`dent_app.api.subscription.request_change`** (`plan`, `note`; `manage_users`): records the request on the platform
+  (a Plan Change Request: clinic, from plan, plan, note, date) and tells the platform owner.
+- The published plans and prices are in `src/config/sales.ts`; a clinic's own `limits` and `price` may differ (a
+  discount, a bigger limit) and are the ones that count.
