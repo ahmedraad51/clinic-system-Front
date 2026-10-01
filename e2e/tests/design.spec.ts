@@ -48,14 +48,14 @@ test("people are shown by their initials, or by a photo when one is uploaded", a
   await page.goto("/dashboard");
   await openFromMenu(page, "Patients");
   await waitForData(page);
-  const patient = page.getByRole("row").filter({ has: page.getByRole("link", { name: "Zahraa Hussein", exact: true }) });
+  const patient = page.getByRole("row").filter({ has: page.getByRole("link", { name: "زهراء حسين", exact: true }) });
   await expect(patient.locator("[data-avatar]")).toHaveAttribute("data-avatar", "initials");
-  await expect(patient.locator("[data-avatar]")).toHaveText("ZH");
+  await expect(patient.locator("[data-avatar]")).toHaveText("زح");
 
   await navigate(page, "/doctors");
   await waitForData(page);
-  const row = page.getByRole("row").filter({ has: page.getByRole("link", { name: "Dr. Ali Al-Jubouri" }) });
-  await expect(row.locator("[data-avatar]")).toHaveText("AJ");
+  const row = page.getByRole("row").filter({ has: page.getByRole("link", { name: "د. علي الجبوري" }) });
+  await expect(row.locator("[data-avatar]")).toHaveText("عج");
   await row.getByRole("button", { name: "Edit" }).click();
 
   const dialog = page.getByRole("dialog", { name: "Edit Doctor" });
@@ -77,6 +77,7 @@ test("people are shown by their initials, or by a photo when one is uploaded", a
 test("initials come from the first and last names", () => {
   expect(initials("Zahraa Hussein")).toBe("ZH");
   expect(initials("Dr. Noor Al-Saadi")).toBe("NS");
+  expect(initials("د. نور الساعدي")).toBe("نس");
   expect(initials("Administrator")).toBe("A");
   expect(initials("زهراء حسين")).toBe("زح");
   expect(initials("  ")).toBe("");

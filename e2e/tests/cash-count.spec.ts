@@ -43,12 +43,12 @@ test("a manager looks back at past counts", async ({ page }) => {
   await page.goto("/payments/day");
   await waitForData(page);
   await expect(page.getByRole("row", { name: /30 Jul 2026/ })).toContainText("Short by IQD 10,000");
-  await expect(page.getByRole("row", { name: /30 Jul 2026/ })).toContainText("Change was given twice to one patient.");
+  await expect(page.getByRole("row", { name: /30 Jul 2026/ })).toContainText("أُعطي الباقي مرتين لمريض واحد.");
 
   await page.getByRole("link", { name: "18 Aug 2026" }).click();
   await expect(page).toHaveURL(/date=2026-08-18/);
   await waitForData(page);
   await expect(page.getByLabel("Cash counted")).toHaveValue("130000");
   await expect(page.getByText("Over by IQD 5,000").first()).toBeVisible();
-  await expect(page.getByText(/^Counted by Dalia Jawad/)).toBeVisible();
+  await expect(page.getByText(/^Counted by داليا جواد/)).toBeVisible();
 });

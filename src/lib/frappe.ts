@@ -396,7 +396,7 @@ export async function uploadFile(file: File, options: UploadOptions = {}): Promi
   return res.data.message.file_url;
 }
 
-/** A File record, as attachFile() returns it and getList("File", …) lists it. */
+/** A File record, as attachFile() returns it. */
 export interface FileDoc {
   name: string;
   file_name: string;

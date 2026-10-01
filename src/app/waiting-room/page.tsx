@@ -192,12 +192,13 @@ function Column({
 function Person({ name, detail, aside, strong = false }: { name: string; detail: string; aside?: string; strong?: boolean }) {
   return (
     <li className="flex items-center justify-between gap-4 py-3">
+      {/* Wraps, never cut: a cut Arabic name loses its start ("…مة س." for "فاطمة س."). */}
       <span className="min-w-0">
-        <span className={cx("block font-semibold text-gray-900 truncate", strong ? "text-4xl" : "text-3xl")}>
+        <span className={cx("block font-semibold text-gray-900 break-words", strong ? "text-4xl" : "text-3xl")}>
           {/* Isolated, so a Latin name keeps its dot at the end on an Arabic screen. */}
           <bdi>{name}</bdi>
         </span>
-        <span className="block text-lg text-gray-600 truncate">{detail}</span>
+        <span className="block text-lg text-gray-600 break-words">{detail}</span>
       </span>
       {aside && <span className="shrink-0 text-2xl font-medium text-gray-700 whitespace-nowrap">{aside}</span>}
     </li>

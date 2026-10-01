@@ -13,7 +13,7 @@ test("the price list fills in the cost of a new treatment plan", async ({ page }
   await openFromMenu(page, "Treatments");
   await page.getByRole("button", { name: "New Treatment" }).first().click();
   const dialog = formDialog(page, "New Treatment Plan");
-  await pickLink(page, "Patient", "Ruqaya", "Ruqaya Adnan", dialog);
+  await pickLink(page, "Patient", "رقية", "رقية عدنان", dialog);
   await dialog.getByLabel("Treatment Type").selectOption("Crown");
   await expect(dialog.getByLabel(/Total Cost/)).toHaveValue("225000");
   await expect(dialog.getByText("Usual price for crown: IQD 225,000")).toBeVisible();
@@ -34,7 +34,7 @@ test("print a treatment estimate for a patient", async ({ page }) => {
   await page.getByRole("link", { name: "Print estimate" }).click();
   await expect(page.getByRole("heading", { name: "Treatment Estimate" })).toBeVisible();
   await waitForData(page);
-  // Abbas Mahdi: implant (250,000 left) and bridge (600,000 left).
+  // عباس مهدي: implant (250,000 left) and bridge (600,000 left).
   await expect(page.getByRole("cell", { name: "Implant" })).toBeVisible();
   await expect(page.getByRole("cell", { name: "Bridge" })).toBeVisible();
   await expect(page.getByText("Left to pay").locator("..")).toContainText("IQD 850,000");

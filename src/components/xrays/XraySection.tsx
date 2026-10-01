@@ -233,7 +233,8 @@ export default function XraySection({
                               )}
                             </span>
                             <span className="block px-3 py-2">
-                              <span className="block text-sm font-semibold text-gray-800 truncate">{label(t.enums.imageType, image.image_type)}</span>
+                              {/* Two lines, not cut at one: "أشعة مجنّحة (Bitewing)" lost its start when cut in a narrow tile. */}
+                              <span className="block text-sm font-semibold text-gray-800 line-clamp-2 break-words">{label(t.enums.imageType, image.image_type)}</span>
                               <span className="block text-xs text-gray-500 truncate">
                                 {imageTeeth(image).length === 1
                                   ? x.tooth(imageTeeth(image)[0])

@@ -238,7 +238,7 @@ export default function LinkSelect({
                   >
                     {people && <Avatar name={option.label} size={28} />}
                     <span className="flex-1 min-w-0">
-                      <span className="block font-medium truncate">{option.label}</span>
+                      <span className="block font-medium break-words">{option.label}</span>
                       {option.detail && (
                         <span className="block text-xs text-gray-500 truncate">
                           <bdi>{option.detail}</bdi>

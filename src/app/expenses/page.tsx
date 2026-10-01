@@ -246,7 +246,7 @@ function ExpensesList() {
                   </Td>
                   <Td label={x.colDoctor}>{row.doctor ? row.doctor_name || row.doctor : <span className="text-gray-500">{x.wholeClinic}</span>}</Td>
                   <Td label={x.colMethod}>{row.payment_method ? <StatusBadge kind="method" status={row.payment_method} /> : display("")}</Td>
-                  <Td label={x.colAmount} className="text-end font-medium text-red-600 whitespace-nowrap">
+                  <Td label={x.colAmount} className="text-end font-medium text-red-700 whitespace-nowrap">
                     {money(row.amount, row.currency)}
                   </Td>
                   {canEdit && (

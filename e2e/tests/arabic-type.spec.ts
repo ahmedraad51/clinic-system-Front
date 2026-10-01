@@ -34,7 +34,7 @@ test.describe("in Arabic", () => {
   test("a Latin ID and an Arabic age keep their order", async ({ page }) => {
     await page.goto("/patients");
     await waitForData(page);
-    const meta = page.getByRole("row", { name: /Abbas Mahdi/ }).locator("span.block.text-xs").first();
+    const meta = page.getByRole("row", { name: /عباس مهدي/ }).locator("span.block.text-xs").first();
     // Each part isolated, so "53 سنة" stays together after the ID.
     await expect(meta).toHaveText("⁨PAT-2026-00004⁩ · ⁨53 سنة⁩ · ⁨ذكر⁩");
   });
@@ -48,9 +48,41 @@ test("English keeps its own type", async ({ page }) => {
   expect(sm).toBe("15px");
 });
 
-test("joined parts are isolated only on right-to-left screens", () => {
+test("the fonts come from the app itself, not from Google, in both languages", async ({ page }) => {
+  // With Google Fonts out of reach (as on the owner's dev server), the text must still get our fonts.
+  const asked: string[] = [];
+  await page.route(/fonts\.(googleapis|gstatic)\.com/, (route) => {
+    asked.push(route.request().url());
+    return route.abort();
+  });
+  await page.goto("/dashboard");
+  await waitForData(page);
+  const loaded = () =>
+    page.evaluate(async () => {
+      await document.fonts.ready;
+      const faces: string[] = [];
+      document.fonts.forEach((face) => {
+        if (face.status === "loaded") faces.push(`${face.family.replace(/"/g, "")} ${face.weight}`);
+      });
+      return faces;
+    });
+  expect(await loaded()).toContain("IBM Plex Sans 400 600");
+  // The headings are semibold.
+  expect(await styleOf("main h1", "font-weight")(page)).toBe("600");
+
+  await page.evaluate(() => localStorage.setItem("language_choice", "ar"));
+  await page.reload();
+  await waitForData(page);
+  const faces = await loaded();
+  expect(faces).toContain("IBM Plex Sans Arabic 400");
+  expect(faces).toContain("IBM Plex Sans Arabic 600");
+  expect(asked).toEqual([]);
+});
+
+test("joined parts are isolated on right-to-left screens, and on English ones only around Arabic", () => {
   setLocale("en", false);
   expect(joinParts(["PAT-2026-00004", "53 years", "", null, "Male"], " · ")).toBe("PAT-2026-00004 · 53 years · Male");
+  expect(joinParts(["د. زينب الهاشمي", "تركيب التاج"], " · ")).toBe("⁨د. زينب الهاشمي⁩ · ⁨تركيب التاج⁩");
   setLocale("ar", false);
   try {
     expect(joinParts(["PAT-2026-00004", "53 سنة"], " · ")).toBe("⁨PAT-2026-00004⁩ · ⁨53 سنة⁩");

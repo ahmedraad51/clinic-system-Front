@@ -8,7 +8,7 @@ test("closed days are shaded and booking on one asks first", async ({ page }) =>
   await expect(page.locator('[data-today]').filter({ hasText: "Fri" })).toContainText("Closed");
 
   await page.goto("/appointments/new?date=2026-10-02&doctor=DOC-00001");
-  await pickLink(page, "Patient", "Hiba", "Hiba Kadhim");
+  await pickLink(page, "Patient", "هبة", "هبة كاظم");
   await expect(page.getByText("The clinic is closed on this day.")).toBeVisible();
   await page.getByLabel("Time").fill("10:00");
   await page.getByRole("button", { name: "Book Appointment" }).click();

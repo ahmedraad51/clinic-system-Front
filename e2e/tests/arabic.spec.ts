@@ -59,8 +59,8 @@ test("add a patient in Arabic", async ({ page }) => {
 test("take a payment in Arabic and print its receipt", async ({ page }) => {
   await page.goto("/payments/new");
   await expect(page.getByRole("heading", { name: "دفعة جديدة" })).toBeVisible();
-  // Yousif Sattar has one plan with money left: his filling, 25,000 of 50,000.
-  await pickLink(page, "المريض", "Yousif", "Yousif Sattar");
+  // يوسف ستار has one plan with money left: his filling, 25,000 of 50,000.
+  await pickLink(page, "المريض", "يوسف", "يوسف ستار");
   await page.getByRole("button", { name: "دفع كامل المتبقي" }).click();
   await expect(page.getByLabel(/المبلغ/)).toHaveValue("25000");
   await page.getByRole("button", { name: "حفظ الدفعة" }).click();
@@ -88,8 +88,8 @@ test("tomorrow's reminder is written in Arabic", async ({ page, context }) => {
   await page.goto("/today");
   await waitForData(page);
   const send = page.getByRole("link", { name: "إرسال تذكير" });
-  // The Arabic "day before" template: "مرحبًا Shahad Qasim، نذكّركم بموعدكم …".
-  await expect(send).toHaveAttribute("href", new RegExp(`\\?text=${encodeURIComponent("مرحبًا Shahad Qasim، نذكّركم بموعدكم")}`));
+  // The Arabic "day before" template: "مرحبًا شهد قاسم، نذكّركم بموعدكم …".
+  await expect(send).toHaveAttribute("href", new RegExp(`\\?text=${encodeURIComponent("مرحبًا شهد قاسم، نذكّركم بموعدكم")}`));
 });
 
 test("switching the language with unsaved changes asks first", async ({ page }) => {

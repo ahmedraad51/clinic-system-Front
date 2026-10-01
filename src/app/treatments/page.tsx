@@ -141,7 +141,7 @@ function TreatmentsList() {
                   </Td>
                   <Td label={t.treatments.cost} className="text-end whitespace-nowrap">{money(plan.total_cost, plan.currency)}</Td>
                   <Td label={t.treatments.remaining} className="text-end whitespace-nowrap">
-                    <span className={Number(plan.remaining_amount) > 0 ? "font-medium text-red-600" : "text-gray-500"}>
+                    <span className={Number(plan.remaining_amount) > 0 ? "font-medium text-red-700" : "text-gray-500"}>
                       {money(plan.remaining_amount, plan.currency)}
                     </span>
                   </Td>

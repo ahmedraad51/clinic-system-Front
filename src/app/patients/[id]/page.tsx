@@ -541,7 +541,7 @@ function PatientDetail() {
                     </Td>
                     <Td label={p.cost} className="text-end whitespace-nowrap">{money(plan.total_cost, plan.currency)}</Td>
                     <Td label={p.remaining} className="text-end whitespace-nowrap">
-                      <span className={Number(plan.remaining_amount) > 0 ? "font-medium text-red-600" : "text-gray-500"}>
+                      <span className={Number(plan.remaining_amount) > 0 ? "font-medium text-red-700" : "text-gray-500"}>
                         {money(plan.remaining_amount, plan.currency)}
                       </span>
                     </Td>
@@ -651,7 +651,7 @@ function PatientDetail() {
                     <Td label={p.method}>
                       <StatusBadge kind="method" status={pay.payment_method} />
                     </Td>
-                    <Td label={p.amount} className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount, pay.currency)}</Td>
+                    <Td label={p.amount} className="text-end font-medium text-green-700 whitespace-nowrap">{money(pay.amount, pay.currency)}</Td>
                   </ClickableRow>
                 ))}
               </tbody>

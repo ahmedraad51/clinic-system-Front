@@ -5,7 +5,7 @@ test("add a doctor, who can then be booked in the calendar", async ({ page }) =>
   await page.goto("/dashboard");
   await openFromMenu(page, "Doctors");
   // Each name opens the doctor's page.
-  await expect(page.getByRole("link", { name: "Dr. Zainab Al-Hashimi" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "د. زينب الهاشمي" })).toBeVisible();
 
   await page.getByRole("button", { name: "Add Doctor" }).click();
   const dialog = page.getByRole("dialog", { name: "Add Doctor" });

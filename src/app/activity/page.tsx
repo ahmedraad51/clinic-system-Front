@@ -223,7 +223,7 @@ function ActivityLog() {
                         <span className="font-medium text-gray-900">{who(entry.user)}</span> {a.verbs[entry.kind]} {what}
                         {" "}
                         {/* Isolated, so a Latin title, a date and the ID keep their order on an Arabic screen. */}
-                        <bdi className="text-gray-500">({entry.name})</bdi>
+                        <bdi className="text-gray-500 whitespace-nowrap">({entry.name})</bdi>
                       </p>
                       {entry.changes.length > 0 && (
                         <ul className="mt-1 space-y-0.5 text-xs text-gray-600">

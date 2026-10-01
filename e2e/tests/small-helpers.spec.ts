@@ -8,7 +8,7 @@ test("exported cells cannot run as spreadsheet formulas", () => {
   expect(csvSafe("+20 100")).toBe("'+20 100");
   expect(csvSafe("@SUM(A1)")).toBe("'@SUM(A1)");
   expect(csvSafe("-5+3")).toBe("'-5+3");
-  expect(csvSafe("Zahraa Hussein")).toBe("Zahraa Hussein");
+  expect(csvSafe("زهراء حسين")).toBe("زهراء حسين");
   // Numbers stay numbers, negative ones too.
   expect(csvSafe(-50)).toBe("-50");
   expect(csvSafe(3000)).toBe("3000");
@@ -40,7 +40,7 @@ test("the WhatsApp log hides the middle of phone numbers", async ({ page }) => {
   await waitForData(page);
   await page.getByRole("tab", { name: /Message Log|Log/ }).click();
   await waitForData(page);
-  // Yousif Sattar's number is 07801112233.
+  // يوسف ستار's number is 07801112233.
   await expect(page.getByText("0780•••2233")).toBeVisible();
   await expect(page.getByText("07801112233")).toHaveCount(0);
 });

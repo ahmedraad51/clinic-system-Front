@@ -51,12 +51,18 @@ export function dirOf(lang: Lang): "rtl" | "ltr" {
 /**
  * Parts of a line joined with a separator (usually " · "), the empty ones left out. On a right-to-left screen each
  * part is isolated (U+2068 … U+2069), so a Latin ID or name and the number of the part beside it never trade places:
- * without it "PAT-2026-00004 · 53 سنة" shows as "53 · سنة PAT-2026-00004". English text stays exactly as it was.
+ * without it "PAT-2026-00004 · 53 سنة" shows as "53 · سنة PAT-2026-00004". On an English screen only a line holding
+ * Arabic (a name or note typed in Arabic) is isolated, so "د. زينب الهاشمي · تركيب التاج" keeps its parts in order;
+ * English text stays exactly as it was.
  */
 export function joinParts(parts: Array<string | number | null | undefined | false>, separator: string): string {
   const kept = parts.filter((part) => part !== null && part !== undefined && part !== false && part !== "").map(String);
-  return dirOf(current) === "rtl" ? kept.map((part) => `⁨${part}⁩`).join(separator) : kept.join(separator);
+  const isolate = dirOf(current) === "rtl" || kept.some((part) => RTL_LETTERS.test(part));
+  return isolate ? kept.map((part) => `⁨${part}⁩`).join(separator) : kept.join(separator);
 }
+
+/** Arabic (and Hebrew) letters: text that reads right to left. */
+const RTL_LETTERS = /[֐-ࣿיִ-﷿ﹰ-﻿]/;
 
 /** Where this computer keeps the language last shown (for the first paint) and the one chosen on it. */
 export const LAST_LANG_KEY = "language";

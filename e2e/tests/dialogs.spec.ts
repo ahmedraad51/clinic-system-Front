@@ -4,15 +4,15 @@ import { formDialog, navigate, openSaved, pickLink, waitForData } from "../helpe
 // New and edit forms open in a dialog over the page they are opened from (see RecordDialogs.tsx).
 
 test("the patient page opens its forms with the patient filled in, and stays after saving", async ({ page }) => {
-  // Hiba Kadhim.
+  // هبة كاظم.
   await page.goto("/patients/PAT-2026-00003");
   await waitForData(page);
-  await expect(page.getByRole("heading", { name: "Hiba Kadhim" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "هبة كاظم" })).toBeVisible();
 
   await page.getByTestId("open-new-treatment").click();
   const dialog = formDialog(page, "New Treatment Plan");
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByText("Hiba Kadhim").first()).toBeVisible();
+  await expect(dialog.getByText("هبة كاظم").first()).toBeVisible();
   await dialog.getByLabel("Treatment Type").selectOption("Extraction");
   await dialog.getByLabel(/Total Cost/).fill("30000");
   await dialog.getByRole("button", { name: "Save Treatment" }).click();
@@ -60,10 +60,10 @@ test("Escape closes an untouched dialog; typed changes are kept unless the user 
 test("Escape in the patient picker closes only its list", async ({ page }) => {
   await page.goto("/appointments?view=day");
   await waitForData(page);
-  await page.getByRole("button", { name: "Book at 3:00 PM with Dr. Zainab Al-Hashimi" }).click();
+  await page.getByRole("button", { name: "Book at 3:00 PM with د. زينب الهاشمي" }).click();
   const dialog = formDialog(page, "New Appointment");
   await dialog.locator("label").filter({ hasText: "Patient" }).first().getByRole("button").first().click();
-  await page.locator('input[role="combobox"]').fill("Zah");
+  await page.locator('input[role="combobox"]').fill("زه");
   await expect(page.getByRole("listbox")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("listbox")).toBeHidden();
@@ -165,6 +165,6 @@ test("the old form pages still work on their own", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /^Whitening/ })).toBeVisible();
 
   await navigate(page, "/payments/new");
-  await pickLink(page, "Patient", "Shahad", "Shahad Qasim");
+  await pickLink(page, "Patient", "شهد", "شهد قاسم");
   await expect(page.getByRole("heading", { name: "New Payment" })).toBeVisible();
 });

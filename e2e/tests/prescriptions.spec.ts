@@ -57,12 +57,12 @@ test("the safety warnings come from the patient record and the medicine flags", 
 });
 
 test("write a prescription from a visit, with a warning for a penicillin allergy", async ({ page }) => {
-  // Zahraa Hussein is allergic to penicillin; her visit is with Dr. Zainab Al-Hashimi.
+  // زهراء حسين is allergic to penicillin; her visit is with د. زينب الهاشمي.
   await page.goto("/appointments/APT-2026-00001");
   await waitForData(page);
   await page.getByRole("link", { name: "Write Prescription" }).click();
   await expect(page.getByRole("heading", { name: "New Prescription" })).toBeVisible();
-  await expect(page.getByText("Zahraa Hussein").first()).toBeVisible();
+  await expect(page.getByText("زهراء حسين").first()).toBeVisible();
   await expect(page.getByLabel("Doctor")).toHaveValue("DOC-00001");
 
   const first = page.getByRole("group", { name: "Medicine 1" });
@@ -71,9 +71,9 @@ test("write a prescription from a visit, with a warning for a penicillin allergy
   await expect(first.getByLabel("Dose")).toHaveValue("500 mg");
   await expect(first.getByLabel("How often")).toHaveValue("Three times a day");
   await expect(first.getByLabel("Days")).toHaveValue("5");
-  await expect(first.getByLabel("Instructions")).toHaveValue("After food");
+  await expect(first.getByLabel("Instructions")).toHaveValue("بعد الأكل");
   await expect(page.getByRole("alert").filter({ hasText: "Check before signing" })).toContainText(
-    'Amoxicillin 500 mg: the patient\'s allergies say "penicillin". Choose another medicine.',
+    'Amoxicillin 500 mg: the patient\'s allergies say "بنسلين". Choose another medicine.',
   );
 
   // Swap it for the usual alternative: the warning goes away.
@@ -99,17 +99,17 @@ test("write a prescription from a visit, with a warning for a penicillin allergy
 
   // It is listed on the visit and on the patient's Prescriptions tab.
   await page.getByRole("link", { name: "8 Sep 2026, 10:00 AM" }).click();
-  await expect(page.getByRole("heading", { name: "Zahraa Hussein" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "زهراء حسين" })).toBeVisible();
   await waitForData(page);
   const card = page.locator("section").filter({ has: page.getByRole("heading", { name: "Prescriptions" }) });
   await expect(card).toContainText("Clindamycin 300 mg, Paracetamol 500 mg");
-  await page.getByRole("link", { name: "Zahraa Hussein" }).first().click();
+  await page.getByRole("link", { name: "زهراء حسين" }).first().click();
   await page.getByRole("tab", { name: /Prescriptions/ }).click();
   await expect(page.getByRole("row").filter({ hasText: "Clindamycin 300 mg, Paracetamol 500 mg" })).toBeVisible();
 });
 
 test("a warning also shows on a saved prescription, and the medicine list can be changed", async ({ page }) => {
-  // Saad Nouri takes warfarin: an NSAID on his prescription is flagged when the page opens.
+  // سعد نوري takes warfarin: an NSAID on his prescription is flagged when the page opens.
   await page.goto("/prescriptions/new?patient=PAT-2026-00008&doctor=DOC-00004");
   await waitForData(page);
   const first = page.getByRole("group", { name: "Medicine 1" });

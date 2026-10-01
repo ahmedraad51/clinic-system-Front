@@ -80,7 +80,7 @@ export default function NotificationBell() {
       >
         <Bell size={22} />
         {items.length > 0 && (
-          <span className="absolute top-0 -end-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-error text-white text-[10px] font-semibold flex items-center justify-center">
+          <span className="absolute top-0 -end-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-solid-red text-white text-[10px] font-semibold flex items-center justify-center">
             {num(items.length)}
           </span>
         )}

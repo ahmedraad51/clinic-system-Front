@@ -7,10 +7,10 @@ test("the front desk marks today's patients from the Today board", async ({ page
   await expect(page.getByRole("heading", { name: "Today", exact: true })).toBeVisible();
 
   // Today's two appointments, each under its doctor.
-  const rusul = page.locator("section").filter({ has: page.getByRole("heading", { name: "Dr. Rusul Kareem" }) });
-  const zainab = page.locator("section").filter({ has: page.getByRole("heading", { name: "Dr. Zainab Al-Hashimi" }) });
-  await expect(rusul).toContainText("Fatima Salman");
-  await expect(zainab).toContainText("Mustafa Jabbar");
+  const rusul = page.locator("section").filter({ has: page.getByRole("heading", { name: "د. رسل كريم" }) });
+  const zainab = page.locator("section").filter({ has: page.getByRole("heading", { name: "د. زينب الهاشمي" }) });
+  await expect(rusul).toContainText("فاطمة سلمان");
+  await expect(zainab).toContainText("مصطفى جبار");
 
   // One tap to confirm, one to complete.
   await zainab.getByRole("button", { name: "Confirm" }).click();
@@ -29,7 +29,7 @@ test("the front desk marks today's patients from the Today board", async ({ page
   await zainab.getByRole("button", { name: "Add Payment" }).click();
   const dialog = page.getByRole("dialog", { name: "New Payment" });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByText("Mustafa Jabbar").first()).toBeVisible();
+  await expect(dialog.getByText("مصطفى جبار").first()).toBeVisible();
 });
 
 test("past appointments without an outcome are listed to be closed", async ({ page }) => {
@@ -37,10 +37,10 @@ test("past appointments without an outcome are listed to be closed", async ({ pa
   const earlier = page.locator("section").filter({ has: page.getByRole("heading", { name: /Earlier, still open/ }) });
   // In the dummy data five September appointments were never marked Completed or No Show.
   await expect(earlier.getByRole("heading")).toHaveText("Earlier, still open (5)");
-  const abbas = earlier.getByRole("listitem").filter({ hasText: "Abbas Mahdi" });
+  const abbas = earlier.getByRole("listitem").filter({ hasText: "عباس مهدي" });
   await abbas.getByRole("button", { name: "No show" }).click();
   await expect(earlier.getByRole("heading")).toHaveText("Earlier, still open (4)");
-  await expect(earlier.getByText("Abbas Mahdi")).toHaveCount(0);
+  await expect(earlier.getByText("عباس مهدي")).toHaveCount(0);
 });
 
 test("tomorrow's reminders open WhatsApp with the message ready", async ({ page, context }) => {
@@ -48,10 +48,10 @@ test("tomorrow's reminders open WhatsApp with the message ready", async ({ page,
   await context.route("https://wa.me/**", (route) => route.abort());
   await page.goto("/today");
   const card = page.locator("section").filter({ has: page.getByRole("heading", { name: /Tomorrow's reminders/ }) });
-  // Tomorrow: Shahad Qasim with Dr. Zainab Al-Hashimi at 11:00.
+  // Tomorrow: شهد قاسم with د. زينب الهاشمي at 11:00.
   await expect(card.getByRole("heading")).toHaveText("Tomorrow's reminders (1 to send)");
   const send = card.getByRole("link", { name: "Send reminder" });
-  await expect(send).toHaveAttribute("href", /^https:\/\/wa\.me\/9647705541287\?text=Hello%20Shahad%20Qasim%2C%20this%20is%20a%20reminder/);
+  await expect(send).toHaveAttribute("href", /^https:\/\/wa\.me\/9647705541287\?text=Hello%20%D8%B4%D9%87%D8%AF%20%D9%82%D8%A7%D8%B3%D9%85%2C%20this%20is%20a%20reminder/);
   const popup = context.waitForEvent("page");
   await send.click();
   await (await popup).close();

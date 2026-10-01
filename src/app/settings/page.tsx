@@ -70,7 +70,7 @@ function toForm(doc: ClinicSettings): SettingsForm {
       const saved = (doc.working_days || "").split(",").map((d) => d.trim()).filter((d) => (WEEK_DAYS as readonly string[]).includes(d));
       return saved.length ? saved : [...WEEK_DAYS];
     })(),
-    // Empty: the default colour (indigo).
+    // Empty: the default colour (violet).
     theme_color: normalizeHex(doc.theme_color) ?? "",
     logo: doc.logo ?? "",
     enable_whatsapp: Number(doc.enable_whatsapp) === 1,
@@ -181,6 +181,12 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
     ) {
       setTab("currencies");
       setError(t.settings.rateInvalid);
+      return;
+    }
+    // No day ticked would be saved as "", which reads back as open every day.
+    if (form.working_days.length === 0) {
+      setTab("hours");
+      setError(t.settings.noOpenDay);
       return;
     }
     setSaving(true);
@@ -586,7 +592,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
 }
 
 /**
- * The clinic colour: the default indigo, a few calm presets, or any colour. Shows a sample of how buttons will look.
+ * The clinic colour: the default violet, a few calm presets, or any colour. Shows a sample of how buttons will look.
  */
 function ThemeColorPicker({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const { t } = useI18n();

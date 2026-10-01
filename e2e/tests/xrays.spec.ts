@@ -81,7 +81,7 @@ test("the viewer zooms, turns, inverts and moves through the images", async ({ p
 
   const viewer = page.getByRole("dialog", { name: "Bitewing · 20 Aug 2026 · Teeth 26, 27, 36, 37" });
   await expect(viewer).toBeVisible();
-  await expect(viewer.getByText("Zahraa Hussein · 1 of 5")).toBeVisible();
+  await expect(viewer.getByText(/زهراء حسين.? · .?1 of 5/)).toBeVisible();
   await expect(viewer.getByRole("button", { name: "Close" })).toBeFocused();
 
   await viewer.getByRole("button", { name: "Zoom in" }).click();
@@ -153,7 +153,7 @@ test("compare two X-rays side by side, and print one on the letterhead", async (
   await navigate(page, "/xrays/IMG-2026-00001");
   await expect(page.getByRole("heading", { name: "Periapical", exact: true })).toBeVisible();
   await expect(page.getByText("Dental image")).toBeVisible();
-  await expect(page.getByText("Zahraa Hussein").first()).toBeVisible();
+  await expect(page.getByText("زهراء حسين").first()).toBeVisible();
   // The drawing is printed on the image.
   await expect(page.locator("main svg[preserveAspectRatio=none] circle")).toHaveCount(1);
 });
@@ -169,7 +169,7 @@ test("the dental chart shows which teeth have X-rays, and can be sketched on", a
   await tooth36.click();
   await page.getByRole("button", { name: "Open Periapical · 18 Jun 2026 · Tooth 36" }).click();
   const viewer = page.getByRole("dialog", { name: "Periapical · 18 Jun 2026 · Tooth 36" });
-  await expect(viewer.getByText("Zahraa Hussein · 4 of 4")).toBeVisible();
+  await expect(viewer.getByText(/زهراء حسين.? · .?4 of 4/)).toBeVisible();
   // The dentist's saved drawing is shown on it.
   await expect(viewer.locator("svg[preserveAspectRatio=none] circle")).toHaveCount(1);
   await viewer.getByRole("button", { name: "Close" }).click();

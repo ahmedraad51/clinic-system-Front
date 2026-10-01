@@ -58,7 +58,7 @@ function PatientCard() {
       {/* The card itself, at its real size; the dashed border is the line to cut along. */}
       <div
         data-testid="patient-card"
-        className="w-[85.6mm] h-[54mm] bg-white text-black border border-dashed border-gray-400 rounded-[3mm] p-[4mm] flex flex-col justify-between overflow-hidden"
+        className="light-paper w-[85.6mm] h-[54mm] bg-white text-black border border-dashed border-gray-400 rounded-[3mm] p-[4mm] flex flex-col justify-between overflow-hidden"
       >
         <div className="flex items-center gap-[2mm]">
           {settings.logo ? (

@@ -11,7 +11,8 @@
     "screenshots": "playwright test --project=screens",
     "screenshots:readme": "playwright test --project=readme",
     "screenshots:arabic": "playwright test --project=arabic",
-    "screenshots:design": "playwright test --project=design-changes"
+    "screenshots:design": "playwright test --project=design-changes",
+    "screenshots:fonts": "playwright test --project=fonts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.18",

@@ -136,7 +136,7 @@ export function Modal({
         )}
       >
         <div className="flex items-center justify-between gap-3 px-6 pt-6 pb-4">
-          <h2 className="text-lg font-medium text-gray-900">{title}</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
           <button
             type="button"
             onClick={onClose}

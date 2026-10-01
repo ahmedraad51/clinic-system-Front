@@ -237,7 +237,7 @@ function TreatmentDetail() {
               </div>
               <div className="flex items-baseline justify-between gap-3">
                 <p className="text-xs text-gray-500">{t.treatments.paid}</p>
-                <p data-testid="plan-paid" className="text-lg font-semibold text-green-600">{money(paid, plan.currency)}</p>
+                <p data-testid="plan-paid" className="text-lg font-semibold text-green-700">{money(paid, plan.currency)}</p>
               </div>
               <div className="flex items-baseline justify-between gap-3">
                 <p className="text-xs text-gray-500">{t.treatments.remaining}</p>
@@ -313,7 +313,7 @@ function TreatmentDetail() {
                           <StatusBadge kind="method" status={pay.payment_method} />
                         </span>
                         <span className="text-end whitespace-nowrap">
-                          <span className="block font-medium text-green-600">{money(pay.amount, pay.currency)}</span>
+                          <span className="block font-medium text-green-700">{money(pay.amount, pay.currency)}</span>
                           {/* Paid in the other currency: what it took off this plan. */}
                           {(pay.currency || "") !== (plan.currency || "") && pay.plan_amount !== undefined && pay.plan_amount !== null && (
                             <span className="block text-xs text-gray-500">{t.money.countsAs(money(pay.plan_amount, plan.currency))}</span>

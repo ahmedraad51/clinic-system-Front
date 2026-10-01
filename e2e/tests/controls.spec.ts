@@ -23,7 +23,7 @@ test("a dropdown is the app's own list: check mark, keys, pictures, and Escape k
   await expect(list).toBeVisible();
   // The empty choice is the chosen one, with its check mark; each doctor has initials before the name.
   await expect(list.getByRole("option", { name: "Select Doctor" })).toHaveAttribute("aria-selected", "true");
-  await expect(list.getByRole("option", { name: /Dr\. Ali Al-Jubouri/ }).locator("[data-avatar]")).toBeVisible();
+  await expect(list.getByRole("option", { name: /د\. علي الجبوري/ }).locator("[data-avatar]")).toBeVisible();
 
   // Escape closes the list only.
   await page.keyboard.press("Escape");
@@ -37,8 +37,9 @@ test("a dropdown is the app's own list: check mark, keys, pictures, and Escape k
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
   await expect(list).toHaveCount(0);
-  await expect(page.getByLabel("Doctor")).toHaveValue("DOC-00002");
-  await expect(page.locator('[data-picker="doctor"]')).toContainText("Dr. Ali Al-Jubouri");
+  // The first doctor in Arabic alphabetical order.
+  await expect(page.getByLabel("Doctor")).toHaveValue("DOC-00004");
+  await expect(page.locator('[data-picker="doctor"]')).toContainText("د. حيدر العبيدي");
   await expect(dialog).toBeVisible();
 });
 
@@ -162,6 +163,6 @@ test("the message under a field goes once the page fills it in", async ({ page }
   const choose = page.getByRole("alert").filter({ hasText: "Choose one." });
   await expect(choose).toHaveCount(1);
   // Choosing a patient sends no input event from the field itself.
-  await pickLink(page, "Patient", "Zahraa", "Zahraa Hussein");
+  await pickLink(page, "Patient", "زهراء", "زهراء حسين");
   await expect(choose).toHaveCount(0);
 });

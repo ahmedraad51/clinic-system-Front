@@ -196,7 +196,7 @@
 }
 
 @theme {
-  /* IBM Plex Sans for English, IBM Plex Sans Arabic for Arabic (next/font in layout.tsx). */
+  /* IBM Plex Sans for English, IBM Plex Sans Arabic for Arabic (the files and variables are in fonts.css). */
   --font-sans: var(--font-plex), ui-sans-serif, system-ui, sans-serif;
 
   /* One text scale: 13 px small text, 15 px body. */
@@ -382,6 +382,16 @@ body {
   color: color-mix(in srgb, var(--ink) 84%, var(--surface));
   font-family: var(--font-plex), ui-sans-serif, system-ui, sans-serif;
   font-size: 0.9375rem;
+  /* Every digit as wide as the others, so amounts, times and counts line up in tables and lists. */
+  font-variant-numeric: tabular-nums;
+}
+
+/* A white sheet shown on screen as it will be printed (the patient ID card): its text keeps the light colours in
+ * dark mode too. */
+.light-paper {
+  --ink: #2f2b3d;
+  --surface: #ffffff;
+  --shade: #000000;
 }
 
 /*

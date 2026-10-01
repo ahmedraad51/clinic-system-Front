@@ -180,7 +180,7 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
                 type="button"
                 onClick={() => setProfileOpen(!profileOpen)}
                 aria-expanded={profileOpen}
-                className="relative flex items-center rounded-full"
+                className="relative flex items-center justify-center rounded-full pointer-coarse:w-11 pointer-coarse:h-11"
               >
                 <MyAvatar size={38} />
                 {/* Online: a small green dot on the picture. */}

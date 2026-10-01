@@ -91,6 +91,10 @@ item, doctors' photos or initials, a search box in long lists, and full keyboard
 time picker open from the bottom of the screen (the patient picker and address suggestions stay under the box while
 typing). Before and after: [docs/design-changes/4-controls](docs/design-changes/4-controls/README.md).
 
+**Fonts and type.** The fonts are part of the app (`public/fonts/`), so they load on every computer, online or not.
+Headings and figures are semibold, there is one size scale, and every digit has the same width, so amounts and times
+line up. Four fonts that suit both languages are compared in [docs/fonts](docs/fonts/README.md) for the owner to choose.
+
 **Forms in dialogs, wide pages.** New and edit forms for appointments, treatment plans and payments open in a dialog
 over the page you are on, already filled in with the patient, plan, tooth or time. Add Patient slides in from the side.
 After saving you stay where you were, and a message offers to open the new record. The patient, doctor, appointment,
@@ -333,8 +337,8 @@ npm run dev
 ```
 
 Open <http://localhost:3000> — it redirects straight to the dashboard, already populated with an Iraqi
-example clinic: Iraqi patients and doctors, addresses in Baghdad and other governorates, `07xx` mobile numbers
-and prices in Iraqi dinars (IQD).
+example clinic written in Arabic: Iraqi patients and doctors, addresses in Baghdad and other governorates, visit
+reasons and notes (medicine names stay in Latin letters), `07xx` mobile numbers and prices in Iraqi dinars (IQD).
 Node **20.9+** is required (developed on Node 22).
 
 **Install as an app.** DentClinic can be installed on a computer, tablet or phone (Chrome or Edge: the install icon
@@ -354,6 +358,7 @@ npm run screenshots       # every page at desktop, tablet and phone size, into s
 npm run screenshots:readme   # the pictures in this README, into docs/screenshots/
 npm run screenshots:arabic   # the main screens in Arabic at three sizes, into docs/arabic/
 npm run screenshots:design   # the redesign's "after" pictures, into docs/design-changes/2-clean/after/
+npm run screenshots:fonts    # the font comparison, into docs/fonts/
 ```
 
 The browser tests walk through the daily work: adding a patient, booking an appointment (and the

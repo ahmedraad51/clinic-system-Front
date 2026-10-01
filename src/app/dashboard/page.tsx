@@ -307,7 +307,7 @@ function Dashboard() {
       {/* Numbers that never loaded are not shown as zeros. */}
       {(data || !failed) && (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
             {seeAppointments && (
               <StatCard
                 title={mine ? t.dashboard.myAppointmentsToday : t.dashboard.appointmentsToday}
@@ -347,12 +347,12 @@ function Dashboard() {
 
           {/*
             What needs doing today. On a wide screen today's appointments and the to-do list sit side by side under the
-            numbers, so both show on a full HD screen without scrolling; the next 7 days follow. On a medium screen the
-            to-do list comes first, then today and the next 7 days side by side.
+            numbers, so both show on a full HD screen without scrolling; the next 7 days follow. Below that they stack, the
+            to-do list first: beside the open menu a tablet has no room for two lists with names.
           */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
             {attentionShown && data && (
-              <NeedsAttention attention={data.attention} className="lg:col-span-2 xl:col-span-2 xl:order-2" />
+              <NeedsAttention attention={data.attention} className="xl:col-span-2 xl:order-2" />
             )}
           {seeAppointments && (
             <>
@@ -442,7 +442,7 @@ function WelcomeBanner({ title, date, summary, actions }: { title: string; date:
     <div className={cx(CARD_CLASS, "px-5 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4")}>
       <div className="min-w-0">
         <p className="text-sm text-gray-500">{date}</p>
-        <h1 className="text-2xl font-medium text-gray-900 mt-0.5 break-words">{title}</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 mt-0.5 break-words">{title}</h1>
         {summary && <p className="text-sm text-gray-600 mt-1">{summary}</p>}
       </div>
       {actions && <div className="shrink-0">{actions}</div>}
@@ -482,7 +482,8 @@ function AppointmentList({
               <Avatar name={a.patient_name || a.patient} size={36} className="max-sm:hidden" />
               <span className="flex-1 min-w-0">
                 <span className="block text-sm font-medium text-gray-800 truncate">{a.patient_name || a.name}</span>
-                <span className="block text-xs text-gray-500 truncate">
+                {/* Wraps, never cut: on an English screen a cut Arabic reason loses its first words. */}
+                <span className="block text-xs text-gray-500 break-words">
                   {joinParts([a.doctor_name, a.reason_for_visit], t.common.dot)}
                 </span>
               </span>

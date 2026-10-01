@@ -135,7 +135,7 @@ export default function AppearancePanel({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-start justify-between gap-3 px-6 py-5 border-b border-gray-200">
           <div>
-            <h2 className="text-lg font-medium text-gray-900">{a.title}</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{a.title}</h2>
             <p className="text-sm text-gray-500">{a.subtitle}</p>
           </div>
           <div className="flex items-center gap-1">

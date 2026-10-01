@@ -365,23 +365,23 @@ function Reports() {
           <Card title={p.title} icon={Wallet} section="money">
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               <div className="xl:col-span-2 space-y-2">
-                <h3 className="text-sm font-medium text-gray-900">{p.summary}</h3>
+                <h3 className="text-sm font-semibold text-gray-900">{p.summary}</h3>
                 <div data-testid="profit-summary" className="space-y-1.5 text-sm text-gray-700 leading-relaxed">
                   {summary.map((sentence) => (
                     <p key={sentence}>{sentence}</p>
                   ))}
                 </div>
               </div>
-              <dl className="grid grid-cols-3 xl:grid-cols-1 gap-4 content-start">
+              <dl className="flex flex-wrap xl:flex-col gap-x-6 gap-y-3 content-start">
                 <div>
                   <dt className="text-xs text-gray-500">{p.expenses}</dt>
-                  <dd data-testid="profit-expenses" className="text-lg font-semibold text-red-600 whitespace-nowrap">{money(profit.expenses)}</dd>
+                  <dd data-testid="profit-expenses" className="text-lg font-semibold text-red-700 whitespace-nowrap">{money(profit.expenses)}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-gray-500">{profit.profit < 0 ? p.loss : p.profit}</dt>
                   <dd
                     data-testid="profit-total"
-                    className={profit.profit < 0 ? "text-lg font-semibold text-red-600 whitespace-nowrap" : "text-lg font-semibold text-green-600 whitespace-nowrap"}
+                    className={profit.profit < 0 ? "text-lg font-semibold text-red-700 whitespace-nowrap" : "text-lg font-semibold text-green-700 whitespace-nowrap"}
                   >
                     {money(Math.abs(profit.profit))}
                   </dd>
@@ -432,7 +432,7 @@ function Reports() {
                         <Td className="font-medium text-gray-800">{row.doctor ? row.name || row.doctor : p.shared}</Td>
                         <Td label={p.colRevenue} className="text-end whitespace-nowrap">{money(row.revenue)}</Td>
                         <Td label={p.colExpenses} className="text-end whitespace-nowrap text-red-600">{money(row.expenses)}</Td>
-                        <Td label={p.colProfit} className={row.profit < 0 ? "text-end whitespace-nowrap font-semibold text-red-600" : "text-end whitespace-nowrap font-semibold text-green-600"}>
+                        <Td label={p.colProfit} className={row.profit < 0 ? "text-end whitespace-nowrap font-semibold text-red-700" : "text-end whitespace-nowrap font-semibold text-green-700"}>
                           {money(row.profit)}
                         </Td>
                       </tr>
@@ -560,7 +560,7 @@ function Reports() {
                     <Td label={r.colMethod}>
                       <StatusBadge kind="method" status={row.payment_method} />
                     </Td>
-                    <Td label={r.colAmount} className="text-end font-medium text-green-600 whitespace-nowrap">{money(row.amount, row.currency)}</Td>
+                    <Td label={r.colAmount} className="text-end font-medium text-green-700 whitespace-nowrap">{money(row.amount, row.currency)}</Td>
                   </tr>
                 ))
               )}
@@ -616,7 +616,7 @@ function Reports() {
                       <StatusBadge kind="treatment" status={row.status} />
                     </Td>
                     <Td label={r.colTotalCost} className="text-end whitespace-nowrap">{money(row.total_cost, row.currency)}</Td>
-                    <Td label={r.colPaid} className="text-end whitespace-nowrap text-green-600">{money(row.paid_amount, row.currency)}</Td>
+                    <Td label={r.colPaid} className="text-end whitespace-nowrap text-green-700">{money(row.paid_amount, row.currency)}</Td>
                     <Td label={r.colRemaining} className="text-end whitespace-nowrap font-semibold text-red-600">{money(row.remaining_amount, row.currency)}</Td>
                   </tr>
                 ))

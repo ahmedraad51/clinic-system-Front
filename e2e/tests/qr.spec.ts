@@ -75,9 +75,9 @@ test("the patient ID card and the printed chart carry the patient's QR code", as
   await expect(page.getByRole("heading", { name: "Patient ID Card" })).toBeVisible();
   await waitForData(page);
   const card = page.getByTestId("patient-card");
-  await expect(card).toContainText("Zahraa Hussein");
+  await expect(card).toContainText("زهراء حسين");
   await expect(card).toContainText("PAT-2026-00001");
-  const code = card.getByRole("img", { name: "QR code of the file of Zahraa Hussein" });
+  const code = card.getByRole("img", { name: "QR code of the file of زهراء حسين" });
   await expect(code).toHaveAttribute("data-qr-value", /\/patients\/PAT-2026-00001$/);
   // A bank card's size: 85.6 × 54 mm.
   const box = await card.boundingBox();
@@ -85,7 +85,7 @@ test("the patient ID card and the printed chart carry the patient's QR code", as
   expect(Math.round(box?.height ?? 0)).toBe(204);
 
   await navigate(page, "/patients/PAT-2026-00001/chart");
-  await expect(page.getByRole("img", { name: "QR code of the file of Zahraa Hussein" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "QR code of the file of زهراء حسين" })).toBeVisible();
   await expect(page.getByText("Scan to open the patient file")).toBeVisible();
 });
 
@@ -102,7 +102,7 @@ test("Scan opens the patient whose card is held to the camera", async ({ page })
   await expect(dialog.getByText("This QR code is not a DentClinic patient card.")).toBeVisible();
   await page.evaluate(() => ((window as unknown as { __scanValue?: string }).__scanValue = `${location.origin}/patients/PAT-2026-00003`));
   await expect(page).toHaveURL(/\/patients\/PAT-2026-00003$/);
-  await expect(page.getByRole("heading", { name: "Hiba Kadhim" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "هبة كاظم" })).toBeVisible();
   await expect(dialog).toBeHidden();
 });
 
@@ -118,7 +118,7 @@ test("without a camera, the patient ID can be typed", async ({ page }) => {
   await expect(dialog.getByText("Type an ID such as PAT-2026-00001.")).toBeVisible();
   await dialog.getByLabel("Or type the patient ID").fill("pat-2026-00005");
   await dialog.getByRole("button", { name: "Open Patient" }).click();
-  await expect(page.getByRole("heading", { name: "Fatima Salman" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "فاطمة سلمان" })).toBeVisible();
 });
 
 test.describe("in Arabic", () => {

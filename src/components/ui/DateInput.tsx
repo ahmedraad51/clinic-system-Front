@@ -248,7 +248,7 @@ export function DateInput({
                               : day === today
                                 ? "border border-primary-600 text-primary-700 font-medium hover:bg-primary-50"
                                 : outside
-                                  ? "text-gray-400 hover:bg-gray-100"
+                                  ? "text-gray-500 hover:bg-gray-100"
                                   : "text-gray-800 hover:bg-gray-100",
                             !allowed && "opacity-30 cursor-not-allowed hover:bg-transparent",
                           )}

@@ -330,7 +330,8 @@ function TodayBoard() {
               />
             </Card>
           ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+            // One doctor (a dentist's own day) takes the whole width instead of leaving half the row empty.
+            <div className={cx("grid grid-cols-1 gap-6 items-start", groups.length > 1 && "xl:grid-cols-2")}>
               {groups.map((group) => {
                 const doctor = doctors.find((d) => d.name === group.doctor);
                 return (

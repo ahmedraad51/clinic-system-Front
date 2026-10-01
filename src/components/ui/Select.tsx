@@ -279,7 +279,8 @@ export function SelectInput({
                     )}
                   >
                     {media?.(option.value)}
-                    <span className="flex-1 min-w-0 truncate">{option.label}</span>
+                    {/* Wraps instead of being cut: "Amoxicillin + clavulanic acid 625 mg · Tablet" is wider than its field. */}
+                    <span className="flex-1 min-w-0 break-words">{option.label}</span>
                     {selected && <Check size={16} aria-hidden="true" className="shrink-0 text-primary-600" />}
                   </li>
                 </Fragment>

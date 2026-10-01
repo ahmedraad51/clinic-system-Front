@@ -129,13 +129,13 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                 <ToothLogo size={28} />
               </span>
             )}
-            <span className={cx("font-semibold text-[1.375rem] leading-none truncate text-gray-900", hideWhenCollapsed)}>{clinicName}</span>
+            <span className={cx("font-semibold text-xl leading-tight truncate text-gray-900", hideWhenCollapsed)}>{clinicName}</span>
           </Link>
           <button
             type="button"
             onClick={() => saveAppearance({ collapsed: !collapsed })}
             className={cx(
-              "max-lg:hidden w-8 h-8 shrink-0 flex items-center justify-center rounded-md text-gray-800 hover:bg-gray-100",
+              "max-lg:hidden w-8 h-8 pointer-coarse:w-11 pointer-coarse:h-11 shrink-0 flex items-center justify-center rounded-md text-gray-800 hover:bg-gray-100",
               hideWhenCollapsed,
               // Invisible while collapsed, so it must not catch a tap meant for the logo under it.
               "lg:nav-collapsed:pointer-events-none lg:nav-collapsed:group-hover/nav:pointer-events-auto lg:nav-collapsed:group-has-[:focus-visible]/nav:pointer-events-auto",
@@ -187,7 +187,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                           onClick={onClose}
                           aria-current={active ? "page" : undefined}
                           className={cx(
-                            "flex items-center gap-2 min-h-[2.375rem] pointer-coarse:min-h-11 px-3 rounded-md text-[0.9375rem] whitespace-nowrap transition-colors",
+                            "flex items-center gap-2 min-h-[2.375rem] pointer-coarse:min-h-11 px-3 rounded-md text-sm whitespace-nowrap transition-colors",
                             active ? "bg-brand text-white shadow-primary" : "text-gray-800 hover:bg-gray-100",
                           )}
                         >

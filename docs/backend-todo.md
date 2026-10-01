@@ -5,42 +5,44 @@ app `dent_app` must provide so the same screens work with `MOCK_DATA = false`. T
 exactly what the front end sends and reads. If the back end uses a different name, change one side so they
 match, and update `src/lib/types.ts`, the mock and `AGENTS.md`.
 
-**Section 9 lists every doctype and field the front end uses, with its type and whether it is required.**
-Sections 1 and 2 explain what is new or still to confirm.
+**Section 9 lists every doctype the front end uses, grouped by doctype: who may read and write it, every call
+the front end makes, and every field with its type, its allowed values and whether it is required.** Sections 1
+and 2 explain what is new or still to confirm.
 
 ## 1. New fields
 
-| Doctype | Field | Type | Notes |
-|---|---|---|---|
-| Patient | `dental_chart` | JSON | The dental chart. The front end sends a JSON string in the shape below and reads either a string or an object. It also reads the first shape, `{"36": "treated", "37": "pending"}`, so records saved before do not need a migration. |
-| Appointment | `patient_name` | Data, read only, `fetch_from: patient.full_name` | Shown in lists instead of the ID. |
-| Appointment | `doctor_name` | Data, read only, `fetch_from: doctor.full_name` | |
-| Appointment | `arrived_at`, `in_chair_at` | Datetime | The waiting room steps, set by the Today board ("2026-09-26 10:05:00", the front desk computer's local time; `null` clears a step). Both stay after the visit is closed. Users with `edit_appointments` write them; everyone with `view_appointments` reads them (the waiting room screen, `/waiting-room`, polls today's open appointments every 20 seconds with these two fields). Track changes on them like the other Appointment fields. |
-| Treatment Plan | `patient_name`, `doctor_name` | same as above | |
-| Treatment Session | `patient_name`, `doctor_name` | same as above | |
-| Payment | `patient_name` | Data, read only, `fetch_from: patient.full_name` | |
-| Payment | `treatment_type` | Data, read only, `fetch_from: treatment_plan.treatment_type` | Used by the payment list and the "revenue by treatment" report. |
-| Clinic Settings | `treatment_prices` | Table (child doctype, e.g. **Clinic Treatment Price**, `istable`) | The price list. Child fields: `treatment_type` (Select, the Treatment Plan types) and `price` (Currency). The front end sends and reads `[{ "treatment_type": "Crown", "price": 6000 }]` and only uses it to pre-fill `Treatment Plan.total_cost`. |
-| Clinic Settings | `phone_country_code` | Data | The country calling code as digits, e.g. `964`. The front end adds it to local numbers (`0770 123 4567` → `9647701234567`) when it opens WhatsApp; empty means 964. The reminder job should build numbers the same way (see section 2, **Phone numbers**). |
-| Treatment Plan | `lab_name` | Data | The dental lab doing the work (crowns, bridges, implant crowns). |
-| Treatment Plan | `lab_sent_date`, `lab_due_date`, `lab_received_date` | Date | When the work went to the lab, is due back, and came back. The Today board lists plans with `lab_sent_date` set and `lab_received_date` not set. |
-| WhatsApp Log | `patient_name` | Data, read only, `fetch_from: patient.full_name` | |
-| Patient | `next_recall_date` | Date | The next check-up the dentist chose. Empty means the usual rule (no visit for 6 months). |
-| Patient | `recall_interval_months` | Int | How often the dentist wants the patient back: 3, 6, 9 or 12; 0 when not chosen. |
-| Patient | `no_recall` | Check | 1 when the dentist said the patient needs no recall (moved away, treated elsewhere). The front end then sends `recall_interval_months = 0` and `next_recall_date = null`. |
-| Doctor | `gender` | Select: Female, Male (empty allowed) | Picks the drawn avatar (a man or a woman in a white coat) when there is no photo. |
-| Clinic Settings | `default_language` | Select: ar, en (empty allowed) | The clinic's language for users who did not choose one. Empty means Arabic. |
-| Clinic Settings | `arabic_digits` | Check, default 0 | 1: Arabic screens write numbers ٠-٩ instead of 0-9. |
-| Clinic Settings | `second_currency` | Link Currency (or Data), empty allowed | A second currency the clinic takes (`USD`). Empty: one currency only. Never the same as `currency`. See **Two currencies** below. |
-| Clinic Settings | `exchange_rates` | Table (child doctype, e.g. **Clinic Exchange Rate**, `istable`) | The second currency's rates. Child fields: `rate_date` (Date) and `rate` (Float, how many of the clinic's currency one unit of the second is worth: `1460` for 1 USD = 1,460 IQD). One row per date; each counts from its date on. The front end always sends the whole table. |
-| Treatment Plan | `currency` | Link Currency (or Data), empty allowed | The plan's currency. Empty means the clinic's own. `total_cost`, `paid_amount` and `remaining_amount` are in it. |
-| Payment | `currency` | Link Currency (or Data), empty allowed | The currency the patient paid in. Empty means the clinic's own (the front end sends `""` for it). `amount` is in it. |
-| Payment | `exchange_rate` | Float | Set by the server (never sent by the front end): the rate of the payment's day when two currencies meet (a payment in the second currency, or on a plan in it), else empty. Kept while the payment's day, currency and plan stay the same (section 6, **Two currencies**). |
-| Payment | `plan_amount` | Currency, read only | Worked out by the server: `amount` in the plan's currency. What the payment takes off the plan. |
-| Payment | `base_amount` | Currency, read only | Worked out by the server: `amount` in the clinic's currency, for totals and reports. |
-| WhatsApp Template | `language` | Select: ar, en (empty allowed) | The language the message is written in; empty means any. The front end picks the template in the language of the screen, then one with no language. The reminder job should do the same with the clinic's default language (or the patient's, if a patient language is added later). |
-| Patient | `chart_sketch` | JSON | Drawings on top of the dental chart, one for the adult teeth and one for the child teeth: `{ "version": 1, "adult": { "version": 1, "aspect": 0.42, "shapes": [...] }, "child": {...} }` (each a SketchData, points from 0 to 1; either may be missing). Store and return it as is. The History card says it changed without showing the values. |
-| Doctor | `photo` | Attach Image | The doctor's photo, uploaded on `/doctors` with `upload_file` (a public file) and shown in round avatars: lists, the calendar, the Today board. Every clinic role must be able to read it with the Doctor list. |
+| Doctype           | Field                                                                                                                      | Type                                                                              | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Patient           | `dental_chart`                                                                                                             | JSON                                                                              | The dental chart. The front end sends a JSON string in the shape below and reads either a string or an object. It also reads the first shape, `{"36": "treated", "37": "pending"}`, so records saved before do not need a migration.                                                                                                                                                                                                          |
+| Appointment       | `patient_name`                                                                                                             | Data, read only, `fetch_from: patient.full_name`                                  | Shown in lists instead of the ID.                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Appointment       | `doctor_name`                                                                                                              | Data, read only, `fetch_from: doctor.full_name`                                   |                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Appointment       | `arrived_at`, `in_chair_at`                                                                                                | Datetime                                                                          | The waiting room steps, set by the Today board ("2026-09-26 10:05:00", the front desk computer's local time; `null` clears a step). Both stay after the visit is closed. Users with `edit_appointments` write them; everyone with `view_appointments` reads them (the waiting room screen, `/waiting-room`, polls today's open appointments every 20 seconds with these two fields). Track changes on them like the other Appointment fields. |
+| Treatment Plan    | `patient_name`, `doctor_name`                                                                                              | same as above                                                                     |                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Treatment Session | `patient_name`, `doctor_name`                                                                                              | same as above                                                                     |                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Payment           | `patient_name`                                                                                                             | Data, read only, `fetch_from: patient.full_name`                                  |                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Payment           | `treatment_type`                                                                                                           | Data, read only, `fetch_from: treatment_plan.treatment_type`                      | Used by the payment list and the "revenue by treatment" report.                                                                                                                                                                                                                                                                                                                                                                               |
+| Clinic Settings   | `treatment_prices`                                                                                                         | Table (child doctype, e.g. **Clinic Treatment Price**, `istable`)                 | The price list. Child fields: `treatment_type` (Select, the Treatment Plan types) and `price` (Currency). The front end sends and reads `[{ "treatment_type": "Crown", "price": 6000 }]` and only uses it to pre-fill `Treatment Plan.total_cost`.                                                                                                                                                                                            |
+| Clinic Settings   | `phone_country_code`                                                                                                       | Data                                                                              | The country calling code as digits, e.g. `964`. The front end adds it to local numbers (`0770 123 4567` → `9647701234567`) when it opens WhatsApp; empty means 964. The reminder job should build numbers the same way (see section 2, **Phone numbers**).                                                                                                                                                                                    |
+| Treatment Plan    | `lab_name`                                                                                                                 | Data                                                                              | The dental lab doing the work. The Lab Work card shows on Crown, Bridge, Implant and Whitening plans, and on any plan already sent to a lab.                                                                                                                                                                                                                                                                                                  |
+| Treatment Plan    | `lab_sent_date`, `lab_due_date`, `lab_received_date`                                                                       | Date                                                                              | When the work went to the lab, is due back, and came back. The Today board lists plans with `lab_sent_date` set and `lab_received_date` not set.                                                                                                                                                                                                                                                                                              |
+| WhatsApp Log      | `patient_name`                                                                                                             | Data, read only, `fetch_from: patient.full_name`                                  |                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Patient           | `next_recall_date`                                                                                                         | Date                                                                              | The next check-up the dentist chose. Empty means the usual rule (no visit for 6 months).                                                                                                                                                                                                                                                                                                                                                      |
+| Patient           | `recall_interval_months`                                                                                                   | Int                                                                               | How often the dentist wants the patient back: 3, 6, 9 or 12; 0 when not chosen.                                                                                                                                                                                                                                                                                                                                                               |
+| Patient           | `no_recall`                                                                                                                | Check                                                                             | 1 when the dentist said the patient needs no recall (moved away, treated elsewhere). The front end then sends `recall_interval_months = 0` and `next_recall_date = null`.                                                                                                                                                                                                                                                                     |
+| Doctor            | `gender`                                                                                                                   | Select: Female, Male (empty allowed)                                              | Picks the drawn avatar (a man or a woman in a white coat) when there is no photo.                                                                                                                                                                                                                                                                                                                                                             |
+| Clinic Settings   | `default_language`                                                                                                         | Select: ar, en (empty allowed)                                                    | The clinic's language for users who did not choose one. Empty (never saved) means Arabic; the Settings page always sends `ar` or `en`.                                                                                                                                                                                                                                                                                                        |
+| Clinic Settings   | `arabic_digits`                                                                                                            | Check, default 0                                                                  | 1: Arabic screens write numbers ٠-٩ instead of 0-9.                                                                                                                                                                                                                                                                                                                                                                                           |
+| Clinic Settings   | `second_currency`                                                                                                          | Link Currency (or Data), empty allowed                                            | A second currency the clinic takes (`USD`). Empty: one currency only. Never the same as `currency`. See **Two currencies** below.                                                                                                                                                                                                                                                                                                             |
+| Clinic Settings   | `exchange_rates`                                                                                                           | Table (child doctype, e.g. **Clinic Exchange Rate**, `istable`)                   | The second currency's rates. Child fields: `rate_date` (Date) and `rate` (Float, how many of the clinic's currency one unit of the second is worth: `1460` for 1 USD = 1,460 IQD). One row per date; each counts from its date on. The front end always sends the whole table.                                                                                                                                                                |
+| Treatment Plan    | `currency`                                                                                                                 | Link Currency (or Data), empty allowed                                            | The plan's currency. Empty means the clinic's own. `total_cost`, `paid_amount` and `remaining_amount` are in it.                                                                                                                                                                                                                                                                                                                              |
+| Payment           | `currency`                                                                                                                 | Link Currency (or Data), empty allowed                                            | The currency the patient paid in. Empty means the clinic's own (the front end sends `""` for it). `amount` is in it.                                                                                                                                                                                                                                                                                                                          |
+| Payment           | `exchange_rate`                                                                                                            | Float                                                                             | Set by the server (never sent by the front end): the rate of the payment's day when two currencies meet (a payment in the second currency, or on a plan in it), else empty. Kept while the payment's day, currency and plan stay the same (section 6, **Two currencies**).                                                                                                                                                                    |
+| Payment           | `plan_amount`                                                                                                              | Currency, read only                                                               | Worked out by the server: `amount` in the plan's currency. What the payment takes off the plan.                                                                                                                                                                                                                                                                                                                                               |
+| Payment           | `base_amount`                                                                                                              | Currency, read only                                                               | Worked out by the server: `amount` in the clinic's currency, for totals and reports.                                                                                                                                                                                                                                                                                                                                                          |
+| WhatsApp Template | `language`                                                                                                                 | Select: ar, en (empty allowed)                                                    | The language the message is written in; empty means any. The front end picks the template in the language of the screen, then one with no language. The reminder job should do the same with the clinic's default language (or the patient's, if a patient language is added later).                                                                                                                                                          |
+| Patient           | `chart_sketch`                                                                                                             | JSON                                                                              | Drawings on top of the dental chart, one for the adult teeth and one for the child teeth: `{ "version": 1, "adult": { "version": 1, "aspect": 0.42, "shapes": [...] }, "child": {...} }` (each a SketchData, points from 0 to 1; either may be missing). Store and return it as is. The History card says it changed without showing the values.                                                                                              |
+| Doctor            | `photo`                                                                                                                    | Attach Image                                                                      | The doctor's photo, uploaded on `/doctors` with `upload_file` (a public file) and shown in round avatars: lists, the calendar, the Today board. Every clinic role must be able to read it with the Doctor list.                                                                                                                                                                                                                               |
+| Doctor            | `rx_paper_size`, `rx_preprinted`, `rx_top_mm`, `rx_bottom_mm`, `rx_qualifications`, `rx_footer`, `rx_logo`, `rx_signature` | Select A5/A4, Check, Int, Int, Small Text, Small Text, Attach Image, Attach Image | The doctor's prescription paper (Edit Paper on the doctor's page). Details in section 9, **Doctor**.                                                                                                                                                                                                                                                                                                                                          |
 
 **Recall rule for `Appointment.on_update`.** When an appointment becomes Completed and its patient has
 `recall_interval_months > 0` and `no_recall = 0`, set `Patient.next_recall_date` to the appointment date plus that
@@ -57,7 +59,10 @@ use the same fields later.
 {
   "version": 2,
   "teeth": {
-    "36": { "conditions": ["root_canal", "crown"], "note": "Zirconia crown being made." },
+    "36": {
+      "conditions": ["root_canal", "crown"],
+      "note": "Zirconia crown being made."
+    },
     "37": { "surfaces": { "O": "caries", "D": "caries" } },
     "24": { "legacy": "treated" }
   }
@@ -78,41 +83,41 @@ After adding fetch fields, run a patch that fills them for existing records (fet
 
 The end-of-day report (`/payments/day`) saves one cash count per day. Name series `CC-.YYYY.-.#####`.
 
-| Field | Type | Notes |
-|---|---|---|
-| `count_date` | Date, required, **unique** | The day that was counted. |
-| `opening_float` | Currency | Money put in the drawer in the morning, for change. |
-| `cash_payments` | Currency, read only | The day's Payments with `payment_method = "Cash"`, worked out in `validate()` when saved (the front end sends its own figure, which should be replaced). |
-| `expected_cash` | Currency, read only | `opening_float + cash_payments`. |
-| `cash_counted` | Currency, required | All the cash counted in the drawer. |
-| `difference` | Currency, read only | `cash_counted - expected_cash`: below 0 short, above 0 over. |
-| `note` | Small Text | Required in `validate()` when `difference` is not 0 ("Write a note saying why the cash is short or over."). |
-| `counted_by` | Link to User | The user who saved it (set it from `frappe.session.user`). |
-| `counted_by_name` | Data, read only, `fetch_from: counted_by.full_name` | |
-| `counted_at` | Datetime, read only | Set to now on every save. |
+| Field             | Type                                                | Notes                                                                                                                                                    |
+| ----------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `count_date`      | Date, required, **unique**                          | The day that was counted.                                                                                                                                |
+| `opening_float`   | Currency                                            | Money put in the drawer in the morning, for change.                                                                                                      |
+| `cash_payments`   | Currency, read only                                 | The day's Payments with `payment_method = "Cash"`, worked out in `validate()` when saved (the front end sends its own figure, which should be replaced). |
+| `expected_cash`   | Currency, read only                                 | `opening_float + cash_payments`.                                                                                                                         |
+| `cash_counted`    | Currency, required                                  | All the cash counted in the drawer.                                                                                                                      |
+| `difference`      | Currency, read only                                 | `cash_counted - expected_cash`: below 0 short, above 0 over.                                                                                             |
+| `note`            | Small Text                                          | Required in `validate()` when `difference` is not 0 ("Write a note saying why the cash is short or over.").                                              |
+| `counted_by`      | Link to User                                        | The user who saved it (set it from `frappe.session.user`).                                                                                               |
+| `counted_by_name` | Data, read only, `fetch_from: counted_by.full_name` |                                                                                                                                                          |
+| `counted_at`      | Datetime, read only                                 | Set to now on every save.                                                                                                                                |
 
 Permissions: users with `add_payments` create and update; users with `view_payments` read. Do not allow delete
-for the front desk (a manager can correct a count by updating it). The front end reads it with
-`GET /api/resource/Cash Count` filtered on `count_date` and sorted `count_date desc`.
+for the front desk (a manager can correct a count by updating it). The front end reads the day's count with
+`GET /api/resource/Cash Count` filtered on `count_date`, and the last 14 counts sorted `count_date desc`.
 
 ### New doctype: Expense (and two permission switches)
 
 The Expenses page (`/expenses`) and the Profit part of Reports. Name series `EXP-.YYYY.-.#####`. An expense with a
 `doctor` counts against that doctor in "Profit by Doctor"; one without is the whole clinic's (rent, salaries).
 
-| Field | Type | Notes |
-|---|---|---|
-| `expense_date` | Date, required | |
-| `category` | Select, required | `Rent`, `Salaries`, `Dental Supplies`, `Lab Fees`, `Equipment`, `Utilities`, `Maintenance`, `Marketing`, `Other` (`EXPENSE_CATEGORIES` in `src/lib/types.ts`). |
-| `amount` | Currency, required | Above zero, in the expense's currency. |
-| `currency` | Link Currency or Data | Empty is the clinic's own; else `Clinic Settings.second_currency`. |
-| `exchange_rate` | Float, read only | Set in `validate()` from `Clinic Settings.exchange_rates` (the rate of `expense_date`) when `currency` is the second one; kept while the day and currency stay, like Payment. |
-| `base_amount` | Currency, read only | The amount in the clinic's own currency (`amount × exchange_rate` for the second currency), for totals. |
-| `doctor` | Link Doctor | Optional. |
-| `doctor_name` | Data, read only, `fetch_from: doctor.full_name` | |
-| `description` | Data | What it was for. |
-| `paid_to` | Data | The landlord, the lab, the supplier. |
-| `payment_method` | Select | `Cash`, `Card`, `Bank Transfer`, or empty. |
+| Field            | Type                                            | Notes                                                                                                                                                                         |
+| ---------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `expense_date`   | Date, required                                  |                                                                                                                                                                               |
+| `category`       | Select, required                                | `Rent`, `Salaries`, `Dental Supplies`, `Lab Fees`, `Equipment`, `Utilities`, `Maintenance`, `Marketing`, `Other` (`EXPENSE_CATEGORIES` in `src/lib/types.ts`).                |
+| `amount`         | Currency, required                              | Above zero, in the expense's currency.                                                                                                                                        |
+| `currency`       | Link Currency (or Data)                         | Empty is the clinic's own; else `Clinic Settings.second_currency`.                                                                                                            |
+| `exchange_rate`  | Float, read only                                | Set in `validate()` from `Clinic Settings.exchange_rates` (the rate of `expense_date`) when `currency` is the second one; kept while the day and currency stay, like Payment. |
+| `base_amount`    | Currency, read only                             | The amount in the clinic's own currency (`amount × exchange_rate` for the second currency), for totals.                                                                       |
+| `doctor`         | Link Doctor                                     | Optional.                                                                                                                                                                     |
+| `doctor_name`    | Data, read only, `fetch_from: doctor.full_name` | Stored: searched.                                                                                                                                                             |
+| `description`    | Data                                            | What it was for.                                                                                                                                                              |
+| `paid_to`        | Data                                            | The landlord, the lab, the supplier.                                                                                                                                          |
+| `payment_method` | Select                                          | `Cash`, `Card`, `Bank Transfer`, or empty.                                                                                                                                    |
 
 `validate()`: a date and a category, `amount > 0`, a currency the clinic takes, and a rate for the day when it is
 the second currency ("There is no exchange rate for USD on that day."). **Clinic Settings.validate()** must also
@@ -129,19 +134,20 @@ Naming `IMG-.YYYY.-.#####`. One record per X-ray, photo or scan of a patient. Th
 then uploads the file with `upload_file` (`doctype: "Dental Image"`, `docname`, `is_private: 1`), then sets `image`
 to the file's URL. Deleting the record must delete its attached file (Frappe does this for attachments).
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `patient` | Link Patient | Yes | |
-| `patient_name` | Data, read only, `fetch_from: patient.full_name` | | |
-| `image_type` | Select: Periapical, Bitewing, Panoramic (OPG), Cephalometric, CBCT screenshot, Intraoral photo, Other | Yes | |
-| `taken_on` | Date | Yes | |
-| `teeth` | Data | No | FDI numbers, comma-separated ("36,37"). Empty: the whole mouth. |
-| `description` | Small Text | No | |
-| `file_name` | Data | No | The name of the uploaded file. |
-| `image` | Attach Image (or Attach, for PDFs) | No | The private file's URL (`/private/files/…`). Empty for a moment during an upload. |
-| `annotations` | JSON | No | The drawing on top, one SketchData: `{ "version": 1, "aspect": 0.75, "shapes": [...] }` (points from 0 to 1 of the image). The file itself is never changed. |
+| Field          | Type                                                                                                  | Required | Notes                                                                                                                                                        |
+| -------------- | ----------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `patient`      | Link Patient                                                                                          | Yes      |                                                                                                                                                              |
+| `patient_name` | Data, read only, `fetch_from: patient.full_name`                                                      |          |                                                                                                                                                              |
+| `image_type`   | Select: Periapical, Bitewing, Panoramic (OPG), Cephalometric, CBCT screenshot, Intraoral photo, Other | Yes      |                                                                                                                                                              |
+| `taken_on`     | Date                                                                                                  | Yes      |                                                                                                                                                              |
+| `teeth`        | Data                                                                                                  | No       | FDI numbers, comma-separated ("36,37"). Empty: the whole mouth.                                                                                              |
+| `description`  | Small Text                                                                                            | No       |                                                                                                                                                              |
+| `file_name`    | Data                                                                                                  | No       | The name of the uploaded file.                                                                                                                               |
+| `image`        | Attach Image (or Attach, for PDFs)                                                                    | No       | The private file's URL (`/private/files/…`). Empty for a moment during an upload.                                                                            |
+| `annotations`  | JSON                                                                                                  | No       | The drawing on top, one SketchData: `{ "version": 1, "aspect": 0.75, "shapes": [...] }` (points from 0 to 1 of the image). The file itself is never changed. |
 
-Permissions: read with `view_patients`; create, write and delete with `edit_patients` (the same rule the front end uses).
+Permissions: read with `view_patients`, and with `view_treatments` (the treatment plan page shows the patient's
+images on the chart); create, write and delete with `edit_patients` (the same rule the front end uses).
 Add Dental Image to the Patient's links, so a patient with images cannot be deleted. Accepted files: JPG, PNG, PDF up
 to 10 MB (DICOM later).
 
@@ -151,37 +157,38 @@ The prescription form (`/prescriptions/new`) and the Medicines page (`/medicines
 
 **Dental Medicine**, name series `MED-.#####`: the clinic's medicine list.
 
-| Field | Type | Notes |
-|---|---|---|
-| `medicine_name` | Data, required | The generic name, "Amoxicillin". |
-| `strength` | Data | "500 mg", "0.12%". |
-| `dosage_form` | Select | Tablet, Capsule, Suspension, Syrup, Mouthwash, Gel, Drops, Injection, Other. |
-| `medicine_group` | Select | Antibiotic, Painkiller, Mouthwash, Antifungal, Other. |
-| `default_dose`, `default_frequency`, `default_instructions` | Data | The usual prescription, filled into a new row. `default_frequency` is one of the values in `FREQUENCIES` (`src/lib/prescriptions.ts`): Once a day, Twice a day, Three times a day, Four times a day, Every 4 hours, Every 6 hours, Every 8 hours, Every 12 hours, When needed, Once only. |
-| `default_duration_days` | Int | |
-| `allergy_words` | Data | Comma-separated words; when one appears in `Patient.allergies` the form warns. |
-| `is_nsaid`, `avoid_in_pregnancy` | Check | Warn with a blood thinner / a pregnancy in the patient's medical text. |
-| `max_daily_mg` | Int | The usual daily maximum; 0 means no check. |
-| `child_note` | Small Text | Shown when the patient is under 12. |
-| `is_active` | Check, default 1 | Only active medicines are offered; nothing is deleted. |
+| Field                                                       | Type             | Notes                                                                                                                                                                                                                                                                                     |
+| ----------------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `medicine_name`                                             | Data, required   | The generic name, "Amoxicillin".                                                                                                                                                                                                                                                          |
+| `strength`                                                  | Data             | "500 mg", "0.12%".                                                                                                                                                                                                                                                                        |
+| `dosage_form`                                               | Select           | Tablet, Capsule, Suspension, Syrup, Mouthwash, Gel, Drops, Injection, Other.                                                                                                                                                                                                              |
+| `medicine_group`                                            | Select           | Antibiotic, Painkiller, Mouthwash, Antifungal, Other.                                                                                                                                                                                                                                     |
+| `default_dose`, `default_frequency`, `default_instructions` | Data             | The usual prescription, filled into a new row. `default_frequency` is one of the values in `FREQUENCIES` (`src/lib/prescriptions.ts`): Once a day, Twice a day, Three times a day, Four times a day, Every 4 hours, Every 6 hours, Every 8 hours, Every 12 hours, When needed, Once only. |
+| `default_duration_days`                                     | Int              |                                                                                                                                                                                                                                                                                           |
+| `allergy_words`                                             | Data             | Comma-separated words; when one appears in `Patient.allergies` the form warns.                                                                                                                                                                                                            |
+| `is_nsaid`, `avoid_in_pregnancy`                            | Check            | Warn with a blood thinner / a pregnancy in the patient's medical text.                                                                                                                                                                                                                    |
+| `max_daily_mg`                                              | Int              | The usual daily maximum; 0 means no check.                                                                                                                                                                                                                                                |
+| `child_note`                                                | Small Text       | Shown when the patient is under 12.                                                                                                                                                                                                                                                       |
+| `is_active`                                                 | Check, default 1 | Only active medicines are offered; nothing is deleted.                                                                                                                                                                                                                                    |
 
 **Prescription**, name series `RX-.YYYY.-.#####`, with a child table **Prescription Medicine**.
 
-| Field | Type | Notes |
-|---|---|---|
-| `patient` | Link Patient, required | |
-| `patient_name` | Data, read only, `fetch_from: patient.full_name` | |
-| `doctor` | Link Doctor, required | |
-| `doctor_name` | Data, read only, `fetch_from: doctor.full_name` | |
-| `appointment` | Link Appointment | The visit it was written at (empty when written from the patient page). |
-| `prescription_date` | Date, required | |
-| `notes` | Small Text | Printed under the medicines. |
-| `medicines` | Table (Prescription Medicine) | Rows: `medicine` (Link Dental Medicine), `medicine_name` (Data: the name and strength as they were when written, sent by the front end), `dose` (Data), `frequency` (Data), `duration_days` (Int), `instructions` (Data). |
-| `summary` | Data, read only | Set in `validate()`: the rows' `medicine_name` joined with ", ", because the list API does not return child tables and the patient page and the appointment page list prescriptions by it. |
+| Field               | Type                                             | Notes                                                                                                                                                                                                                                                               |
+| ------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `patient`           | Link Patient, required                           |                                                                                                                                                                                                                                                                     |
+| `patient_name`      | Data, read only, `fetch_from: patient.full_name` |                                                                                                                                                                                                                                                                     |
+| `doctor`            | Link Doctor, required                            |                                                                                                                                                                                                                                                                     |
+| `doctor_name`       | Data, read only, `fetch_from: doctor.full_name`  |                                                                                                                                                                                                                                                                     |
+| `appointment`       | Link Appointment                                 | The visit it was written at (empty when written from the patient page).                                                                                                                                                                                             |
+| `prescription_date` | Date, required                                   |                                                                                                                                                                                                                                                                     |
+| `notes`             | Small Text                                       | Printed under the medicines.                                                                                                                                                                                                                                        |
+| `medicines`         | Table (Prescription Medicine)                    | Rows: `medicine` (Link Dental Medicine), `medicine_name` (Data: the name and strength as they were when written, sent by the front end), `dose` (Data), `frequency` (Data: one of the `FREQUENCIES` above, or empty), `duration_days` (Int), `instructions` (Data). |
+| `summary`           | Data, read only                                  | Set in `validate()`: the rows' `medicine_name` joined with ", ", because the list API does not return child tables and the patient page and the appointment page list prescriptions by it.                                                                          |
 
 Permissions: `view_treatments` reads both; `add_treatments` creates, updates and deletes Prescription; `manage_users`
-writes Dental Medicine. Track Changes on Prescription is welcome but not read yet. The safety warnings are worked
-out in the browser from the patient's medical text and the medicine flags; nothing to compute on the server.
+writes Dental Medicine; the prescription form reads the medicine list with `add_treatments`. Turn on Track Changes
+for Prescription: the Activity page reads its changes. The safety warnings are worked out in the browser from the
+patient's medical text and the medicine flags; nothing to compute on the server.
 
 ## 2. Field names to confirm
 
@@ -212,9 +219,10 @@ These come from the README, not from the doctype JSON files. Check each one in t
   role must be able to read `Doctor.email`.
 - **Clinic Settings** (single doctype): `clinic_name`, `logo` (Attach Image), `phone`, `email`, `address`,
   `currency` (default `IQD`; the front end also shows IQD when it is empty), `tax_number`, `opening_time` (Time), `closing_time` (Time), `theme_color` (Color or Data, a hex
-  colour such as `#4f46e5`, or empty for the default; the whole front end is coloured from it), `enable_whatsapp`,
-  `enable_patient_portal`, `enable_financial_reports` (Checks), and `working_days` (Data: the English day names the
-  clinic is open, comma-separated, e.g. `Saturday,Sunday,Monday,Tuesday,Wednesday,Thursday`; empty = every day).
+  colour such as `#0d9394`, or empty for the default violet `#6a5fdd`; the whole front end is coloured from it),
+  `enable_whatsapp`, `enable_patient_portal`, `enable_financial_reports` (Checks), and `working_days` (Data: the
+  English day names the clinic is open, comma-separated, e.g. `Saturday,Sunday,Monday,Tuesday,Wednesday,Thursday`;
+  the Settings page saves at least one day; empty, never saved, means every day).
 - **Treatment Session:** `patient`, `treatment_plan`, `doctor`, `session_date`, `session_time`, `status`,
   `notes`. The front end offers the statuses `Scheduled`, `Completed`, `Cancelled`.
 - **WhatsApp Template:** `template_name`, `trigger` (`24 Hours Before`, `2 Hours Before`, `Manual`),
@@ -235,10 +243,23 @@ The UI hides screens with the Clinic Permission flags, but Frappe decides what d
   - the `Clinic Settings` single (for the currency and clinic name),
   - the `Doctor` list (for dropdowns).
 - **Users with `manage_users`** (normally Clinic Manager) must be able to read and write `Doctor`, `User`,
-  `Clinic Permission`, `Clinic Settings`, `WhatsApp Template`, and read `WhatsApp Log`.
+  `Clinic Permission`, `Clinic Settings`, `WhatsApp Template` and `Dental Medicine`, and read `WhatsApp Log`,
+  `Version`, `Deleted Document` and the Activity page's eight doctypes.
+- **Screens read more than their own doctype.** A form's patient picker reads Patient for anyone who may add an
+  appointment, a plan or a payment; the Today board reads Patient, Treatment Plan (lab work) and the active WhatsApp
+  Templates for `view_appointments`; the receipt reads Patient and Treatment Plan for `view_payments`; Reports reads
+  Payment, Treatment Plan and Appointment for `view_reports`; the treatment plan page reads Patient and Dental Image
+  for `view_treatments`. Section 9 lists these under **Permissions** for each doctype ("Also read by"); the server
+  must allow them, or those cards fail.
+- **Who sees everything:** the user `Administrator` and anyone with the role `System Manager` get every switch in
+  the front end. Anyone else gets the switches of their Clinic Permission record; with no record, every switch is
+  off.
 - **Enforce the 16 flags on the server**, for example with `has_permission` / `permission_query_conditions`
   hooks, or by giving each role DocType permissions that match the presets in `ROLE_PRESETS`
-  (`src/lib/types.ts`). Otherwise a user could still call the API directly.
+  (`src/lib/types.ts`). Otherwise a user could still call the API directly. Section 9 gives, for each doctype, the
+  switches the screens use to read, create, update and delete it (for example, an appointment is deleted with
+  `edit_appointments`, a payment with `add_payments`, and treatment sessions are added and changed with
+  `edit_treatments`).
 
 A simpler option for the first two reads is one whitelisted method, for example
 `dent_app.api.get_my_session`, that returns the user's name, roles and permission flags. If you add it,
@@ -250,8 +271,9 @@ The Activity page (`/activity`, `manage_users`) reads three things Frappe alread
 
 - each record's `owner` and `creation` (Patient, Appointment, Treatment Plan, Payment, Expense, Prescription, Dental
   Image, Doctor), newest first, for "added";
-- `Version` (`ref_doctype`, `docname`, `data`, `owner`, `creation`), filtered on `ref_doctype in (…)`, for
-  "changed": turn on **Track Changes** for those doctypes;
+- `Version` (`ref_doctype`, `docname`, `data`, `owner`, `creation`), listed directly with
+  `GET /api/resource/Version` filtered on `ref_doctype in (…)`, for "changed": turn on **Track Changes** for all eight
+  doctypes (it is already on for the first four);
 - `Deleted Document` (`deleted_doctype`, `deleted_name`, `data`, `restored`, `new_name`, `owner`, `creation`), for
   "deleted", and **Restore** calls `frappe.core.doctype.deleted_document.deleted_document.restore` with `name`.
 
@@ -277,20 +299,26 @@ never caches `/frappe/…`, so API answers always come from the server.
 - `GET /api/method/frappe.desk.reportview.get_count` with `doctype`, `fields`, `filters`, `or_filters`,
   `distinct` — used for the count when a search box is filled. **Check that this works for every role**; if
   not, add a small whitelisted count method.
-- `POST /api/method/upload_file` (multipart, `is_private=0`) for the clinic logo and doctor photos, and with
-  `doctype=Dental Image`, `docname=<image>`, `is_private=1` for X-rays and photos: the front end first creates the
-  Dental Image record, then uploads the file attached to it, then saves the file's URL in `image` (if the upload
-  fails it deletes the record again). It lists a patient's images with `GET /api/resource/Dental Image` filtered on
-  `patient`, deletes one with `DELETE /api/resource/Dental Image/<name>` (Frappe deletes the attached file with it),
-  and shows the file at `/frappe<file_url>` through the rewrite (the session cookie opens private files). Every
-  role with `view_patients` must be able to read these private files.
+- `POST /api/method/upload_file` (multipart, `is_private=0`, `folder=Home`) for the clinic logo, doctor photos and
+  the prescription paper's logo and signature, and with `doctype=Dental Image`, `docname=<image>`, `is_private=1`,
+  `folder=Home/Attachments` for X-rays and photos: the front end first creates the Dental Image record, then uploads
+  the file attached to it, then saves the file's URL in `image` (if the upload fails it deletes the record again).
+  Only `file_url` is read from the answer. It lists a patient's images with `GET /api/resource/Dental Image`
+  filtered on `patient`, opens one with `GET …/<name>` (the printable page), changes the details or the drawing with
+  `PUT`, deletes one with `DELETE /api/resource/Dental Image/<name>` (Frappe deletes the attached file with it), and
+  shows the file at `/frappe<file_url>` through the rewrite (the session cookie opens private files). Every role
+  with `view_patients` or `view_treatments` must be able to read these private files.
+- `PUT /api/resource/User/<own id>` with `{ "language": "ar" }` or `"en"` (the language switch, for every user).
+- `GET /api/resource/Version` and `GET /api/resource/Deleted Document` (the Activity page, section 9).
 - `GET /api/method/frappe.desk.form.load.getdoc` with `doctype`, `name` for the **History** card (patient,
   appointment, treatment plan and payment pages). The front end reads `docs[0].owner` and `creation`,
-  `docinfo.versions` (`owner`, `creation`, `data` with `changed: [[field, old, new]]`; Frappe writes the values
+  `docinfo.versions` (`name`, `owner`, `creation`, `data` with `changed: [[field, old, new]]`; Frappe writes the values
   as formatted text, such as `150,000.00` or `20-08-2026`, and the front end reads them that way) and
   `docinfo.user_info` (`fullname` for the owner, the last editor and the users in the versions, which Frappe
   fills in itself). Track Changes (`track_changes: 1`) is already on for Patient, Appointment, Treatment Plan and
-  Payment; keep it on, or there is nothing to show but who added the record. getdoc checks read permission on
+  Payment; keep it on, or there is nothing to show but who added the record (and turn it on for Expense,
+  Prescription, Dental Image and Doctor too, for the Activity page). The card loads again when the record's
+  `modified` changes. getdoc checks read permission on
   the doc, so every role that can open these pages can use it. Frappe returns the last 10 versions; the card
   says so. One thing to change:
   - **Save worked-out totals without a Version.** `Appointment.on_update` and `TreatmentPlan.on_update` call
@@ -393,9 +421,9 @@ total cost." The dummy data already uses messages like these.
 
 ## 8. Later, for speed
 
-The recall list (`/recall`) also loads every patient and appointment to find who is due. A whitelisted
-method that returns patients with no completed visit since a date and nothing booked would be faster.
-
+The recall list (`/recall`) and the dashboard's "Needs attention" card load every patient and appointment to find
+who is due. A whitelisted method that returns patients with no completed visit since a date and nothing booked
+would be faster.
 
 The dashboard and reports add up payments and balances in the browser. When the data grows, add
 whitelisted methods that return the sums for a date range (revenue by treatment, by method, by month, and
@@ -403,326 +431,560 @@ the outstanding total), and switch `src/app/reports/page.tsx` and `src/app/dashb
 existing query reports (Daily Revenue, Monthly Revenue, Treatment Revenue, Outstanding Balances) are a good
 base.
 
-## 9. Field reference: every doctype and field the front end uses
+## 9. Reference: every doctype the front end uses
 
-This is the whole contract in one place, checked against the code on 2026-09-30. Sections 1 and 2 explain the
-new and unconfirmed fields in more detail. If a field is not listed here, the front end neither reads nor sends it.
+This is the whole contract in one place, checked against the code on 2026-10-01. For each doctype it lists who may
+do what, every call the front end makes, and every field it reads or sends, with its type and whether it is
+required. Sections 1 to 6 explain the new fields and the rules in more detail. If a doctype, field or call is not
+listed here, the front end does not use it.
 
 How to read the tables:
 
-- **Type** is the Frappe field type we expect.
+- **Type** is the Frappe field type we expect. For a Select, the allowed values follow it; the front end saves
+  them in English and translates only the labels.
 - **Required**: **Yes** means the form will not save without it, so the doctype should mark it `reqd` too.
   **Server** means the front end never sends it (or its value is replaced): the back end works it out or fetches
   it. **No** means optional.
 - **Stored** (in Notes) means the field is used in a filter, a search or a sort, so it must be a real column,
   not a virtual field. Fetch fields (`fetch_from`) are stored by default; keep them that way.
+- **Permissions** name the Clinic Permission switches the screens check. "Also read by" lists the other
+  switches whose screens read this doctype too (a picker in a form, a card on another page). The server must allow
+  those reads, or the screen shows an error or leaves the card out.
+- **Calls** use the shapes in section 4: "list" is `GET /api/resource/<Doctype>`, "count" is `get_count`
+  (`reportview.get_count` when a search box is filled), "get" is `GET …/<name>`, "create" is `POST`, "update" is
+  `PUT …/<name>` and "delete" is `DELETE …/<name>`.
 
 Rules for every doctype:
 
-- Dates are sent as `YYYY-MM-DD`. Times are sent as `HH:MM` (no seconds); Frappe's `HH:MM:SS` is read fine.
+- Dates are sent as `YYYY-MM-DD`, Datetimes as `YYYY-MM-DD HH:MM:SS` (local time), Times as `HH:MM` (no seconds);
+  Frappe's `HH:MM:SS` is read fine.
 - Check fields are sent as `0` or `1`.
-- An empty Link, Date or Time field is sent as `null`, never `""`. Empty text is sent as `""`.
+- An empty Date, Time or Link to a record (patient, doctor, plan, appointment, medicine) is sent as `null`. Empty
+  text is sent as `""`. Some other empty values are sent as `""`, so the server must accept both `""` and `null`
+  for them:
+  - the currency fields (`currency` on Treatment Plan, Payment and Expense, `Clinic Settings.second_currency`):
+    `""` means the clinic's own currency, or no second currency;
+  - `Clinic Settings.logo` and `theme_color`: `""` means none / the default colour;
+  - the empty Selects `Patient.gender`, `Dental Medicine.default_frequency` and `Prescription Medicine.frequency`
+    (while `Doctor.gender`, `Expense.payment_method` and `WhatsApp Template.language` are sent as `null`).
 - A child table is always sent whole (every row, without `name` or `idx`), so each save replaces the table.
+- **Updates are often partial**: a `PUT` may carry only one or two fields (a status, a waiting room step, the dental
+  chart, a drawing, a role list). Frappe merges them into the saved record; `validate()` must work with that.
 - Link fields hold the record ID; the screens show the fetched `*_name` field instead.
+- Frappe's standard fields are read too: `owner` and `creation` (the History card and the Activity page) and
+  `modified` (the History card of a patient, appointment, treatment plan or payment loads again when it changes).
+  Lists read `name` always.
+- **Who sees everything:** the user `Administrator` and anyone with the role `System Manager` get every switch in
+  the front end. Anyone else gets the switches of the Clinic Permission record named after their user ID; with no
+  such record, every switch is off (the dashboard and the profile still open).
 
 ### Patient
 
-Naming `PAT-.YYYY.-.#####`. Searched with `like` on `full_name`, `phone_number`, `secondary_phone` and `name`.
+Naming `PAT-.YYYY.-.#####`. Track Changes on.
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `full_name` | Data | Yes | |
-| `gender` | Select: Male, Female, Other | No | |
-| `date_of_birth` | Date | No | |
-| `age` | Int | No | Sent only when `date_of_birth` is empty (0-120). Worked out from the date when there is one. Must not be read only (section 2). |
-| `phone_number` | Data | Yes | Stored as typed; searched with digit patterns (section 2, **Phone numbers**). |
-| `secondary_phone` | Data | No | Same as `phone_number`. |
-| `email` | Data (Email) | No | |
-| `address` | Small Text | No | |
-| `allergies`, `current_medications`, `chronic_diseases`, `medical_history`, `notes` | Small Text | No | The medical alerts and prescription warnings are read from these texts. |
-| `dental_chart` | JSON | No | New (section 1). |
-| `chart_sketch` | JSON | No | New (section 1): the drawings on the chart. |
-| `next_recall_date` | Date | No | New (section 1). |
-| `recall_interval_months` | Int | No | New: 0, 3, 6, 9 or 12. |
-| `no_recall` | Check | No | New. |
-| `total_paid` | Currency | Server | |
-| `total_remaining` | Currency | Server | Stored: filtered (`> 0`) and sorted. |
-| `total_appointments`, `total_treatments` | Int | Server | Not read by the front end. |
+**Permissions.** Read: `view_patients`. Also read by: anyone with `add_appointments`, `add_treatments` or
+`add_payments` (the patient picker in their forms, and the medical alerts under it: `name`, `full_name`,
+`phone_number`, `age` and the five medical fields), `view_appointments` (the Today board and the appointment page:
+phone, balance, gender, age and the medical fields), `view_payments` (the receipt: phone and balance; the dashboard's
+"owes money" count), `view_treatments` (the treatment plan and prescription pages: name, age and the medical fields,
+and the dental chart), `manage_users` (the Activity page). Create: `add_patients`. Update: `edit_patients` (the form,
+the dental chart, the chart drawing, the next check-up; also the "What was done in this visit?" dialog). Delete:
+`delete_patients`.
+
+**Calls.**
+
+- list + count (Patients page): search `like` on `full_name`, `phone_number`, `secondary_phone`, `name` (phone
+  numbers also as digit patterns, section 2); filters `gender =`, `total_remaining > 0`; sorted `full_name asc` or
+  `total_remaining desc`; 20 a page.
+- list: the global search (the same search, 8 rows), the patient picker (`full_name`, `name`, `phone_number`, 20
+  rows), the duplicate check on the form (`phone_number like`, `secondary_phone like`, `full_name like`), single
+  patients by `name =` or `name in […]` (Today board, receipt, prescription, medical alerts, chart), and every
+  patient (`limit_page_length=0`) for the recall list and the dashboard's "Needs attention" card.
+- count: every patient, and patients with `total_remaining > 0` (the dashboard).
+- get (every patient page and printout), create, update (whole form; or only `dental_chart`; only `chart_sketch`;
+  only `next_recall_date`, `recall_interval_months` and `no_recall`), delete, getdoc (History).
+
+| Field                                                                              | Type                        | Required | Notes                                                                                                                                        |
+| ---------------------------------------------------------------------------------- | --------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `full_name`                                                                        | Data                        | Yes      | Stored (search, sort).                                                                                                                       |
+| `gender`                                                                           | Select: Male, Female, Other | No       | Stored (filter). Sent as `""` when empty.                                                                                                    |
+| `date_of_birth`                                                                    | Date                        | No       |                                                                                                                                              |
+| `age`                                                                              | Int                         | No       | 0-120. Sent only when `date_of_birth` is empty (`null` when no age was typed either); left out of the payload when there is a date, and worked out from it. Must not be read only (section 2). |
+| `phone_number`                                                                     | Data                        | Yes      | Stored as typed; searched with digit patterns (section 2, **Phone numbers**).                                                                |
+| `secondary_phone`                                                                  | Data                        | No       | Same as `phone_number`.                                                                                                                      |
+| `email`                                                                            | Data (Email)                | No       |                                                                                                                                              |
+| `address`                                                                          | Small Text                  | No       |                                                                                                                                              |
+| `allergies`, `current_medications`, `chronic_diseases`, `medical_history`, `notes` | Small Text                  | No       | The medical alerts and prescription warnings are read from these texts.                                                                      |
+| `dental_chart`                                                                     | JSON                        | No       | Section 1. Sent as a JSON string.                                                                                                            |
+| `chart_sketch`                                                                     | JSON                        | No       | Section 1: the drawings on the chart; `null` removes them.                                                                                   |
+| `next_recall_date`                                                                 | Date                        | No       | Section 1.                                                                                                                                   |
+| `recall_interval_months`                                                           | Int: 0, 3, 6, 9, 12         | No       | Section 1.                                                                                                                                   |
+| `no_recall`                                                                        | Check                       | No       | Section 1.                                                                                                                                   |
+| `total_paid`                                                                       | Currency                    | Server   |                                                                                                                                              |
+| `total_remaining`                                                                  | Currency                    | Server   | Stored: filtered (`> 0`) and sorted.                                                                                                         |
+| `total_appointments`, `total_treatments`                                           | Int                         | Server   | Not read by the front end.                                                                                                                   |
 
 ### Doctor
 
-Naming `DOC-.#####`. Written only on `/doctors`; never deleted.
+Naming `DOC-.#####`. Written only on `/doctors` and the doctor's page; never deleted. Track Changes on (Activity).
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `full_name` | Data | Yes | |
-| `specialization` | Select: General Dentist, Orthodontist, Endodontist, Periodontist, Oral Surgeon, Pediatric Dentist, Prosthodontist | No | Defaults to General Dentist in the form. |
-| `phone_number` | Data | No | |
-| `email` | Data (Email) | No | Links a user to their Doctor record (section 2). Every clinic role must be able to read it. |
-| `start_time`, `end_time` | Time | No | Both or neither; the end must be after the start. |
-| `is_active` | Check, default 1 | No | Only active doctors are offered. |
-| `gender` | Select: Female, Male | No | New (section 1). For the drawn avatar. |
-| `photo` | Attach Image | No | New (section 1). A file URL; the front end sends `null` to remove it. |
-| `rx_paper_size` | Select: A5, A4 (default A5) | No | New. The doctor's prescription paper ("Prescription Paper" on `/doctors/[id]`, `src/lib/rxPaper.ts`). |
-| `rx_preprinted` | Check | No | New. The paper already has the doctor's header and footer printed on it. |
-| `rx_top_mm`, `rx_bottom_mm` | Int, 0-120 | No | New. The room left for that printed header and footer, in mm (defaults 40 and 20). |
-| `rx_qualifications` | Small Text | No | New. Lines printed under the doctor's name. |
-| `rx_footer` | Small Text | No | New. Printed at the bottom of the prescription. |
-| `rx_logo`, `rx_signature` | Attach Image | No | New. An own logo, and a signature or stamp image; `null` removes them. |
+**Permissions.** Read: every clinic role (the active doctors for every dropdown, the calendar and the Today board,
+and `email` to find "my" doctor record). Also read by `view_treatments` (the prescription paper fields, on the
+prescription page). The whole list with search, and create and update: `manage_users`. Delete: never (switch
+`is_active` off).
 
-The prescription page reads the doctor with `GET /api/resource/Doctor` (these fields and `full_name`, `specialization`), so users with `view_treatments` must be able to read them; only `manage_users` writes them.
+**Calls.**
+
+- list (every dropdown): `is_active = 1`, sorted `full_name asc`, all rows, with `name`, `full_name`,
+  `specialization`, `start_time`, `end_time`, `gender`, `photo`.
+- list (the user's own doctor record): `email = <the user's email>`, `is_active = 1`, one row.
+- list + count (Doctors page): search `like` on `full_name`, `specialization`, `phone_number`, `email`; filter
+  `is_active =`; sorted `full_name asc`; 20 a page.
+- list (prescription page): `name =`, with the `rx_*` fields below.
+- get (doctor's page), create, update (the dialog; or only the `rx_*` fields from Edit Paper), `upload_file` for
+  `photo`, `rx_logo` and `rx_signature` (public files).
+
+| Field                       | Type                                                                                                              | Required | Notes                                                                                                                |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------- |
+| `full_name`                 | Data                                                                                                              | Yes      | Stored (search, sort).                                                                                               |
+| `specialization`            | Select: General Dentist, Orthodontist, Endodontist, Periodontist, Oral Surgeon, Pediatric Dentist, Prosthodontist | No       | Stored (search). The form starts at General Dentist.                                                                 |
+| `phone_number`              | Data                                                                                                              | No       | Stored (search).                                                                                                     |
+| `email`                     | Data (Email)                                                                                                      | No       | Stored (filter, search). Links a user to their Doctor record (section 2). Every clinic role must be able to read it. |
+| `start_time`, `end_time`    | Time                                                                                                              | No       | Both or neither; the end must be after the start.                                                                    |
+| `is_active`                 | Check, default 1                                                                                                  | No       | Stored (filter). Only active doctors are offered.                                                                    |
+| `gender`                    | Select: Female, Male                                                                                              | No       | Section 1. `null` when empty.                                                                                        |
+| `photo`                     | Attach Image                                                                                                      | No       | Section 1. A public file URL; `null` removes it. Image up to 5 MB (checked in the browser).                          |
+| `rx_paper_size`             | Select: A5, A4 (default A5)                                                                                       | No       | The doctor's prescription paper (`src/lib/rxPaper.ts`).                                                              |
+| `rx_preprinted`             | Check                                                                                                             | No       | The paper already has the doctor's header and footer printed on it.                                                  |
+| `rx_top_mm`, `rx_bottom_mm` | Int, 0-120                                                                                                        | No       | The room left for that printed header and footer, in mm (defaults 40 and 20).                                        |
+| `rx_qualifications`         | Small Text                                                                                                        | No       | Lines printed under the doctor's name.                                                                               |
+| `rx_footer`                 | Small Text                                                                                                        | No       | Printed at the bottom of the prescription.                                                                           |
+| `rx_logo`, `rx_signature`   | Attach Image                                                                                                      | No       | An own logo, and a signature or stamp image (up to 2 MB); `null` removes them.                                       |
 
 ### Appointment
 
-Naming `APT-.YYYY.-.#####`. Searched on `patient_name`, `doctor_name`, `reason_for_visit` and `name`.
+Naming `APT-.YYYY.-.#####`. Track Changes on.
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `patient` | Link Patient | Yes | |
-| `patient_name` | Data, `fetch_from: patient.full_name` | Server | Stored (search). |
-| `doctor` | Link Doctor | Yes | |
-| `doctor_name` | Data, `fetch_from: doctor.full_name` | Server | Stored (search). |
-| `appointment_date` | Date | Yes | Filtered with `=`, `<`, `>`, `>=`, `<=`, `between`. |
-| `appointment_time` | Time | Yes | |
-| `duration_minutes` | Int, default 30 | No | 15, 30, 45, 60, 90 or 120. |
-| `status` | Select: Scheduled, Confirmed, Completed, Cancelled, No Show | Yes | Always sent; new bookings are Scheduled. |
-| `reason_for_visit` | Data | No | |
-| `notes` | Small Text | No | |
-| `arrived_at` | Datetime | No | Arrived at the front desk (waiting room). |
-| `in_chair_at` | Datetime | No | Called into the chair. |
+**Permissions.** Read: `view_appointments`. Also read by `view_reports` (the appointment outcomes on Reports),
+`view_treatments` (the visit's date and time on a prescription) and `manage_users` (Activity); the dashboard shows its appointment cards only with `view_appointments`. Create:
+`add_appointments`. Update (the form, the status buttons, the waiting room steps, dragging in the calendar) and
+delete: `edit_appointments`.
+
+**Calls.**
+
+- list + count (the list view): search `like` on `patient_name`, `doctor_name`, `reason_for_visit`, `name`;
+  filters `appointment_date =`, `>=`, `<`, `status =`; sorted `appointment_date asc|desc, appointment_time asc|desc`.
+- list (all rows): the calendar (`appointment_date between`, `doctor =`), the booking form's clash check and the
+  doctor's day (`doctor =`, `appointment_date =`, `status not in (Cancelled, No Show)`, `name !=`), the Today board
+  (today; earlier days still open: `appointment_date <`, `status in (Scheduled, Confirmed)`, 50 rows; tomorrow), the
+  waiting room screen (today, `status in`, every 20 seconds), the bell (today, `status in`, `doctor =` for a doctor),
+  the dashboard (today, the next 7 days, the last 6 months for the chart, open ones in the past), the recall list
+  and the dashboard's "Needs attention" (every appointment: `patient`, `appointment_date`, `status`), Reports
+  (`appointment_date >=` and `<=`), a patient's appointments (`patient =`), the next visit of the patients on a list
+  page (`patient in`, `appointment_date >=`, `status in`), a doctor's page (`doctor =`, dates, `status !=`), and one
+  appointment's date and time on a prescription (`name =`).
+- count: open appointments in the past (`appointment_date <`, `status in`, `doctor =`).
+- get, create, update (the whole form; or only `status`; only `arrived_at`; only `in_chair_at`; only
+  `appointment_date`, `appointment_time` and `doctor` after a drag), delete, getdoc (History).
+
+| Field              | Type                                                        | Required | Notes                                                                                     |
+| ------------------ | ----------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------- |
+| `patient`          | Link Patient                                                | Yes      | Stored (filter `=`, `in`).                                                                |
+| `patient_name`     | Data, `fetch_from: patient.full_name`                       | Server   | Stored (search).                                                                          |
+| `doctor`           | Link Doctor                                                 | Yes      | Stored (filter).                                                                          |
+| `doctor_name`      | Data, `fetch_from: doctor.full_name`                        | Server   | Stored (search).                                                                          |
+| `appointment_date` | Date                                                        | Yes      | Stored: filtered with `=`, `<`, `>`, `>=`, `<=`, `between`; sorted.                       |
+| `appointment_time` | Time                                                        | Yes      | Stored (sort).                                                                            |
+| `duration_minutes` | Int: 15, 30, 45, 60, 90, 120 (default 30)                   | No       |                                                                                           |
+| `status`           | Select: Scheduled, Confirmed, Completed, Cancelled, No Show | Yes      | Stored: filtered with `=`, `!=`, `in`, `not in`. Always sent; new bookings are Scheduled. |
+| `reason_for_visit` | Data                                                        | No       | Stored (search).                                                                          |
+| `notes`            | Small Text                                                  | No       |                                                                                           |
+| `arrived_at`       | Datetime                                                    | No       | Section 1: arrived at the front desk (waiting room). `null` clears it.                    |
+| `in_chair_at`      | Datetime                                                    | No       | Section 1: called into the chair. `null` clears it.                                       |
 
 ### Treatment Plan
 
-Naming `TRT-.YYYY.-.#####`. Searched on `patient_name`, `treatment_type`, `tooth_number` and `name`.
+Naming `TRT-.YYYY.-.#####`. Track Changes on.
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `patient` | Link Patient | Yes | |
-| `patient_name` | Data, fetched | Server | Stored (search). |
-| `doctor` | Link Doctor | No | |
-| `doctor_name` | Data, fetched | Server | |
-| `treatment_type` | Select: Filling, Root Canal, Crown, Bridge, Extraction, Implant, Cleaning, Whitening | Yes | |
-| `tooth_number` | Data | No | An FDI number as text (`"36"`, `"51"`); older free text like `"36, 37"` is still read. |
-| `currency` | Link Currency (or Data) | No | New (section 1). Empty: the clinic's own. Cannot change once the plan has payments. |
-| `total_cost` | Currency | Yes | In the plan's `currency`. 0 or more; cannot go below what was already paid. |
-| `status` | Select: Planned, In Progress, Completed, Cancelled | Yes | New plans are always sent as Planned. |
-| `diagnosis`, `treatment_notes` | Small Text | No | |
-| `paid_amount` | Currency | Server | Sum of the plan's payments' `plan_amount` (section 6, **Two currencies**). |
-| `remaining_amount` | Currency | Server | Stored: filtered (`> 0`) and sorted. 0 for a Cancelled plan. |
-| `lab_name` | Data | No | New (section 1). |
-| `lab_sent_date` | Date | No | New. Required by the Lab Work dialog when it saves. Filtered with `is set`. |
-| `lab_due_date` | Date | No | New. Not before `lab_sent_date`. |
-| `lab_received_date` | Date | No | New. Filtered with `is not set`. |
+**Permissions.** Read: `view_treatments`. Also read by `view_payments` (the payment form's plan list, balances,
+the receipt, the statement, the dashboard's amount owed), `add_payments` (the payment form), `view_reports`
+(Reports), `view_appointments` (the Today board's "Lab work due") and `manage_users` (the counts before a currency
+change in Settings, Activity). Create: `add_treatments`. Update (the form, the status buttons, the lab work) and
+delete: `edit_treatments`.
+
+**Calls.**
+
+- list + count (Treatment Plans page): search `like` on `patient_name`, `treatment_type`, `tooth_number`, `name`
+  (and `treatment_type in […]` for the types whose translated label matches); filters `status =`,
+  `treatment_type =`; sorted `name desc`.
+- list (all rows): a patient's plans (`patient =`; for the estimate also `status in (Planned, In Progress)`, for
+  the statement `status != Cancelled`), the open plans of the "What was done?" dialog, plans with a balance
+  (`remaining_amount > 0`, `patient in`), the dashboard (counts by `status in`, balances, types), Reports (with a
+  balance, sorted `remaining_amount desc`; every plan's doctor; plans started in the period: `creation >=` and
+  `<`, `status != Cancelled`), a doctor's open plans (`doctor =`, `status in`), the lab list (`lab_sent_date is
+set`, `lab_received_date is not set`, sorted `lab_due_date asc`).
+- count: plans in a currency (`currency =`) and all plans, before Settings changes a currency; open plans
+  (`status in (Planned, In Progress)`) on the dashboard.
+- get, create, update (the form; or only `status`; or only the four `lab_*` fields; or only
+  `lab_received_date`), delete, getdoc (History).
+
+| Field                          | Type                                                                                 | Required                   | Notes                                                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `patient`                      | Link Patient                                                                         | Yes                        | Stored (filter).                                                                                        |
+| `patient_name`                 | Data, fetched                                                                        | Server                     | Stored (search).                                                                                        |
+| `doctor`                       | Link Doctor                                                                          | No                         | Stored (filter).                                                                                        |
+| `doctor_name`                  | Data, fetched                                                                        | Server                     |                                                                                                         |
+| `treatment_type`               | Select: Filling, Root Canal, Crown, Bridge, Extraction, Implant, Cleaning, Whitening | Yes                        | Stored (filter, search).                                                                                |
+| `tooth_number`                 | Data                                                                                 | No                         | Stored (search). An FDI number as text (`"36"`, `"51"`); older free text like `"36, 37"` is still read. |
+| `currency`                     | Link Currency (or Data)                                                              | No                         | Section 1. `""`: the clinic's own. Stored (count filter). Cannot change once the plan has payments.     |
+| `total_cost`                   | Currency                                                                             | Yes                        | In the plan's `currency`. 0 or more; cannot go below what was already paid.                             |
+| `status`                       | Select: Planned, In Progress, Completed, Cancelled                                   | Yes                        | Stored (filter `=`, `!=`, `in`). New plans are always sent as Planned.                                  |
+| `diagnosis`, `treatment_notes` | Small Text                                                                           | No                         |                                                                                                         |
+| `paid_amount`                  | Currency                                                                             | Server                     | Sum of the plan's payments' `plan_amount` (section 6, **Two currencies**).                              |
+| `remaining_amount`             | Currency                                                                             | Server                     | Stored: filtered (`> 0`) and sorted. 0 for a Cancelled plan.                                            |
+| `lab_name`                     | Data                                                                                 | No                         | Section 1. The Lab Work card shows for Crown, Bridge, Implant and Whitening, or any plan already sent.  |
+| `lab_sent_date`                | Date                                                                                 | Yes in the Lab Work dialog | Stored (filtered with `is set`).                                                                        |
+| `lab_due_date`                 | Date                                                                                 | No                         | Stored (sort). Not before `lab_sent_date`.                                                              |
+| `lab_received_date`            | Date                                                                                 | No                         | Stored (filtered with `is not set`).                                                                    |
+| `creation`                     | Frappe's own                                                                         | Server                     | Filtered with `>=` and `<` by Reports (plans started in the period).                                    |
 
 ### Treatment Session
 
 Naming `SES-.YYYY.-.#####`.
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `treatment_plan` | Link Treatment Plan | Yes | Always sent. |
-| `patient` | Link Patient | Yes | Sent from the plan; filtered on the patient page. |
-| `patient_name` | Data, fetched | Server | |
-| `doctor` | Link Doctor | No | |
-| `doctor_name` | Data, fetched | Server | |
-| `session_date` | Date | Yes | |
-| `session_time` | Time | No | |
-| `status` | Select: Scheduled, Completed, Cancelled | Yes | |
-| `notes` | Small Text | No | "What was done in this visit?" is saved here. |
+**Permissions.** Read: `view_treatments`. Create, update and delete: `edit_treatments` (the Sessions card of a plan,
+and "What was done in this visit?" after an appointment is completed).
+
+**Calls.** list of a plan's sessions (`treatment_plan =`, sorted `session_date asc, session_time asc`), of a
+patient's sessions (`patient =`, sorted by `session_date`), create, update, delete.
+
+| Field            | Type                                    | Required | Notes                                                              |
+| ---------------- | --------------------------------------- | -------- | ------------------------------------------------------------------ |
+| `treatment_plan` | Link Treatment Plan                     | Yes      | Stored (filter). Always sent.                                      |
+| `patient`        | Link Patient                            | Yes      | Stored (filter). Sent from the plan.                               |
+| `patient_name`   | Data, fetched                           | Server   |                                                                    |
+| `doctor`         | Link Doctor                             | No       |                                                                    |
+| `doctor_name`    | Data, fetched                           | Server   |                                                                    |
+| `session_date`   | Date                                    | Yes      | Stored (sort).                                                     |
+| `session_time`   | Time                                    | No       |                                                                    |
+| `status`         | Select: Scheduled, Completed, Cancelled | Yes      | New sessions start as Scheduled; the visit dialog sends Completed. |
+| `notes`          | Small Text                              | No       | "What was done in this visit?" is saved here.                      |
 
 ### Payment
 
-Naming `PAY-.YYYY.-.#####`. Searched on `patient_name`, `treatment_type`, `notes` and `name`.
+Naming `PAY-.YYYY.-.#####`. Track Changes on.
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `patient` | Link Patient | Yes | |
-| `patient_name` | Data, fetched | Server | Stored (search). |
-| `treatment_plan` | Link Treatment Plan | No | Empty for a general payment. |
-| `treatment_type` | Data, `fetch_from: treatment_plan.treatment_type` | Server | Stored (search, reports). |
-| `payment_date` | Date | Yes | |
-| `amount` | Currency | Yes | In the payment's `currency`. Above 0, and (converted) not more than the plan has left. |
-| `currency` | Link Currency (or Data) | No | New (section 1). Empty: the clinic's own. |
-| `exchange_rate` | Float | Server | New. The rate of the payment's day when two currencies meet (section 6). |
-| `plan_amount` | Currency | Server | New. `amount` in the plan's currency. Read on the receipt and the plan page. |
-| `base_amount` | Currency | Server | New. `amount` in the clinic's currency. Read by the dashboard and reports (revenue). |
-| `payment_method` | Select: Cash, Card, Bank Transfer | Yes | |
-| `notes` | Small Text | No | |
+**Permissions.** Read: `view_payments`. Also read by `view_reports` (Reports) and `manage_users` (the counts before
+a currency change in Settings, Activity). Create, update and delete: `add_payments`.
+
+**Calls.**
+
+- list + count (Payments page): search `like` on `patient_name`, `treatment_type`, `notes`, `name`; filters
+  `payment_method =`, `payment_date >=` and `<=`; sorted `payment_date desc, name desc`. The total under the list
+  reads every matching row (`amount`, `currency`) with the same filters and search.
+- list (all rows): the day report (`payment_date =`), the dashboard (`payment_date >=`), Reports (the period and
+  the period before), a patient's payments (`patient =`), a plan's payments (`treatment_plan =`; the receipt also
+  reads them to print what was left after this payment).
+- count: payments in a currency (`currency =`) and all payments, before Settings changes a currency.
+- get, create, update, delete, getdoc (History).
+
+| Field            | Type                                              | Required | Notes                                                                                  |
+| ---------------- | ------------------------------------------------- | -------- | -------------------------------------------------------------------------------------- |
+| `patient`        | Link Patient                                      | Yes      | Stored (filter).                                                                       |
+| `patient_name`   | Data, fetched                                     | Server   | Stored (search).                                                                       |
+| `treatment_plan` | Link Treatment Plan                               | No       | Stored (filter). `null` for a general payment.                                         |
+| `treatment_type` | Data, `fetch_from: treatment_plan.treatment_type` | Server   | Stored (search, reports).                                                              |
+| `payment_date`   | Date                                              | Yes      | Stored (filter, sort).                                                                 |
+| `amount`         | Currency                                          | Yes      | In the payment's `currency`. Above 0, and (converted) not more than the plan has left. |
+| `currency`       | Link Currency (or Data)                           | No       | Section 1. `""`: the clinic's own. Stored (count filter).                              |
+| `exchange_rate`  | Float                                             | Server   | Section 1. Never sent by the front end; read on the form, the receipt and Reports.     |
+| `plan_amount`    | Currency                                          | Server   | `amount` in the plan's currency. Read on the receipt, the statement and the plan page. |
+| `base_amount`    | Currency                                          | Server   | `amount` in the clinic's currency. Read by the dashboard and Reports.                  |
+| `payment_method` | Select: Cash, Card, Bank Transfer                 | Yes      | Stored (filter). New payments start as Cash.                                           |
+| `notes`          | Small Text                                        | No       | Stored (search).                                                                       |
+
+### Expense
+
+Naming `EXP-.YYYY.-.#####`. Track Changes on (Activity). Details and rules in section 1.
+
+**Permissions.** Read: `view_expenses` (Reports reads it with `view_reports` and `view_expenses`; Activity with
+`manage_users`). Create, update and delete: `add_expenses`.
+
+**Calls.** list + count (Expenses page): search `like` on `description`, `paid_to`, `doctor_name`, `name`; filters
+`category =`, `expense_date >=` and `<=`; sorted `expense_date desc, name desc`; the total and the CSV export read
+every matching row. list (Reports: the period and the period before). get, create, update, delete.
+
+| Field                    | Type                                                                                                   | Required | Notes                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------ | -------- | --------------------------------------------------------------- |
+| `expense_date`           | Date                                                                                                   | Yes      | Stored (filter, sort).                                          |
+| `category`               | Select: Rent, Salaries, Dental Supplies, Lab Fees, Equipment, Utilities, Maintenance, Marketing, Other | Yes      | Stored (filter).                                                |
+| `amount`                 | Currency                                                                                               | Yes      | Above zero, in the expense's currency.                          |
+| `currency`               | Link Currency (or Data)                                                                                | No       | `""`: the clinic's own; else `Clinic Settings.second_currency`. |
+| `exchange_rate`          | Float                                                                                                  | Server   |                                                                 |
+| `base_amount`            | Currency                                                                                               | Server   |                                                                 |
+| `doctor`                 | Link Doctor                                                                                            | No       | `null` when empty.                                              |
+| `doctor_name`            | Data, `fetch_from: doctor.full_name`                                                                   | Server   | Stored (search).                                                |
+| `description`, `paid_to` | Data                                                                                                   | No       | Stored (search).                                                |
+| `payment_method`         | Select: Cash, Card, Bank Transfer                                                                      | No       | `null` when empty. New expenses start as Cash.                  |
+
+### Cash Count
+
+Naming `CC-.YYYY.-.#####`. Details and rules in section 1.
+
+**Permissions.** Read: `view_payments`. Create and update: `add_payments`. Delete: never.
+
+**Calls.** list of the day's count (`count_date =`, one row), list of the recent counts (sorted `count_date desc`,
+14 rows), create, update. The front end sends `count_date`, `opening_float`, `cash_counted`, `note` and
+`counted_by`, and also its own `cash_payments`, `expected_cash` and `difference`, which `validate()` must replace.
+
+| Field                                          | Type          | Required               | Notes                          |
+| ---------------------------------------------- | ------------- | ---------------------- | ------------------------------ |
+| `count_date`                                   | Date          | Yes                    | Unique. Stored (filter, sort). |
+| `opening_float`                                | Currency      | No                     |                                |
+| `cash_counted`                                 | Currency      | Yes                    |                                |
+| `note`                                         | Small Text    | Yes when short or over |                                |
+| `counted_by`                                   | Link User     | No                     | The user who saved it.         |
+| `cash_payments`, `expected_cash`, `difference` | Currency      | Server                 |                                |
+| `counted_by_name`                              | Data, fetched | Server                 |                                |
+| `counted_at`                                   | Datetime      | Server                 |                                |
 
 ### User (Frappe core)
 
-The name is the email address. Created on `/users`; only `enabled` and `roles` are changed afterwards; never deleted.
+The name is the email address. Created on `/users`; afterwards only `roles`, `enabled` and the user's own
+`language` change; never deleted.
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `email` | Data | Yes | On create. |
-| `first_name` | Data | Yes | On create; the form calls it "Full Name". |
-| `full_name` | Data | Server | |
-| `enabled` | Check | No | A user cannot disable their own account. |
-| `roles` | Table (Has Role): `role` | Yes | Clinic Manager, Clinic Doctor or Clinic Receptionist. Other roles on the user (such as System Manager) are kept. |
-| `new_password` | Password | Yes | On create only, at least 8 characters. |
-| `send_welcome_email` | Check | No | Always sent as 0. |
-| `gender`, `user_image` | Frappe's own User fields | No | Read only, for the avatar in the menu, the top bar and the users list. Every user must be able to read their own. |
-| `language` | Frappe's own User field (Link Language) | No | The language the user chose with the Arabic / English switch in the menu: the front end sends `PUT /api/resource/User/<own id>` with `{ "language": "ar" }` or `"en"`. **Every user must be able to change their own `language`** (and nothing else on their User record through this call). Make sure the Language records `ar` and `en` exist. Frappe then also answers error messages in that language where it has translations. |
+**Permissions.** Read their own record: every user (`full_name`, `first_name`, `email`, `roles`, `language`,
+`gender`, `user_image`). Read other users, create, update `roles` and `enabled`: `manage_users`. Update their own
+`language`: every user (and nothing else on their record through this call).
+
+**Calls.** get (own record; a user's page), list + count (Users page: `name not in (Administrator, Guest)`, filter
+`enabled =`, search `like` on `full_name`, `email`, sorted `full_name asc`), list of every user's `full_name`
+(Activity), list of the enabled users (`name != Guest`, `enabled = 1`, sorted `full_name asc`) for **Try Another User**
+on the profile page (only while login is off, so not needed once it is on), create, update (only `roles`; only
+`enabled`; only own `language`).
+
+| Field                  | Type                     | Required      | Notes                                                                                                                                                                          |
+| ---------------------- | ------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `email`                | Data                     | Yes on create |                                                                                                                                                                                |
+| `first_name`           | Data                     | Yes on create | The form calls it "Full Name".                                                                                                                                                 |
+| `full_name`            | Data                     | Server        | Stored (search, sort).                                                                                                                                                         |
+| `enabled`              | Check                    | No            | Stored (filter). A user cannot disable their own account.                                                                                                                      |
+| `roles`                | Table (Has Role): `role` | Yes on create | One of Clinic Manager, Clinic Doctor, Clinic Receptionist on create. Later the manager can choose "No clinic role"; other roles on the user (such as System Manager) are kept. |
+| `new_password`         | Password                 | Yes on create | At least 8 characters. Only on create.                                                                                                                                         |
+| `send_welcome_email`   | Check                    | No            | Always sent as 0.                                                                                                                                                              |
+| `gender`, `user_image` | Frappe's own fields      | No            | Read only, for the avatar in the menu, the top bar and the users list.                                                                                                         |
+| `language`             | Link Language: ar, en    | No            | The Arabic / English switch sends `PUT /api/resource/User/<own id>` with `{ "language": "ar" }` or `"en"`. Make sure the Language records `ar` and `en` exist.                 |
 
 ### Clinic Permission
 
 One per user; the record **name must equal the user ID** (`autoname: field:user`), because the front end loads it
-with `GET /api/resource/Clinic Permission/<user>`.
+with `GET /api/resource/Clinic Permission/<user>`. No record means every switch is off.
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `user` | Link User | Yes | Unique. |
-| `view_patients`, `add_patients`, `edit_patients`, `delete_patients`, `view_appointments`, `add_appointments`, `edit_appointments`, `view_treatments`, `add_treatments`, `edit_treatments`, `view_payments`, `add_payments`, `view_expenses`, `add_expenses`, `view_reports`, `manage_users` | Check | No | 16 switches, sent as 0 or 1. |
+**Permissions.** Read their own record: every user. Read other users' records, create and update: `manage_users`.
+Delete: never.
+
+**Calls.** get (own; a user's page), create (when a user is added with "apply the role's usual permissions", or
+saved for the first time on the user's page), update (all 16 switches and `user`).
+
+| Field                                                                                                                                                                                                                                                                                       | Type      | Required | Notes                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `user`                                                                                                                                                                                                                                                                                      | Link User | Yes      | Unique.                                                                                                                                                                                                                                                                                              |
+| `view_patients`, `add_patients`, `edit_patients`, `delete_patients`, `view_appointments`, `add_appointments`, `edit_appointments`, `view_treatments`, `add_treatments`, `edit_treatments`, `view_payments`, `add_payments`, `view_expenses`, `add_expenses`, `view_reports`, `manage_users` | Check     | No       | 16 switches, sent as 0 or 1. The usual sets (`ROLE_PRESETS` in `src/lib/types.ts`): Manager all 16; Doctor view and edit patients, view, add and edit appointments and treatments, view payments; Receptionist view, add and edit patients and appointments, view treatments, view and add payments. |
 
 ### Clinic Settings (single)
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `clinic_name` | Data | Yes | |
-| `logo` | Attach Image | No | A public file URL. |
-| `phone`, `email`, `tax_number` | Data | No | Printed on the letterhead. |
-| `address` | Small Text | No | |
-| `currency` | Link Currency (or Data) | No | ISO code; empty is treated as IQD. The clinic's own currency: totals are kept in it. |
-| `second_currency` | Link Currency (or Data) | No | New (section 1). Empty: one currency only. |
-| `exchange_rates` | Table (**Clinic Exchange Rate**) | No | New (section 1). Rows: `rate_date` (Date), `rate` (Float). |
-| `phone_country_code` | Data | No | New (section 1). Digits only; empty means 964. |
-| `default_language` | Select: ar, en | No | New (section 1). Empty means Arabic. |
-| `arabic_digits` | Check | No | New (section 1). |
-| `opening_time`, `closing_time` | Time | No | |
-| `working_days` | Data | No | Day names, comma-separated (section 2). Empty means open every day. |
-| `theme_color` | Color | No | A hex colour. Empty means the front end's default indigo; the front end sends `""` for that. |
-| `enable_whatsapp`, `enable_financial_reports` | Check, **default 1** | No | The front end treats only an explicit 0 as off. |
-| `enable_patient_portal` | Check | No | Saved only; not used yet. |
-| `treatment_prices` | Table (**Clinic Treatment Price**) | No | New (section 1). Rows: `treatment_type` (Select, the plan types), `price` (Currency). Only rows with a price are sent. |
+**Permissions.** Read: every user (the currency, the clinic name, the switches and the colour are used on every
+screen). Update: `manage_users`; the save first counts Treatment Plans and Payments (all, and per currency), so that
+user also needs `get_count` on both.
+
+**Calls.** get `Clinic Settings/Clinic Settings`, update (every field below in one call), `upload_file` for the logo
+(public file, up to 2 MB checked in the browser).
+
+| Field                                         | Type                               | Required | Notes                                                                                                                                                                      |
+| --------------------------------------------- | ---------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `clinic_name`                                 | Data                               | Yes      |                                                                                                                                                                            |
+| `logo`                                        | Attach Image                       | No       | A public file URL; `""` when removed.                                                                                                                                      |
+| `phone`, `email`, `tax_number`                | Data                               | No       | Printed on the letterhead.                                                                                                                                                 |
+| `address`                                     | Small Text                         | No       |                                                                                                                                                                            |
+| `currency`                                    | Link Currency (or Data)            | No       | ISO code; empty is treated as IQD. The clinic's own currency: totals are kept in it.                                                                                       |
+| `second_currency`                             | Link Currency (or Data)            | No       | Section 1. `""`: one currency only.                                                                                                                                        |
+| `exchange_rates`                              | Table (**Clinic Exchange Rate**)   | No       | Section 1. Rows: `rate_date` (Date), `rate` (Float above 0), one per date, sent sorted by date.                                                                            |
+| `phone_country_code`                          | Data                               | No       | Section 1. Digits only; `""` means 964.                                                                                                                                    |
+| `default_language`                            | Select: ar, en                     | No       | Section 1. The Settings page always sends `ar` or `en`; empty (never saved) means Arabic.                                                                                  |
+| `arabic_digits`                               | Check                              | No       | Section 1.                                                                                                                                                                 |
+| `opening_time`, `closing_time`                | Time                               | No       | `null` when empty.                                                                                                                                                         |
+| `working_days`                                | Data                               | No       | The English day names the clinic is open, comma-separated (section 2). The page refuses to save with no day ticked. Empty (never saved) means open every day.              |
+| `theme_color`                                 | Color (or Data)                    | No       | A hex colour such as `#0d9394`. `""` means the front end's default violet (`#6a5fdd`).                                                                                     |
+| `enable_whatsapp`, `enable_financial_reports` | Check, **default 1**               | No       | The front end treats only an explicit 0 as off, but the Settings form ticks them only for an explicit 1, so keep the default.                                              |
+| `enable_patient_portal`                       | Check                              | No       | Saved only; not used yet.                                                                                                                                                  |
+| `treatment_prices`                            | Table (**Clinic Treatment Price**) | No       | Section 1. Rows: `treatment_type` (the plan types; an older price list may hold another type, which is kept), `price` (Currency). Only rows with a price above 0 are sent. |
+
+The currencies offered are IQD, USD, EUR, EGP, SAR, AED, JOD, KWD, TRY and GBP (`CURRENCIES` in `src/lib/types.ts`);
+if `currency` is a Link, these Currency records must exist and be enabled.
 
 ### WhatsApp Template
 
 Naming `WAT-.#####`.
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `template_name` | Data | Yes | |
-| `trigger` | Select: 24 Hours Before, 2 Hours Before, Manual | Yes | |
-| `message` | Text | Yes | With the placeholders in section 2. |
-| `is_active` | Check | No | |
-| `language` | Select: ar, en | No | New (section 1). Empty means any language. |
+**Permissions.** Read the active templates: `view_appointments` (Tomorrow's reminders on the Today board and Send
+Message on an appointment). Read all, create, update and delete: `manage_users`.
+
+**Calls.** list of every template (sorted `template_name asc`), list of the active ones (`is_active = 1`), create,
+update, delete.
+
+| Field           | Type                                            | Required | Notes                                                                          |
+| --------------- | ----------------------------------------------- | -------- | ------------------------------------------------------------------------------ |
+| `template_name` | Data                                            | Yes      | Stored (sort).                                                                 |
+| `trigger`       | Select: 24 Hours Before, 2 Hours Before, Manual | Yes      | New templates start as 24 Hours Before.                                        |
+| `message`       | Text                                            | Yes      | With the placeholders in section 2.                                            |
+| `is_active`     | Check                                           | No       | Stored (filter).                                                               |
+| `language`      | Select: ar, en                                  | No       | Section 1. `null`: any language. New templates start in the screen's language. |
 
 ### WhatsApp Log (read only for the front end)
 
-Naming `WAL-.YYYY.-.#####`. Searched on `patient_name`, `phone_number` and `message`; filtered on `status` and
-`appointment`; sorted by `sent_at`.
+Naming `WAL-.YYYY.-.#####`.
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `patient` | Link Patient | Server | |
-| `patient_name` | Data, fetched | Server | Stored (search). |
-| `appointment` | Link Appointment | Server | |
-| `phone_number` | Data | Server | |
-| `status` | Select: Sent, Failed, Pending | Server | |
-| `sent_at` | Datetime | Server | |
-| `message` | Text | Server | |
-| `error_message` | Small Text | Server | |
+**Permissions.** Read: `manage_users` (the Message Log). An appointment's page also lists that appointment's
+messages for everyone with `view_appointments`, and hides the card when the server refuses; allow that read if the
+front desk should see them. The front end never writes it.
 
-### Cash Count
+**Calls.** list + count (search `like` on `patient_name`, `phone_number`, `message`; filter `status =`; sorted
+`sent_at desc`), list of one appointment's messages (`appointment =`, sorted `sent_at desc`, 20 rows).
 
-Details and rules in section 1. The front end sends `count_date`, `opening_float`, `cash_counted`, `note` and
-`counted_by`, and also its own `cash_payments`, `expected_cash` and `difference`, which `validate()` must replace.
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `count_date` | Date | Yes | Unique. |
-| `opening_float` | Currency | No | |
-| `cash_counted` | Currency | Yes | |
-| `note` | Small Text | Yes when short or over | |
-| `counted_by` | Link User | No | |
-| `cash_payments`, `expected_cash`, `difference` | Currency | Server | |
-| `counted_by_name` | Data, fetched | Server | |
-| `counted_at` | Datetime | Server | |
-
-### Expense
-
-Details and rules in section 1. The front end sends `expense_date`, `category`, `amount`, `currency`, `doctor`
-(or null), `description`, `paid_to` and `payment_method` (or null); it reads `exchange_rate`, `base_amount` and
-`doctor_name` back.
-
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `expense_date` | Date | Yes | |
-| `category` | Select | Yes | |
-| `amount` | Currency | Yes | Above zero. |
-| `currency` | Data | No | Empty is the clinic's own. |
-| `doctor` | Link Doctor | No | |
-| `description`, `paid_to` | Data | No | |
-| `payment_method` | Select | No | |
-| `exchange_rate`, `base_amount` | Float, Currency | Server | |
-| `doctor_name` | Data, fetched | Server | |
+| Field           | Type                          | Required | Notes                                          |
+| --------------- | ----------------------------- | -------- | ---------------------------------------------- |
+| `patient`       | Link Patient                  | Server   |                                                |
+| `patient_name`  | Data, fetched                 | Server   | Stored (search).                               |
+| `appointment`   | Link Appointment              | Server   | Stored (filter).                               |
+| `phone_number`  | Data                          | Server   | Stored (search). Shown with the middle hidden. |
+| `status`        | Select: Sent, Failed, Pending | Server   | Stored (filter).                               |
+| `sent_at`       | Datetime                      | Server   | Stored (sort).                                 |
+| `message`       | Text                          | Server   | Stored (search).                               |
+| `error_message` | Small Text                    | Server   |                                                |
 
 ### Dental Medicine
 
-Details in section 1. Searched on `medicine_name`, `medicine_group` and `strength`; never deleted.
+Naming `MED-.#####`. Details in section 1. Never deleted.
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `medicine_name` | Data | Yes | |
-| `strength` | Data | No | |
-| `dosage_form` | Select (section 1) | No | |
-| `medicine_group` | Select (section 1) | No | |
-| `default_dose`, `default_frequency`, `default_instructions` | Data | No | |
-| `default_duration_days` | Int | No | |
-| `allergy_words` | Data | No | |
-| `is_nsaid`, `avoid_in_pregnancy` | Check | No | |
-| `max_daily_mg` | Int | No | 0 means no check. |
-| `child_note` | Small Text | No | |
-| `is_active` | Check, default 1 | No | |
+**Permissions.** Read: `add_treatments` (the prescription form), `view_treatments` (the printed prescription) and
+`manage_users` (the Medicines page). Create and update: `manage_users`. Delete: never (switch `is_active` off).
+
+**Calls.** list of every medicine (sorted `medicine_group asc, medicine_name asc`; inactive ones too, so an old
+prescription still shows its medicine), list by `name in […]` (the printed prescription), list + count (Medicines
+page: search `like` on `medicine_name`, `medicine_group`, `strength`; filter `is_active =`), create, update.
+
+| Field                                  | Type                                                                                                                                                                | Required | Notes                                                                         |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------- |
+| `medicine_name`                        | Data                                                                                                                                                                | Yes      | Stored (search, sort).                                                        |
+| `strength`                             | Data                                                                                                                                                                | No       | Stored (search).                                                              |
+| `dosage_form`                          | Select: Tablet, Capsule, Suspension, Syrup, Mouthwash, Gel, Drops, Injection, Other                                                                                 | No       | Always sent; new medicines start as Tablet.                                   |
+| `medicine_group`                       | Select: Antibiotic, Painkiller, Mouthwash, Antifungal, Other                                                                                                        | No       | Stored (search, sort). Always sent; new medicines start as Antibiotic.        |
+| `default_dose`, `default_instructions` | Data                                                                                                                                                                | No       | The usual prescription, filled into a new row.                                |
+| `default_frequency`                    | Select (or Data): Once a day, Twice a day, Three times a day, Four times a day, Every 4 hours, Every 6 hours, Every 8 hours, Every 12 hours, When needed, Once only | No       | `""` when not set. The values of `FREQUENCIES` in `src/lib/prescriptions.ts`. |
+| `default_duration_days`                | Int                                                                                                                                                                 | No       |                                                                               |
+| `allergy_words`                        | Data                                                                                                                                                                | No       | Comma-separated words.                                                        |
+| `is_nsaid`, `avoid_in_pregnancy`       | Check                                                                                                                                                               | No       |                                                                               |
+| `max_daily_mg`                         | Int                                                                                                                                                                 | No       | 0 means no check.                                                             |
+| `child_note`                           | Small Text                                                                                                                                                          | No       |                                                                               |
+| `is_active`                            | Check, default 1                                                                                                                                                    | No       | Stored (filter).                                                              |
 
 ### Prescription and Prescription Medicine
 
-Details in section 1.
+Naming `RX-.YYYY.-.#####`. Details in section 1. Track Changes on (Activity).
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `patient` | Link Patient | Yes | |
-| `patient_name` | Data, fetched | Server | |
-| `doctor` | Link Doctor | Yes | |
-| `doctor_name` | Data, fetched | Server | |
-| `appointment` | Link Appointment | No | |
-| `prescription_date` | Date | Yes | |
-| `notes` | Small Text | No | |
-| `medicines` | Table (Prescription Medicine) | Yes, at least one row | Rows below. |
-| `summary` | Data | Server | Stored: read in the lists. |
+**Permissions.** Read: `view_treatments`. Also read by `manage_users` (Activity). Create, update and delete:
+`add_treatments`.
 
-| Prescription Medicine field | Type | Required | Notes |
-|---|---|---|---|
-| `medicine` | Link Dental Medicine | Yes | |
-| `medicine_name` | Data | Yes | Sent by the front end (name and strength when written). |
-| `dose`, `frequency`, `instructions` | Data | No | |
-| `duration_days` | Int | No | |
+**Calls.** list of a patient's prescriptions (`patient =`, sorted `prescription_date desc, name desc`), of an
+appointment's (`appointment =`, same sort, 20 rows), get (with the `medicines` rows), create, update, delete.
+
+| Field               | Type                          | Required              | Notes                                                                               |
+| ------------------- | ----------------------------- | --------------------- | ----------------------------------------------------------------------------------- |
+| `patient`           | Link Patient                  | Yes                   | Stored (filter).                                                                    |
+| `patient_name`      | Data, fetched                 | Server                |                                                                                     |
+| `doctor`            | Link Doctor                   | Yes                   |                                                                                     |
+| `doctor_name`       | Data, fetched                 | Server                |                                                                                     |
+| `appointment`       | Link Appointment              | No                    | Stored (filter). `null` when written from the patient page.                         |
+| `prescription_date` | Date                          | Yes                   | Stored (sort).                                                                      |
+| `notes`             | Small Text                    | No                    | Printed under the medicines.                                                        |
+| `medicines`         | Table (Prescription Medicine) | Yes, at least one row | Rows below.                                                                         |
+| `summary`           | Data                          | Server                | Set in `validate()`; read in the lists (the list API does not return child tables). |
+
+| Prescription Medicine field | Type                                                                     | Required | Notes                                                   |
+| --------------------------- | ------------------------------------------------------------------------ | -------- | ------------------------------------------------------- |
+| `medicine`                  | Link Dental Medicine                                                     | Yes      |                                                         |
+| `medicine_name`             | Data                                                                     | Yes      | Sent by the front end (name and strength when written). |
+| `dose`, `instructions`      | Data                                                                     | No       |                                                         |
+| `frequency`                 | Select (or Data): the same values as `Dental Medicine.default_frequency` | No       | `""` when not chosen.                                   |
+| `duration_days`             | Int                                                                      | No       | 0 when empty.                                           |
 
 ### Dental Image
 
-New (section 1, **New doctype: Dental Image**). Naming `IMG-.YYYY.-.#####`. Read with `patient`, `patient_name`,
-`image_type`, `taken_on`, `teeth`, `description`, `file_name`, `image`, `annotations`; filtered on
-`patient` (Stored) and sorted `taken_on desc, name asc`.
+Naming `IMG-.YYYY.-.#####`. Details in section 1 (**New doctype: Dental Image**). Track Changes on (Activity).
 
-| Field | Type | Required | Notes |
-|---|---|---|---|
-| `patient` | Link Patient | Yes | Stored. |
-| `patient_name` | Data | Server | `fetch_from: patient.full_name`. |
-| `image_type` | Select | Yes | The seven values in section 1. |
-| `taken_on` | Date | Yes | |
-| `teeth` | Data | No | FDI numbers joined with `,`, no spaces. |
-| `description` | Small Text | No | |
-| `file_name` | Data | No | |
-| `image` | Attach Image | No | Set after the upload. |
-| `annotations` | JSON | No | |
+**Permissions.** Read: `view_patients`, and `view_treatments` (the treatment plan page shows the patient's images on
+the chart), and `manage_users` (Activity). Every reader must also be able to open the private files. Create, update and delete: `edit_patients`.
+
+**Calls.** list of a patient's images (`patient =`, sorted `taken_on desc, name asc`, all rows), get (the printable
+image page), create (`patient`, `file_name`, `image_type`, `taken_on`, `teeth`, `description`), `upload_file`
+attached to it (private), update (only `image` after the upload; only the details `image_type`, `taken_on`,
+`teeth`, `description`; only `annotations`), delete (also when the upload failed).
+
+| Field          | Type                                                                                                  | Required | Notes                                              |
+| -------------- | ----------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------- |
+| `patient`      | Link Patient                                                                                          | Yes      | Stored (filter).                                   |
+| `patient_name` | Data                                                                                                  | Server   | `fetch_from: patient.full_name`.                   |
+| `image_type`   | Select: Periapical, Bitewing, Panoramic (OPG), Cephalometric, CBCT screenshot, Intraoral photo, Other | Yes      |                                                    |
+| `taken_on`     | Date                                                                                                  | Yes      | Stored (sort).                                     |
+| `teeth`        | Data                                                                                                  | No       | FDI numbers joined with `,`, no spaces.            |
+| `description`  | Small Text                                                                                            | No       |                                                    |
+| `file_name`    | Data                                                                                                  | No       |                                                    |
+| `image`        | Attach Image (or Attach, for PDFs)                                                                    | No       | Set after the upload. JPG, PNG or PDF up to 10 MB. |
+| `annotations`  | JSON                                                                                                  | No       | The drawing; `null` removes it.                    |
 
 ### File (Frappe core)
 
-Uploaded with `upload_file` (section 4): the clinic logo and doctor photos (public), and the file of each Dental
-Image (private, attached to it). The front end reads `name`, `file_name` and `file_url` from the upload's answer,
-and never lists or deletes File records itself.
+Uploaded with `POST /api/method/upload_file` (multipart): `file`, `is_private=0` and `folder=Home` for the clinic
+logo, doctor photos and the prescription paper's logo and signature; `file`, `is_private=1`, `doctype`, `docname`
+and `folder=Home/Attachments` for the file of a Dental Image. The front end reads only `file_url` from the answer
+and shows every file at `/frappe<file_url>`. It never lists or deletes File records itself (deleting a Dental Image
+deletes its file).
 
 ### Version (Frappe core)
 
-Never queried directly; read through `frappe.desk.form.load.getdoc` for the History card (section 4).
+**Permissions.** Read: `manage_users` (the Activity page); and, through `getdoc`, whoever may read the record.
+
+**Calls.**
+
+- list (Activity page): `name`, `ref_doctype`, `docname`, `data`, `owner`, `creation`; filter `ref_doctype in
+(Patient, Appointment, Treatment Plan, Payment, Expense, Prescription, Dental Image, Doctor)` (or one of them);
+  sorted `creation desc`; 40 rows, then 40 more with Show More.
+- `getdoc` (the History card of a patient, appointment, treatment plan or payment): `docinfo.versions` with `name`,
+  `owner`, `creation` and `data`.
+
+The Activity page's "added" list also reads the eight doctypes themselves: for each, `name`, `owner`, `creation` and
+the fields that name the record (Patient and Doctor `full_name`; Appointment `patient_name`, `appointment_date`;
+Treatment Plan `patient_name`, `treatment_type`, `tooth_number`; Payment `patient_name`, `payment_date`; Expense
+`description`, `category`, `expense_date`; Prescription `patient_name`, `prescription_date`; Dental Image
+`patient_name`, `image_type`), sorted `creation desc`, 40 rows, then 40 more. So `manage_users` must be able to read
+all eight.
+
+`data` is Frappe's JSON with `changed: [[field, old, new], …]`. **Turn on Track Changes for all eight doctypes
+above**, or their changes never show on the Activity page.
+
+### Deleted Document (Frappe core)
+
+**Permissions.** Read and restore: `manage_users`. Restoring creates the record again, so check that a manager can
+restore every doctype in the list (for example a Payment, without `add_payments`).
+
+**Calls.** list (Activity page): `name`, `deleted_doctype`, `deleted_name`, `data`, `restored`, `new_name`, `owner`,
+`creation`; filter `deleted_doctype in (…)` (the same eight doctypes); sorted `creation desc`. Restore:
+`POST /api/method/frappe.core.doctype.deleted_document.deleted_document.restore` with `name` (section 3).
+
+### Records that must exist
+
+- **Role:** Clinic Manager, Clinic Doctor, Clinic Receptionist (the user forms offer these; `System Manager` is
+  read as "can do everything").
+- **Language:** `ar` and `en` (`User.language`).
+- **Currency:** the ten codes above, if the currency fields are Links.
+- **Clinic Treatment Price** and **Clinic Exchange Rate**: the child doctypes of Clinic Settings (section 1).

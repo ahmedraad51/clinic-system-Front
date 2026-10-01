@@ -6,11 +6,11 @@ import { formDialog, navigate, openFromMenu, waitForData } from "../helpers";
 test("the permissions table: a checkbox per section and action, with select-all per row and column", async ({ page }) => {
   await page.goto("/dashboard");
   await openFromMenu(page, "Users");
-  await page.getByRole("link", { name: "Dalia Jawad" }).click();
+  await page.getByRole("link", { name: "داليا جواد" }).click();
   await waitForData(page);
 
   // The profile card on the side: name, role and status.
-  await expect(page.getByRole("heading", { name: "Dalia Jawad" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "داليا جواد" })).toBeVisible();
   await expect(page.getByText("Clinic Receptionist").first()).toBeVisible();
 
   const table = page.getByRole("table");
@@ -79,11 +79,11 @@ test("settings are in tabs, and a missing clinic name brings its tab back", asyn
 test("a doctor has a page with the day, the coming days and open plans", async ({ page }) => {
   await page.goto("/dashboard");
   await openFromMenu(page, "Doctors");
-  await page.getByRole("link", { name: "Dr. Zainab Al-Hashimi" }).click();
+  await page.getByRole("link", { name: "د. زينب الهاشمي" }).click();
   await waitForData(page);
-  await expect(page.getByRole("heading", { name: "Dr. Zainab Al-Hashimi" })).toBeVisible();
-  // Mustafa Jabbar is with her today at 12:30.
-  await expect(page.getByText("Mustafa Jabbar").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "د. زينب الهاشمي" })).toBeVisible();
+  // مصطفى جبار is with her today at 12:30.
+  await expect(page.getByText("مصطفى جبار").first()).toBeVisible();
 
   // New Appointment books with her.
   await page.getByRole("button", { name: "New Appointment" }).click();

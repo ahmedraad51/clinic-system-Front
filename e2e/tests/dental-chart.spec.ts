@@ -4,7 +4,7 @@ import { openFromMenu, waitForData } from "../helpers";
 test("mark a tooth on the dental chart and save it", async ({ page }) => {
   await page.goto("/dashboard");
   await openFromMenu(page, "Patients");
-  await page.getByRole("link", { name: "Hiba Kadhim" }).click();
+  await page.getByRole("link", { name: "هبة كاظم" }).click();
   await waitForData(page);
   await page.getByRole("tab", { name: "Dental Chart" }).click();
   await expect(page.getByText("Nothing marked. All teeth are recorded as healthy.")).toBeVisible();
@@ -23,7 +23,7 @@ test("mark a tooth on the dental chart and save it", async ({ page }) => {
 
   // Leave the patient and come back: the chart was stored.
   await openFromMenu(page, "Patients");
-  await page.getByRole("link", { name: "Hiba Kadhim" }).click();
+  await page.getByRole("link", { name: "هبة كاظم" }).click();
   await waitForData(page);
   await page.getByRole("tab", { name: "Dental Chart" }).click();
   const finding = page.getByRole("button", { name: /^46\s/ });
@@ -48,7 +48,7 @@ test("a chart saved in the old format still loads", async ({ page }) => {
 });
 
 test("a treatment plan shows the chart at its tooth, and the chart prints", async ({ page }) => {
-  // Zahraa Hussein's crown on tooth 36.
+  // زهراء حسين's crown on tooth 36.
   await page.goto("/treatments/TRT-2026-00002");
   await waitForData(page);
   await expect(page.getByText("Lower left first molar")).toBeVisible();
@@ -66,7 +66,7 @@ test("a treatment plan shows the chart at its tooth, and the chart prints", asyn
 
 test("on a phone the chart scrolls to the chosen tooth", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  // Saad Nouri's crown on tooth 37, at the far end of the lower jaw.
+  // سعد نوري's crown on tooth 37, at the far end of the lower jaw.
   await page.goto("/treatments/TRT-2026-00013");
   await waitForData(page);
   const tooth = page.getByRole("button", { name: /^Tooth 37,/ });

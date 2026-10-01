@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Sans, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { preload } from "react-dom";
+import "./fonts.css";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -13,22 +14,15 @@ import { ZOOM_BOOT_SCRIPT } from "@/lib/display";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import { APPEARANCE_BOOT_SCRIPT } from "@/lib/appearanceBoot";
 
-// One family in both languages (globals.css uses the variables): IBM Plex Sans for English, IBM Plex Sans Arabic for
-// all text on Arabic screens, headings included (its Latin letters are IBM Plex Sans, so English names inside Arabic
-// text match). The Arabic one has no fallback size adjustment: an Arial fallback would otherwise draw the Arabic.
-const plex = IBM_Plex_Sans({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-  variable: "--font-plex",
-});
-const arabic = IBM_Plex_Sans_Arabic({
-  subsets: ["arabic", "latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-  variable: "--font-arabic",
-  adjustFontFallback: false,
-});
+// One family in both languages: IBM Plex Sans for English, IBM Plex Sans Arabic for all text on Arabic screens,
+// headings included (its Latin letters are IBM Plex Sans, so English names inside Arabic text match). The files are
+// in public/fonts/ and their rules in fonts.css (the --font-plex and --font-arabic variables globals.css uses), so
+// the app never depends on reaching Google Fonts. The regular weight of each is fetched before the page is drawn.
+const FONT_PRELOADS = [
+  "/fonts/ibm-plex-sans-arabic/arabic-400.woff2",
+  "/fonts/ibm-plex-sans-arabic/latin-400.woff2",
+  "/fonts/ibm-plex-sans/latin.woff2",
+];
 
 export const metadata: Metadata = {
   title: "DentClinic",
@@ -52,10 +46,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  for (const href of FONT_PRELOADS) preload(href, { as: "font", type: "font/woff2", crossOrigin: "anonymous" });
   return (
     // The boot scripts may set the language, the clinic colour, this computer's screen size and its appearance
     // (dark mode, collapsed menu …) on <html> before React loads.
-    <html lang={DEFAULT_LANG} dir={dirOf(DEFAULT_LANG)} className={`${plex.variable} ${arabic.variable}`} suppressHydrationWarning>
+    <html lang={DEFAULT_LANG} dir={dirOf(DEFAULT_LANG)} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: LANG_BOOT_SCRIPT + THEME_BOOT_SCRIPT + ZOOM_BOOT_SCRIPT + APPEARANCE_BOOT_SCRIPT }} />
       </head>

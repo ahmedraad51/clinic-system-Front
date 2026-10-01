@@ -7,20 +7,20 @@ import { rxPageCss, rxPaperOf, rxPaperPayload } from "../../src/lib/rxPaper";
 const pageStyles = (page: Page) => page.evaluate(() => [...document.querySelectorAll("style")].map((style) => style.textContent).join(" "));
 
 test("a prescription prints on its doctor's own heading", async ({ page }) => {
-  // RX-2026-00001 is Dr. Noor Al-Saadi's: her name, qualifications and footer, on A5.
+  // RX-2026-00001 is د. نور الساعدي's: her name, qualifications and footer, on A5.
   await page.goto("/prescriptions/RX-2026-00001");
   await waitForData(page);
   const header = page.getByTestId("rx-header");
-  await expect(header).toContainText("Dr. Noor Al-Saadi");
+  await expect(header).toContainText("د. نور الساعدي");
   await expect(header).toContainText("BDS, MSc Endodontics (University of Baghdad)");
   await expect(header).toContainText("DentClinic");
-  await expect(page.getByTestId("rx-footer")).toContainText("Sat–Thu 9 AM–6 PM");
-  await expect(page.getByTestId("rx-prints-on")).toHaveText("Prints on Dr. Noor Al-Saadi's paper (A5).");
+  await expect(page.getByTestId("rx-footer")).toContainText("السبت–الخميس 9 ص–6 م");
+  await expect(page.getByTestId("rx-prints-on")).toHaveText("Prints on د. نور الساعدي's paper (A5).");
   await expect.poll(() => pageStyles(page)).toContain("size: A5; margin: 10mm 10mm 10mm");
 });
 
 test("on pre-printed paper the header and footer are left blank", async ({ page }) => {
-  // RX-2026-00002 is Dr. Haider Al-Obaidi's, whose pads have 45 mm printed at the top and 25 mm at the bottom.
+  // RX-2026-00002 is د. حيدر العبيدي's, whose pads have 45 mm printed at the top and 25 mm at the bottom.
   await page.goto("/prescriptions/RX-2026-00002");
   await waitForData(page);
   await expect(page.getByTestId("rx-header-area")).toHaveText("Printed header on the paper (45 mm)");
@@ -31,7 +31,7 @@ test("on pre-printed paper the header and footer are left blank", async ({ page 
   await page.emulateMedia({ media: "print" });
   await expect(page.getByTestId("rx-header-area")).toBeHidden();
   // The patient on the prescription itself (the back link above it is not printed).
-  await expect(page.getByText("Saad Nouri").last()).toBeVisible();
+  await expect(page.getByText("سعد نوري").last()).toBeVisible();
 });
 
 test("the doctor's page sets the prescription paper, with a preview", async ({ page }) => {
@@ -41,7 +41,7 @@ test("the doctor's page sets the prescription paper, with a preview", async ({ p
   await expect(page.getByTestId("rx-paper-summary")).toHaveText("A5 paper with the clinic letterhead.");
 
   await page.getByRole("button", { name: "Edit Paper" }).click();
-  const dialog = page.getByRole("dialog", { name: "Prescription Paper: Dr. Zainab Al-Hashimi" });
+  const dialog = page.getByRole("dialog", { name: "Prescription Paper: د. زينب الهاشمي" });
   await dialog.getByLabel("Paper size").selectOption("A4");
   await dialog.getByLabel("Qualifications").fill("BDS (University of Baghdad)\nMSc Restorative Dentistry");
   const preview = dialog.getByTestId("rx-preview");
@@ -58,7 +58,7 @@ test("the doctor's page sets the prescription paper, with a preview", async ({ p
   await dialog.getByRole("switch", { name: /already has the header/ }).click();
   await dialog.getByRole("button", { name: "Save Paper" }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.getByRole("status").filter({ hasText: "Prescription paper saved for Dr. Zainab Al-Hashimi." })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Prescription paper saved for د. زينب الهاشمي." })).toBeVisible();
   await expect(page.getByTestId("rx-paper-summary")).toHaveText("A4 paper with the doctor's own heading.");
 });
 

@@ -199,7 +199,7 @@ export function PageHeader({
           {avatar}
           <div className="min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
-              {title && <h1 className="text-2xl font-medium text-gray-900 break-words">{title}</h1>}
+              {title && <h1 className="text-2xl font-semibold text-gray-900 break-words">{title}</h1>}
               {badge}
             </div>
             {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
@@ -287,7 +287,7 @@ export function Card({
           {title ? (
             <div className="flex items-center gap-2.5 min-w-0">
               {icon && <CardIcon icon={icon} />}
-              <h2 className="text-lg font-medium text-gray-900">{title}</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
             </div>
           ) : (
             <span />
@@ -389,7 +389,7 @@ export function ProfileCard({
     <section className={cx(CARD_CLASS, "p-5 sm:p-6")}>
       <div className="flex flex-col items-center text-center">
         {avatar}
-        <Title className={cx("text-xl font-medium text-gray-900 break-words", avatar ? "mt-4" : undefined)}>{title}</Title>
+        <Title className={cx("text-xl font-semibold text-gray-900 break-words", avatar ? "mt-4" : undefined)}>{title}</Title>
         {subtitle && <div className="text-sm text-gray-500 mt-0.5 break-words">{subtitle}</div>}
         {badges && <div className="flex flex-wrap justify-center gap-2 mt-3">{badges}</div>}
       </div>
@@ -404,7 +404,7 @@ export function ProfileCard({
               <div key={stat.label} className="flex items-start gap-3 min-w-0">
                 <IconTile icon={stat.icon} hue={stat.hue} />
                 <div className="min-w-0">
-                  <div data-testid={stat.testId} className="text-base font-medium text-gray-900 leading-tight break-words">
+                  <div data-testid={stat.testId} className="text-base font-semibold text-gray-900 leading-tight break-words">
                     {stat.value}
                   </div>
                   <div className="text-xs text-gray-500">{stat.label}</div>
@@ -472,7 +472,7 @@ export function StatCard({
         <div className="text-sm text-gray-600">{title}</div>
         {/* Wraps instead of cutting off: "IQD 1,250,000" does not fit a phone's half-width card on one line. The
             currency format joins "IQD" and the number with a no-break space; a plain one lets it wrap there. */}
-        <div className="mt-1 text-xl sm:text-2xl font-medium text-gray-900 leading-tight break-words">
+        <div className="mt-1 text-xl sm:text-2xl font-semibold text-gray-900 leading-tight break-words">
           {typeof value === "string" ? value.replace(/\u00a0/g, " ") : value}
         </div>
         {hint && <div className="text-xs text-gray-500 mt-1">{hint}</div>}
@@ -1173,9 +1173,10 @@ export function Tabs<K extends string>({
   onChange: (key: K) => void;
 }) {
   return (
-    // Pill tabs on the page: the chosen one solid in the clinic colour.
-    <div className="overflow-x-auto print:hidden -m-1 p-1">
-      <div className="flex gap-1 min-w-max" role="tablist">
+    // Pill tabs on the page: the chosen one solid in the clinic colour. They wrap onto a second line when they do not
+    // fit (a scrolling row cut the first tabs off at the edge once a later one was chosen).
+    <div className="print:hidden -m-1 p-1">
+      <div className="flex flex-wrap gap-1" role="tablist">
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -1193,7 +1194,7 @@ export function Tabs<K extends string>({
               <span
                 className={cx(
                   "ms-1.5 rounded px-1.5 py-0.5 text-xs",
-                  active === tab.key ? "bg-white/20 text-white" : "bg-gray-100 text-gray-700",
+                  active === tab.key ? "bg-black/15 text-white" : "bg-gray-100 text-gray-700",
                 )}
               >
                 {tab.count}
@@ -1374,7 +1375,7 @@ export function EmptyState({
   return (
     <div className="flex flex-col items-center text-center py-10 px-6">
       <EmptyDrawing icon={Icon} />
-      <p className="font-medium text-gray-900">{title}</p>
+      <p className="font-semibold text-gray-900">{title}</p>
       {text && <p className="text-sm text-gray-500 mt-1 max-w-sm">{text}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>

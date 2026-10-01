@@ -22,7 +22,7 @@ test("patient statement and appointment card", async ({ page }) => {
   await page.getByRole("link", { name: "Print statement" }).click();
   await expect(page.getByRole("heading", { name: "Patient Statement" })).toBeVisible();
   await waitForData(page);
-  // Zahraa Hussein: root canal 150,000 and crown 200,000; 250,000 paid; 100,000 left.
+  // زهراء حسين: root canal 150,000 and crown 200,000; 250,000 paid; 100,000 left.
   await expect(page.getByText("Total for treatments").locator("..")).toContainText("IQD 350,000");
   await expect(page.getByText("Total paid").locator("..")).toContainText("IQD 250,000");
   await expect(page.getByText("Balance", { exact: true }).locator("..")).toContainText("IQD 100,000");
@@ -32,5 +32,5 @@ test("patient statement and appointment card", async ({ page }) => {
   await page.getByRole("link", { name: "Print Card" }).click();
   await expect(page.getByRole("heading", { name: "Appointment Card" })).toBeVisible();
   await expect(page.getByText("Tuesday, 8 September 2026")).toBeVisible();
-  await expect(page.getByText("with Dr. Zainab Al-Hashimi")).toBeVisible();
+  await expect(page.getByText("with د. زينب الهاشمي")).toBeVisible();
 });

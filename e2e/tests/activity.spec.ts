@@ -9,20 +9,21 @@ test("the activity log shows what was added, changed and deleted, and a deleted 
 
   // A payment entered twice was deleted on 21 Sep; the seed also has changes to PAY-2026-00001.
   const deleted = page.getByTestId("activity-entry").filter({ hasText: "(PAY-2026-00018)" });
-  await expect(deleted).toContainText("Laith Hamid deleted Payment Yousif Sattar");
+  // On an English screen each Arabic part of the title is isolated (U+2068 … U+2069), so it keeps its order.
+  await expect(deleted).toContainText(/ليث حامد deleted Payment \u2068?يوسف ستار/);
   await page.getByLabel("What happened").selectOption("changed");
   const changed = page.getByTestId("activity-entry").filter({ hasText: "(PAY-2026-00001)" }).first();
   await expect(changed).toContainText("changed Payment");
   await expect(changed).toContainText("→");
 
   await page.getByLabel("What happened").selectOption("deleted");
-  await deleted.getByRole("button", { name: /^Restore: Payment Yousif Sattar/ }).click();
+  await deleted.getByRole("button", { name: /^Restore: Payment \u2068?يوسف ستار/ }).click();
   await expect(page.getByRole("status").filter({ hasText: "is back." })).toBeVisible();
   await expect(deleted.getByText("Restored")).toBeVisible();
   await expect(deleted.getByRole("button", { name: /^Restore/ })).toHaveCount(0);
 
   // It is back under its own number, and counts on the plan again (25,000 + 10,000 of 50,000).
-  await deleted.getByRole("link", { name: /Yousif Sattar/ }).click();
+  await deleted.getByRole("link", { name: /يوسف ستار/ }).click();
   await expect(page).toHaveURL(/\/payments\/PAY-2026-00018$/);
   await expect(page.getByRole("heading", { name: "Payment Receipt" })).toBeVisible();
   await navigate(page, "/treatments/TRT-2026-00015");
@@ -32,7 +33,7 @@ test("the activity log shows what was added, changed and deleted, and a deleted 
 test("a deleted expense is restored from the log", async ({ page }) => {
   await page.goto("/expenses");
   await waitForData(page);
-  const row = page.getByRole("row", { name: /Generator subscription and electricity, September/ });
+  const row = page.getByRole("row", { name: /اشتراك المولدة والكهرباء، أيلول/ });
   await row.getByRole("button", { name: /^Delete/ }).click();
   await page.getByRole("dialog", { name: "Delete this expense?" }).getByRole("button", { name: "Delete" }).click();
   await expect(row).toHaveCount(0);
@@ -40,12 +41,12 @@ test("a deleted expense is restored from the log", async ({ page }) => {
   await openFromMenu(page, "Activity");
   await page.getByLabel("Record").selectOption("Expense");
   const entry = page.getByTestId("activity-entry").filter({ hasText: "deleted Expense" }).first();
-  await expect(entry).toContainText("Administrator deleted Expense Generator subscription and electricity, September");
+  await expect(entry).toContainText(/Administrator deleted Expense \u2068?اشتراك المولدة والكهرباء، أيلول/);
   await entry.getByRole("button", { name: /^Restore/ }).click();
   await expect(entry.getByText("Restored")).toBeVisible();
 
   await openFromMenu(page, "Expenses");
-  await expect(page.getByRole("row", { name: /Generator subscription and electricity, September/ })).toBeVisible();
+  await expect(page.getByRole("row", { name: /اشتراك المولدة والكهرباء، أيلول/ })).toBeVisible();
 });
 
 test("a record cannot come back while what it belongs to is deleted", async ({ page }) => {
@@ -63,7 +64,7 @@ test("a record cannot come back while what it belongs to is deleted", async ({ p
 
   await page.getByTestId("open-new-appointment").click();
   const booking = formDialog(page, "New Appointment");
-  await booking.getByLabel("Doctor").selectOption({ label: "Dr. Noor Al-Saadi · Endodontist" });
+  await booking.getByLabel("Doctor").selectOption({ label: "د. نور الساعدي · Endodontist" });
   await booking.getByLabel("Date").fill(today());
   await booking.getByLabel("Time").fill("16:00");
   await booking.getByRole("button", { name: "Book Appointment" }).click();
@@ -95,7 +96,7 @@ test("a record cannot come back while what it belongs to is deleted", async ({ p
 test("only managers see the activity log", async ({ page }) => {
   await page.goto("/profile");
   await waitForData(page);
-  await page.getByLabel("View the app as").selectOption({ label: "Dalia Jawad" });
+  await page.getByLabel("View the app as").selectOption({ label: "داليا جواد" });
   await expect(page.getByText("Clinic Receptionist").first()).toBeVisible();
   await expect(page.getByRole("navigation").getByRole("link", { name: "Activity", exact: true })).toHaveCount(0);
   await navigate(page, "/activity");
@@ -116,7 +117,7 @@ test.describe("in Arabic", () => {
 
 test("the log merges the three sources, newest first", () => {
   const entries = mergeActivity(
-    [{ doctype: "Patient", rows: [{ name: "PAT-1", full_name: "Zahraa Hussein", owner: "a", creation: "2026-09-01 10:00:00" }] }],
+    [{ doctype: "Patient", rows: [{ name: "PAT-1", full_name: "زهراء حسين", owner: "a", creation: "2026-09-01 10:00:00" }] }],
     [
       { name: "VER-1", ref_doctype: "Patient", docname: "PAT-1", owner: "b", creation: "2026-09-02 10:00:00", data: JSON.stringify({ changed: [["address", "", "Basra"]] }) },
       // Only fields the server works out: nothing to show.
@@ -127,9 +128,10 @@ test("the log merges the three sources, newest first", () => {
   );
   expect(entries.map((entry) => [entry.kind, entry.name, entry.title])).toEqual([
     ["deleted", "PAT-2", "Ali Kareem"],
-    ["changed", "PAT-1", "Zahraa Hussein"],
-    ["added", "PAT-1", "Zahraa Hussein"],
+    ["changed", "PAT-1", "زهراء حسين"],
+    ["added", "PAT-1", "زهراء حسين"],
   ]);
-  expect(recordTitle("Appointment", { patient_name: "Hiba Kadhim", appointment_date: "2026-09-26" })).toBe("Hiba Kadhim · 26 Sep 2026");
+  // Each part isolated, since it holds Arabic (joinParts).
+  expect(recordTitle("Appointment", { patient_name: "هبة كاظم", appointment_date: "2026-09-26" })).toBe("\u2068هبة كاظم\u2069 · \u206826 Sep 2026\u2069");
   expect(mergeActivity([{ doctype: "Patient", rows: [{ name: "PAT-1", owner: "a", creation: "x" }] }], [], [], 10, false)).toEqual([]);
 });

@@ -13,7 +13,7 @@ const sample: SlipData = {
   method: "Cash",
   amount: "IQD 3,000",
   balance: { label: "Left on this treatment", amount: "IQD 3,000" },
-  printedBy: "Dalia Jawad",
+  printedBy: "داليا جواد",
 };
 
 test("the slip is sized for the paper roll and escapes what it prints", () => {
@@ -24,7 +24,7 @@ test("the slip is sized for the paper roll and escapes what it prints", () => {
   expect(html).toContain("Zahraa &lt;b&gt;Hussein&lt;/b&gt;");
   expect(html).not.toContain("<b>Hussein</b>");
   expect(html).toContain("Left on this treatment");
-  expect(html).toContain("Printed 26 Sep 2026, 10:42 AM by Dalia Jawad");
+  expect(html).toContain("Printed 26 Sep 2026, 10:42 AM by داليا جواد");
 
   const narrow = buildReceiptSlip({ ...sample, balance: undefined }, { widthMm: 58, marginMm: 2, textSize: "large" });
   expect(narrow).toContain("body { width: 58mm;");
@@ -63,7 +63,7 @@ test("print a receipt slip and set this computer's paper width", async ({ page }
   await expect.poll(async () => (await printed()).length).toBe(1);
   const first = (await printed())[0];
   expect(first).toContain("PAY-2026-00001");
-  expect(first).toContain("Zahraa Hussein");
+  expect(first).toContain("زهراء حسين");
   expect(first).toContain("Bank Transfer");
   expect(first).toContain("width: 80mm");
   // Sized to the slip when printed: 80 mm wide and as long as the content.

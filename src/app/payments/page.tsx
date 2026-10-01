@@ -186,7 +186,7 @@ function PaymentsList() {
                   <Td label={p.colMethod}>
                     <StatusBadge kind="method" status={pay.payment_method} />
                   </Td>
-                  <Td label={p.colAmount} className="text-end font-medium text-green-600 whitespace-nowrap">{money(pay.amount, pay.currency)}</Td>
+                  <Td label={p.colAmount} className="text-end font-medium text-green-700 whitespace-nowrap">{money(pay.amount, pay.currency)}</Td>
                 </ClickableRow>
               ))
             )}

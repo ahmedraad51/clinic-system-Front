@@ -15,6 +15,6 @@ test("a record page keeps its shape while it loads", async ({ page }) => {
   await expect(loading).toBeVisible();
   // An outline of the page, not a spinner in an empty page.
   await expect(loading.locator(".animate-pulse")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Zahraa Hussein" })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole("heading", { name: "زهراء حسين" })).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".animate-pulse")).toHaveCount(0);
 });

@@ -55,6 +55,7 @@ export const settings = {
   hoursHint: "Shown as a hint when booking an appointment.",
   openOn: "Open on",
   openOnHint: "Closed days are shaded in the calendar, and booking on them asks first.",
+  noOpenDay: "Choose at least one day the clinic is open.",
   // Price list
   priceList: "Price List",
   priceListHint:

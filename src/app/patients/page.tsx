@@ -217,7 +217,7 @@ function PatientsList() {
                     <Td label={p.balance} className="text-end whitespace-nowrap">
                       {Number(patient.total_remaining) > 0 ? (
                         <span className="inline-flex items-center gap-2">
-                          <span className="font-medium text-red-600">{owed(patient)}</span>
+                          <span className="font-medium text-red-700">{owed(patient)}</span>
                           {owing && settings.enable_whatsapp !== 0 && reminder(patient) && (
                             <a
                               href={reminder(patient)}

@@ -9,6 +9,7 @@ import { defineConfig, devices } from "@playwright/test";
  *   npm run screenshots:readme   the pictures in README.md, saved to docs/screenshots/
  *   npm run screenshots:arabic   the main screens in Arabic at three sizes, saved to docs/arabic/
  *   npm run screenshots:design   the redesign's "after" pictures, saved to docs/design-changes/after/
+ *   npm run screenshots:fonts    the font comparison (dashboard and patient page per font), saved to docs/fonts/
  */
 const PORT = Number(process.env.E2E_PORT || 3100);
 const BASE_URL = `http://localhost:${PORT}`;
@@ -47,6 +48,11 @@ export default defineConfig({
     {
       name: "readme",
       testDir: "e2e/readme",
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "fonts",
+      testDir: "e2e/fonts",
       use: { ...devices["Desktop Chrome"] },
     },
   ],

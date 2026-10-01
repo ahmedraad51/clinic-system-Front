@@ -5,10 +5,13 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- **Waiting for the owner:** Phases 2, 3 and 4 and the new form controls are done (see Done). Please **restart the
-  dev server** (`npm run dev`) once: two small packages were added for the QR codes, and the fonts changed. The red
-  "1 Issue" badge on the patient page should then be gone (see the form controls entry). Then look through the new
-  screens; what comes next is the owner's choice.
+- **Waiting for the owner: choose a font.** The dashboard and a patient page in four fonts (IBM Plex Sans Arabic, which
+  the app uses now, Cairo, Tajawal and Readex Pro), in Arabic and English, are in
+  [docs/fonts](docs/fonts/README.md). Say which one, and it will be built into the app like the current one.
+- No restart of the dev server is needed this time (no package or `next.config.ts` change); just reload the page
+  once (Ctrl+F5) so it picks up the fonts.
+- **Open choice:** the small hint labels that appear when the mouse rests on an icon button or a tooth are still the
+  browser's own. Replacing them means a new tooltip component, which this round did not add (no new features).
 
 ## Backlog
 
@@ -17,6 +20,21 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Done
 
+- 2026-10-01 - **Final check before the back end.** Every page and every dialog was opened as a receptionist, a
+  dentist and a manager, in Arabic and English, in light and dark mode, on a computer, a tablet and a phone, and
+  checked for anything broken, cut off, untranslated or drawn by the browser. Nothing was broken or untranslated. Fixed:
+  on a tablet the dashboard's number cards were too narrow ("IQD 250,000" broke in the middle) and today's list cut
+  patient names, so they now stack until the screen is wide; with one doctor, "My Day" uses the whole width; on an
+  English screen an Arabic name or reason that did not fit lost its first words, so names in the waiting room screen,
+  the dashboard, the patient picker and every dropdown now wrap onto a second line instead (a long medicine name too);
+  the profit figures on Reports wrap on a phone; record numbers in the activity log stay on one line; green and red
+  amounts, the bell's red number and the count in the chosen tab are darker, so they are easier to read; the profile
+  picture and the menu's collapse button are big enough to tap on a tablet. Also part of this round (started earlier
+  the same day): the fonts are now inside the app, so they load on every computer even without internet; the example
+  data is written in Arabic, as the clinic would type it; Settings refuses to save with no open day ticked; and tabs
+  that do not fit wrap onto a second line. `docs/backend-todo.md` was checked against the code: it lists every
+  doctype, field, allowed value, permission and call the front end uses. The README pictures were taken again. All
+  208 browser tests pass.
 - 2026-10-01 - **The app's own form controls, and one font family.** No list, calendar or check box is drawn by the
   browser any more. Every dropdown opens the app's own list: the same font, rounded corners and shadow as the rest of
   DentClinic, a check mark on the chosen item, each doctor's photo or initials (and the patient's initials in the

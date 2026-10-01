@@ -7,8 +7,8 @@ test("a receptionist cannot open Reports", async ({ page }) => {
   const menu = page.getByRole("navigation");
   await expect(menu.getByRole("link", { name: "Reports", exact: true })).toBeVisible();
 
-  // Profile > Try Another User > Dalia Jawad (Clinic Receptionist).
-  await page.getByLabel("View the app as").selectOption({ label: "Dalia Jawad" });
+  // Profile > Try Another User > داليا جواد (Clinic Receptionist).
+  await page.getByLabel("View the app as").selectOption({ label: "داليا جواد" });
   await expect(page.getByText("Clinic Receptionist").first()).toBeVisible();
   await waitForData(page);
 

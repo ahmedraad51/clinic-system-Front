@@ -2,7 +2,7 @@ import { expect, test } from "../fixtures";
 import { waitForData } from "../helpers";
 
 test("the whole patient file prints on one page, with the parts chosen", async ({ page }) => {
-  // Zahraa Hussein: a root canal and a crown on 36, a prescription, three payments and five images.
+  // زهراء حسين: a root canal and a crown on 36, a prescription, three payments and five images.
   await page.goto("/patients/PAT-2026-00001");
   await waitForData(page);
   await page.getByRole("link", { name: "Print File" }).click();
@@ -10,10 +10,10 @@ test("the whole patient file prints on one page, with the parts chosen", async (
   await waitForData(page);
 
   await expect(page.getByRole("heading", { name: "Patient details" })).toBeVisible();
-  await expect(page.getByRole("alert").filter({ hasText: "Penicillin" })).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: "البنسلين" })).toBeVisible();
   await expect(page.getByTestId("file-treatments")).toContainText("Root Canal");
-  await expect(page.getByTestId("file-treatments")).toContainText("Crown preparation and impression.");
-  await expect(page.getByTestId("file-appointments")).toContainText("Crown preparation");
+  await expect(page.getByTestId("file-treatments")).toContainText("تحضير التاج وأخذ الطبعة.");
+  await expect(page.getByTestId("file-appointments")).toContainText("تحضير التاج");
   await expect(page.getByTestId("file-prescriptions")).toContainText("Clindamycin 300 mg, Ibuprofen 400 mg");
   await expect(page.getByTestId("file-total-paid")).toHaveText("IQD 250,000");
   await expect(page.getByTestId("file-balance")).toHaveText("IQD 100,000");

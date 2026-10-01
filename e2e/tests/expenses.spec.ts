@@ -3,7 +3,7 @@ import { formDialog, navigate, openFromMenu, waitForData } from "../helpers";
 import { computeProfit, previousPeriod, profitSummary } from "../../src/lib/profit";
 
 // The dummy data has twelve expenses from July to September 2026. This month (1-26 Sep): IQD 250,000 came in
-// (Dr. Haider Al-Obaidi 200,000, Dr. Noor Al-Saadi 50,000) and IQD 145,000 went out (supplies 60,000,
+// (د. حيدر العبيدي 200,000, د. نور الساعدي 50,000) and IQD 145,000 went out (supplies 60,000,
 // electricity 45,000, a lab bill of 40,000 for Dr. Haider), so the profit is IQD 105,000.
 
 test("profit, per doctor and in plain words, on the Reports page", async ({ page }) => {
@@ -19,7 +19,7 @@ test("profit, per doctor and in plain words, on the Reports page", async ({ page
   // 6 to 31 August: IQD 1,042,000 in, IQD 642,000 out (the dollar curing light at its day's rate).
   await expect(summary).toContainText("That is 74% less than in the 26 days before (6 Aug 2026 to 31 Aug 2026), when the profit was IQD 400,000.");
   await expect(summary).toContainText("The biggest cost was Dental supplies: IQD 60,000 (41% of all costs).");
-  await expect(summary).toContainText("Dr. Haider Al-Obaidi brought in the most: IQD 200,000, or IQD 160,000 after the costs recorded for them.");
+  await expect(summary).toContainText("د. حيدر العبيدي brought in the most: IQD 200,000, or IQD 160,000 after the costs recorded for them.");
   await expect(summary).toContainText("Patients still owe");
 
   // Per doctor: the lab bill counts against Dr. Haider; the shared costs against the whole clinic.
@@ -46,14 +46,14 @@ test("add, change and delete an expense in a dialog", async ({ page }) => {
   await dialog.getByLabel("Category").selectOption("Lab Fees");
   await dialog.getByLabel(/Amount/).fill("30000");
   await dialog.getByLabel("What for").fill("Root canal files");
-  await dialog.getByLabel("Paid to").fill("Al-Mansour Dental Lab");
-  await dialog.getByLabel("Doctor").selectOption({ label: "Dr. Noor Al-Saadi" });
+  await dialog.getByLabel("Paid to").fill("مختبر المنصور للأسنان");
+  await dialog.getByLabel("Doctor").selectOption({ label: "د. نور الساعدي" });
   await dialog.getByRole("button", { name: "Save Expense" }).click();
   await expect(dialog).toBeHidden();
   await expect(page.getByRole("status").filter({ hasText: "Expense added." })).toBeVisible();
   // The list and the total load again.
   const row = page.getByRole("row", { name: /Root canal files/ });
-  await expect(row).toContainText("Dr. Noor Al-Saadi");
+  await expect(row).toContainText("د. نور الساعدي");
   await expect(page.getByTestId("expenses-total")).toHaveText("IQD 1,175,000 + $150");
 
   // Change it: the amount must be above zero.
@@ -84,7 +84,7 @@ test("expenses in dollars count at the rate of their day, and filters narrow the
   await waitForData(page);
   await page.getByLabel("Category").selectOption("Equipment");
   await expect(page.getByTestId("expenses-total")).toHaveText("$150");
-  await expect(page.getByRole("row", { name: /LED curing light/ })).toContainText("$150");
+  await expect(page.getByRole("row", { name: /جهاز تصليب ضوئي LED/ })).toContainText("$150");
 
   await page.getByRole("button", { name: "Add Expense" }).click();
   const dialog = formDialog(page, "New Expense");
@@ -96,8 +96,8 @@ test("only users with the expenses permissions see them", async ({ page }) => {
   await page.goto("/profile");
   await waitForData(page);
   await expect(page.getByRole("navigation").getByRole("link", { name: "Expenses", exact: true })).toBeVisible();
-  // Dalia Jawad, the receptionist, has neither.
-  await page.getByLabel("View the app as").selectOption({ label: "Dalia Jawad" });
+  // داليا جواد, the receptionist, has neither.
+  await page.getByLabel("View the app as").selectOption({ label: "داليا جواد" });
   await expect(page.getByText("Clinic Receptionist").first()).toBeVisible();
   await expect(page.getByRole("navigation").getByRole("link", { name: "Expenses", exact: true })).toHaveCount(0);
   await navigate(page, "/expenses");

@@ -9,9 +9,9 @@ test("find a patient by phone from any page with Ctrl+K", async ({ page }) => {
   await expect(dialog).toBeVisible();
 
   await dialog.getByRole("combobox").fill("908 6602");
-  await expect(dialog.getByRole("option", { name: /Ruqaya Adnan/ })).toBeVisible();
+  await expect(dialog.getByRole("option", { name: /رقية عدنان/ })).toBeVisible();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { name: "Ruqaya Adnan" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "رقية عدنان" })).toBeVisible();
   await expect(dialog).toBeHidden();
 });
 

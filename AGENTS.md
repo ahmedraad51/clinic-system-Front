@@ -25,13 +25,14 @@ accurate.
 
 | | State | Where |
 |---|---|---|
-| Data source | **Dummy data.** Every read and write goes to an in-memory store. No back end needed. | `MOCK_DATA = true` in `src/lib/frappe.ts` |
+| Data source | **Dummy data**, written in Arabic as the clinic would type it. Every read and write goes to an in-memory store. No back end needed. | `MOCK_DATA = true` in `src/lib/frappe.ts` |
 | Login | **Off.** A stand-in `Administrator` session is used and logout buttons are hidden. `/profile` has a **Try Another User** card to see the app with another user's permissions. The login page sits in a private folder, so `/login` is not a route. | `AUTH_DISABLED = true` in `src/context/AuthContext.tsx`; page in `src/app/_login/page.tsx` |
 | `npm run dev` | Works. Dev output goes to `.next/dev`, so `npm run build` can run while it is up. Changing `next.config.ts` restarts it, and the first page after that can take several minutes to compile. | |
-| `npm run build` | **Passes** (checked 2026-09-30): compiles, type-checks and prerenders every route, with no warnings. | |
-| `npm run lint` | **Passes** with 0 problems (checked 2026-09-30). `npx tsc --noEmit` passes too. | |
+| `npm run build` | **Passes** (checked 2026-10-01): compiles, type-checks and prerenders every route, with no warnings. | |
+| `npm run lint` | **Passes** with 0 problems (checked 2026-10-01). `npx tsc --noEmit` passes too. | |
 | Languages | **Arabic (default, right to left) and English.** Every text is in `src/i18n/en/*.ts` and `src/i18n/ar/*.ts`; the switch is in the menu. See **Languages** below. **Every new text must be added in both languages.** | `src/i18n/`, `src/context/LanguageContext.tsx` |
-| Tests | **Playwright tests pass** (207 tests, 23 of them in Arabic, checked 2026-10-01; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, expenses and profit, the waiting room, QR codes, the printed patient file, prescription paper, the activity log, the installable app, Arabic typography, the app's own form controls, phone numbers, the form dialogs and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (208 tests, 23 of them in Arabic, checked 2026-10-01; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, expenses and profit, the waiting room, QR codes, the printed patient file, prescription paper, the activity log, the installable app, Arabic typography, the app's own form controls, phone numbers, the form dialogs and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Screen review | **Done 2026-10-01, before the back end:** every page and dialog as a receptionist, a dentist and a manager, in Arabic and English, light and dark, at desktop, tablet and phone size, checked in the page (cut off, sticking out, untranslated, drawn by the browser, contrast, touch size) and by eye. The script is `e2e/screens/final.local.spec.ts` (git-ignored, local only; 36 combinations, about 2 hours with 2 workers, and it needs free memory: on the owner's machine it was stopped once for low memory). Arabic names on English screens are expected (the data is Arabic). | `screenshots/final/` (git-ignored) |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -52,6 +53,7 @@ Both flags are set this way on purpose. Leave them alone unless the task is abou
 | `npm run screenshots:readme` | Retakes the pictures in `README.md` into `docs/screenshots/` (desktop, dummy data). Run it after a visible change and commit the images. `SKIP_BUILD=1` works here too |
 | `npm run screenshots:arabic` | The main screens in Arabic at desktop, tablet and phone size into `docs/arabic/<size>/<screen>.png` (dummy data, 26 September 2026). `SKIP_BUILD=1` works here too |
 | `npm run screenshots:design` | The current redesign's "after" pictures (main screens in English at desktop, tablet and phone size, plus desktop in dark mode) into `docs/design-changes/2-clean/after/`; `SHOTS=before` retakes the "before" side, `DESIGN=` picks another folder. `SKIP_BUILD=1` works here too |
+| `npm run screenshots:fonts` | The font comparison: the dashboard and a patient page in IBM Plex Sans Arabic, Cairo, Tajawal and Readex Pro, in Arabic and English, into `docs/fonts/` (the candidates come from Google Fonts for these pictures only). `SKIP_BUILD=1` works here too |
 
 The Frappe address comes from the `FRAPPE_URL` environment variable (for example in `.env.local`), default
 `http://dent_clinic.localhost:8000`. See `next.config.ts`.
@@ -65,7 +67,7 @@ The Frappe address comes from the `FRAPPE_URL` environment variable (for example
 | Framework | Next.js **16.2.9**, App Router, Turbopack |
 | UI | React **19.2.4**, TypeScript 5 with `strict: true`, path alias `@/*` → `src/*` |
 | Styling | Tailwind CSS **v4** via `@tailwindcss/postcss`. It is CSS-first: no `tailwind.config.*`; the design tokens (the `primary-*` palette and the text scale) are an `@theme` block in `src/app/globals.css` |
-| Font | One family in both languages: IBM Plex Sans for English and IBM Plex Sans Arabic for everything in Arabic (headings too, and Latin letters inside Arabic screens), through `next/font/google` in `layout.tsx` (the `--font-plex` and `--font-arabic` variables, used in `globals.css`) |
+| Font | One family in both languages: IBM Plex Sans for English and IBM Plex Sans Arabic for everything in Arabic (headings too, and Latin letters inside Arabic screens). The font files are part of the app (`public/fonts/`, their `@font-face` rules and the `--font-plex` and `--font-arabic` variables in `src/app/fonts.css`, preloaded in `layout.tsx`); nothing is fetched from Google. The owner is choosing between four fonts (`docs/fonts/`) |
 | Icons | `lucide-react` everywhere; the tooth logo is our own SVG in `src/components/ToothLogo.tsx` |
 | HTTP | `axios`, one instance in `src/lib/frappe.ts` |
 | QR codes | `qrcode-generator` makes the grid (`qrMatrix()` in `src/lib/qr.ts`, drawn as our own SVG by `QrCode.tsx`); `jsqr` reads camera frames where the browser has no `BarcodeDetector` (loaded only then) |
@@ -142,6 +144,7 @@ src/
 │   ├── page.tsx                   redirect("/dashboard")
 │   ├── not-found.tsx              404 page
 │   ├── globals.css                Tailwind import, body colours, print background
+│   ├── fonts.css                  the @font-face rules of the fonts in public/fonts/, and --font-plex / --font-arabic
 │   ├── _login/page.tsx            login form; private folder, so it is NOT routed (see Auth)
 │   ├── dashboard/page.tsx
 │   ├── today/page.tsx             the front desk's day
@@ -255,9 +258,11 @@ docs/
 ├── backend-todo.md           what the back end must provide for this front end
 ├── screenshots/              images used by README.md (retake with npm run screenshots:readme)
 ├── arabic/                   the main screens in Arabic at three sizes (npm run screenshots:arabic)
+├── fonts/                    the font comparison for the owner (npm run screenshots:fonts), with a README
 └── design-changes/           each redesign before and after: 1-midnight/, 2-clean/ (npm run screenshots:design),
                               3-dialogs-wide/ (e2e/design-changes/wide-pages.spec.ts), 4-controls/ (controls.spec.ts)
-public/                       sw.js and offline.html (the installable app), icons/ (the app icons), demo/xrays/ (the demo X-rays)
+public/                       sw.js and offline.html (the installable app), icons/ (the app icons), demo/xrays/ (the demo X-rays),
+                              fonts/ (the app's fonts, Google Fonts' own subsets: Arabic, Latin, Latin Extended)
 e2e/
 ├── helpers.ts                waitForData, navigate (client-side, keeps the dummy data), openFromMenu, pickLink (optionally inside a dialog), formDialog, openSaved
 ├── tests/                    the Playwright tests (npm run test:e2e)
@@ -325,7 +330,7 @@ the dialog to be hidden, and use `openSaved(page, "Payment recorded.")` to follo
 | `/users/[id]` | `manage_users` | A profile card (initials, name, email, role, status, permissions on, sections open, details) beside **Account** (clinic role, enable/disable) and **Permissions**: the role presets (Manager, Doctor, Receptionist, Select all, Clear all) above a table built from `PERMISSION_MATRIX` in `types.ts`: a row per section (Patients, Appointments, Treatments, Payments, Reports, Clinic setup), a column each for View, Add, Edit and Delete (`PERMISSION_ACTIONS`), a checkbox in each cell and an empty cell ("Not available") where the section has no such action, and a select-all box for every row and column (partly on shows as a dash). Clinic setup has one box, `manage_users`, under Edit. `[id]` is `encodeURIComponent(btoa(user.name))` |
 | `/activity` | `manage_users` | The activity log (menu: System → Activity): who **added** (each record's `owner` and `creation`), **changed** (`Version` records, shown with `readableChanges()`, `fieldLabel()` and `historyValue()`, up to 3 changes a line; a version with nothing readable is left out) and **deleted** (`Deleted Document`) which record, newest first, merged by `mergeActivity()` over `ACTIVITY_DOCTYPES`; filters **What happened** and **Record**; 40 at a time with Show More. A deleted record has **Restore** (`restoreDeleted()`): it comes back under its own name, and the line then says Restored and links to it. Titles and IDs sit in `<bdi>` for Arabic screens |
 | `/whatsapp` | `manage_users` | Templates (add, edit, delete, placeholders, live preview) and the message log (phone numbers shown with the middle hidden, `maskPhone()`; the full number is on the patient's page) Each template has a **Language** (Arabic, English or any; `language`), shown on its card; reminders and the Send Message dialog prefer the screen's language (`pickTemplate`). |
-| `/settings` | `manage_users` | A clinic card (logo, name, phone, currencies, open days, prices set, contact details) beside the settings in tabs: **Clinic**, **Currencies**, **Language**, **Working Hours**, **Price List**, **Features**; one Save Settings for all of them, and a failed check opens the tab that has the problem. Clinic Settings: name, logo upload, contact, tax number, currency, working hours, feature switches, theme colour, **Phone Country Code** (`phone_country_code`, digits only, empty means 964; added to local numbers in WhatsApp links, `useSettings().countryCode`), **Currencies** (a **Second currency** such as USD, `second_currency`, and its **Exchange rates**, `exchange_rates`: rows of a date and "1 USD in IQD", each counting from its date; Add Rate, a remove button per row; every row needs a date and an amount above zero, one per date), **Price List** (a usual price per treatment type, saved in `treatment_prices`), and **Open on** day toggles saved as `working_days` (`useSettings().isOpenOn(iso)`; nothing set means open every day). Closed days are shaded "Closed" in the calendar, the day view shows a notice, and booking on one shows a note and asks "Book anyway?" The **Language** card: **Default language** (`default_language`, Arabic or English: the language of users who did not choose one) and **Arabic digits** (`arabic_digits`: Arabic screens write ٠-٩). |
+| `/settings` | `manage_users` | A clinic card (logo, name, phone, currencies, open days, prices set, contact details) beside the settings in tabs: **Clinic**, **Currencies**, **Language**, **Working Hours**, **Price List**, **Features**; one Save Settings for all of them, and a failed check opens the tab that has the problem. Clinic Settings: name, logo upload, contact, tax number, currency, working hours, feature switches, theme colour, **Phone Country Code** (`phone_country_code`, digits only, empty means 964; added to local numbers in WhatsApp links, `useSettings().countryCode`), **Currencies** (a **Second currency** such as USD, `second_currency`, and its **Exchange rates**, `exchange_rates`: rows of a date and "1 USD in IQD", each counting from its date; Add Rate, a remove button per row; every row needs a date and an amount above zero, one per date), **Price List** (a usual price per treatment type, saved in `treatment_prices`), and **Open on** day toggles saved as `working_days` (`useSettings().isOpenOn(iso)`; nothing set means open every day; saving with no day ticked is refused). Closed days are shaded "Closed" in the calendar, the day view shows a notice, and booking on one shows a note and asks "Book anyway?" The **Language** card: **Default language** (`default_language`, Arabic or English: the language of users who did not choose one) and **Arabic digits** (`arabic_digits`: Arabic screens write ٠-٩). |
 | `/profile` | none | A profile card beside the rest; what I can do is the permissions table, read only. My details (with `MyAvatar`), **Screen Size on This Computer** (80, 90, 100, 110 or 120 %: `saveZoom()` sets the root font size, and every size is in rem, so text and spacing scale together; kept in `localStorage.screen_zoom` and applied before the first paint by `ZOOM_BOOT_SCRIPT` in `layout.tsx`), what I can do, change password, **Install DentClinic** (`InstallAppCard`), and (login off only) Try Another User |
 
 **Forms in dialogs.** New and edit forms for appointments, treatment plans and payments open in a dialog over the
@@ -432,8 +437,11 @@ the timeouts in `src/lib/frappe.ts`.
 An in-memory store that returns data in the same shape as Frappe's REST API, so pages behave the same with
 either source.
 
-- **Seed data** is Iraqi: Iraqi names, addresses in Baghdad (Mahalla / Zuqaq / House) and other governorates (Basra,
-  Erbil, Najaf, Babylon), mobile numbers typed the usual ways (`0770 123 4567`, `07801112233`, `+964 772 771 4520`),
+- **Seed data** is Iraqi and written in Arabic, as the clinic would type it: names (زهراء حسين, د. زينب الهاشمي …), addresses in
+  Baghdad (محلة / زقاق / دار) and other governorates (البصرة، أربيل، النجف، بابل), visit reasons, notes, diagnoses,
+  medical text (البنسلين, سكري النوع الثاني …), expenses and image descriptions; medicine names, strengths and doses stay
+  in Latin letters, and there are WhatsApp templates in both languages. Below, people are named in English letters
+  for short (Fatima Salman = فاطمة سلمان). It has mobile numbers typed the usual ways (`0770 123 4567`, `07801112233`, `+964 772 771 4520`),
   and prices in Iraqi dinars (`currency` IQD; filling 40,000, root canal 150,000, crown 200,000, bridge 600,000,
   extraction 30,000, implant 1,000,000, cleaning 35,000, whitening 250,000 in the price list). 12 patients (Fatima Salman is a 9-year-old child; two,
   Suha Majeed and Muhannad Taha, last seen more than six months ago for the recall list; Hiba Kadhim has a dentist's
@@ -452,7 +460,7 @@ either source.
   September), and Ruqaya Adnan has a dental implant priced in dollars (`TRT-2026-00016`, $700) with $300 paid in dollars
   (`PAY-2026-00016`, 10 Aug, cash) and IQD 148,000 in dinars (`PAY-2026-00017`, 20 Aug, card), both at 1,480, so $300 is
   left; and 6 Dental Images (`IMG-2026-00001` …): Zahraa's
-  periapicals of 36 before (with a drawing: a circle, an arrow and "Lesion") and after the root canal, a panoramic, a
+  periapicals of 36 before (with a drawing: a circle, an arrow and «آفة», a lesion) and after the root canal, a panoramic, a
   bitewing of the left side and an intraoral photo, and Abbas's implant in 46. Their pictures are drawn SVGs in
   `public/demo/xrays/`. Deleting a record also deletes the Files attached to it, like Frappe, and keeps a copy in `Deleted Document`
   (`DEL-00001` …; not for File, Version or Deleted Document itself); two seed ones, an appointment booked twice
@@ -771,7 +779,7 @@ whatsapp, trigger, user) and `statusTone(kind, status)` for other views that mus
 `NumberInput` (every amount, price or age box; `decimals={false}` for whole numbers), `PhoneInput` (every phone box),
 `SelectInput`, `DateInput`, `TimeInput`, `SuggestInput`, `ColorInput` (the app's own controls, below), `TextArea`, `Toggle`,
 `SearchInput`, `Toolbar`, `Table`, `Th`, `Td` (with `label` for the phone cards), `ClickableRow`, `TableLoading`, `TableMessage`, `TableError` (a failed list load with Try Again), `ClearFiltersButton`, `LoadError` (a failed page load with Try Again), `Pagination`, `DetailList` and
-`DetailRow` (label beside the value when the card is at least 20rem wide, above it in a narrower card: a container query on `DetailList`), `Tabs`, `Alert`, `Spinner`, `ProgressBar` (0-100 with a label and percentage, or `showLabel={false}`; uploads and the plan's paid bar), `PageLoading`, `RecordLoading`, `EmptyState`, `NoAccess`, `NotFoundCard`; plus
+`DetailRow` (label beside the value when the card is at least 20rem wide, above it in a narrower card: a container query on `DetailList`), `Tabs` (pills that wrap onto a second line when they do not fit; never a scrolling row, which cut the first tabs off), `Alert`, `Spinner`, `ProgressBar` (0-100 with a label and percentage, or `showLabel={false}`; uploads and the plan's paid bar), `PageLoading`, `RecordLoading`, `EmptyState`, `NoAccess`, `NotFoundCard`; plus
 `DetailLayout` (two columns from `xl`: the `aside` on the start side, 4 of 12, hidden on paper; stacked below),
 `ProfileCard` (avatar, title, subtitle, badges, actions, children, `stats` as `ProfileStat` tiles, `details`; `titleLevel`
 1 when it holds the page's name), `Fraction` ("9 / 14", kept left to right in Arabic),
@@ -809,7 +817,8 @@ writing new class lists.
   colour under white text is `bg-brand`** (`hover:bg-brand-dark`), never `bg-primary-600`. Status hues (red, green,
   yellow, amber, blue, sky, purple, violet, rose) get soft tints (50-200) and light text shades (600-950) in dark
   mode, so **never put white text on `bg-red-600`, `bg-green-600` …**: use `bg-solid-green`, `bg-solid-red`,
-  `bg-solid-ink` (the same in both modes) or a fixed hex. Use `bg-surface`, never `bg-white`, for anything that is a
+  `bg-solid-ink` (the same in both modes) or a fixed hex. A white sheet shown as it will print (the patient ID card) gets
+  the `light-paper` class, which puts the light `--ink` and `--surface` back inside it. Use `bg-surface`, never `bg-white`, for anything that is a
   card, menu or field (`bg-white` stays white: a switch knob, the X-ray viewer). Drawings that must look the same in
   both modes (the teeth of the dental chart) use fixed hex paints. The design's colours are `--success`, `--info`, `--warning`,
   `--error` and `--secondary` (`bg-success` …). The semi-dark menu sets its own `--ink` and `--surface`
@@ -837,8 +846,11 @@ writing new class lists.
   last colour before the first paint. `blue` stays only as a
   status tone (see Badge colours). The `Tone` type also has `primary`; `StatCard` uses it by default.
 - **Text sizes:** `--text-xs` is 13 px and `--text-sm` is 15 px (a little larger than Tailwind's default, for
-  reading at a distance); on Arabic screens 14 and 16 px with taller lines (see Languages → Arabic typography). Page titles `text-2xl font-medium`, card titles `text-lg font-medium`, body
-  `text-sm`, hints and table headers `text-xs`. Do not add other sizes for ordinary text.
+  reading at a distance); on Arabic screens 14 and 16 px with taller lines (see Languages → Arabic typography). Page titles `text-2xl font-semibold`, card titles `text-lg font-semibold`,
+  record names `text-xl font-semibold`, figures (`StatCard`, `ProfileStat`) semibold, body `text-sm`, labels and buttons
+  `font-medium`, hints and table headers `text-xs`. Do not add other sizes for ordinary text (the menu is `text-sm` too).
+  Every digit has the same width (`font-variant-numeric: tabular-nums` on `body`), so amounts, times and counts line up.
+  The fonts have the weights 400, 500 and 600 only: no `font-light` or `font-bold`.
 - **Motion is short and calm, and only `motion-safe:`.** A new page fades in while lifting 6 px
   (`animate-page-in`, 0.2 s, on a wrapper keyed by the path in `MainLayout`), buttons shrink to 98 % while
   pressed, clickable cards (`StatCard` with `href`, `ActionTile`) get a deeper shadow on hover, and the menu
@@ -974,7 +986,7 @@ Children under 6, or charts with only child teeth marked, open on the child teet
 
 ## Known issues
 
-Updated on 2026-09-30.
+Updated on 2026-10-01.
 
 - **The back end does not have everything yet.** `Patient.dental_chart`, the `*_name` fetch fields,
   read permissions and several field names must be added or confirmed. See `docs/backend-todo.md` (section 9
@@ -982,9 +994,9 @@ Updated on 2026-09-30.
 - **Totals are computed in the browser.** The dashboard's revenue and amount owed, the payments total and the
   reports load every matching row (`limit: 0`) and add them up. That is fine for one clinic for years, but a
   back-end report method would be faster later.
-- **Data stays in the language it was typed in.** Patient names, notes and medicine names in the dummy data are in
-  English letters, so Arabic screens show them as they are. Fixed values (statuses, types, methods) are saved in
-  English and only their labels are translated.
+- **Data stays in the language it was typed in.** The dummy data is in Arabic (medicine names in Latin letters), so
+  English screens show Arabic names and notes as they are, in IBM Plex Sans Arabic. Fixed values (statuses, types,
+  methods) are saved in English and only their labels are translated.
 - `enable_patient_portal` is saved but not used by the front end.
 - Deleting is blocked for records that others link to (Frappe's normal rule). Users are disabled, not deleted.
 
@@ -1024,9 +1036,11 @@ from the translation files, never from text typed in a component.
   chart's teeth (anatomical: the patient's right is always on the left) keep `dir="ltr"`.
 - **Fonts.** One family in both languages (the owner's choice, 2026-10-01): IBM Plex Sans for English, and IBM Plex Sans
   Arabic for everything in Arabic, headings included, in both scripts (its Latin letters were drawn to sit beside its
-  Arabic ones, so a name typed in English matches the Arabic around it). `next/font`: `--font-plex` and
-  `--font-arabic`; every subset is emitted, `subsets` only decides what is preloaded. The Arabic font has
-  `adjustFontFallback: false`: an Arial fallback would otherwise draw the Arabic.
+  Arabic ones, so a name typed in English matches the Arabic around it). The files are in `public/fonts/` and their rules in
+  `src/app/fonts.css` (`--font-plex`: IBM Plex Sans, then IBM Plex Sans Arabic for Arabic letters on English screens;
+  `--font-arabic`). They used to come through `next/font/google`, which downloads them while the dev server runs: when
+  that download failed (2026-10-01, on the owner's computer) the app fell back to Arial without a word. Never go back
+  to it. `e2e/tests/arabic-type.spec.ts` blocks Google Fonts and checks the fonts still load.
 - **Arabic typography** (`:root[lang="ar"]` in `globals.css`, overriding Tailwind's variables, so no component changes):
   small text 14 px on 24 px lines and body text 16 px on 27 px lines (Arabic letters look smaller than Latin ones and
   carry dots and marks above and below), line heights of 1.5-1.75 for larger sizes and the `leading-*` classes,
@@ -1038,8 +1052,9 @@ from the translation files, never from text typed in a component.
 - **Mixed Arabic and Latin on one line.** A Latin ID, name or dose next to an Arabic word with a number trades places
   with it under the bidi rules ("PAT-2026-00004 · 53 سنة" showed as "53 · سنة PAT-2026-00004"). For text, join the
   parts with `joinParts(parts, t.common.dot)` (`src/i18n/runtime.ts`: each part in U+2068 … U+2069 on Arabic screens,
-  English unchanged); in JSX use `<Parts parts={[…]} />` (UI kit: each part in a `<bdi>`, kept whole, so a narrow
+  and on English screens when a part holds Arabic letters; English-only text unchanged); in JSX use `<Parts parts={[…]} />` (UI kit: each part in a `<bdi>`, kept whole, so a narrow
   column moves a part to the next line instead of splitting a name around it), or wrap typed text in `<bdi>`.
+- **Wrap typed text, do not cut it.** `truncate` on Arabic text inside an English line cuts its start, not its end ("…مة س." for "فاطمة س."). Names, reasons and list options use `break-words` (dropdown and patient-picker options wrap onto a second line); cut only where the box has a fixed size (calendar blocks).
 - **WhatsApp templates** have a `language` (`ar`, `en` or empty): `pickTemplate(templates, trigger, lang)` in
   `src/lib/whatsapp.ts` prefers the screen's language. The dummy data has each template in both languages.
 - **Tests.** The browser tests run in English: `e2e/fixtures.ts` sets the language chosen on the computer to `en`

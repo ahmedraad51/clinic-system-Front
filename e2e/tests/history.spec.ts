@@ -13,10 +13,10 @@ test("Frappe's version records become readable changes", () => {
         { name: "V2", owner: "someone@else.test", creation: "2026-08-21 09:12:40", data: { changed: [["amount", 150000, 100000]] } },
         { name: "V3", owner: "x", creation: "2026-08-22 09:00:00", data: "not json" },
       ],
-      user_info: { "dalia.jawad@dentclinic.test": { fullname: "Dalia Jawad" } },
+      user_info: { "dalia.jawad@dentclinic.test": { fullname: "داليا جواد" } },
     },
   );
-  expect(history.createdByName).toBe("Dalia Jawad");
+  expect(history.createdByName).toBe("داليا جواد");
   // Newest first; a user without a known name shows the user ID; an unreadable record has no changes.
   expect(history.entries.map((e) => e.name)).toEqual(["V3", "V2", "V1"]);
   expect(history.entries[1]).toMatchObject({ userName: "someone@else.test", changes: [{ field: "amount", from: 150000, to: 100000 }] });
@@ -28,11 +28,11 @@ test("Frappe's version records become readable changes", () => {
   expect(
     readableChanges("Appointment", [
       { field: "doctor", from: "DOC-00001", to: "DOC-00003" },
-      { field: "doctor_name", from: "Dr. Zainab Al-Hashimi", to: "Dr. Noor Al-Saadi" },
+      { field: "doctor_name", from: "د. زينب الهاشمي", to: "د. نور الساعدي" },
       { field: "status", from: "Scheduled", to: "Confirmed" },
     ]),
   ).toEqual([
-    { field: "doctor", from: "Dr. Zainab Al-Hashimi", to: "Dr. Noor Al-Saadi" },
+    { field: "doctor", from: "د. زينب الهاشمي", to: "د. نور الساعدي" },
     { field: "status", from: "Scheduled", to: "Confirmed" },
   ]);
   expect(readableChanges("Payment", [{ field: "treatment_plan", from: "TRT-1", to: "TRT-2" }])).toEqual([
@@ -69,17 +69,17 @@ test("a payment shows who changed it and what", async ({ page }) => {
   await expect(history.getByRole("listitem")).toHaveCount(0);
   await history.getByRole("button", { name: "Show History" }).click();
   const items = history.locator("ol > li");
-  await expect(items.nth(0)).toContainText("Laith Hamid changed it · 21 Aug 2026, 9:12 AM");
+  await expect(items.nth(0)).toContainText("ليث حامد changed it · 21 Aug 2026, 9:12 AM");
   await expect(items.nth(0)).toContainText("Amount: IQD 150,000 → IQD 100,000");
-  await expect(items.nth(1)).toContainText("Dalia Jawad changed it");
+  await expect(items.nth(1)).toContainText("داليا جواد changed it");
   await expect(items.nth(1)).toContainText("Method: Cash → Bank Transfer");
-  await expect(items.last()).toContainText("Dalia Jawad added it · 20 Aug 2026, 10:30 AM");
+  await expect(items.last()).toContainText("داليا جواد added it · 20 Aug 2026, 10:30 AM");
 });
 
 test("a change made in the app is recorded with the user who made it", async ({ page }) => {
   await page.goto("/profile");
   await waitForData(page);
-  await page.getByLabel("View the app as").selectOption({ label: "Dalia Jawad" });
+  await page.getByLabel("View the app as").selectOption({ label: "داليا جواد" });
   await expect(page.getByText("Clinic Receptionist").first()).toBeVisible();
 
   await navigate(page, "/appointments/APT-2026-00001");
@@ -90,7 +90,7 @@ test("a change made in the app is recorded with the user who made it", async ({ 
   // The open card loads again after the save.
   await page.getByRole("button", { name: "Confirmed", exact: true }).click();
   const first = history.locator("ol > li").first();
-  await expect(first).toContainText("Dalia Jawad changed it");
+  await expect(first).toContainText("داليا جواد changed it");
   await expect(first).toContainText("Status: Scheduled → Confirmed");
   await expect(history.getByText("No changes since then.")).toHaveCount(0);
   // A second save at once shows up too.
@@ -101,12 +101,12 @@ test("a change made in the app is recorded with the user who made it", async ({ 
 test("moving a visit to another doctor shows the doctors' names", async ({ page }) => {
   await page.goto("/appointments/APT-2026-00001/edit");
   await waitForData(page);
-  await page.getByLabel(/^Doctor/).selectOption({ label: "Dr. Noor Al-Saadi · Endodontist" });
+  await page.getByLabel(/^Doctor/).selectOption({ label: "د. نور الساعدي · Endodontist" });
   await page.getByRole("button", { name: /Save/ }).click();
   await expect(page).toHaveURL(/\/appointments\/APT-2026-00001$/);
   const history = page.locator("section").filter({ has: page.getByRole("heading", { name: "History" }) });
   await history.getByRole("button", { name: "Show History" }).click();
-  await expect(history.locator("ol > li").first()).toContainText("Doctor: Dr. Zainab Al-Hashimi → Dr. Noor Al-Saadi");
+  await expect(history.locator("ol > li").first()).toContainText("Doctor: د. زينب الهاشمي → د. نور الساعدي");
   await expect(history).not.toContainText("DOC-");
 });
 
@@ -125,5 +125,5 @@ test("the patient page has a History tab", async ({ page }) => {
   await expect(first).toContainText("Administrator changed it");
   await expect(first).toContainText("Check-up every (months): 0 → 3");
   await expect(first).toContainText("Next check-up: — → 10 Mar 2026");
-  await expect(history.locator("ol > li").last()).toContainText("Dalia Jawad added it · 2 Nov 2025");
+  await expect(history.locator("ol > li").last()).toContainText("داليا جواد added it · 2 Nov 2025");
 });

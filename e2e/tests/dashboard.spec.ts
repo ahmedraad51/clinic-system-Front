@@ -33,7 +33,7 @@ test("the everyday jobs are large tiles at the top of the dashboard", async ({ p
 
   // A receptionist cannot start treatment plans, so that tile is not there.
   await navigate(page, "/profile");
-  await page.getByLabel("View the app as").selectOption({ label: "Dalia Jawad" });
+  await page.getByLabel("View the app as").selectOption({ label: "داليا جواد" });
   await expect(page.getByText("Clinic Receptionist").first()).toBeVisible();
   await navigate(page, "/dashboard");
   await expect(tiles.getByRole("link", { name: /New Treatment/ })).toHaveCount(0);

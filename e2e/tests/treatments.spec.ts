@@ -8,7 +8,7 @@ test("create a treatment plan and pay part of it", async ({ page }) => {
   const dialog = formDialog(page, "New Treatment Plan");
   await expect(dialog).toBeVisible();
 
-  await pickLink(page, "Patient", "Shahad", "Shahad Qasim", dialog);
+  await pickLink(page, "Patient", "شهد", "شهد قاسم", dialog);
   await dialog.getByLabel("Treatment Type").selectOption("Filling");
   await dialog.getByLabel("Tooth").selectOption("26");
   await dialog.getByLabel(/Total Cost/).fill("100000");
@@ -39,7 +39,7 @@ test("create a treatment plan and pay part of it", async ({ page }) => {
 test("a payment cannot be more than what is left on the plan", async ({ page }) => {
   await page.goto("/dashboard");
   await openFromMenu(page, "Treatments");
-  await page.getByRole("searchbox").fill("Yousif");
+  await page.getByRole("searchbox").fill("يوسف");
   await page.getByRole("link", { name: "Filling" }).first().click();
   await waitForData(page);
   // Yousif's filling costs 50,000 and 25,000 is paid.
@@ -57,7 +57,7 @@ test("book the next visit from a treatment plan", async ({ page }) => {
   await page.getByRole("button", { name: "Book Visit" }).click();
   const dialog = formDialog(page, "New Appointment");
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByText("Zahraa Hussein").first()).toBeVisible();
+  await expect(dialog.getByText("زهراء حسين").first()).toBeVisible();
   await expect(dialog.getByLabel("Doctor")).toHaveValue("DOC-00001");
   await expect(dialog.getByLabel("Reason for Visit")).toHaveValue("Crown · tooth 36");
 });

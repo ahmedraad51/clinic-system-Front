@@ -15,8 +15,8 @@ test("drag an appointment to another doctor and time", async ({ page }) => {
   await page.goto(`/appointments?view=day&day=${tomorrow()}`);
   await waitForData(page);
 
-  // Tomorrow Shahad Qasim sees Dr. Zainab Al-Hashimi at 11:00. Move her to Dr. Noor Al-Saadi at 9:30.
-  const block = page.getByRole("link", { name: /11:00 AM, Shahad Qasim, Dr\. Zainab Al-Hashimi/ });
+  // Tomorrow شهد قاسم sees د. زينب الهاشمي at 11:00. Move her to د. نور الساعدي at 9:30.
+  const block = page.getByRole("link", { name: /11:00 AM, شهد قاسم, د\. زينب الهاشمي/ });
   const box = await block.boundingBox();
   const column = await page.locator('[data-column="DOC-00003"]').boundingBox();
   if (!box || !column) throw new Error("calendar not drawn");
@@ -29,13 +29,13 @@ test("drag an appointment to another doctor and time", async ({ page }) => {
 
   const dialog = page.getByRole("dialog", { name: "Move this appointment?" });
   await expect(dialog).toContainText("9:30 AM");
-  await expect(dialog).toContainText("with Dr. Noor Al-Saadi");
+  await expect(dialog).toContainText("with د. نور الساعدي");
   await dialog.getByRole("button", { name: "Move", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Shahad Qasim moved to 9:30 AM." })).toBeVisible();
-  await expect(page.getByRole("link", { name: /9:30 AM, Shahad Qasim, Dr\. Noor Al-Saadi/ })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "شهد قاسم moved to 9:30 AM." })).toBeVisible();
+  await expect(page.getByRole("link", { name: /9:30 AM, شهد قاسم, د\. نور الساعدي/ })).toBeVisible();
 
   // A plain click still opens the appointment.
-  await page.getByRole("link", { name: /9:30 AM, Shahad Qasim/ }).click();
-  await expect(page.getByRole("heading", { name: "Shahad Qasim" })).toBeVisible();
-  await expect(page.getByText("Dr. Noor Al-Saadi").first()).toBeVisible();
+  await page.getByRole("link", { name: /9:30 AM, شهد قاسم/ }).click();
+  await expect(page.getByRole("heading", { name: "شهد قاسم" })).toBeVisible();
+  await expect(page.getByText("د. نور الساعدي").first()).toBeVisible();
 });

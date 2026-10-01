@@ -59,17 +59,17 @@ test("a phone search matches the stored number however it was typed", () => {
 });
 
 test("WhatsApp buttons use the international number for a locally typed phone", async ({ page }) => {
-  // Muhannad Taha's number is stored as "0770 123 4567".
+  // مهند طه's number is stored as "0770 123 4567".
   await page.goto("/patients/PAT-2025-00002");
   await waitForData(page);
-  await expect(page.getByRole("heading", { name: "Muhannad Taha" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "مهند طه" })).toBeVisible();
   await expect(page.getByRole("main").getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", "https://wa.me/9647701234567");
 
   // The recall list's reminder too.
   await navigate(page, "/recall");
-  await expect(page.getByRole("row", { name: /Muhannad Taha/ }).getByRole("link", { name: "WhatsApp" })).toHaveAttribute(
+  await expect(page.getByRole("row", { name: /مهند طه/ }).getByRole("link", { name: "WhatsApp" })).toHaveAttribute(
     "href",
-    /^https:\/\/wa\.me\/9647701234567\?text=Hello%20Muhannad%20Taha/,
+    /^https:\/\/wa\.me\/9647701234567\?text=Hello%20%D9%85%D9%87%D9%86%D8%AF%20%D8%B7%D9%87/,
   );
 });
 
@@ -95,23 +95,23 @@ test("patients are found by phone however the number is typed", async ({ page })
 
   // Stored as "0770 123 4567".
   await search.fill("+964 770 123 4567");
-  await expect(page.getByRole("link", { name: "Muhannad Taha" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "مهند طه" })).toBeVisible();
   await expect(page.getByText("1 record", { exact: true })).toBeVisible();
 
   // Stored as "07801112233", searched with spaces and 00964.
   await search.fill("00964 780 111 2233");
-  await expect(page.getByRole("link", { name: "Yousif Sattar" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Muhannad Taha" })).toHaveCount(0);
-  // Arabic-keyboard digits find Muhannad Taha again.
+  await expect(page.getByRole("link", { name: "يوسف ستار" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "مهند طه" })).toHaveCount(0);
+  // Arabic-keyboard digits find مهند طه again.
   await search.fill("٠٧٧٠١٢٣٤٥٦٧");
-  await expect(page.getByRole("link", { name: "Muhannad Taha" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Yousif Sattar" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "مهند طه" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "يوسف ستار" })).toHaveCount(0);
 
   // The search box in the top bar (Ctrl+K) too.
   await page.keyboard.press("Control+k");
   const dialog = page.getByRole("dialog", { name: "Search" });
   await dialog.getByRole("combobox").fill("+9647701234567");
-  await expect(dialog.getByRole("option", { name: /Muhannad Taha/ })).toBeVisible();
+  await expect(dialog.getByRole("option", { name: /مهند طه/ })).toBeVisible();
 });
 
 test("a new patient with a known number in another format is flagged", async ({ page }) => {
@@ -119,7 +119,7 @@ test("a new patient with a known number in another format is flagged", async ({ 
   await page.getByLabel("Full Name").fill("M. Taha");
   await page.getByLabel("Phone Number").fill("+964 770 123 4567");
   const warning = page.getByText("Already registered?").locator("..");
-  await expect(warning).toContainText("Muhannad Taha");
+  await expect(warning).toContainText("مهند طه");
   await expect(warning).toContainText("same phone number");
 });
 

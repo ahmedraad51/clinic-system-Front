@@ -80,7 +80,7 @@ export function InstallAppCard() {
       <p className="text-sm text-gray-600">{x.text}</p>
       <div className="mt-4" data-testid="install-state">
         {installed ? (
-          <p className="text-sm font-medium text-green-600">{x.installed}</p>
+          <p className="text-sm font-medium text-green-700">{x.installed}</p>
         ) : available ? (
           <Button icon={Download} loading={busy} onClick={install}>
             {x.button}
