@@ -93,7 +93,7 @@ typing). Before and after: [docs/design-changes/4-controls](docs/design-changes/
 
 **Fonts and type.** The fonts are part of the app (`public/fonts/`), so they load on every computer, online or not.
 Headings and figures are semibold, there is one size scale, and every digit has the same width, so amounts and times
-line up. Four fonts that suit both languages are compared in [docs/fonts](docs/fonts/README.md) for the owner to choose.
+line up. IBM Plex was chosen from four fonts that suit both languages ([docs/fonts](docs/fonts/README.md)).
 
 **Forms in dialogs, wide pages.** New and edit forms for appointments, treatment plans and payments open in a dialog
 over the page you are on, already filled in with the patient, plan, tooth or time. Add Patient slides in from the side.

@@ -53,7 +53,7 @@ Both flags are set this way on purpose. Leave them alone unless the task is abou
 | `npm run screenshots:readme` | Retakes the pictures in `README.md` into `docs/screenshots/` (desktop, dummy data). Run it after a visible change and commit the images. `SKIP_BUILD=1` works here too |
 | `npm run screenshots:arabic` | The main screens in Arabic at desktop, tablet and phone size into `docs/arabic/<size>/<screen>.png` (dummy data, 26 September 2026). `SKIP_BUILD=1` works here too |
 | `npm run screenshots:design` | The current redesign's "after" pictures (main screens in English at desktop, tablet and phone size, plus desktop in dark mode) into `docs/design-changes/2-clean/after/`; `SHOTS=before` retakes the "before" side, `DESIGN=` picks another folder. `SKIP_BUILD=1` works here too |
-| `npm run screenshots:fonts` | The font comparison: the dashboard and a patient page in IBM Plex Sans Arabic, Cairo, Tajawal and Readex Pro, in Arabic and English, into `docs/fonts/` (the candidates come from Google Fonts for these pictures only). `SKIP_BUILD=1` works here too |
+| `npm run screenshots:fonts` | The font comparison the owner chose from (IBM Plex, 2026-10-01): the dashboard and a patient page in IBM Plex Sans Arabic, Cairo, Tajawal and Readex Pro, in Arabic and English, into `docs/fonts/` (the candidates come from Google Fonts for these pictures only). `SKIP_BUILD=1` works here too |
 
 The Frappe address comes from the `FRAPPE_URL` environment variable (for example in `.env.local`), default
 `http://dent_clinic.localhost:8000`. See `next.config.ts`.
@@ -67,7 +67,7 @@ The Frappe address comes from the `FRAPPE_URL` environment variable (for example
 | Framework | Next.js **16.2.9**, App Router, Turbopack |
 | UI | React **19.2.4**, TypeScript 5 with `strict: true`, path alias `@/*` → `src/*` |
 | Styling | Tailwind CSS **v4** via `@tailwindcss/postcss`. It is CSS-first: no `tailwind.config.*`; the design tokens (the `primary-*` palette and the text scale) are an `@theme` block in `src/app/globals.css` |
-| Font | One family in both languages: IBM Plex Sans for English and IBM Plex Sans Arabic for everything in Arabic (headings too, and Latin letters inside Arabic screens). The font files are part of the app (`public/fonts/`, their `@font-face` rules and the `--font-plex` and `--font-arabic` variables in `src/app/fonts.css`, preloaded in `layout.tsx`); nothing is fetched from Google. The owner is choosing between four fonts (`docs/fonts/`) |
+| Font | One family in both languages: IBM Plex Sans for English and IBM Plex Sans Arabic for everything in Arabic (headings too, and Latin letters inside Arabic screens). The font files are part of the app (`public/fonts/`, their `@font-face` rules and the `--font-plex` and `--font-arabic` variables in `src/app/fonts.css`, preloaded in `layout.tsx`); nothing is fetched from Google. The owner chose IBM Plex on 2026-10-01 from four fonts compared in `docs/fonts/` |
 | Icons | `lucide-react` everywhere; the tooth logo is our own SVG in `src/components/ToothLogo.tsx` |
 | HTTP | `axios`, one instance in `src/lib/frappe.ts` |
 | QR codes | `qrcode-generator` makes the grid (`qrMatrix()` in `src/lib/qr.ts`, drawn as our own SVG by `QrCode.tsx`); `jsqr` reads camera frames where the browser has no `BarcodeDetector` (loaded only then) |

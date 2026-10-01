@@ -2,8 +2,10 @@
 
 Four fonts that work for both Arabic and English, each shown on the dashboard and on a patient page, in Arabic and in
 English (1440 × 900, dummy data, 1 October 2026). Nothing else changes between the pictures: the same sizes, the
-same semibold headings and the same colours. **Please choose one**; it will then be built into the app the same way
-as the current one (the font files are part of the app, so they never depend on Google Fonts).
+same semibold headings and the same colours.
+
+**Chosen (1 October 2026): 1. IBM Plex Sans Arabic**, with IBM Plex Sans for English. It is the font the app already
+used, so nothing changed; its files are part of the app (`public/fonts/`), so they never depend on Google Fonts.
 
 Retake the pictures with `npm run screenshots:fonts` (`e2e/fonts/fonts.spec.ts`).
 
