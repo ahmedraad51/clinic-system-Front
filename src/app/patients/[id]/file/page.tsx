@@ -18,6 +18,7 @@ import { errorMessage, fileHref, getList } from "@/lib/frappe";
 import { currencyOf, sumByCurrency } from "@/lib/currency";
 import { display, formatDate, formatTime, todayISO } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
+import { medicalValue } from "@/lib/medical";
 import { patientHref, routeId } from "@/lib/links";
 import { IMAGE_FIELDS, imageTitle, isPdf, sortImages } from "@/lib/xrays";
 import type {
@@ -192,7 +193,7 @@ function PatientFile() {
               type="checkbox"
               checked={chosen[section.key]}
               onChange={(event) => setChosen({ ...chosen, [section.key]: event.target.checked })}
-              className="w-[1.125rem] h-[1.125rem] accent-[var(--brand)]"
+              className="w-[1.125rem] h-[1.125rem]"
             />
             {f.sections[section.key]}
           </label>
@@ -232,7 +233,7 @@ function PatientFile() {
             {medical.map(([name, value]) => (
               <div key={name}>
                 <dt className="text-xs text-gray-500">{name}</dt>
-                <dd className="text-sm text-gray-800 mt-0.5 whitespace-pre-line">{value?.trim() || f.none}</dd>
+                <dd className="text-sm text-gray-800 mt-0.5 whitespace-pre-line">{medicalValue(value) || t.common.dash}</dd>
               </div>
             ))}
           </dl>

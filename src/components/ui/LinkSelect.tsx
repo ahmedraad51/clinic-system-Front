@@ -2,12 +2,14 @@
 
 import { messages } from "@/i18n";
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { Check, ChevronDown, X } from "lucide-react";
+import Avatar from "@/components/Avatar";
 import { getList, type FilterRow } from "@/lib/frappe";
 import { searchFilters, useDebounced } from "@/lib/hooks";
 import { cx } from "@/lib/format";
 import type { Doc } from "@/lib/types";
-import { inputClass } from "./index";
+import { Popover } from "./Popover";
+import { inputClass } from "./styles";
 
 interface Option {
   name: string;
@@ -25,7 +27,8 @@ const noop = () => {};
 /**
  * A searchable picker for a Link field, e.g. choosing a patient. It asks the server
  * as you type, so it works with any number of records. `value` is the linked doc's
- * name (its ID); the label is only for display.
+ * name (its ID); the label is only for display. The list is the app's own (a Popover on the page body, so a dialog
+ * never cuts it off); people (patients, doctors) get their initials before the name, and the chosen one a check mark.
  */
 export default function LinkSelect({
   doctype,
@@ -54,6 +57,8 @@ export default function LinkSelect({
 }) {
   const listId = useId();
   const boxRef = useRef<HTMLDivElement>(null);
+  // Patients and doctors are people: their initials go before each name.
+  const people = doctype === "Patient" || doctype === "Doctor";
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [highlight, setHighlight] = useState(0);
@@ -117,19 +122,6 @@ export default function LinkSelect({
     };
   }, [value, labels, doctype, labelField]);
 
-  // Close when clicking anywhere else.
-  useEffect(() => {
-    if (!open) return;
-    const onPointer = (event: PointerEvent) => {
-      if (boxRef.current && !boxRef.current.contains(event.target as Node)) {
-        setOpen(false);
-        setQuery("");
-      }
-    };
-    document.addEventListener("pointerdown", onPointer);
-    return () => document.removeEventListener("pointerdown", onPointer);
-  }, [open]);
-
   const options = result?.options ?? [];
   const searching = open && (result === null || result.query !== debounced || debounced !== query);
 
@@ -150,6 +142,9 @@ export default function LinkSelect({
     } else if (event.key === "Enter") {
       event.preventDefault();
       if (options[highlight]) choose(options[highlight]);
+    } else if (event.key === "Tab") {
+      setOpen(false);
+      setQuery("");
     } else if (event.key === "Escape") {
       // Closes only the list, not a dialog the picker is in.
       event.preventDefault();
@@ -185,8 +180,9 @@ export default function LinkSelect({
             type="button"
             disabled={disabled}
             onClick={() => setOpen(true)}
-            className={cx(inputClass, "text-start flex items-center justify-between gap-2 pe-16")}
+            className={cx(inputClass, "text-start flex items-center gap-2 pe-16")}
           >
+            {people && value && <Avatar name={shownLabel} size={24} />}
             <span className={cx("truncate", value ? "text-gray-800" : "text-gray-500")}>{shownLabel || placeholder}</span>
           </button>
           <span className="absolute end-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-gray-500">
@@ -209,6 +205,7 @@ export default function LinkSelect({
       <input
         tabIndex={-1}
         aria-hidden="true"
+        data-choice=""
         required={required}
         value={value}
         onChange={noop}
@@ -216,36 +213,45 @@ export default function LinkSelect({
       />
 
       {open && (
-        <ul
-          id={listId}
-          role="listbox"
-          className="absolute z-30 mt-1 w-full max-h-64 overflow-auto rounded-md bg-surface shadow-lg py-1.5 skin-bordered:border skin-bordered:border-gray-200"
+        <Popover
+          anchor={boxRef}
+          sheet={false}
+          onClose={() => {
+            setOpen(false);
+            setQuery("");
+          }}
         >
-          {options.length === 0 ? (
-            <li className="px-3.5 py-2.5 text-sm text-gray-500">{searching ? messages().ui.searching : messages().ui.noMatches}</li>
-          ) : (
-            options.map((option, index) => (
-              <li key={option.name} role="option" aria-selected={option.name === value}>
-                <button
-                  type="button"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => choose(option)}
-                  className={cx(
-                    "w-full text-start px-3.5 py-2 pointer-coarse:py-3 text-sm",
-                    index === highlight ? "bg-primary-50 text-primary-700" : "text-gray-700 hover:bg-gray-50",
-                  )}
-                >
-                  <span className="block font-medium">{option.label}</span>
-                  {option.detail && (
-                    <span className="block text-xs text-gray-500">
-                      <bdi>{option.detail}</bdi>
+          <ul id={listId} role="listbox" className="overflow-y-auto p-1">
+            {options.length === 0 ? (
+              <li className="px-3.5 py-2.5 text-sm text-gray-500">{searching ? messages().ui.searching : messages().ui.noMatches}</li>
+            ) : (
+              options.map((option, index) => (
+                <li key={option.name} role="option" aria-selected={option.name === value}>
+                  <button
+                    type="button"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => choose(option)}
+                    className={cx(
+                      "w-full flex items-center gap-2.5 text-start px-2.5 py-1.5 pointer-coarse:py-2.5 rounded-md text-sm",
+                      index === highlight ? "bg-primary-50 text-primary-700" : "text-gray-800 hover:bg-gray-100",
+                    )}
+                  >
+                    {people && <Avatar name={option.label} size={28} />}
+                    <span className="flex-1 min-w-0">
+                      <span className="block font-medium truncate">{option.label}</span>
+                      {option.detail && (
+                        <span className="block text-xs text-gray-500 truncate">
+                          <bdi>{option.detail}</bdi>
+                        </span>
+                      )}
                     </span>
-                  )}
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
+                    {option.name === value && <Check size={16} className="shrink-0 text-primary-600" aria-hidden="true" />}
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>
+        </Popover>
       )}
     </div>
   );

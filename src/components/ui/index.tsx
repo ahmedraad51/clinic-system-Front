@@ -10,7 +10,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createContext, Fragment, useContext } from "react";
+import { createContext, Fragment, useContext, useEffect, useRef, useState, type FormEvent } from "react";
 import type {
   ButtonHTMLAttributes,
   ComponentType,
@@ -19,7 +19,6 @@ import type {
   MouseEvent,
   ReactNode,
   Ref,
-  SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from "react";
 import {
@@ -29,6 +28,7 @@ import {
 import { label, messages } from "@/i18n";
 import { cleanNumberText, cx } from "@/lib/format";
 import { toLatinDigits } from "@/lib/phone";
+import { inputClass } from "./styles";
 
 /* ---------------------------------------------------------------- tones -- */
 
@@ -635,17 +635,8 @@ export function LinkButton({
 
 /* --------------------------------------------------------------- inputs -- */
 
-/**
- * An outlined field: a thin border in the text colour (stronger on hover), and on focus a 2 px border in the clinic
- * colour with a small coloured lift.
- */
-export const inputClass =
-  "w-full min-h-10 pointer-coarse:min-h-11 rounded-md border border-gray-300 bg-surface px-3.5 py-1.5 text-sm max-sm:text-base text-gray-900 " +
-  "placeholder:text-gray-400 hover:border-gray-500 transition-[border-color,box-shadow] " +
-  "focus:outline-none focus:border-primary-600 focus:ring-1 focus:ring-primary-600 focus:shadow-primary " +
-  "disabled:bg-gray-100 disabled:text-gray-500 disabled:hover:border-gray-300 " +
-  // A field that failed its check (the form sets aria-invalid, and passes the message to Field's `error`).
-  "aria-invalid:border-error aria-invalid:ring-1 aria-invalid:ring-error aria-invalid:focus:shadow-none";
+/** The outlined field look (src/components/ui/styles.ts, shared with Select, DateInput and TimeInput). */
+export { inputClass };
 
 /**
  * A small label above one input. The input goes inside as children, so clicking the label focuses it. The label
@@ -667,27 +658,72 @@ export function Field({
   children: ReactNode;
   className?: string;
 }) {
+  // The browser's own check (required, an email address …) shown as our message, not the browser's bubble.
+  const [checkError, setCheckError] = useState("");
+  const shown = error || checkError;
+  const labelRef = useRef<HTMLLabelElement>(null);
+  // A value the page fills in itself (a picked patient, a suggested time, Pay full balance) sends no input event:
+  // after each render, the message goes once every control in the field passes its check.
+  useEffect(() => {
+    if (!checkError) return;
+    const frame = requestAnimationFrame(() => {
+      const controls = labelRef.current?.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("input, select, textarea");
+      if (controls && [...controls].every((control) => control.validity.valid)) setCheckError("");
+    });
+    return () => cancelAnimationFrame(frame);
+  });
   return (
-    <label className={cx("block group/field", className)}>
+    <label
+      ref={labelRef}
+      className={cx("block group/field", className)}
+      data-invalid={checkError ? "" : undefined}
+      onInvalidCapture={(event: FormEvent<HTMLLabelElement>) => {
+        event.preventDefault();
+        const control = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+        setCheckError(invalidMessage(control));
+        focusFirstInvalid(control);
+      }}
+      onInputCapture={() => checkError && setCheckError("")}
+      onChangeCapture={() => checkError && setCheckError("")}
+    >
       <span
+        data-field-label=""
         className={cx(
           "block text-xs mb-1 transition-colors",
-          error ? "text-red-700" : "text-gray-800 group-focus-within/field:text-primary-600",
+          shown ? "text-red-700" : "text-gray-800 group-focus-within/field:text-primary-600",
         )}
       >
         {label}
         {required && <span className="text-red-500 ms-0.5">*</span>}
       </span>
       {children}
-      {error && (
+      {shown && (
         <span role="alert" className="flex items-start gap-1.5 text-xs text-red-700 mt-1">
           <AlertCircle size={14} className="shrink-0 mt-0.5" aria-hidden="true" />
-          {error}
+          {shown}
         </span>
       )}
       {hint && <span className="block text-xs text-gray-500 mt-1">{hint}</span>}
     </label>
   );
+}
+
+/** The words for a field the browser's own check stopped, in the screen's language. */
+function invalidMessage(control: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement): string {
+  const t = messages().ui;
+  if (control.validity.valueMissing) return control instanceof HTMLSelectElement || "choice" in control.dataset ? t.choiceRequired : t.fieldRequired;
+  if (control.validity.typeMismatch && control.type === "email") return t.emailInvalid;
+  return control.validationMessage || t.fieldRequired;
+}
+
+/** When a form is sent with several fields wrong, the first one (they are checked in order) gets the focus. */
+let lastInvalidFocus = 0;
+function focusFirstInvalid(control: HTMLElement) {
+  const now = Date.now();
+  if (now - lastInvalidFocus < 300) return;
+  lastInvalidFocus = now;
+  control.focus({ preventScroll: true });
+  control.scrollIntoView({ block: "center", behavior: "smooth" });
 }
 
 /**
@@ -766,13 +802,13 @@ export function PhoneInput({ className, onChange, ...rest }: Omit<InputHTMLAttri
   );
 }
 
-export function SelectInput({ className, children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <select className={cx(inputClass, className)} {...rest}>
-      {children}
-    </select>
-  );
-}
+/** The app's own dropdown (Select.tsx), used like a <select>. */
+export { SelectInput } from "./Select";
+export { SuggestInput, type Suggestion } from "./SuggestInput";
+export { ColorInput } from "./ColorInput";
+/** The app's own date and time fields (DateInput.tsx, TimeInput.tsx), used like <input type="date"> and type="time". */
+export { DateInput } from "./DateInput";
+export { TimeInput } from "./TimeInput";
 
 export function TextArea({
   className,

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Save } from "lucide-react";
-import { Alert, Button, Card, Field, FormActions, focusField, NumberInput, SelectInput, TextInput } from "@/components/ui";
+import { Alert, Button, Card, DateInput, Field, focusField, FormActions, NumberInput, SelectInput, TextInput } from "@/components/ui";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import CurrencySelect from "@/components/CurrencySelect";
 import { useI18n } from "@/context/LanguageContext";
@@ -12,6 +12,7 @@ import { errorMessage } from "@/lib/frappe";
 import { currencyDecimals, formatDate, todayISO } from "@/lib/format";
 import { useDoctors } from "@/lib/hooks";
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS, type Expense } from "@/lib/types";
+import { doctorMedia } from "@/components/Avatar";
 
 export interface ExpenseFormData {
   expense_date: string;
@@ -132,7 +133,7 @@ export default function ExpenseForm({
       <Card>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label={x.date} required>
-            <TextInput type="date" name="expense_date" value={form.expense_date} onChange={handleChange} required />
+            <DateInput name="expense_date" value={form.expense_date} onChange={handleChange} required />
           </Field>
           <Field label={x.category} required>
             <SelectInput name="category" value={form.category} onChange={handleChange} required>
@@ -187,7 +188,7 @@ export default function ExpenseForm({
             </SelectInput>
           </Field>
           <Field label={x.doctor} hint={x.doctorHint} className="sm:col-span-2">
-            <SelectInput name="doctor" value={form.doctor} onChange={handleChange}>
+            <SelectInput name="doctor" value={form.doctor} onChange={handleChange} media={doctorMedia(doctors)}>
               <option value="">{x.noDoctor}</option>
               {savedDoctorGone && <option value={form.doctor}>{doctorLabel || form.doctor}</option>}
               {(doctors ?? []).map((doctor) => (

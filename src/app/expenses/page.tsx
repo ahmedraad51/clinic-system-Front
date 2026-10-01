@@ -5,8 +5,7 @@ import { Download, Pencil, Plus, Trash2, Wallet } from "lucide-react";
 import RequirePermission from "@/components/Guard";
 import { useRecordDialogs } from "@/components/RecordDialogs";
 import {
-  Badge, Button, Card, ClearFiltersButton, PageContainer, PageHeader, Pagination, SearchInput, SelectInput, StatusBadge, Table,
-  TableError, TableLoading, TableMessage, Td, TextInput, Th, Toolbar,
+  Badge, Button, Card, ClearFiltersButton, DateInput, PageContainer, PageHeader, Pagination, SearchInput, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
@@ -186,9 +185,9 @@ function ExpensesList() {
           ))}
         </SelectInput>
         <div className="flex items-center gap-2 min-w-0">
-          <TextInput type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label={x.fromDate} className="min-w-0 flex-1 sm:flex-none sm:w-40" />
+          <DateInput value={from} onChange={(e) => setFrom(e.target.value)} aria-label={x.fromDate} className="min-w-0 flex-1 sm:flex-none sm:w-40" />
           <span className="text-gray-500 text-sm">{x.to}</span>
-          <TextInput type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label={x.toDate} className="min-w-0 flex-1 sm:flex-none sm:w-40" />
+          <DateInput value={to} onChange={(e) => setTo(e.target.value)} aria-label={x.toDate} className="min-w-0 flex-1 sm:flex-none sm:w-40" />
         </div>
       </Toolbar>
 

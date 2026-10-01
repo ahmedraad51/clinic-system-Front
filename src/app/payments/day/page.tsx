@@ -8,7 +8,7 @@ import { CashCountCard, RecentCashCounts } from "@/components/CashCountCard";
 import ClinicLetterhead from "@/components/ClinicLetterhead";
 import RequirePermission from "@/components/Guard";
 import {
-  Button, Card, EmptyState, Field, LoadError, PageContainer, PageHeader, PageLoading, StatusBadge, Table, Td, TextInput, Th,
+  Button, Card, DateInput, EmptyState, Field, LoadError, PageContainer, PageHeader, PageLoading, StatusBadge, Table, Td, Th,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -95,10 +95,10 @@ function DayReport() {
 
       <div className="print:hidden">
         <Field label={c.day} className="max-w-xs">
-          <TextInput
-            type="date"
+          <DateInput
             value={date}
             max={todayISO()}
+            clearable={false}
             onChange={(event) => {
               if (event.target.value) router.replace(`/payments/day?date=${event.target.value}`, { scroll: false });
             }}

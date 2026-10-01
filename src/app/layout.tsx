@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { El_Messiri, IBM_Plex_Sans_Arabic, Poppins } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -13,28 +13,20 @@ import { ZOOM_BOOT_SCRIPT } from "@/lib/display";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import { APPEARANCE_BOOT_SCRIPT } from "@/lib/appearanceBoot";
 
-// globals.css uses them through their variables: Poppins for English; IBM Plex Sans Arabic for Arabic text, tables and
-// forms, and El Messiri for Arabic headings. Poppins has no fallback font of its own: on Arabic screens it comes first,
-// and the letters it lacks must reach the Arabic font.
-const poppins = Poppins({
+// One family in both languages (globals.css uses the variables): IBM Plex Sans for English, IBM Plex Sans Arabic for
+// all text on Arabic screens, headings included (its Latin letters are IBM Plex Sans, so English names inside Arabic
+// text match). The Arabic one has no fallback size adjustment: an Arial fallback would otherwise draw the Arabic.
+const plex = IBM_Plex_Sans({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   display: "swap",
-  variable: "--font-poppins",
-  adjustFontFallback: false,
+  variable: "--font-plex",
 });
 const arabic = IBM_Plex_Sans_Arabic({
-  subsets: ["arabic"],
-  weight: ["400", "500", "600", "700"],
+  subsets: ["arabic", "latin"],
+  weight: ["300", "400", "500", "600", "700"],
   display: "swap",
   variable: "--font-arabic",
-  adjustFontFallback: false,
-});
-const arabicHeadings = El_Messiri({
-  subsets: ["arabic"],
-  weight: ["500", "600", "700"],
-  display: "swap",
-  variable: "--font-arabic-headings",
   adjustFontFallback: false,
 });
 
@@ -63,7 +55,7 @@ export default function RootLayout({
   return (
     // The boot scripts may set the language, the clinic colour, this computer's screen size and its appearance
     // (dark mode, collapsed menu …) on <html> before React loads.
-    <html lang={DEFAULT_LANG} dir={dirOf(DEFAULT_LANG)} className={`${poppins.variable} ${arabic.variable} ${arabicHeadings.variable}`} suppressHydrationWarning>
+    <html lang={DEFAULT_LANG} dir={dirOf(DEFAULT_LANG)} className={`${plex.variable} ${arabic.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: LANG_BOOT_SCRIPT + THEME_BOOT_SCRIPT + ZOOM_BOOT_SCRIPT + APPEARANCE_BOOT_SCRIPT }} />
       </head>

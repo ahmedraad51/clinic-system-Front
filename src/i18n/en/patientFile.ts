@@ -14,7 +14,6 @@ export const patientFile = {
   },
   details: "Patient details",
   medical: "Medical information",
-  none: "None",
   noTreatments: "No treatment plans.",
   noAppointments: "No appointments.",
   noPrescriptions: "No prescriptions.",

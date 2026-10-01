@@ -3,7 +3,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { Check, Save, Users } from "lucide-react";
-import { Alert, Button, Card, Field, FormActions, LinkButton, NumberInput, focusField, PhoneInput, SelectInput, TextArea, TextInput } from "@/components/ui";
+import { Alert, Button, Card, DateInput, Field, focusField, FormActions, LinkButton, NumberInput, PhoneInput, SelectInput, SuggestInput, TextArea, TextInput } from "@/components/ui";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
@@ -312,7 +312,7 @@ export default function PatientForm({
           ) : (
             <div>
               <Field label={f.dateOfBirth} hint={f.dobHint}>
-                <TextInput type="date" name="date_of_birth" value={form.date_of_birth} onChange={handleChange} />
+                <DateInput name="date_of_birth" value={form.date_of_birth} onChange={handleChange} />
               </Field>
               <button
                 type="button"
@@ -336,15 +336,8 @@ export default function PatientForm({
             <TextInput type="email" name="email" value={form.email} onChange={handleChange} dir="ltr" />
           </Field>
           <Field label={f.address}>
-            <TextInput name="address" value={form.address} onChange={handleChange} list="iraq-governorates" autoComplete="off" />
             {/* Suggestions while typing: the governorates of Iraq, in the language of the screen. */}
-            <datalist id="iraq-governorates">
-              {governorateSuggestions().map((place) => (
-                <option key={place.value} value={place.value}>
-                  {place.hint}
-                </option>
-              ))}
-            </datalist>
+            <SuggestInput name="address" value={form.address} onChange={handleChange} suggestions={governorateSuggestions()} />
           </Field>
         </div>
       </Card>

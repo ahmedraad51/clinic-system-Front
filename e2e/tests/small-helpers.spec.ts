@@ -49,7 +49,19 @@ test("the address box suggests the governorates of Iraq", async ({ page }) => {
   await page.goto("/dashboard");
   await waitForData(page);
   await navigate(page, "/patients/new");
-  await expect(page.getByLabel("Address")).toHaveAttribute("list", "iraq-governorates");
-  await expect(page.locator("#iraq-governorates option")).toHaveCount(19);
-  await expect(page.locator("#iraq-governorates option[value='Baghdad']")).toHaveCount(1);
+  const address = page.getByLabel("Address");
+  await address.click();
+  // Our own list (not the browser's datalist): up to 8 governorates while the box is empty.
+  await expect(page.getByRole("listbox").getByRole("option")).toHaveCount(8);
+  await address.fill("ba");
+  await expect(page.getByRole("option", { name: /Baghdad/ })).toBeVisible();
+  await expect(page.getByRole("option", { name: /Basra/ })).toBeVisible();
+  await expect(page.getByRole("option", { name: /Erbil/ })).toHaveCount(0);
+  await address.press("ArrowDown");
+  await address.press("Enter");
+  await expect(address).toHaveValue("Baghdad");
+  await expect(page.getByRole("listbox")).toHaveCount(0);
+  // Free text still works.
+  await address.fill("Karrada, Baghdad");
+  await expect(address).toHaveValue("Karrada, Baghdad");
 });

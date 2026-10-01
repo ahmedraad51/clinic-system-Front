@@ -31,7 +31,7 @@ accurate.
 | `npm run build` | **Passes** (checked 2026-09-30): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-30). `npx tsc --noEmit` passes too. | |
 | Languages | **Arabic (default, right to left) and English.** Every text is in `src/i18n/en/*.ts` and `src/i18n/ar/*.ts`; the switch is in the menu. See **Languages** below. **Every new text must be added in both languages.** | `src/i18n/`, `src/context/LanguageContext.tsx` |
-| Tests | **Playwright tests pass** (198 tests, 21 of them in Arabic, checked 2026-10-01; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, expenses and profit, the waiting room, QR codes, the printed patient file, prescription paper, the activity log, the installable app, Arabic typography, phone numbers, the form dialogs and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (207 tests, 23 of them in Arabic, checked 2026-10-01; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, expenses and profit, the waiting room, QR codes, the printed patient file, prescription paper, the activity log, the installable app, Arabic typography, the app's own form controls, phone numbers, the form dialogs and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -65,7 +65,7 @@ The Frappe address comes from the `FRAPPE_URL` environment variable (for example
 | Framework | Next.js **16.2.9**, App Router, Turbopack |
 | UI | React **19.2.4**, TypeScript 5 with `strict: true`, path alias `@/*` → `src/*` |
 | Styling | Tailwind CSS **v4** via `@tailwindcss/postcss`. It is CSS-first: no `tailwind.config.*`; the design tokens (the `primary-*` palette and the text scale) are an `@theme` block in `src/app/globals.css` |
-| Font | Poppins for English; IBM Plex Sans Arabic for Arabic text, tables and forms (both scripts), and El Messiri for Arabic headings, through `next/font/google` in `layout.tsx` (the `--font-poppins`, `--font-arabic` and `--font-arabic-headings` variables, used in `globals.css`) |
+| Font | One family in both languages: IBM Plex Sans for English and IBM Plex Sans Arabic for everything in Arabic (headings too, and Latin letters inside Arabic screens), through `next/font/google` in `layout.tsx` (the `--font-plex` and `--font-arabic` variables, used in `globals.css`) |
 | Icons | `lucide-react` everywhere; the tooth logo is our own SVG in `src/components/ToothLogo.tsx` |
 | HTTP | `axios`, one instance in `src/lib/frappe.ts` |
 | QR codes | `qrcode-generator` makes the grid (`qrMatrix()` in `src/lib/qr.ts`, drawn as our own SVG by `QrCode.tsx`); `jsqr` reads camera frames where the browser has no `BarcodeDetector` (loaded only then) |
@@ -138,7 +138,7 @@ src/lib/frappe.ts   the only module that touches data
 ```
 src/
 ├── app/
-│   ├── layout.tsx                 root layout: fonts (Poppins, IBM Plex Sans Arabic, El Messiri), boot scripts, providers, MainLayout
+│   ├── layout.tsx                 root layout: fonts (IBM Plex Sans, IBM Plex Sans Arabic), boot scripts, providers, MainLayout
 │   ├── page.tsx                   redirect("/dashboard")
 │   ├── not-found.tsx              404 page
 │   ├── globals.css                Tailwind import, body colours, print background
@@ -202,6 +202,13 @@ src/
 │   └── ui/
 │       ├── index.tsx         the UI kit (cards, buttons, inputs, tables, badges, paging, tabs, alerts, …)
 │       ├── Modal.tsx         Modal, ConfirmDialog
+│       ├── styles.ts         inputClass, the outlined field look shared by the controls below
+│       ├── Popover.tsx       the floating panel of the controls (a portal; a sheet from the bottom on a phone)
+│       ├── Select.tsx        SelectInput, the app's own dropdown over a hidden <select>
+│       ├── DateInput.tsx     the app's own date field and calendar
+│       ├── TimeInput.tsx     the app's own time field and picker
+│       ├── SuggestInput.tsx  a text box with suggestions (the app's own <datalist>)
+│       ├── ColorInput.tsx    the app's own colour field (palette and colour code)
 │       └── LinkSelect.tsx    searchable picker for Link fields (used for patients)
 ├── context/
 │   ├── AuthContext.tsx       who is logged in, the AUTH_DISABLED switch, useAuth()
@@ -249,7 +256,7 @@ docs/
 ├── screenshots/              images used by README.md (retake with npm run screenshots:readme)
 ├── arabic/                   the main screens in Arabic at three sizes (npm run screenshots:arabic)
 └── design-changes/           each redesign before and after: 1-midnight/, 2-clean/ (npm run screenshots:design),
-                              3-dialogs-wide/ (e2e/design-changes/wide-pages.spec.ts)
+                              3-dialogs-wide/ (e2e/design-changes/wide-pages.spec.ts), 4-controls/ (controls.spec.ts)
 public/                       sw.js and offline.html (the installable app), icons/ (the app icons), demo/xrays/ (the demo X-rays)
 e2e/
 ├── helpers.ts                waitForData, navigate (client-side, keeps the dummy data), openFromMenu, pickLink (optionally inside a dialog), formDialog, openSaved
@@ -283,7 +290,7 @@ the dialog to be hidden, and use `openSaved(page, "Payment recorded.")` to follo
 | `/waiting-room` | `view_appointments` | The waiting room TV screen, with no menu or top bar: the clinic logo and name, a big clock and the date, and three columns: **In the chair**, **Waiting** (longest first, with the minutes) and **Coming up** (the next 6 not arrived, from a quarter of an hour ago on), each patient as first name and initial only (`shortName()`, in a `<bdi>`) with the doctor. Loads today's open appointments again every 20 seconds (`REFRESH_SECONDS`) and after a dialog saves; a failed load keeps the last list and says so. **Full Screen** and **Back to Today** hide in full screen. The only screen with larger text sizes (it is read from across the room). In dummy mode a new tab starts from the seed data, so tests open it from the Today board in the same tab |
 | `/patients` | `view_patients` | Server-side search (name, phone, second phone, ID), gender filter, paging. Each row: name with ID, age and gender, medical-alert chips (`medicalFlags`), phone, next booked visit (`view_appointments`, loaded for the rows on the page) and balance (`view_payments`). With `view_payments`, a **Balance** filter ("Owes money": `total_remaining > 0`, biggest first; `?balance=owing` opens on it) adds a WhatsApp **Remind** link with the balance written in |
 | `/recall` | `view_patients` and `view_appointments` | Patients due for a check-up and with nothing Scheduled or Confirmed from today on: a patient with `next_recall_date` (the dentist's choice) is due from that date whatever the period, one with `no_recall` never is, and everyone else is due when no Completed visit falls within the chosen period (3, 6, 9 or 12 months; default 6). A **Check-up due** column says when and why ("Dentist: every 3 months" or "6 months after the last visit"); longest overdue first, never-seen patients last. Tap to call, a WhatsApp link with a ready reminder text (`wa.me/<digits>?text=`), and Book (`add_appointments`). Worked out in the browser from all appointments |
-| `/patients/new` | `add_patients` | Shared `PatientForm`. While typing, patients with the same phone number (`samePhone()` from `src/lib/phone.ts`: the last 10 digits of either phone field, so `0770 123 4567` and `+964 770 123 4567` match) or exactly the same name show under **Already registered?** with a link; saving with the same phone number asks first (also on edit when the phone changes; `currentName` excludes the patient itself). The Medical Information card starts with a **Quick checklist** (`CHECKLIST` in `PatientForm.tsx`): tick boxes that add or remove a standard word in `allergies`, `current_medications` or `chronic_diseases` (no new fields); a box already true from other wording (e.g. "Warfarin 3mg") shows ticked and disabled. The Address box suggests the governorates of Iraq (`IRAQ_GOVERNORATES`, a `datalist`; free text still works). **Only know the age?** swaps the date of birth for an **Age** box (for patients who do not know their birth date); `age` is sent only when `date_of_birth` is empty. Opens the new record after saving |
+| `/patients/new` | `add_patients` | Shared `PatientForm`. While typing, patients with the same phone number (`samePhone()` from `src/lib/phone.ts`: the last 10 digits of either phone field, so `0770 123 4567` and `+964 770 123 4567` match) or exactly the same name show under **Already registered?** with a link; saving with the same phone number asks first (also on edit when the phone changes; `currentName` excludes the patient itself). The Medical Information card starts with a **Quick checklist** (`CHECKLIST` in `PatientForm.tsx`): tick boxes that add or remove a standard word in `allergies`, `current_medications` or `chronic_diseases` (no new fields); a box already true from other wording (e.g. "Warfarin 3mg") shows ticked and disabled. The Address box suggests the governorates of Iraq (`IRAQ_GOVERNORATES`, a `SuggestInput`; free text still works). **Only know the age?** swaps the date of birth for an **Age** box (for patients who do not know their birth date); `age` is sent only when `date_of_birth` is empty. Opens the new record after saving |
 | `/patients/[id]` | `view_patients` | Two columns from `xl` up (stacked below): on the start side a `ProfileCard` with the name, age, gender, ID, the actions and the summary; beside it the `MedicalAlerts` band and the tabs. The summary card has tap-to-call (`tel:`) and WhatsApp (`https://wa.me/<digits>`) buttons, last visit, next appointment, balance to pay (with Add payment), paid so far, and **Next check-up** (the dentist's date and interval, "No recall" or "Usual rule"; **Change** with `edit_patients` opens `RecallDialog`: every 3, 6, 9 or 12 months with the date counted from the last visit and editable, no recall, or the usual rule); tabs: **Overview** (a timeline of appointments, treatment sessions and payments, grouped Upcoming / Today / by month, beside the contact and medical cards), Appointments, Treatment Plans, Payments, Dental Chart, **Prescriptions** (`view_treatments`: date, medicines and doctor, with **New Prescription** for `add_treatments`), **X-rays & Photos** (`XraySection`, with a count: **Dental Image** records, newest first, grouped by the day taken, filtered by type and tooth, a tile per image with a marker when it has a drawing. Drag files onto the drop zone, **Add Files** or **Take Photo** (the tablet camera): JPG, PNG and PDF up to 10 MB each (`isAccepted`, `MAX_IMAGE_MB`; others are refused by name); the **Add N images** dialog gives each file a type (guessed from its name by `guessImageType`: "opg" → Panoramic, a camera photo → Intraoral photo, a PDF → Other) and shared **Taken on**, **Teeth** (FDI numbers, checked by `parseTeeth`) and **Description**; each file then makes its record, is attached to it privately (`attachFile`) and the record points at it, with an upload `ProgressBar` ("Uploading 2 of 3: …"); if one fails, the ones before it are kept. **Compare** picks two images (not PDFs) for `CompareView`, side by side (one above the other on a phone), each with its own zoom, a shared invert and swap. A tile opens `ImageViewer` on all the patient's images (whatever the filter): full screen, zoom (buttons, wheel, + and −, two-finger pinch on a tablet, also while drawing), drag to move, rotate, brightness and contrast sliders, invert, reset, show/hide the drawing, previous/next (arrow keys in the reading direction), full screen, Print (`/xrays/[id]`), and with `edit_patients` **Draw** (`SketchToolbar`: pen, arrow, circle, text, six colours, undo, clear; saved as `annotations`, the image itself never changes), **Details** (`ImageDetailsDialog`) and Delete. A PDF shows in a frame with Open in a new tab. The images are loaded once by the page (`usePatientImages`) and shared with the Dental Chart tab), **History** (`RecordHistory`, open at once). Buttons: New Appointment, New Treatment, Edit, Delete (icon; each by permission) |
 | `/patients/[id]/edit` | `edit_patients` | Shared `PatientForm` |
 | `/patients/[id]/estimate` | `view_patients` and `view_treatments` | Printable treatment estimate on the clinic letterhead: the patient's Planned and In Progress plans with cost, paid and to pay, totals, a 30-day validity note (`VALID_DAYS`) and signature lines. Linked as **Print estimate** above the Treatment Plans tab |
@@ -760,9 +767,9 @@ function Things() {
 (`flush` for tables; `icon` draws a quiet grey icon before the title, via `CardIcon`: give every titled card on a record page one), `CARD_CLASS` (the card look, for boxes that are not a `Card`: surface colour, 6 px corners, soft shadow, a border in the bordered skin), `IconTile` (an icon on a soft tint of its colour in a small rounded square; `hue`, sizes sm, md, lg), `hueClass(hue)`, `StatCard` (the figure and its name, a tinted icon on the end side, hidden on phones; `section` or `tone` for the icon's colour), `ActionTile` (a card for an everyday job, with a tinted icon and a hint; `section`), `Badge` (a label chip: 4 px corners, a 16 % tint of its colour with readable text), `StatusBadge` (kinds: appointment, treatment, session, method,
 whatsapp, trigger, user) and `statusTone(kind, status)` for other views that must match the badge colours,
 `Button` and `LinkButton` (primary, secondary, danger, ghost, success; sm, md; `icon`, `loading`),
-`Segmented` (joined view switch, e.g. Day / Week / List; the chosen one solid), `FormActions` (sticky Save / Cancel bar), `Field` (a small label above one input, wrapping it; `error` for a failed check; the label takes the clinic colour while focused) and `focusField()`, `TextInput`,
+`Segmented` (joined view switch, e.g. Day / Week / List; the chosen one solid), `FormActions` (sticky Save / Cancel bar), `Field` (a small label above one input, wrapping it; `error` for a failed check; the label takes the clinic colour while focused; it also catches the browser's own checks, such as `required` or an email address, and shows them as our message under the field instead of the browser's bubble) and `focusField()`, `TextInput`,
 `NumberInput` (every amount, price or age box; `decimals={false}` for whole numbers), `PhoneInput` (every phone box),
-`SelectInput`, `TextArea`, `Toggle`,
+`SelectInput`, `DateInput`, `TimeInput`, `SuggestInput`, `ColorInput` (the app's own controls, below), `TextArea`, `Toggle`,
 `SearchInput`, `Toolbar`, `Table`, `Th`, `Td` (with `label` for the phone cards), `ClickableRow`, `TableLoading`, `TableMessage`, `TableError` (a failed list load with Try Again), `ClearFiltersButton`, `LoadError` (a failed page load with Try Again), `Pagination`, `DetailList` and
 `DetailRow` (label beside the value when the card is at least 20rem wide, above it in a narrower card: a container query on `DetailList`), `Tabs`, `Alert`, `Spinner`, `ProgressBar` (0-100 with a label and percentage, or `showLabel={false}`; uploads and the plan's paid bar), `PageLoading`, `RecordLoading`, `EmptyState`, `NoAccess`, `NotFoundCard`; plus
 `DetailLayout` (two columns from `xl`: the `aside` on the start side, 4 of 12, hidden on paper; stacked below),
@@ -772,7 +779,7 @@ whatsapp, trigger, user) and `statusTone(kind, status)` for other views that mus
 the newest reacts to Escape and Tab; `priority` puts it above other dialogs; `size` md, lg or xl; `side` for a panel
 from the end side; `fullScreenOnPhone`; the page's scroll lock is counted, so dialogs closing together in any order
 unlock it; an Escape that a control inside already used (`preventDefault`, as the patient picker's list does) does not
-close it; `isDialogOpen()`, and the Ctrl+K search does not open over a dialog) and `ConfirmDialog` (focus starts on Cancel) in `Modal.tsx`, and `LinkSelect` for searchable Link fields. Use these instead of
+close it; `isDialogOpen()`, and the Ctrl+K search does not open over a dialog) and `ConfirmDialog` (focus starts on Cancel) in `Modal.tsx`, and `LinkSelect` for searchable Link fields (its list is a `Popover`, with initials before patients and doctors and a check mark on the chosen one). Use these instead of
 writing new class lists.
 
 ### Styling
@@ -785,7 +792,7 @@ writing new class lists.
   solid with `shadow-primary`, 40 px (44 px on touch screens), 6 px corners, medium weight; the secondary one outlined.
   Fields outlined (the text colour at 26 %), 2 px clinic colour and a lift on focus, the label small and above.
   Tables plain: small-capital headers in the text colour, thin rows. Pill tabs. Violet clinic colour (#6a5fdd, the
-  design's #7367f0 a touch deeper for readable white text). Poppins; IBM Plex Sans Arabic, with El Messiri for Arabic headings. No gradients, glows,
+  design's #7367f0 a touch deeper for readable white text). IBM Plex Sans; IBM Plex Sans Arabic in Arabic. No gradients, glows,
   mascots, drawings or cartoon avatars: people are shown by their initials, or a photo.
 - **Dark mode and the other appearance choices** are per computer (`src/lib/appearance.ts`, `localStorage.appearance`):
   light, dark or the computer's own setting (the theme menu in the top bar, or the Appearance panel), a menu collapsed
@@ -846,6 +853,41 @@ writing new class lists.
   first (the row's name or date) and action cells `label="…"` with the same text as its `Th`; empty cells
   are hidden. End every form with `<FormActions>` (a Save / Cancel bar that sticks to the bottom of the
   screen). Inputs use 16 px text on phones so iPhones do not zoom in.
+- **No control the browser draws itself.** Every dropdown, date, time, colour and suggestion box is one of ours, used
+  like the native element (`value`, `onChange` with a real event, `name`, `required`):
+  - `SelectInput` (`Select.tsx`) takes `<option>` and `<optgroup>` children as before. A real `<select>` stays
+    underneath, invisible, as a `peer`: it keeps the label, the form, `required`, the keyboard focus and the tests
+    (`selectOption`, `toHaveValue` still work). On top a button (`data-picker` = the field's `name`) shows the choice;
+    a click, or Down, Enter, Space or F4 on the field, opens our list: hover and active rows, a check mark on the chosen
+    item, a search box above 8 items (`SEARCH_FROM`), Up / Down / Page / Home / End / Enter / Escape / Tab, and typing a
+    letter jumps to the next item starting with it. `media={(value) => …}` puts a picture before each item: doctor
+    lists pass `doctorMedia(doctors)` from `Avatar.tsx` (photo or initials).
+  - `DateInput` and `TimeInput` sit on a hidden `type="date"` / `type="time"`. The calendar has days, months and years
+    views, the week starting on `WEEK_STARTS_ON`, the month and day names of the screen's language (`t.dates`), today
+    marked, Today and Clear (`clearable`, by default when not required), `min` / `max` (the keys never leave them), and arrow keys (left and right follow the reading
+    direction; Page Up / Down a month, with Shift a year). The time picker has hour, minute (5-minute steps; a saved
+    minute in between is kept) and AM / PM columns.
+  - `SuggestInput` (a text box with suggestions under it; free text still works) and `ColorInput` (a palette and a
+    colour code box; Settings → theme colour).
+  - They choose with `setNativeValue()`, which sets the hidden element's value and sends a real `change` / `input`
+    event, so every form's `handleChange` works unchanged.
+  - Their panels are a `Popover` (`Popover.tsx`): a portal on `document.body` (z-[57], so a dialog never cuts it off),
+    below the field or above it when there is more room, kept on screen, following the field while the page or a dialog
+    scrolls, closed by a click elsewhere; on a phone (below 640 px) a sheet from the bottom with the field's label as its
+    title (`sheet={false}` keeps suggestions under a box being typed in; `tall` for a panel that must show whole).
+    Escape inside one closes the panel only (`preventDefault` + `stopPropagation`), never the dialog around it. It
+    starts transparent, not hidden, so its content can take the focus at once; Tab goes round inside it, and `Modal`
+    leaves Tab alone while the focus is in a `[data-popover]`. A fixed `width` is in rem (it follows the Screen Size
+    setting); it places itself again when its content grows (a `ResizeObserver`) and measures against the visual
+    viewport (the phone keyboard). A tap on the sheet's backdrop closes it on click, so the tap never reaches the page.
+    On a touch screen a choice made by tap does not focus the hidden native control again (`coarsePointer()`): on an
+    iPhone that would open the browser's own picker. The sheet's title is the Field's label (`data-field-label`), so a
+    control outside a `Field` needs an `aria-label`.
+  - `Field` shows the browser's own checks as our message; it clears once every control inside passes again, also when
+    the page fills the value in itself (a picked patient, a suggested time, Pay full balance).
+  - Checkboxes and radio buttons are drawn by `globals.css` (`appearance: none`: a rounded box in the field border
+    colour, the clinic colour with a white check, dot or dash when chosen, a focus ring), and so are sliders (the X-ray
+    viewer). File inputs are always hidden behind a `Button`. There is no `type="number"` anywhere.
 - **Number and phone boxes:** use `NumberInput` and `PhoneInput`, never `type="number"`. Iraqi keyboards type
   Arabic-Indic digits (٠-٩) even in an English screen; `type="number"` quietly empties itself on them.
   `NumberInput` is a text box (`inputMode` decimal or numeric, `dir="ltr"`) that keeps only the number while
@@ -980,11 +1022,11 @@ from the translation files, never from text typed in a component.
   `border-s` …), give sideways arrows `rtl:rotate-180`, and slide things in from the start side
   (`-translate-x-full rtl:translate-x-full`). Phone numbers, record IDs, amounts and times in inputs, and the dental
   chart's teeth (anatomical: the patient's right is always on the left) keep `dir="ltr"`.
-- **Fonts.** Poppins for English. In Arabic, IBM Plex Sans Arabic for text, tables and forms, in both scripts (its Latin
-  letters were drawn to sit beside its Arabic ones, so a name typed in English matches the Arabic around it), and El
-  Messiri only for headings (`h1`-`h4`), with Poppins first there for Latin letters (`next/font`: `--font-poppins`,
-  `--font-arabic`, `--font-arabic-headings`; every subset is emitted, `subsets` only decides what is preloaded). The
-  fonts have `adjustFontFallback: false`: an Arial fallback would otherwise draw the Arabic.
+- **Fonts.** One family in both languages (the owner's choice, 2026-10-01): IBM Plex Sans for English, and IBM Plex Sans
+  Arabic for everything in Arabic, headings included, in both scripts (its Latin letters were drawn to sit beside its
+  Arabic ones, so a name typed in English matches the Arabic around it). `next/font`: `--font-plex` and
+  `--font-arabic`; every subset is emitted, `subsets` only decides what is preloaded. The Arabic font has
+  `adjustFontFallback: false`: an Arial fallback would otherwise draw the Arabic.
 - **Arabic typography** (`:root[lang="ar"]` in `globals.css`, overriding Tailwind's variables, so no component changes):
   small text 14 px on 24 px lines and body text 16 px on 27 px lines (Arabic letters look smaller than Latin ones and
   carry dots and marks above and below), line heights of 1.5-1.75 for larger sizes and the `leading-*` classes,

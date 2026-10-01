@@ -5,9 +5,10 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- **Waiting for the owner:** Phases 2, 3 and 4 are done (see Done). Please **restart the dev server** (`npm run
-  dev`) once: two small packages were added for the QR codes. Then look through the new screens; what comes next is
-  the owner's choice.
+- **Waiting for the owner:** Phases 2, 3 and 4 and the new form controls are done (see Done). Please **restart the
+  dev server** (`npm run dev`) once: two small packages were added for the QR codes, and the fonts changed. The red
+  "1 Issue" badge on the patient page should then be gone (see the form controls entry). Then look through the new
+  screens; what comes next is the owner's choice.
 
 ## Backlog
 
@@ -15,6 +16,26 @@ Each finished item says what changed, when, and which commit holds it.
    back end for faster totals (see Known issues in AGENTS.md).
 
 ## Done
+
+- 2026-10-01 - **The app's own form controls, and one font family.** No list, calendar or check box is drawn by the
+  browser any more. Every dropdown opens the app's own list: the same font, rounded corners and shadow as the rest of
+  DentClinic, a check mark on the chosen item, each doctor's photo or initials (and the patient's initials in the
+  patient picker), and a search box when a list has more than 8 items. It works with the keyboard (arrows, Enter,
+  Escape, typing a letter), in Arabic from right to left, in dark mode and inside dialogs (never cut off; Escape closes
+  only the list). On a phone the lists, the calendar and the time picker open from the bottom of the screen; the patient
+  picker and the address suggestions stay under the box, so the keyboard stays open. Dates are picked on our own calendar (Iraqi
+  month names and Arabic day names in Arabic, today marked, Today and Clear), times on our own time picker; checkboxes,
+  radio buttons and the X-ray sliders are drawn in the clinic colour; the address box suggests the governorates in our
+  own list; the theme colour has our own palette with a colour code box. A required field left empty now shows our red
+  message under it ("Fill in this field." / "املأ هذا الحقل.") instead of the browser's bubble. The font is now
+  IBM Plex Sans in English and IBM Plex Sans Arabic for everything in Arabic (El Messiri is gone), so both languages
+  look like one family. Medical values that only say "nothing" show as "لا يوجد" in Arabic and "None" in English, and
+  empty ones as a dash. **The "1 Issue" badge:** on a freshly started dev server, the patient page (every tab and
+  dialog, in both languages) shows no error. The badge most likely came from the dev server having been started
+  before the QR code packages were installed (the top bar's scan button loads one of them), so restarting `npm run
+  dev` should clear it; if it comes back, click the badge and send the message. Before-and-after pictures:
+  [docs/design-changes/4-controls](docs/design-changes/4-controls/README.md). **What to check:** open a few forms (new
+  appointment, new treatment plan, new payment, add patient) in both languages and on a phone.
 
 - 2026-10-01 - **Better Arabic typography.** Arabic screens now read more comfortably: text is a step larger (16 px,
   small text 14 px) with taller lines, so the dots and marks above and below the letters have room; letter spacing is

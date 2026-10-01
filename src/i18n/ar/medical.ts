@@ -2,6 +2,7 @@ import type { Messages } from "../en";
 
 export const medical: Messages["medical"] = {
   title: "تنبيهات طبية",
+  none: "لا يوجد",
   allergy: "حساسية",
   bloodThinner: "مميّع الدم",
   diabetes: "السكري",

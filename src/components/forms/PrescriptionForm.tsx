@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Plus, Save, Trash2 } from "lucide-react";
-import { Alert, Button, Card, Field, FormActions, LinkButton, NumberInput, SelectInput, TextArea, TextInput } from "@/components/ui";
+import { Alert, Button, Card, DateInput, Field, FormActions, LinkButton, NumberInput, SelectInput, TextArea, TextInput } from "@/components/ui";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import PrescriptionWarnings from "@/components/PrescriptionWarnings";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
@@ -14,6 +14,7 @@ import { todayISO } from "@/lib/format";
 import { useDoctors, usePatientMedical } from "@/lib/hooks";
 import { FREQUENCIES, MEDICINE_FIELDS, medicineDefaults, medicineLabel, prescriptionWarnings } from "@/lib/prescriptions";
 import { MEDICINE_GROUPS, type DentalMedicine, type Prescription, type PrescriptionMedicine } from "@/lib/types";
+import { doctorMedia } from "@/components/Avatar";
 
 export interface PrescriptionRow {
   /** Keeps React and the labels stable while rows are added and removed. */
@@ -244,7 +245,7 @@ export default function PrescriptionForm({
             </div>
           )}
           <Field label={t.common.doctor} required>
-            <SelectInput name="doctor" value={form.doctor} onChange={handleChange} required>
+            <SelectInput name="doctor" value={form.doctor} onChange={handleChange} media={doctorMedia(doctors)} required>
               <option value="">{f.selectDoctor}</option>
               {doctorMissing && <option value={form.doctor}>{doctorLabel || form.doctor}</option>}
               {doctors.map((doctor) => (
@@ -255,7 +256,7 @@ export default function PrescriptionForm({
             </SelectInput>
           </Field>
           <Field label={t.common.date} required>
-            <TextInput type="date" name="prescription_date" value={form.prescription_date} onChange={handleChange} required />
+            <DateInput name="prescription_date" value={form.prescription_date} onChange={handleChange} required />
           </Field>
         </div>
       </Card>

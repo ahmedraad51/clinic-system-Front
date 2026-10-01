@@ -8,10 +8,10 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("the app is violet with the Poppins font until the clinic picks its own colour", async ({ page }) => {
+test("the app is violet with the IBM Plex Sans font until the clinic picks its own colour", async ({ page }) => {
   await page.goto("/settings");
   await waitForData(page);
-  await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain("Poppins");
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).fontFamily)).toMatch(/^"?IBM Plex Sans"?,/);
   const brand = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--brand").trim());
   expect(await brand()).toBe(DEFAULT_THEME_COLOR);
   // The clinic colour is on the Features tab.

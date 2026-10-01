@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Save } from "lucide-react";
-import { Alert, Button, Card, Field, FormActions, LinkButton, NumberInput, focusField, SelectInput, TextArea, TextInput } from "@/components/ui";
+import { Alert, Button, Card, DateInput, Field, focusField, FormActions, LinkButton, NumberInput, SelectInput, TextArea } from "@/components/ui";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import LinkSelect from "@/components/ui/LinkSelect";
 import CurrencySelect from "@/components/CurrencySelect";
@@ -258,7 +258,7 @@ export default function PaymentForm({
             </SelectInput>
           </Field>
           <Field label={f.date} required>
-            <TextInput type="date" name="payment_date" value={form.payment_date} onChange={handleChange} required />
+            <DateInput name="payment_date" value={form.payment_date} onChange={handleChange} required />
           </Field>
           {currencies.length > 1 && (
             <Field label={t.money.currency}>

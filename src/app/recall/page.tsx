@@ -88,7 +88,7 @@ function Recall() {
         actions={
           <label className="flex items-center gap-2 text-sm text-gray-600 whitespace-nowrap">
             {t.recall.notSeenFor}
-            <SelectInput value={String(months)} onChange={(e) => setMonths(Number(e.target.value))} className="w-auto">
+            <SelectInput value={String(months)} onChange={(e) => setMonths(Number(e.target.value))} aria-label={t.recall.notSeenFor} className="w-auto">
               {RECALL_PERIODS.map((m) => (
                 <option key={m} value={m}>
                   {t.common.months(m)}

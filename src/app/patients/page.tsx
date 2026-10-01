@@ -129,6 +129,7 @@ function PatientsList() {
         <SearchInput value={search} onChange={setSearch} placeholder={p.searchPlaceholder} />
         {showBalance && (
           <SelectInput
+            name="balance"
             value={owing ? "owing" : ""}
             onChange={(e) => setOwing(e.target.value === "owing")}
             className="sm:w-44"

@@ -1,6 +1,8 @@
 /** The medical alerts band and chips (src/components/MedicalAlerts.tsx, src/lib/medical.ts). */
 export const medical = {
   title: "Medical alerts",
+  /** A medical field that says there is nothing ("None", "no", "لا يوجد" …). */
+  none: "None",
   allergy: "Allergy",
   bloodThinner: "Blood thinner",
   diabetes: "Diabetes",

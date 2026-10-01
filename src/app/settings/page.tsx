@@ -6,24 +6,7 @@ import { CalendarDays, Plus, Settings, Save, Sparkles, Tags, Trash2, Upload } fr
 import RequirePermission from "@/components/Guard";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  DetailLayout, Fraction,
-  Field,
-  FormActions,
-  NumberInput,
-  PageContainer,
-  PageHeader,
-  PageLoading,
-  PhoneInput,
-  ProfileCard,
-  ProgressBar,
-  SelectInput,
-  Tabs,
-  TextInput,
-  Toggle,
+  Alert, Badge, Button, Card, ColorInput, DateInput, DetailLayout, Field, FormActions, Fraction, NumberInput, PageContainer, PageHeader, PageLoading, PhoneInput, ProfileCard, ProgressBar, SelectInput, Tabs, TextInput, TimeInput, Toggle,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -432,8 +415,7 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
               {form.exchange_rates.map((row, index) => (
                 <div key={index} className="flex flex-wrap items-end gap-3">
                   <Field label={t.settings.rateFrom} className="w-44">
-                    <TextInput
-                      type="date"
+                    <DateInput
                       dir="ltr"
                       value={row.rate_date}
                       onChange={(event) =>
@@ -510,10 +492,10 @@ function SettingsFormView({ initial, onSaved }: { initial: ClinicSettings; onSav
       <Card title={t.settings.workingHours}>
         <div className="grid grid-cols-2 gap-4">
           <Field label={t.settings.openingTime}>
-            <TextInput type="time" name="opening_time" value={form.opening_time} onChange={handleChange} dir="ltr" />
+            <TimeInput name="opening_time" value={form.opening_time} onChange={handleChange} dir="ltr" />
           </Field>
           <Field label={t.settings.closingTime}>
-            <TextInput type="time" name="closing_time" value={form.closing_time} onChange={handleChange} dir="ltr" />
+            <TimeInput name="closing_time" value={form.closing_time} onChange={handleChange} dir="ltr" />
           </Field>
         </div>
         <p className="text-xs text-gray-500 mt-3">{t.settings.hoursHint}</p>
@@ -645,16 +627,10 @@ function ThemeColorPicker({ value, onChange }: { value: string; onChange: (value
             style={{ backgroundColor: preset.value }}
           />
         ))}
-        <label className="flex items-center gap-2 ms-1 text-sm text-gray-600">
-          <input
-            type="color"
-            value={current}
-            onChange={(event) => onChange(event.target.value)}
-            aria-label={t.settings.anyColour}
-            className="h-9 w-12 pointer-coarse:h-11 pointer-coarse:w-14 rounded-lg border border-gray-200 bg-surface p-1 cursor-pointer"
-          />
+        <span className="flex items-center gap-2 ms-1 text-sm text-gray-600">
+          <ColorInput value={current} onChange={onChange} label={t.settings.anyColour} />
           {t.settings.other}
-        </label>
+        </span>
       </div>
       <div className="flex flex-wrap items-center gap-3 mt-3">
         <span className="px-4 py-2 rounded-xl text-sm font-medium text-white shadow-sm" style={{ backgroundColor: used }}>

@@ -55,7 +55,7 @@ function Check3({
         disabled={disabled}
         aria-label={name}
         onChange={(event) => onChange(event.target.checked)}
-        className="w-[1.125rem] h-[1.125rem] pointer-coarse:w-6 pointer-coarse:h-6 cursor-pointer accent-[var(--brand)]"
+        className="w-[1.125rem] h-[1.125rem] pointer-coarse:w-6 pointer-coarse:h-6 cursor-pointer"
       />
     </label>
   );

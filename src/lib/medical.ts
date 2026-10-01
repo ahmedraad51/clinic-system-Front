@@ -37,6 +37,17 @@ export function isBlankMedicalText(value: string | null | undefined): boolean {
 }
 
 /**
+ * A medical field the way the screens show it: empty stays empty (the screen shows a dash), a word that only says
+ * "nothing" ("None", "no", "nil", "-", "لا يوجد" …) is shown in the screen's language ("None" / "لا يوجد"), anything else
+ * as it was typed.
+ */
+export function medicalValue(value: string | null | undefined): string {
+  const text = (value || "").trim();
+  if (!text) return "";
+  return isBlankMedicalText(text) ? messages().medical.none : text;
+}
+
+/**
  * An Arabic word from the list, with the prefixes Arabic writes on to a word (و، ب، ف، ل، ال and their mixes)
  * and any ending. It must start a word, so "حمل" is not found inside "يتحمل". Group 1 is the word without the
  * prefix. (No look-behind: older iPads cannot read it.)

@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { FileText } from "lucide-react";
-import { Button, Field, ProgressBar, TextArea, TextInput } from "@/components/ui";
+import { Button, DateInput, Field, ProgressBar, TextArea, TextInput } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { ImageTypeSelect } from "./ImageDetailsDialog";
 import { useI18n } from "@/context/LanguageContext";
@@ -137,7 +137,7 @@ export default function AddImagesDialog({
         </ul>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label={x.takenOn} required>
-            <TextInput type="date" dir="ltr" value={takenOn} onChange={(e) => setTakenOn(e.target.value)} required />
+            <DateInput dir="ltr" value={takenOn} onChange={(e) => setTakenOn(e.target.value)} required />
           </Field>
           <Field label={x.teeth} hint={x.teethHint} error={teethError}>
             <TextInput

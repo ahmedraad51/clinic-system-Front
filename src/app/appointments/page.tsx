@@ -5,11 +5,11 @@ import { useRecordDialogs } from "@/components/RecordDialogs";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarDays, CalendarRange, CalendarX, ChevronLeft, ChevronRight, List, Plus } from "lucide-react";
-import { PatientLink } from "@/components/Avatar";
+import { doctorMedia, PatientLink } from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import AppointmentCalendar, { type CalendarView } from "@/components/AppointmentCalendar";
 import {
-  Button, Card, ClearFiltersButton, ClickableRow, PageContainer, PageHeader, PageLoading, Pagination, SearchInput, Segmented, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, TextInput, Th, Toolbar,
+  Button, Card, ClearFiltersButton, ClickableRow, DateInput, PageContainer, PageHeader, PageLoading, Pagination, SearchInput, Segmented, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
@@ -138,20 +138,21 @@ function Appointments() {
               aria-label={view === "week" ? t.appointments.nextWeek : t.appointments.nextDay}
               className="px-3 rtl:[&>svg]:rotate-180"
             />
-            <TextInput
-              type="date"
+            <DateInput
               dir="ltr"
               value={day}
               onChange={(event) => {
                 if (isDate(event.target.value)) update({ day: event.target.value });
               }}
               aria-label={t.appointments.goToDate}
+              clearable={false}
               className="sm:w-auto flex-1 sm:flex-none min-w-0"
             />
             <SelectInput
               value={doctor}
               onChange={(event) => update({ doctor: event.target.value || (myDoctor ? "all" : "") })}
               aria-label={t.common.doctor}
+              media={doctorMedia(doctors)}
               className="sm:w-auto sm:max-w-[15rem]"
             >
               <option value="">{t.appointments.allDoctors}</option>

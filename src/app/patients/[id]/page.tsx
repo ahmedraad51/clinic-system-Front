@@ -29,6 +29,7 @@ import { deleteDoc, errorMessage, getList, updateDoc, type FilterRow } from "@/l
 import { addMonths, display, formatDate, formatMonth, formatTime, todayISO } from "@/lib/format";
 import { currencyOf, sumByCurrency } from "@/lib/currency";
 import { useDocument, usePatientImages } from "@/lib/hooks";
+import { medicalValue } from "@/lib/medical";
 import { chartSketchToSave, type ChartSketch } from "@/lib/sketch";
 import { DEFAULT_RECALL_MONTHS } from "@/lib/recall";
 import { whatsappNumber } from "@/lib/whatsapp";
@@ -428,11 +429,12 @@ function PatientDetail() {
           <div className="space-y-6 lg:col-span-2">
             <Card title={p.medicalCard} icon={HeartPulse} section="red">
               <DetailList>
-                <DetailRow label={p.allergies}>{patient.allergies}</DetailRow>
-                <DetailRow label={p.currentMedications}>{patient.current_medications}</DetailRow>
-                <DetailRow label={p.chronicDiseases}>{patient.chronic_diseases}</DetailRow>
-                <DetailRow label={p.medicalHistory}>{patient.medical_history}</DetailRow>
-                <DetailRow label={p.notes}>{patient.notes}</DetailRow>
+                {/* "None" and the like in the screen's language ("لا يوجد"); empty shows a dash. */}
+                <DetailRow label={p.allergies}>{medicalValue(patient.allergies)}</DetailRow>
+                <DetailRow label={p.currentMedications}>{medicalValue(patient.current_medications)}</DetailRow>
+                <DetailRow label={p.chronicDiseases}>{medicalValue(patient.chronic_diseases)}</DetailRow>
+                <DetailRow label={p.medicalHistory}>{medicalValue(patient.medical_history)}</DetailRow>
+                <DetailRow label={p.notes}>{medicalValue(patient.notes)}</DetailRow>
               </DetailList>
             </Card>
           </div>

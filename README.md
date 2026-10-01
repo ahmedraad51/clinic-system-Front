@@ -85,6 +85,12 @@ menu and a wide page are chosen per computer in the **Appearance** panel (the pa
 and in Arabic. Before and after, at desktop, tablet and phone size, and in dark mode:
 [docs/design-changes](docs/design-changes/README.md).
 
+**The app's own controls.** Dropdowns, the calendar, the time picker, checkboxes and the colour picker are drawn by
+DentClinic, not the browser: one font (IBM Plex Sans, and IBM Plex Sans Arabic in Arabic), a check mark on the chosen
+item, doctors' photos or initials, a search box in long lists, and full keyboard use. On a phone the lists, calendar and
+time picker open from the bottom of the screen (the patient picker and address suggestions stay under the box while
+typing). Before and after: [docs/design-changes/4-controls](docs/design-changes/4-controls/README.md).
+
 **Forms in dialogs, wide pages.** New and edit forms for appointments, treatment plans and payments open in a dialog
 over the page you are on, already filled in with the patient, plan, tooth or time. Add Patient slides in from the side.
 After saving you stay where you were, and a message offers to open the new record. The patient, doctor, appointment,

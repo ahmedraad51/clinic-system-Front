@@ -12,7 +12,7 @@ import RecordHistory from "@/components/RecordHistory";
 import LabWorkCard from "@/components/LabWorkCard";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import {
-  Alert, Button, Card, DetailLayout, EmptyState, Field, IconTile, LoadError, NotFoundCard, PageContainer, PageHeader, PageLoading, ProfileCard, ProgressBar, RecordLoading, SelectInput, StatusBadge, Table, Td, TextArea, TextInput, Th,
+  Alert, Button, Card, DateInput, DetailLayout, EmptyState, Field, IconTile, LoadError, NotFoundCard, PageContainer, PageHeader, PageLoading, ProfileCard, ProgressBar, RecordLoading, SelectInput, StatusBadge, Table, Td, TextArea, Th, TimeInput,
 } from "@/components/ui";
 import { ConfirmDialog, Modal } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
@@ -28,6 +28,7 @@ import {
   LAB_TREATMENT_TYPES, SESSION_STATUSES, TREATMENT_STATUSES,
   type Payment, type TreatmentPlan, type TreatmentSession, type TreatmentStatus,
 } from "@/lib/types";
+import { doctorMedia } from "@/components/Avatar";
 
 export default function TreatmentDetailPage() {
   return (
@@ -527,14 +528,14 @@ function SessionModal({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <Field label={t.common.date} required>
-            <TextInput type="date" name="session_date" value={form.session_date} onChange={handleChange} required />
+            <DateInput name="session_date" value={form.session_date} onChange={handleChange} required />
           </Field>
           <Field label={t.common.time}>
-            <TextInput type="time" name="session_time" value={form.session_time} onChange={handleChange} dir="ltr" />
+            <TimeInput name="session_time" value={form.session_time} onChange={handleChange} dir="ltr" />
           </Field>
         </div>
         <Field label={t.common.doctor}>
-          <SelectInput name="doctor" value={form.doctor} onChange={handleChange}>
+          <SelectInput name="doctor" value={form.doctor} onChange={handleChange} media={doctorMedia(doctors)}>
             <option value="">{t.treatments.selectDoctor}</option>
             {doctorMissing && <option value={form.doctor}>{session?.doctor_name || plan.doctor_name || form.doctor}</option>}
             {doctors.map((doctor) => (

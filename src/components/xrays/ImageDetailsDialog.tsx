@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Button, Field, SelectInput, TextArea, TextInput } from "@/components/ui";
+import { Button, DateInput, Field, SelectInput, TextArea, TextInput } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
@@ -84,7 +84,7 @@ export default function ImageDetailsDialog({
           <ImageTypeSelect value={form.image_type} onChange={(image_type) => setForm({ ...form, image_type })} />
         </Field>
         <Field label={x.takenOn} required>
-          <TextInput type="date" dir="ltr" value={form.taken_on} onChange={(e) => setForm({ ...form, taken_on: e.target.value })} required />
+          <DateInput dir="ltr" value={form.taken_on} onChange={(e) => setForm({ ...form, taken_on: e.target.value })} required />
         </Field>
         <Field label={x.teeth} hint={x.teethHint} error={teethError}>
           <TextInput

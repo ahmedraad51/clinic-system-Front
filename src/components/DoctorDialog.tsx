@@ -3,7 +3,7 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Camera, Trash2 } from "lucide-react";
 import Avatar from "@/components/Avatar";
-import { Alert, Button, Field, PhoneInput, ProgressBar, SelectInput, TextInput, Toggle } from "@/components/ui";
+import { Alert, Button, Field, PhoneInput, ProgressBar, SelectInput, TextInput, TimeInput, Toggle } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
@@ -177,10 +177,10 @@ export default function DoctorDialog({ doctor, onClose, onSaved }: { doctor: Doc
             <TextInput type="email" name="email" value={form.email} onChange={handleChange} dir="ltr" />
           </Field>
           <Field label={t.doctors.startsAt} hint={t.doctors.startsAtHint}>
-            <TextInput type="time" name="start_time" value={form.start_time} onChange={handleChange} dir="ltr" />
+            <TimeInput name="start_time" value={form.start_time} onChange={handleChange} dir="ltr" />
           </Field>
           <Field label={t.doctors.finishesAt}>
-            <TextInput type="time" name="end_time" value={form.end_time} onChange={handleChange} dir="ltr" />
+            <TimeInput name="end_time" value={form.end_time} onChange={handleChange} dir="ltr" />
           </Field>
         </div>
         <Toggle

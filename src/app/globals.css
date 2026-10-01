@@ -196,8 +196,8 @@
 }
 
 @theme {
-  /* Poppins for English; IBM Plex Sans Arabic and El Messiri (headings) for Arabic (next/font in layout.tsx). */
-  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  /* IBM Plex Sans for English, IBM Plex Sans Arabic for Arabic (next/font in layout.tsx). */
+  --font-sans: var(--font-plex), ui-sans-serif, system-ui, sans-serif;
 
   /* One text scale: 13 px small text, 15 px body. */
   --text-xs: 0.8125rem;
@@ -219,6 +219,14 @@
     from {
       opacity: 0;
       transform: translateY(6px);
+    }
+  }
+  /* A dropdown, calendar or time picker opening under its field. */
+  --animate-pop-in: pop-in 0.12s ease-out backwards;
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(-3px);
     }
   }
 }
@@ -265,6 +273,104 @@
     outline-offset: 2px;
     border-radius: 6px;
   }
+
+  /*
+   * Checkboxes and radio buttons drawn by the app, not the browser: a rounded box (a circle for a radio) in the field
+   * border colour, filled with the clinic colour and a white check mark (a dot, or a dash when partly on) when chosen.
+   * Native underneath, so the keyboard, labels, forms and tests work as before; size classes on the input still win.
+   */
+  input[type="checkbox"],
+  input[type="radio"] {
+    appearance: none;
+    flex-shrink: 0;
+    width: 1.125rem;
+    height: 1.125rem;
+    margin: 0;
+    border: 1.5px solid color-mix(in srgb, var(--ink) 38%, var(--surface));
+    border-radius: 0.3125rem;
+    background: var(--surface) center / 80% no-repeat;
+    cursor: pointer;
+    vertical-align: middle;
+    transition:
+      background-color 0.12s,
+      border-color 0.12s,
+      box-shadow 0.12s;
+  }
+  input[type="radio"] {
+    border-radius: 9999px;
+  }
+  input[type="checkbox"]:hover:not(:disabled),
+  input[type="radio"]:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--ink) 60%, var(--surface));
+  }
+  input[type="checkbox"]:checked,
+  input[type="checkbox"]:indeterminate,
+  input[type="radio"]:checked {
+    background-color: var(--brand);
+    border-color: var(--brand);
+  }
+  input[type="checkbox"]:checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
+  }
+  input[type="checkbox"]:indeterminate {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M4 8h8'/%3E%3C/svg%3E");
+  }
+  input[type="radio"]:checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='3.2' fill='white'/%3E%3C/svg%3E");
+    background-size: 100%;
+  }
+  input[type="checkbox"]:focus-visible,
+  input[type="radio"]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 35%, transparent);
+  }
+  input[type="checkbox"]:disabled,
+  input[type="radio"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Sliders (the X-ray viewer's light and contrast): a thin rounded track and a round handle in the clinic colour. */
+  input[type="range"] {
+    appearance: none;
+    height: 1.25rem;
+    background: transparent;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 0.25rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, currentColor 30%, transparent);
+  }
+  input[type="range"]::-moz-range-track {
+    height: 0.25rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, currentColor 30%, transparent);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 1rem;
+    height: 1rem;
+    margin-top: -0.375rem;
+    border: 2px solid white;
+    border-radius: 9999px;
+    background: var(--brand);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 0.75rem;
+    height: 0.75rem;
+    border: 2px solid white;
+    border-radius: 9999px;
+    background: var(--brand);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+  }
+  input[type="range"]:focus-visible {
+    outline: none;
+  }
+  input[type="range"]:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 40%, transparent);
+  }
 }
 
 html {
@@ -274,14 +380,14 @@ html {
 body {
   background-color: var(--page-bg);
   color: color-mix(in srgb, var(--ink) 84%, var(--surface));
-  font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-plex), ui-sans-serif, system-ui, sans-serif;
   font-size: 0.9375rem;
 }
 
 /*
- * Arabic screens: IBM Plex Sans Arabic for text, tables and forms, in both scripts: its Latin letters (IBM Plex Sans)
- * were drawn to sit beside its Arabic ones, so a patient's name typed in English matches the Arabic around it in size
- * and weight. Headings: El Messiri for the Arabic letters, Poppins (first, without Arabic letters) for Latin ones.
+ * Arabic screens: IBM Plex Sans Arabic for all text, headings included, in both scripts: its Latin letters (IBM Plex
+ * Sans) were drawn to sit beside its Arabic ones, so a patient's name typed in English matches the Arabic around it.
+ * English screens use IBM Plex Sans: the two languages look like one family.
  */
 :root[lang="ar"] body {
   font-family: var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
@@ -292,7 +398,7 @@ body {
 /*
  * Arabic typography. Arabic letters look smaller than Latin ones at the same size and carry dots and marks above and
  * below the line, so on Arabic screens the small and body text are a step larger (14 and 16 px) with taller lines
- * (about 1.7), headings get room for El Messiri's tall letters, and there is no letter spacing at all: spacing pulls
+ * (about 1.7), headings get more room, and there is no letter spacing at all: spacing pulls
  * joined Arabic letters apart. Every text-*, leading-* and tracking-* class reads these variables.
  */
 :root[lang="ar"] {
@@ -325,9 +431,6 @@ body {
 /* Arabic has no capital letters and no italics: an English-style label stays plain. */
 :root[lang="ar"] :where(.italic, em, i) {
   font-style: normal;
-}
-:root[lang="ar"] :where(h1, h2, h3, h4) {
-  font-family: var(--font-poppins), var(--font-arabic-headings), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* The page behind the cards. */

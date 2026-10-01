@@ -87,7 +87,9 @@ export function Modal({
         closeRef.current();
         return;
       }
-      if (event.key !== "Tab" || !dialog) return;
+      if (event.key !== "Tab" || !dialog || event.defaultPrevented) return;
+      // A picker's panel (a Popover on the page body) keeps Tab inside itself.
+      if ((document.activeElement as HTMLElement | null)?.closest("[data-popover]")) return;
       const items = [...dialog.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => el.offsetParent !== null);
       if (items.length === 0) return;
       const firstItem = items[0];

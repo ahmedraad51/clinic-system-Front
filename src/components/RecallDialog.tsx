@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Alert, Button, Field, SelectInput, TextInput } from "@/components/ui";
+import { Alert, Button, DateInput, Field, SelectInput } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
@@ -75,7 +75,7 @@ export default function RecallDialog({
         </Field>
         {needsDate && (
           <Field label={t.recall.nextOn} hint={t.recall.countedFrom(formatDate(from))}>
-            <TextInput type="date" value={date} onChange={(event) => setDate(event.target.value)} required />
+            <DateInput value={date} onChange={(event) => setDate(event.target.value)} required />
           </Field>
         )}
         {choice === "none" && <p className="text-sm text-gray-600">{t.recall.noneHint}</p>}

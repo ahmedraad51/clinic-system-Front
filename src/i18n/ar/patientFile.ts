@@ -15,7 +15,6 @@ export const patientFile: Messages["patientFile"] = {
   },
   details: "بيانات المريض",
   medical: "المعلومات الطبية",
-  none: "لا يوجد",
   noTreatments: "لا توجد خطط علاج.",
   noAppointments: "لا توجد مواعيد.",
   noPrescriptions: "لا توجد وصفات طبية.",

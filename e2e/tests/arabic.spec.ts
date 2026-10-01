@@ -13,8 +13,8 @@ test("the app opens in Arabic, right to left, and switches to English and back",
   await expect(html).toHaveAttribute("lang", "ar");
   await expect(html).toHaveAttribute("dir", "rtl");
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain("IBM Plex Sans Arabic");
-  // Headings are El Messiri.
-  await expect.poll(() => page.evaluate(() => getComputedStyle(document.querySelector("h1") as Element).fontFamily)).toContain("El Messiri");
+  // Headings use the same family.
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.querySelector("h1") as Element).fontFamily)).toContain("IBM Plex Sans Arabic");
 
   // Arabic words, Iraqi month names and dinars.
   await expect(page.getByRole("heading", { name: "صباح الخير، Administrator" })).toBeVisible();

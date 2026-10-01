@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Save } from "lucide-react";
-import { Alert, Button, Card, Field, FormActions, LinkButton, SelectInput, TextArea, TextInput } from "@/components/ui";
+import { Alert, Button, Card, DateInput, Field, FormActions, LinkButton, SelectInput, TextArea, TextInput, TimeInput } from "@/components/ui";
 import MedicalAlerts from "@/components/MedicalAlerts";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import { ConfirmDialog } from "@/components/ui/Modal";
@@ -14,6 +14,7 @@ import { label } from "@/i18n";
 import { useI18n } from "@/context/LanguageContext";
 import { useSettings } from "@/context/SettingsContext";
 import { APPOINTMENT_STATUSES, DURATIONS, type Appointment } from "@/lib/types";
+import { doctorMedia } from "@/components/Avatar";
 
 export interface AppointmentFormData {
   patient: string;
@@ -221,7 +222,7 @@ export default function AppointmentForm({
             </div>
           )}
           <Field label={t.common.doctor} required className="sm:col-span-2">
-            <SelectInput name="doctor" value={form.doctor} onChange={handleChange} required>
+            <SelectInput name="doctor" value={form.doctor} onChange={handleChange} media={doctorMedia(doctors)} required>
               <option value="">{f.selectDoctor}</option>
               {doctorMissing && (
                 <option value={form.doctor}>
@@ -238,10 +239,10 @@ export default function AppointmentForm({
             </SelectInput>
           </Field>
           <Field label={t.common.date} required>
-            <TextInput type="date" dir="ltr" name="appointment_date" value={form.appointment_date} onChange={handleChange} required />
+            <DateInput dir="ltr" name="appointment_date" value={form.appointment_date} onChange={handleChange} required />
           </Field>
           <Field label={t.common.time} required hint={hours}>
-            <TextInput type="time" dir="ltr" name="appointment_time" value={form.appointment_time} onChange={handleChange} required />
+            <TimeInput dir="ltr" name="appointment_time" value={form.appointment_time} onChange={handleChange} required />
           </Field>
           <Field label={f.duration}>
             <SelectInput name="duration_minutes" value={form.duration_minutes} onChange={handleChange}>

@@ -255,7 +255,7 @@ export default function ImageViewer({
               value={view.brightness}
               onChange={(event) => setView({ ...view, brightness: Number(event.target.value) })}
               aria-label={x.brightness}
-              className="w-20 sm:w-28 accent-primary-400"
+              className="w-20 sm:w-28 text-white"
             />
           </label>
           <label className="flex items-center gap-2 px-2 text-xs text-white/85" title={x.contrast}>
@@ -267,7 +267,7 @@ export default function ImageViewer({
               value={view.contrast}
               onChange={(event) => setView({ ...view, contrast: Number(event.target.value) })}
               aria-label={x.contrast}
-              className="w-20 sm:w-28 accent-primary-400"
+              className="w-20 sm:w-28 text-white"
             />
           </label>
           <ViewerButton icon={SunMoon} label={x.invert} pressed={view.invert} onClick={() => setView({ ...view, invert: !view.invert })} />

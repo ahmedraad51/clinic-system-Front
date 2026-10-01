@@ -63,6 +63,17 @@ export default function Avatar({
 }
 
 /** The user who is logged in: their photo (or their doctor photo), else their initials. */
+/**
+ * The picture before each doctor in a dropdown (SelectInput's `media`): the doctor's photo or initials. Values that
+ * are not one of these doctors ("all doctors", nobody chosen) get none.
+ */
+export function doctorMedia(doctors: ReadonlyArray<{ name: string; full_name?: string | null; photo?: string | null }> | null | undefined) {
+  return function DoctorMedia(value: string) {
+    const doctor = doctors?.find((d) => d.name === value);
+    return doctor ? <Avatar name={doctor.full_name || doctor.name} photo={doctor.photo} size={24} /> : null;
+  };
+}
+
 export function MyAvatar({ size = 32, className }: { size?: number; className?: string }) {
   const { profile, doctor, displayName } = useSession();
   return <Avatar name={displayName} photo={profile?.user_image || doctor?.photo} size={size} className={className} />;

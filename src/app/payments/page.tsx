@@ -8,7 +8,7 @@ import { CreditCard, FileText, Plus, Receipt } from "lucide-react";
 import { PatientLink } from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import {
-  Button, Card, ClearFiltersButton, ClickableRow, LinkButton, PageContainer, PageHeader, Pagination, SearchInput, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, TextInput, Th, Toolbar,
+  Button, Card, ClearFiltersButton, ClickableRow, DateInput, LinkButton, PageContainer, PageHeader, Pagination, SearchInput, SelectInput, StatusBadge, Table, TableError, TableLoading, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
@@ -129,9 +129,9 @@ function PaymentsList() {
           ))}
         </SelectInput>
         <div className="flex items-center gap-2 min-w-0">
-          <TextInput type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label={p.fromDate} className="min-w-0 flex-1 sm:flex-none sm:w-40" />
+          <DateInput value={from} onChange={(e) => setFrom(e.target.value)} aria-label={p.fromDate} className="min-w-0 flex-1 sm:flex-none sm:w-40" />
           <span className="text-gray-500 text-sm">{p.to}</span>
-          <TextInput type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label={p.toDate} className="min-w-0 flex-1 sm:flex-none sm:w-40" />
+          <DateInput value={to} onChange={(e) => setTo(e.target.value)} aria-label={p.toDate} className="min-w-0 flex-1 sm:flex-none sm:w-40" />
         </div>
       </Toolbar>
 

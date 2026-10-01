@@ -43,7 +43,7 @@ test.describe("in Arabic", () => {
 test("English keeps its own type", async ({ page }) => {
   await page.goto("/patients/PAT-2026-00008");
   await waitForData(page);
-  expect((await styleOf("body", "font-family")(page)).split(",")[0]).toContain("Poppins");
+  expect((await styleOf("body", "font-family")(page)).split(",")[0]).toMatch(/^"?IBM Plex Sans"?$/);
   const sm = await page.evaluate(() => getComputedStyle(document.querySelector(".text-sm") as Element).fontSize);
   expect(sm).toBe("15px");
 });

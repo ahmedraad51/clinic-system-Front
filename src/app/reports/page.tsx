@@ -6,8 +6,7 @@ import { AlertCircle, BarChart2, BriefcaseMedical, CalendarCheck, CalendarDays, 
 import { BarChart, DonutChart, type ChartPoint } from "@/components/Charts";
 import RequirePermission from "@/components/Guard";
 import {
-  Button, Card, EmptyState, LoadError, PageContainer, PageHeader, PageLoading, SelectInput, StatCard,
-  StatusBadge, Table, TableMessage, Td, TextInput, Th, Toolbar,
+  Button, Card, DateInput, EmptyState, LoadError, PageContainer, PageHeader, PageLoading, SelectInput, StatCard, StatusBadge, Table, TableMessage, Td, Th, Toolbar,
 } from "@/components/ui";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
@@ -334,9 +333,9 @@ function Reports() {
         </SelectInput>
         {range === "custom" && (
           <div className="flex items-center gap-2">
-            <TextInput type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} aria-label={r.fromDate} className="sm:w-40" />
+            <DateInput value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} aria-label={r.fromDate} className="sm:w-40" />
             <span className="text-gray-500 text-sm">{r.to}</span>
-            <TextInput type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} aria-label={r.toDate} className="sm:w-40" />
+            <DateInput value={customTo} onChange={(e) => setCustomTo(e.target.value)} aria-label={r.toDate} className="sm:w-40" />
           </div>
         )}
       </Toolbar>

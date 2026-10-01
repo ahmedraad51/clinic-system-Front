@@ -17,6 +17,7 @@ import { label, messages } from "@/i18n";
 import {
   CHILD_LOWER_TEETH, CHILD_UPPER_TEETH, LOWER_TEETH, TREATMENT_STATUSES, TREATMENT_TYPES, UPPER_TEETH, type TreatmentPlan,
 } from "@/lib/types";
+import { doctorMedia } from "@/components/Avatar";
 
 export interface TreatmentFormData {
   patient: string;
@@ -193,7 +194,7 @@ export default function TreatmentForm({
             </div>
           )}
           <Field label={t.common.doctor}>
-            <SelectInput name="doctor" value={form.doctor} onChange={handleChange}>
+            <SelectInput name="doctor" value={form.doctor} onChange={handleChange} media={doctorMedia(doctors)}>
               <option value="">{t.treatmentForm.selectDoctor}</option>
               {doctorMissing && <option value={form.doctor}>{doctorLabel || form.doctor}</option>}
               {doctors.map((doctor) => (

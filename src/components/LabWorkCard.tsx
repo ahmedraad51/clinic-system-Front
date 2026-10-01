@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { FlaskConical, PackageCheck, Pencil } from "lucide-react";
-import { Alert, Badge, Button, Card, DetailList, DetailRow, Field, TextInput } from "@/components/ui";
+import { Alert, Badge, Button, Card, DateInput, DetailList, DetailRow, Field, TextInput } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
@@ -161,14 +161,14 @@ function LabDialog({ plan, onClose, onSaved }: { plan: TreatmentPlan; onClose: (
         </Field>
         <div className="grid grid-cols-2 gap-4">
           <Field label={t.lab.sent} required>
-            <TextInput type="date" value={form.lab_sent_date} onChange={(e) => setForm({ ...form, lab_sent_date: e.target.value })} required />
+            <DateInput value={form.lab_sent_date} onChange={(e) => setForm({ ...form, lab_sent_date: e.target.value })} required />
           </Field>
           <Field label={t.lab.dueBack}>
-            <TextInput type="date" value={form.lab_due_date} onChange={(e) => setForm({ ...form, lab_due_date: e.target.value })} />
+            <DateInput value={form.lab_due_date} onChange={(e) => setForm({ ...form, lab_due_date: e.target.value })} />
           </Field>
         </div>
         <Field label={t.lab.received} hint={t.lab.receivedHint}>
-          <TextInput type="date" value={form.lab_received_date} onChange={(e) => setForm({ ...form, lab_received_date: e.target.value })} />
+          <DateInput value={form.lab_received_date} onChange={(e) => setForm({ ...form, lab_received_date: e.target.value })} />
         </Field>
         {error && <Alert tone="red">{error}</Alert>}
         <div className="flex flex-wrap gap-2 pt-2">
