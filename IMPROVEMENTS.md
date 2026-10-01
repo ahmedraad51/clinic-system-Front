@@ -5,14 +5,24 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Now
 
-- Phase 4 goes on in the new look: QR codes, the whole patient file in print,
-  custom prescription paper, restoring deleted records, and installing the app.
+- **Waiting for the owner:** Phases 2, 3 and 4 are done (see Done). Please **restart the dev server** (`npm run
+  dev`) once: two small packages were added for the QR codes. Then look through the new screens; what comes next is
+  the owner's choice.
 
 ## Backlog
 
-1. Phase 4 of the redesign plan (the features from the competitor study), item 8, in both languages.
+1. Ideas for later: SMS or WhatsApp sending from the server, online booking by patients, and a report method on the
+   back end for faster totals (see Known issues in AGENTS.md).
 
 ## Done
+
+- 2026-10-01 - **DentClinic as an installable app (Phase 4, item 8).** DentClinic can now be installed like a program
+  on a computer, tablet or phone: in Chrome or Edge with the install icon in the address bar or **Profile → Install
+  DentClinic**, and on an iPhone or iPad with Share → Add to Home Screen. It opens in its own window with the tooth
+  icon, starts on the dashboard, and its icon has shortcuts to Today, Appointments and Patients. Without a
+  connection it shows a clear "You are offline" page (Arabic and English) with Try Again, instead of the browser's
+  error; patient data is never stored on the device. It works with the production build over HTTPS. English and
+  Arabic. **What to check:** install it on the reception computer and on a tablet.
 
 - 2026-10-01 - **Activity log and restoring deleted records (Phase 4, item 7).** A new **Activity** page (menu:
   System, for managers) lists who added, changed and deleted which record (patients, appointments, treatment plans,

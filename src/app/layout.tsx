@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { El_Messiri, IBM_Plex_Sans_Arabic, Poppins } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
@@ -7,6 +7,7 @@ import { SettingsProvider } from "@/context/SettingsContext";
 import { SessionProvider } from "@/context/SessionContext";
 import { ToastProvider } from "@/context/ToastContext";
 import MainLayout from "@/components/MainLayout";
+import { ServiceWorkerRegister } from "@/components/InstallApp";
 import { DEFAULT_LANG, dirOf, LANG_BOOT_SCRIPT } from "@/i18n/runtime";
 import { ZOOM_BOOT_SCRIPT } from "@/lib/display";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme";
@@ -40,6 +41,18 @@ const arabicHeadings = El_Messiri({
 export const metadata: Metadata = {
   title: "DentClinic",
   description: "Dental Clinic Management System",
+  applicationName: "DentClinic",
+  // The manifest (app/manifest.ts) is linked by Next.js itself. For iPhone and iPad: the home screen icon and title.
+  appleWebApp: { capable: true, title: "DentClinic", statusBarStyle: "default" },
+  icons: {
+    icon: [{ url: "/icons/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+  },
+};
+
+/** The installed app's title bar in the clinic's default colour. */
+export const viewport: Viewport = {
+  themeColor: "#6a5fdd",
 };
 
 export default function RootLayout({
@@ -61,6 +74,7 @@ export default function RootLayout({
               <ToastProvider>
                 <LanguageProvider>
                   <MainLayout>{children}</MainLayout>
+                  <ServiceWorkerRegister />
                 </LanguageProvider>
               </ToastProvider>
             </SessionProvider>

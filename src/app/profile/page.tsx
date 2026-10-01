@@ -5,6 +5,7 @@ import { UserRound, Check, KeyRound, LayoutGrid, Shield, Users, X } from "lucide
 import RequirePermission from "@/components/Guard";
 import { MyAvatar } from "@/components/Avatar";
 import ScreenSizeCard from "@/components/ScreenSizeCard";
+import { InstallAppCard } from "@/components/InstallApp";
 import {
   Alert, Badge, Button, Card, DetailLayout, Fraction, Field, PageContainer, PageHeader, ProfileCard, SelectInput, TextInput,
 } from "@/components/ui";
@@ -117,6 +118,7 @@ function Profile() {
         </Card>
 
         <ScreenSizeCard />
+        <InstallAppCard />
         <ChangePasswordCard demo={authDisabled} />
         {authDisabled && <DemoUserCard />}
       </DetailLayout>

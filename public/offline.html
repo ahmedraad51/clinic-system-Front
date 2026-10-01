@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DentClinic</title>
+  <link rel="icon" href="/icons/icon.svg">
+  <style>
+    :root { color-scheme: light dark; --ink: #2f2b3d; --page: #f8f7fa; --card: #ffffff; --brand: #6a5fdd; }
+    @media (prefers-color-scheme: dark) { :root { --ink: #e1def5; --page: #25293c; --card: #2f3349; } }
+    body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px;
+      background: var(--page); color: var(--ink); font-family: system-ui, "Segoe UI", Tahoma, sans-serif; }
+    main { max-width: 26rem; width: 100%; background: var(--card); border-radius: 6px; padding: 32px 24px; text-align: center;
+      box-shadow: 0 3px 12px rgba(47, 43, 61, 0.14); }
+    img { width: 64px; height: 64px; }
+    h1 { font-size: 1.25rem; margin: 16px 0 8px; }
+    p { margin: 0 0 8px; line-height: 1.6; opacity: 0.8; }
+    .en { direction: ltr; border-top: 1px solid rgba(127, 127, 127, 0.25); margin-top: 20px; padding-top: 16px; }
+    button { margin-top: 20px; min-height: 44px; padding: 0 24px; border: 0; border-radius: 6px; background: var(--brand);
+      color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <main>
+    <img src="/icons/icon.svg" alt="">
+    <h1>لا يوجد اتصال بالإنترنت</h1>
+    <p>DentClinic يحتاج إلى الاتصال لعرض بيانات العيادة. تحقق من الشبكة ثم أعد المحاولة.</p>
+    <div class="en">
+      <h1>You are offline</h1>
+      <p>DentClinic needs a connection to show the clinic's data. Check the network, then try again.</p>
+    </div>
+    <button type="button" onclick="location.reload()">إعادة المحاولة · Try Again</button>
+  </main>
+</body>
+</html>

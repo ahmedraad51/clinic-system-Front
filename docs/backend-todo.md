@@ -261,6 +261,12 @@ restore relies on (the record goes back under its own name). Restore should refu
 plan or appointment is gone, with a readable message, and run the same `validate()` as a new record (a payment must
 still fit its plan). Deleted X-rays and photos come back without their file (Frappe deletes the File).
 
+### Serving the installable app
+
+The front end is an installable app (web app manifest at `/manifest.webmanifest`, service worker at `/sw.js`). Both
+are served by Next.js itself; the site needs **HTTPS** for installing and for the service worker. The service worker
+never caches `/frappe/…`, so API answers always come from the server.
+
 ## 4. API calls the front end makes
 
 - `GET /api/resource/<Doctype>` with `fields`, `filters`, `or_filters`, `order_by`, `limit_start`,

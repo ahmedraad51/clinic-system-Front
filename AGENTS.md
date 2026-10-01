@@ -31,7 +31,7 @@ accurate.
 | `npm run build` | **Passes** (checked 2026-09-30): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-30). `npx tsc --noEmit` passes too. | |
 | Languages | **Arabic (default, right to left) and English.** Every text is in `src/i18n/en/*.ts` and `src/i18n/ar/*.ts`; the switch is in the menu. See **Languages** below. **Every new text must be added in both languages.** | `src/i18n/`, `src/context/LanguageContext.tsx` |
-| Tests | **Playwright tests pass** (190 tests, 18 of them in Arabic, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, expenses and profit, the waiting room, QR codes, the printed patient file, prescription paper, the activity log, phone numbers, the form dialogs and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (194 tests, 19 of them in Arabic, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, expenses and profit, the waiting room, QR codes, the printed patient file, prescription paper, the activity log, the installable app, phone numbers, the form dialogs and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -92,7 +92,19 @@ src/lib/frappe.ts   the only module that touches data
 - **Rendering model.** Only `src/app/layout.tsx`, `src/app/page.tsx` (a server-side `redirect("/dashboard")`)
   and `src/app/not-found.tsx` are Server Components. Every other page is a Client Component that loads its
   data in effects after mount. No Server Actions, no server-side data fetching, no `loading.tsx` or
-  `error.tsx`, no `proxy.ts` (the Next 16 name for middleware).
+  `error.tsx`, no `proxy.ts` (the Next 16 name for middleware). `src/app/manifest.ts` is the web app manifest
+  (`/manifest.webmanifest`).
+- **Installable app (PWA).** `src/app/manifest.ts` (name, `start_url` `/dashboard`, standalone, the clinic violet,
+  icons in `public/icons/`, shortcuts to Today, Appointments and Patients), the icons and title for iPhone in
+  `layout.tsx` (`appleWebApp`, `viewport.themeColor`), and `public/sw.js`, registered by `ServiceWorkerRegister`
+  (`src/components/InstallApp.tsx`) in the **production build only** (never under `npm run dev`). The service
+  worker caches only `public/offline.html` (Arabic and English) and its icon: when opening a page fails with no
+  connection it shows that page; everything else, and all data (`/frappe/…`), goes to the network untouched. Bump
+  `CACHE` in `sw.js` when the offline page changes. `InstallAppCard` on `/profile` shows **Install the App** when the
+  browser offers it (`beforeinstallprompt`, kept for the button), how to install otherwise (Share → Add to Home
+  Screen on iPhone and iPad), or that it is installed. The PNG icons are rendered from `icon.svg` and
+  `icon-maskable.svg`; redraw them from the SVGs (at 192, 512, maskable 512 and Apple 180) when the logo changes.
+  Installing needs HTTPS (or localhost).
 - **Provider tree** (in `layout.tsx`): `AuthProvider` → `SettingsProvider` → `SessionProvider` →
   `ToastProvider` → `LanguageProvider` → `MainLayout` → page. `LanguageProvider` keys its children by the language,
   so everything below is drawn again when it changes.
@@ -238,7 +250,7 @@ docs/
 ├── arabic/                   the main screens in Arabic at three sizes (npm run screenshots:arabic)
 └── design-changes/           each redesign before and after: 1-midnight/, 2-clean/ (npm run screenshots:design),
                               3-dialogs-wide/ (e2e/design-changes/wide-pages.spec.ts)
-public/                       placeholder SVGs from create-next-app (unused)
+public/                       sw.js and offline.html (the installable app), icons/ (the app icons), demo/xrays/ (the demo X-rays)
 e2e/
 ├── helpers.ts                waitForData, navigate (client-side, keeps the dummy data), openFromMenu, pickLink (optionally inside a dialog), formDialog, openSaved
 ├── tests/                    the Playwright tests (npm run test:e2e)
@@ -307,7 +319,7 @@ the dialog to be hidden, and use `openSaved(page, "Payment recorded.")` to follo
 | `/activity` | `manage_users` | The activity log (menu: System → Activity): who **added** (each record's `owner` and `creation`), **changed** (`Version` records, shown with `readableChanges()`, `fieldLabel()` and `historyValue()`, up to 3 changes a line; a version with nothing readable is left out) and **deleted** (`Deleted Document`) which record, newest first, merged by `mergeActivity()` over `ACTIVITY_DOCTYPES`; filters **What happened** and **Record**; 40 at a time with Show More. A deleted record has **Restore** (`restoreDeleted()`): it comes back under its own name, and the line then says Restored and links to it. Titles and IDs sit in `<bdi>` for Arabic screens |
 | `/whatsapp` | `manage_users` | Templates (add, edit, delete, placeholders, live preview) and the message log (phone numbers shown with the middle hidden, `maskPhone()`; the full number is on the patient's page) Each template has a **Language** (Arabic, English or any; `language`), shown on its card; reminders and the Send Message dialog prefer the screen's language (`pickTemplate`). |
 | `/settings` | `manage_users` | A clinic card (logo, name, phone, currencies, open days, prices set, contact details) beside the settings in tabs: **Clinic**, **Currencies**, **Language**, **Working Hours**, **Price List**, **Features**; one Save Settings for all of them, and a failed check opens the tab that has the problem. Clinic Settings: name, logo upload, contact, tax number, currency, working hours, feature switches, theme colour, **Phone Country Code** (`phone_country_code`, digits only, empty means 964; added to local numbers in WhatsApp links, `useSettings().countryCode`), **Currencies** (a **Second currency** such as USD, `second_currency`, and its **Exchange rates**, `exchange_rates`: rows of a date and "1 USD in IQD", each counting from its date; Add Rate, a remove button per row; every row needs a date and an amount above zero, one per date), **Price List** (a usual price per treatment type, saved in `treatment_prices`), and **Open on** day toggles saved as `working_days` (`useSettings().isOpenOn(iso)`; nothing set means open every day). Closed days are shaded "Closed" in the calendar, the day view shows a notice, and booking on one shows a note and asks "Book anyway?" The **Language** card: **Default language** (`default_language`, Arabic or English: the language of users who did not choose one) and **Arabic digits** (`arabic_digits`: Arabic screens write ٠-٩). |
-| `/profile` | none | A profile card beside the rest; what I can do is the permissions table, read only. My details (with `MyAvatar`), **Screen Size on This Computer** (80, 90, 100, 110 or 120 %: `saveZoom()` sets the root font size, and every size is in rem, so text and spacing scale together; kept in `localStorage.screen_zoom` and applied before the first paint by `ZOOM_BOOT_SCRIPT` in `layout.tsx`), what I can do, change password, and (login off only) Try Another User |
+| `/profile` | none | A profile card beside the rest; what I can do is the permissions table, read only. My details (with `MyAvatar`), **Screen Size on This Computer** (80, 90, 100, 110 or 120 %: `saveZoom()` sets the root font size, and every size is in rem, so text and spacing scale together; kept in `localStorage.screen_zoom` and applied before the first paint by `ZOOM_BOOT_SCRIPT` in `layout.tsx`), what I can do, change password, **Install DentClinic** (`InstallAppCard`), and (login off only) Try Another User |
 
 **Forms in dialogs.** New and edit forms for appointments, treatment plans and payments open in a dialog over the
 page (`useRecordDialogs()` from `src/components/RecordDialogs.tsx`: `open({ kind: "newTreatment", prefill: { patient },

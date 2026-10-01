@@ -206,7 +206,7 @@ what they are not allowed to do.
 | `/activity` | The activity log: who added, changed and deleted which record, and when; a record deleted by mistake is restored with one click |
 | `/whatsapp` | Reminder templates with a live preview, and the message log, with phone numbers partly hidden |
 | `/settings` | In tabs: clinic name and logo, contact details, currency (Iraqi dinars are shown without decimals), a second currency (US dollars) with its exchange rates by date, the phone country code (964 for Iraq, added to local numbers such as `0770…` in WhatsApp links), working hours, feature switches, and the clinic colour (the whole app follows it), and a price list that fills in treatment costs |
-| `/profile` | Your details and permissions, change password, and the screen size on this computer (bigger text for a reception monitor) |
+| `/profile` | Your details and permissions, change password, the screen size on this computer (bigger text for a reception monitor), and **Install DentClinic** as an app |
 
 ### Project structure
 
@@ -330,6 +330,11 @@ Open <http://localhost:3000> — it redirects straight to the dashboard, already
 example clinic: Iraqi patients and doctors, addresses in Baghdad and other governorates, `07xx` mobile numbers
 and prices in Iraqi dinars (IQD).
 Node **20.9+** is required (developed on Node 22).
+
+**Install as an app.** DentClinic can be installed on a computer, tablet or phone (Chrome or Edge: the install icon
+in the address bar, or Profile → Install DentClinic; iPhone and iPad: Share → Add to Home Screen). It then opens in
+its own window, and shows a friendly page when there is no connection. This needs the production build over HTTPS
+(`npm run build` and `npm run start` behind HTTPS); `npm run dev` does not register the service worker.
 
 ### Checks and tests
 
