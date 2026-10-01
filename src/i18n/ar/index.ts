@@ -56,7 +56,9 @@ import { setup } from "./setup";
 import { importer } from "./importer";
 import { exporter } from "./exporter";
 import { plan } from "./plan";
-import { platform } from "./platform";
+import { platform } from "./platform";
+import { backup } from "./backup";
+import { license } from "./license";
 
 /** The Arabic texts: Modern Standard Arabic as clinic staff in Iraq use it. */
 export const ar: Messages = {
@@ -118,4 +120,6 @@ export const ar: Messages = {
   exporter,
   plan,
   platform,
+  backup,
+  license,
 };

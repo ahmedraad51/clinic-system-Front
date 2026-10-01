@@ -1145,3 +1145,23 @@ only (a new Role; a clinic's System Manager must not have it), and refuses every
 - **`dent_app.platform.payments`** (optional `clinic`), newest first; **`trial_requests`** and **`change_requests`**,
   newest first.
 - Log every one of these changes (who, when) and keep payments forever: they are the platform's accounts.
+
+### Server and backups (every mode, mostly the clinic server)
+
+- **Backups every night** at a set time (`schedule_time`, e.g. 02:00) with Frappe's own backup (`bench backup
+  --with-files`), kept for `keep_days` (14) days on the clinic server's backup disk; a clinic server with a cloud copy
+  also sends each one to the copy. Record each as a **Server Backup** (`BKP-…`): `created_at`, `kind` (`automatic` or
+  `manual`), `status` (`running`, `done`, `failed`), `size_mb`, `in_cloud`, `file_name`, `by` (a manual one: the user's
+  full name), `error` (in words, in the clinic's language).
+- **`dent_app.api.backup.overview`** (`manage_users`): `BackupOverview` in `src/lib/server.ts`: `backups` (newest first),
+  `schedule_time`, `keep_days`, and `disk` (`free_gb`, `total_gb` of the backup disk; null in the cloud).
+- **`dent_app.api.backup.backup_now`** (`manage_users`; refused on the cloud copy and while one is running): starts a
+  backup in a background job and answers its record with `status: "running"`. The page asks `overview` every 1.5 s
+  until it is done.
+- **`dent_app.api.backup.download`** (GET, `backup=<name>`, `manage_users`, also on the cloud copy): sends the backup as
+  one file (a ZIP of the database dump and the files archives), with `Content-Disposition: attachment` and its size, and
+  **streams** it (it can be gigabytes). "Save to USB" writes it where the manager chooses (Chrome and Edge open a Save
+  window, so the USB drive can be picked), or into Downloads. Log every download in the Activity: the file holds every
+  patient's data.
+- **`dent_app.api.server.status`** (see above) also gives the Server card its clock and version, and the Cloud Copy card
+  its status, last update, error and address.

@@ -12,6 +12,7 @@ export default function SettingsNav() {
   const pages = [
     { href: "/settings", label: t.plan.nav.settings },
     { href: "/settings/plan", label: t.plan.nav.plan },
+    { href: "/settings/server", label: t.backup.nav },
   ];
   return (
     <nav aria-label={t.plan.navLabel} className="flex flex-wrap gap-1 mb-6 print:hidden">

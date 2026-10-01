@@ -56,7 +56,9 @@ import { setup } from "./setup";
 import { importer } from "./importer";
 import { exporter } from "./exporter";
 import { plan } from "./plan";
-import { platform } from "./platform";
+import { platform } from "./platform";
+import { backup } from "./backup";
+import { license } from "./license";
 
 export const en = {
   common,
@@ -117,6 +119,8 @@ export const en = {
   exporter,
   plan,
   platform,
+  backup,
+  license,
 };
 
 export type Messages = typeof en;

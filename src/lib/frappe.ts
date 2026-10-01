@@ -15,7 +15,9 @@ import {
   mockAttach,
   setMockUser,
 } from "./mockData";
-import { mockPlatformCall } from "./mockPlatform";
+import { mockBackupFile, mockPlatformCall } from "./mockPlatform";
+import { SERVER_METHODS } from "./server";
+import { downloadBytes } from "./spreadsheet";
 import { demoFlag } from "./demo";
 import { currentMode } from "./deployment";
 
@@ -462,6 +464,59 @@ export function uploadRequestConfig({ onProgress }: UploadOptions = {}): AxiosRe
 }
 
 /** Uploads a file (e.g. the clinic logo) and returns its URL. */
+/** The browser's "Save as" window (Chrome and Edge): lets the person pick the USB drive. Not in TypeScript's DOM types yet. */
+type SaveFilePicker = (options: {
+  suggestedName: string;
+  types?: Array<{ description: string; accept: Record<string, string[]> }>;
+}) => Promise<{ createWritable: () => Promise<WritableStream<Uint8Array> & { write: (data: Uint8Array) => Promise<void>; close: () => Promise<void> }> }>;
+
+/**
+ * Saves one of the server's backups on this computer, where the person chooses (a USB drive): with the browser's
+ * "Save as" window when it has one (the file is streamed there, however big), else as a normal download.
+ * "saved": written where they chose; "downloaded": in the browser's Downloads; "cancelled": they closed the window.
+ * Reading is allowed on the view-only copy too.
+ */
+export async function saveBackup(backup: { name: string; file_name: string }): Promise<"saved" | "downloaded" | "cancelled"> {
+  const picker = (window as unknown as { showSaveFilePicker?: SaveFilePicker }).showSaveFilePicker;
+  let handle: Awaited<ReturnType<SaveFilePicker>> | null = null;
+  if (picker) {
+    try {
+      handle = await picker({ suggestedName: backup.file_name, types: [{ description: "ZIP", accept: { "application/zip": [".zip"] } }] });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return "cancelled";
+      // The window could not open (a frame, a policy): download instead.
+    }
+  }
+  if (MOCK_DATA) {
+    const bytes = await viaMock(() => mockBackupFile(backup.name));
+    if (handle) {
+      const writable = await handle.createWritable();
+      await writable.write(bytes);
+      await writable.close();
+      return "saved";
+    }
+    downloadBytes(bytes, backup.file_name, "application/zip");
+    return "downloaded";
+  }
+  const url = `/frappe/api/method/${SERVER_METHODS.downloadBackup}?backup=${encodeURIComponent(backup.name)}`;
+  if (handle) {
+    // A backup can be gigabytes: streamed to the file, never held in memory. (The one fetch outside axios: axios
+    // cannot stream in the browser.)
+    const response = await fetch(url, { credentials: "include" });
+    reportConnection(true);
+    if (!response.ok || !response.body) throw new Error(messages().backup.downloadFailed);
+    await response.body.pipeTo(await handle.createWritable());
+    return "saved";
+  }
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = backup.file_name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  return "downloaded";
+}
+
 export async function uploadFile(file: File, options: UploadOptions = {}): Promise<string> {
   assertWritable();
   if (MOCK_DATA) return viaMock(() => mockUpload(file, options.onProgress));

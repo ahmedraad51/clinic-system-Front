@@ -2,13 +2,15 @@ import { messages } from "@/i18n";
 import { GRACE_DAYS, PLAN_KEYS, PLANS, TRIAL_DAYS, type PlanKey, type PlanLimits } from "@/config/sales";
 import { currentMode, isValidClinicAddress } from "./deployment";
 import { demoFlag } from "./demo";
-import { addDays, todayISO } from "./format";
-import { mockGetCount, mockGetList } from "./mockData";
+import { addDays, addMonths, todayISO } from "./format";
+import { LICENSE_KEY_PATTERN, LICENSE_METHODS, type LicenseStatus } from "./license";
+import { mockActingUser, mockGetCount, mockGetDoc, mockGetList } from "./mockData";
 import {
   PAYMENT_CHANNELS, PLATFORM_METHODS, paidUntilAfter, type ChangeRequest, type ClinicAccount, type PaymentChannel, type PlatformPayment,
   type TrialRequest, type TrialRequestDoc,
 } from "./platform";
-import { SERVER_METHODS, type ServerStatus } from "./server";
+import { SERVER_METHODS, type BackupOverview, type ServerBackup, type ServerStatus } from "./server";
+import { zipFiles } from "./spreadsheet";
 import { SUBSCRIPTION_METHODS, type Subscription } from "./subscription";
 
 /**
@@ -45,6 +47,110 @@ function serverStatus(): ServerStatus {
           ? { status: "ok", last_sync: minutesAgo(12), address: "alnoor-copy.dentclinic.example" }
           : { status: "failed", last_sync: minutesAgo(95), error: messages().connection.copyNoInternet, address: "alnoor-copy.dentclinic.example" },
   };
+}
+
+/* --- Backups ------------------------------------------------------------------------------------------------------- */
+
+let backups: ServerBackup[] | null = null;
+/** For the size of a manual backup: the latest nightly one plus a little. */
+const BACKUP_MB = 26.4;
+
+const backupName = (at: string) => `BKP-${at.slice(0, 10)}-${at.slice(11, 13)}${at.slice(14, 16)}`;
+const backupFileName = (at: string) => `dentclinic-backup-${at.slice(0, 10)}-${at.slice(11, 13)}${at.slice(14, 16)}.zip`;
+
+/** A week of nightly backups at 02:00; one failed (the disk was full) and the next night's worked. */
+function serverBackups(): ServerBackup[] {
+  if (backups) return backups;
+  const today = todayISO();
+  backups = Array.from({ length: 7 }, (_, i) => {
+    const at = `${addDays(today, -i)} 02:00:00`;
+    const failed = i === 3;
+    return {
+      name: backupName(at), created_at: at, kind: "automatic" as const, status: failed ? ("failed" as const) : ("done" as const),
+      size_mb: failed ? null : Math.round((BACKUP_MB - i * 0.3) * 10) / 10, in_cloud: !failed, file_name: backupFileName(at),
+      error: failed ? messages().backup.mockDiskFull : undefined,
+    };
+  });
+  return backups;
+}
+
+function backupOverview(): BackupOverview {
+  const mode = currentMode(true);
+  // Without internet, the night's backup stayed on the clinic server.
+  const internet = mode !== "clinic-server" || !demoFlag("noInternet");
+  const list = serverBackups().map((b, i) => (i === 0 && !internet && b.kind === "automatic" ? { ...b, in_cloud: false } : { ...b }));
+  return { backups: list, schedule_time: "02:00", keep_days: 14, disk: mode === "clinic-server" ? { free_gb: 182.4, total_gb: 238.5 } : null };
+}
+
+async function backupNow(): Promise<ServerBackup> {
+  if (serverBackups().some((b) => b.status === "running")) throw new Error(messages().backup.alreadyRunning);
+  const at = frappeDateTime(new Date());
+  let by = mockActingUser();
+  try {
+    by = String((await mockGetDoc("User", by)).full_name || by);
+  } catch {
+    // Keep the user ID.
+  }
+  const backup: ServerBackup = {
+    name: backupName(at), created_at: at, kind: "manual", status: "running", size_mb: null, in_cloud: false, file_name: backupFileName(at), by,
+  };
+  serverBackups().unshift(backup);
+  // Done a few seconds later (window.__mockBackupMs for tests), and sent to the cloud copy when there is internet.
+  const ms = typeof window !== "undefined" ? ((window as unknown as { __mockBackupMs?: number }).__mockBackupMs ?? 3000) : 3000;
+  setTimeout(() => {
+    backup.status = "done";
+    backup.size_mb = BACKUP_MB + 0.1;
+    backup.in_cloud = currentMode(true) !== "clinic-server" || !demoFlag("noInternet");
+  }, ms);
+  return { ...backup };
+}
+
+/** The backup's file: a ZIP with the clinic's records as JSON and a README (a real one holds the database and the files). */
+export async function mockBackupFile(name: string): Promise<Uint8Array> {
+  const backup = serverBackups().find((b) => b.name === name && b.status === "done");
+  if (!backup) throw new Error(messages().backup.notFound);
+  const doctypes = [
+    "Patient", "Doctor", "Appointment", "Treatment Plan", "Treatment Session", "Payment", "Expense", "Prescription", "Dental Medicine",
+    "Dental Image", "Cash Count",
+  ];
+  const data: Record<string, unknown> = {};
+  for (const doctype of doctypes) data[doctype] = await mockGetList(doctype, ["*"], { limit: 0 });
+  data["Clinic Settings"] = await mockGetDoc("Clinic Settings", "Clinic Settings");
+  const encode = (text: string) => new TextEncoder().encode(text);
+  return zipFiles({
+    "README.txt": encode(`DentClinic backup ${backup.created_at}\r\nThe dummy data's records as JSON. A real backup holds the database and the uploaded files.\r\n`),
+    "records.json": encode(JSON.stringify(data, null, 1)),
+  });
+}
+
+/* --- The licence of a clinic server ---------------------------------------------------------------------------------- */
+
+let license: LicenseStatus | null = null;
+
+function currentLicense(): LicenseStatus {
+  if (!license) {
+    license = {
+      key: "DCL-4F2A-••••-••••-9C1E", clinic_name: "DentClinic", plan: "server-cloud", issued_on: "2025-11-20",
+      expires_on: addDays(todayISO(), 55), status: "valid", grace_days: GRACE_DAYS, server_id: "SRV-7Q2M-K9XA",
+    };
+  }
+  // For tests (set before the app loads): window.__mockLicense changes it until a new key is entered.
+  const override = typeof window !== "undefined" ? (window as unknown as { __mockLicense?: Partial<LicenseStatus> }).__mockLicense : undefined;
+  const result = { ...license, ...override };
+  if (result.status === "valid" && result.expires_on < todayISO()) result.status = "expired";
+  return result;
+}
+
+function activateLicense(args: Args): LicenseStatus {
+  const key = String(args.key ?? "").trim().toUpperCase();
+  // In the dummy data a key ending in 0000 stands for one made for another computer.
+  if (!LICENSE_KEY_PATTERN.test(key) || key.endsWith("-0000")) throw new Error(messages().license.badKey);
+  const current = currentLicense();
+  // A year on from the current end, or from today when it has passed.
+  const from = current.expires_on > todayISO() ? current.expires_on : todayISO();
+  license = { ...current, key: `${key.slice(0, 8)}-••••-••••-${key.slice(-4)}`, issued_on: todayISO(), expires_on: addMonths(from, 12), status: "valid" };
+  if (typeof window !== "undefined") delete (window as unknown as { __mockLicense?: unknown }).__mockLicense;
+  return currentLicense();
 }
 
 /* --- The platform's records ----------------------------------------------------------------------------------------- */
@@ -128,16 +234,19 @@ function liveStatus(account: ClinicAccount): ClinicAccount["status"] {
 
 async function subscriptionStatus(): Promise<Subscription> {
   const account = platformClinics().find((c) => c.name === CURRENT)!;
-  const plan = PLANS[account.plan];
   const overrides = testOverrides();
   const pending = changeRequests.find((r) => r.clinic === CURRENT);
+  // A clinic server (and its cloud copy) runs on its licence: the plan and until when come from it.
+  const lic = currentMode(true) === "cloud" ? null : currentLicense();
+  const planKey = lic?.plan ?? account.plan;
+  const plan = PLANS[planKey];
   return {
-    plan: account.plan,
-    status: liveStatus(account),
-    trial_ends_on: account.trial_ends_on,
-    paid_until: account.paid_until,
+    plan: planKey,
+    status: lic ? (lic.status === "valid" ? "active" : "ended") : liveStatus(account),
+    trial_ends_on: lic ? null : account.trial_ends_on,
+    paid_until: lic ? lic.expires_on : account.paid_until,
     grace_days: GRACE_DAYS,
-    limits: { ...account.limits, ...overrides.limits },
+    limits: { ...(lic ? plan.limits : account.limits), ...overrides.limits },
     usage: await currentUsage(),
     price: plan.price,
     currency: plan.currency,
@@ -244,6 +353,14 @@ export async function mockPlatformCall(method: string, args: Args): Promise<unkn
   switch (method) {
     case SERVER_METHODS.status:
       return serverStatus();
+    case SERVER_METHODS.backups:
+      return backupOverview();
+    case SERVER_METHODS.backupNow:
+      return backupNow();
+    case LICENSE_METHODS.status:
+      return currentLicense();
+    case LICENSE_METHODS.activate:
+      return activateLicense(args);
     case SUBSCRIPTION_METHODS.status:
       return subscriptionStatus();
     case SUBSCRIPTION_METHODS.requestChange:

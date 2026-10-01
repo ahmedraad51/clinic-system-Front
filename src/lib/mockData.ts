@@ -677,6 +677,11 @@ function stamp(): string {
 /** The logged-in user, who owns new records and makes the changes (see setSessionUser in frappe.ts). */
 let actingUser = "Administrator";
 
+/** Who the dummy back end acts as (setMockUser). */
+export function mockActingUser(): string {
+  return actingUser;
+}
+
 export function setMockUser(user: string | null): void {
   actingUser = user || "Guest";
 }
