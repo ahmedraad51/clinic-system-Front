@@ -16,6 +16,7 @@ export const nav: Messages["nav"] = {
   users: "المستخدمون",
   whatsapp: "واتساب",
   activity: "سجل النشاط",
+  exportData: "تصدير البيانات",
   settings: "الإعدادات",
   profile: "الملف الشخصي",
   logout: "تسجيل الخروج",

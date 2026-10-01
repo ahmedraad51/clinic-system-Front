@@ -1080,3 +1080,13 @@ serves all three; what each mode needs from the back end is listed below, item b
   phone already registered when the clinic wants that refused).
 - **Later, for speed:** a whitelisted `dent_app.api.patients.import_rows(rows)` that takes up to 500 rows, inserts them
   in one transaction and answers which rows were skipped and why, so 5,000 patients take seconds, not minutes.
+
+### Exporting all data (every mode)
+
+- `/export` reads every Patient, Appointment, Treatment Plan and Payment with `GET /api/resource/<Doctype>`,
+  `limit_page_length=0` and the fields in `src/lib/exportData.ts`, and builds the ZIP in the browser. Only the manager
+  (`manage_users`) is offered it, but the server must allow those reads for that user (they need the read
+  permissions in section 3 anyway).
+- **Later, for big clinics:** a whitelisted `dent_app.api.export.all_data(format)` that builds the same ZIP on the server
+  (in a background job, with a link when ready), so tens of thousands of rows do not travel as JSON first. Log every
+  export (who, when) in the Activity, since the file holds medical data.

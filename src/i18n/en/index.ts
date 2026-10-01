@@ -53,7 +53,8 @@ import { site } from "./site";
 import { connection } from "./connection";
 import { access } from "./access";
 import { setup } from "./setup";
-import { importer } from "./importer";
+import { importer } from "./importer";
+import { exporter } from "./exporter";
 
 export const en = {
   common,
@@ -111,6 +112,7 @@ export const en = {
   access,
   setup,
   importer,
+  exporter,
 };
 
 export type Messages = typeof en;

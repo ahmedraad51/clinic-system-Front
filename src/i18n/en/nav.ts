@@ -15,6 +15,7 @@ export const nav = {
   users: "Users",
   whatsapp: "WhatsApp",
   activity: "Activity",
+  exportData: "Export Data",
   settings: "Settings",
   profile: "Profile",
   logout: "Log out",
