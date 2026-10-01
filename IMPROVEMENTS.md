@@ -522,5 +522,7 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## New packages
 
+- **fflate** (free, MIT, tiny, no other packages): makes and opens ZIP files. Used to read Excel files when importing
+  patients, and to write the Excel files and the ZIP of the data export. Added 2026-10-01 (restart `npm run dev` once).
 - **@playwright/test** (free, by Microsoft, very widely used; only used for testing, not shipped to the
   clinic): runs the browser tests and takes the screenshots. Chromium only.

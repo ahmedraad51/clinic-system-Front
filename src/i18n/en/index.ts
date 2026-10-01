@@ -52,7 +52,8 @@ import { deployment } from "./deployment";
 import { site } from "./site";
 import { connection } from "./connection";
 import { access } from "./access";
-import { setup } from "./setup";
+import { setup } from "./setup";
+import { importer } from "./importer";
 
 export const en = {
   common,
@@ -109,6 +110,7 @@ export const en = {
   connection,
   access,
   setup,
+  importer,
 };
 
 export type Messages = typeof en;

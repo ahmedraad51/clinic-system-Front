@@ -4,12 +4,13 @@ import { Suspense, useEffect, useState } from "react";
 import { useRecordDialogs } from "@/components/RecordDialogs";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Users, HeartPulse, UserPlus, UserSearch } from "lucide-react";
+import { FileSpreadsheet, Users, HeartPulse, UserPlus, UserSearch } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import RequirePermission from "@/components/Guard";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import {
   Button,
+  LinkButton,
   Card,
   ClearFiltersButton,
   ClickableRow,
@@ -136,9 +137,14 @@ function PatientsList() {
         subtitle={p.subtitle}
         actions={
           can("add_patients") && (
-            <Button icon={UserPlus} data-testid="open-new-patient" onClick={() => openDialog({ kind: "newPatient" })}>
-              {p.addPatient}
-            </Button>
+            <>
+              <LinkButton href="/patients/import" variant="secondary" icon={FileSpreadsheet}>
+                {t.importer.open}
+              </LinkButton>
+              <Button icon={UserPlus} data-testid="open-new-patient" onClick={() => openDialog({ kind: "newPatient" })}>
+                {p.addPatient}
+              </Button>
+            </>
           )
         }
       />

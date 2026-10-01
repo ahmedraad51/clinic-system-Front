@@ -1070,3 +1070,13 @@ serves all three; what each mode needs from the back end is listed below, item b
 - The wizard saves with the usual `PUT` on Clinic Settings (only the fields of the step, plus `setup_step`, and
   `setup_status` at the end), creates Doctors and Users (with a Clinic Permission) as their own pages do. The manager
   needs the same rights as on Settings, Doctors and Users.
+
+### Importing patients (every mode)
+
+- The front end imports a spreadsheet one patient at a time with the usual `POST /api/resource/Patient` (the same
+  fields as the patient form; empty dates `null`, `age` only without a date of birth), after checking every row and the
+  clinic's mobile numbers itself (it reads every Patient's `name`, `full_name`, `phone_number`, `secondary_phone`).
+  Up to 5,000 rows per file. That needs `add_patients`, and the server must keep its own checks (required fields, a
+  phone already registered when the clinic wants that refused).
+- **Later, for speed:** a whitelisted `dent_app.api.patients.import_rows(rows)` that takes up to 500 rows, inserts them
+  in one transaction and answers which rows were skipped and why, so 5,000 patients take seconds, not minutes.
