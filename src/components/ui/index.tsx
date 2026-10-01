@@ -10,7 +10,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createContext, useContext } from "react";
+import { createContext, Fragment, useContext } from "react";
 import type {
   ButtonHTMLAttributes,
   ComponentType,
@@ -315,6 +315,25 @@ export function DetailLayout({ aside, children }: { aside: ReactNode; children: 
   );
 }
 
+/**
+ * Parts of a line with " · " between them, the empty ones left out. Each part is isolated and kept whole: in Arabic a
+ * Latin name never trades places with a time or a number beside it, and a narrow column moves a part to the next
+ * line instead of breaking a name around another part. For plain text (titles, labels) use joinParts().
+ */
+export function Parts({ parts, className }: { parts: Array<ReactNode | null | undefined | false>; className?: string }) {
+  const kept = parts.filter((part) => part !== null && part !== undefined && part !== false && part !== "");
+  return (
+    <span className={className}>
+      {kept.map((part, index) => (
+        <Fragment key={index}>
+          {index > 0 && messages().common.dot}
+          <bdi className="inline-block">{part}</bdi>
+        </Fragment>
+      ))}
+    </span>
+  );
+}
+
 /** "9 / 14", kept left to right on Arabic pages too (a slash between numbers would read backwards). */
 export function Fraction({ value, of }: { value: ReactNode; of: ReactNode }) {
   return (
@@ -378,19 +397,22 @@ export function ProfileCard({
       {actions && <div className="flex flex-wrap justify-center gap-2 mt-5 print:hidden">{actions}</div>}
       {children}
       {stats && stats.length > 0 && (
-        <div className="grid grid-cols-2 gap-4 mt-6">
-          {stats.map((stat) => (
-            <div key={stat.label} className="flex items-start gap-3 min-w-0">
-              <IconTile icon={stat.icon} hue={stat.hue} />
-              <div className="min-w-0">
-                <div data-testid={stat.testId} className="text-base font-medium text-gray-900 leading-tight break-words">
-                  {stat.value}
+        // Two columns only where the card is at least 24rem wide; a narrow card keeps one.
+        <div className="@container mt-6">
+          <div className="grid grid-cols-1 @sm:grid-cols-2 gap-4">
+            {stats.map((stat) => (
+              <div key={stat.label} className="flex items-start gap-3 min-w-0">
+                <IconTile icon={stat.icon} hue={stat.hue} />
+                <div className="min-w-0">
+                  <div data-testid={stat.testId} className="text-base font-medium text-gray-900 leading-tight break-words">
+                    {stat.value}
+                  </div>
+                  <div className="text-xs text-gray-500">{stat.label}</div>
+                  {stat.extra}
                 </div>
-                <div className="text-xs text-gray-500">{stat.label}</div>
-                {stat.extra}
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
       {details && details.length > 0 && (

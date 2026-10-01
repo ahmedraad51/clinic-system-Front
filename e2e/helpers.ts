@@ -9,7 +9,8 @@ import { FIXED_NOW } from "./fixtures";
 
 /** Waits until no "Loading..." spinner is left on the page (in English or Arabic). */
 export async function waitForData(page: Page) {
-  await expect(page.getByText(/^(Loading\.\.\.|جارٍ التحميل\.\.\.)$/)).toHaveCount(0, { timeout: 15_000 });
+  // Arabic writes the single ellipsis character (…).
+  await expect(page.getByText(/^(Loading\.\.\.|جارٍ التحميل…)$/)).toHaveCount(0, { timeout: 15_000 });
 }
 
 /** Client-side navigation, the same as clicking a link. Keeps the dummy data in memory. */

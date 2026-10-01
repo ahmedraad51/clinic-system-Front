@@ -10,7 +10,7 @@ export const history: Messages["history"] = {
   showHistory: "عرض السجل",
   intro: "من أضاف هذا السجل، ومن غيّر ماذا ومتى.",
   loadFailed: "تعذّر تحميل السجل.",
-  loading: "جارٍ التحميل...",
+  loading: "جارٍ التحميل…",
   changedIt: "عدّله",
   addedIt: "أضافه",
   at: (when: string) => ` · ${when}`,

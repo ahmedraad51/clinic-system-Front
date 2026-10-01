@@ -19,7 +19,8 @@ export function formatMoney(amount: number | string | null | undefined, currency
   const decimals = maxDecimals ?? (WHOLE_UNIT_CURRENCIES.has(code) ? 0 : 2);
   if (currentLang() === "ar") {
     const symbol = messages().dates.currencySymbols[code] ?? code;
-    return `${num(value, { minimumFractionDigits: 0, maximumFractionDigits: decimals })} ${symbol}`;
+    // A no-break space: the amount and its currency never end up on two lines (the English format does the same).
+    return `${num(value, { minimumFractionDigits: 0, maximumFractionDigits: decimals })}\u00a0${symbol}`;
   }
   try {
     return new Intl.NumberFormat("en-US", {

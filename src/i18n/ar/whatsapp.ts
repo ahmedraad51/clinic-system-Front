@@ -48,7 +48,7 @@ export const whatsapp: Messages["whatsapp"] = {
   deleted: "حُذف القالب.",
   deleteFailed: "تعذّر حذف القالب.",
   log: {
-    searchPlaceholder: "ابحث باسم المريض أو الهاتف أو النص...",
+    searchPlaceholder: "ابحث باسم المريض أو الهاتف أو النص…",
     allStatuses: "كل الحالات",
     sent: "وقت الإرسال",
     message: "الرسالة",

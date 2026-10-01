@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { joinParts } from "@/i18n";
 import Link from "next/link";
 import {
   ChevronLeft, ChevronRight, Contrast, Expand, ExternalLink, Eye, EyeOff, Info, PenLine, Printer, RotateCcw, Scan, Shrink,
@@ -218,7 +219,7 @@ export default function ImageViewer({
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold truncate">{title}</p>
           <p className="text-xs text-white/70 truncate">
-            {[patientName, images.length > 1 ? x.counter(index + 1, images.length) : ""].filter(Boolean).join(t.common.dot)}
+            {joinParts([patientName, images.length > 1 ? x.counter(index + 1, images.length) : ""], t.common.dot)}
           </p>
         </div>
         <ViewerButton icon={ChevronLeft} label={x.previous} onClick={() => go(-1)} disabled={images.length < 2 || Boolean(drawing)} className="rtl:rotate-180" />

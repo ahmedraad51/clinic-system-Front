@@ -7,7 +7,7 @@ export const payments: Messages["payments"] = {
   subtitle: "كل الدفعات المستلمة، الأحدث أولًا.",
   dayReport: "تقرير نهاية اليوم",
   add: "إضافة دفعة",
-  searchPlaceholder: "ابحث باسم المريض أو العلاج أو الملاحظة...",
+  searchPlaceholder: "ابحث باسم المريض أو العلاج أو الملاحظة…",
   methodFilter: "طريقة الدفع",
   allMethods: "كل الطرق",
   fromDate: "من تاريخ",

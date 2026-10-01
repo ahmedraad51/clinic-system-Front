@@ -5,7 +5,7 @@ export const treatments: Messages["treatments"] = {
   title: "خطط العلاج",
   subtitle: "العلاجات المخططة والجارية لكل مريض، مع المبلغ المتبقي.",
   newTreatment: "علاج جديد",
-  searchPlaceholder: "ابحث باسم المريض أو العلاج أو رقم السن...",
+  searchPlaceholder: "ابحث باسم المريض أو العلاج أو رقم السن…",
   typeFilter: "نوع العلاج",
   allTypes: "كل العلاجات",
   allStatuses: "كل الحالات",

@@ -16,7 +16,7 @@ export const expenses: Messages["expenses"] = {
   deleteText: (what: string) => `سيُحذف ${what} من المصروفات ومن تقارير الربح.`,
   deleteLabel: (what: string) => `حذف ${what}`,
   editLabel: (what: string) => `تعديل ${what}`,
-  searchPlaceholder: "ابحث في الغرض أو المستلم أو الطبيب...",
+  searchPlaceholder: "ابحث في الغرض أو المستلم أو الطبيب…",
   categoryFilter: "الفئة",
   allCategories: "كل الفئات",
   fromDate: "من تاريخ",

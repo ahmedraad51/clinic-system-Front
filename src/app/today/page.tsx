@@ -20,7 +20,7 @@ import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
-import { label, messages, num } from "@/i18n";
+import { joinParts, label, messages, num } from "@/i18n";
 import { errorMessage, getList, updateDoc } from "@/lib/frappe";
 import { addDays, cx, formatDate, formatLongDate, formatTime, fromMinutes, nowDateTime, todayISO, toMinutes } from "@/lib/format";
 import { useDoctors, useOpenBalances } from "@/lib/hooks";
@@ -307,7 +307,7 @@ function TodayBoard() {
       {/* Nothing loaded yet: no zeros and no "No appointments today", only the error above. */}
       {board && (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 2xl:grid-cols-6 gap-3">
             <Count label={t.today.counts.toCome} value={counts.toCome} icon={Clock} hue="appointments" />
             <Count label={t.today.counts.waiting} value={counts.waiting} icon={Hourglass} hue={counts.waiting ? "yellow" : "gray"} />
             <Count label={t.today.counts.inChair} value={counts.inChair} icon={Armchair} hue={counts.inChair ? "blue" : "gray"} />
@@ -403,7 +403,8 @@ function TodayBoard() {
                               </div>
                               <p className="text-sm text-gray-500 mt-0.5">
                                 <Link href={appointmentHref(a.name)} className="hover:text-primary-600">
-                                  {a.reason_for_visit || t.today.appointment}
+                                  {/* Typed text, often in English: isolated from the Arabic minutes beside it. */}
+                                  <bdi>{a.reason_for_visit || t.today.appointment}</bdi>
                                 </Link>
                                 {t.common.dot}
                                 {t.common.minutes(Number(a.duration_minutes) || 30)}
@@ -554,9 +555,10 @@ function TodayBoard() {
                         <span className="min-w-[10rem] flex-1">
                           <span className="block font-medium text-gray-800">{p.patient_name || p.patient}</span>
                           <span className="block text-sm text-gray-500">
-                            {label(t.enums.treatmentType, p.treatment_type)}
-                            {p.tooth_number ? `${t.common.dot}${t.today.tooth(p.tooth_number)}` : ""}
-                            {p.lab_name ? `${t.common.dot}${p.lab_name}` : ""}
+                            {joinParts(
+                              [label(t.enums.treatmentType, p.treatment_type), p.tooth_number && t.today.tooth(p.tooth_number), p.lab_name],
+                              t.common.dot,
+                            )}
                           </span>
                         </span>
                         <span className="text-sm text-gray-600 whitespace-nowrap">
@@ -587,9 +589,10 @@ function TodayBoard() {
                         {a.patient_name || a.patient}
                       </Link>
                       <p className="text-sm text-gray-500">
-                        {t.today.dateTime(formatDate(a.appointment_date), formatTime(a.appointment_time))}
-                        {a.doctor_name ? `${t.common.dot}${a.doctor_name}` : ""}
-                        {a.reason_for_visit ? `${t.common.dot}${a.reason_for_visit}` : ""}
+                        {joinParts(
+                          [t.today.dateTime(formatDate(a.appointment_date), formatTime(a.appointment_time)), a.doctor_name, a.reason_for_visit],
+                          t.common.dot,
+                        )}
                       </p>
                     </div>
                     {canEdit && (

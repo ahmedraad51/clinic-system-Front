@@ -1,5 +1,6 @@
 import { HeartPulse } from "lucide-react";
 import { useI18n } from "@/context/LanguageContext";
+import { joinParts } from "@/i18n";
 import { cx } from "@/lib/format";
 import { isBlankMedicalText, medicalFlags, type MedicalFields } from "@/lib/medical";
 
@@ -49,7 +50,7 @@ export default function MedicalAlerts({ patient, title }: { patient: MedicalFiel
           ))}
         </ul>
       )}
-      {conditions.length > 0 && <p className="text-sm mt-2">{conditions.join(t.common.dot)}</p>}
+      {conditions.length > 0 && <p className="text-sm mt-2">{joinParts(conditions, t.common.dot)}</p>}
     </div>
   );
 }

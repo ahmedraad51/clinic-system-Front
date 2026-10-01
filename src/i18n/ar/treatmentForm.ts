@@ -1,7 +1,7 @@
 import type { Messages } from "../en";
 
 export const treatmentForm: Messages["treatmentForm"] = {
-  searchPatient: "ابحث بالاسم أو رقم الهاتف...",
+  searchPatient: "ابحث بالاسم أو رقم الهاتف…",
   selectDoctor: "اختر الطبيب",
   treatmentType: "نوع العلاج",
   selectType: "اختر النوع",

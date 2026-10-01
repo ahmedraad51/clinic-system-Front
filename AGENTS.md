@@ -31,7 +31,7 @@ accurate.
 | `npm run build` | **Passes** (checked 2026-09-30): compiles, type-checks and prerenders every route, with no warnings. | |
 | `npm run lint` | **Passes** with 0 problems (checked 2026-09-30). `npx tsc --noEmit` passes too. | |
 | Languages | **Arabic (default, right to left) and English.** Every text is in `src/i18n/en/*.ts` and `src/i18n/ar/*.ts`; the switch is in the menu. See **Languages** below. **Every new text must be added in both languages.** | `src/i18n/`, `src/context/LanguageContext.tsx` |
-| Tests | **Playwright tests pass** (194 tests, 19 of them in Arabic, checked 2026-09-30; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, expenses and profit, the waiting room, QR codes, the printed patient file, prescription paper, the activity log, the installable app, phone numbers, the form dialogs and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
+| Tests | **Playwright tests pass** (198 tests, 21 of them in Arabic, checked 2026-10-01; run them with `--workers=2` on the owner's machine, never while a build runs): one file per area in `e2e/tests/` (patients, booking, calendar, Today board, treatments, payments, prescriptions, printouts, permissions, WhatsApp, X-rays, two currencies, expenses and profit, the waiting room, QR codes, the printed patient file, prescription paper, the activity log, the installable app, Arabic typography, phone numbers, the form dialogs and more). Pure helpers such as `src/lib/phone.ts` are tested in the same runner without a browser. No CI. | `e2e/`, `playwright.config.ts` |
 
 Both flags are set this way on purpose. Leave them alone unless the task is about them.
 
@@ -65,7 +65,7 @@ The Frappe address comes from the `FRAPPE_URL` environment variable (for example
 | Framework | Next.js **16.2.9**, App Router, Turbopack |
 | UI | React **19.2.4**, TypeScript 5 with `strict: true`, path alias `@/*` → `src/*` |
 | Styling | Tailwind CSS **v4** via `@tailwindcss/postcss`. It is CSS-first: no `tailwind.config.*`; the design tokens (the `primary-*` palette and the text scale) are an `@theme` block in `src/app/globals.css` |
-| Font | Poppins for English; IBM Plex Sans Arabic for Arabic text, tables and forms, and El Messiri for Arabic headings, through `next/font/google` in `layout.tsx` (the `--font-poppins`, `--font-arabic` and `--font-arabic-headings` variables, used in `globals.css`) |
+| Font | Poppins for English; IBM Plex Sans Arabic for Arabic text, tables and forms (both scripts), and El Messiri for Arabic headings, through `next/font/google` in `layout.tsx` (the `--font-poppins`, `--font-arabic` and `--font-arabic-headings` variables, used in `globals.css`) |
 | Icons | `lucide-react` everywhere; the tooth logo is our own SVG in `src/components/ToothLogo.tsx` |
 | HTTP | `axios`, one instance in `src/lib/frappe.ts` |
 | QR codes | `qrcode-generator` makes the grid (`qrMatrix()` in `src/lib/qr.ts`, drawn as our own SVG by `QrCode.tsx`); `jsqr` reads camera frames where the browser has no `BarcodeDetector` (loaded only then) |
@@ -830,7 +830,7 @@ writing new class lists.
   last colour before the first paint. `blue` stays only as a
   status tone (see Badge colours). The `Tone` type also has `primary`; `StatCard` uses it by default.
 - **Text sizes:** `--text-xs` is 13 px and `--text-sm` is 15 px (a little larger than Tailwind's default, for
-  reading at a distance). Page titles `text-2xl font-medium`, card titles `text-lg font-medium`, body
+  reading at a distance); on Arabic screens 14 and 16 px with taller lines (see Languages → Arabic typography). Page titles `text-2xl font-medium`, card titles `text-lg font-medium`, body
   `text-sm`, hints and table headers `text-xs`. Do not add other sizes for ordinary text.
 - **Motion is short and calm, and only `motion-safe:`.** A new page fades in while lifting 6 px
   (`animate-page-in`, 0.2 s, on a wrapper keyed by the path in `MainLayout`), buttons shrink to 98 % while
@@ -980,10 +980,24 @@ from the translation files, never from text typed in a component.
   `border-s` …), give sideways arrows `rtl:rotate-180`, and slide things in from the start side
   (`-translate-x-full rtl:translate-x-full`). Phone numbers, record IDs, amounts and times in inputs, and the dental
   chart's teeth (anatomical: the patient's right is always on the left) keep `dir="ltr"`.
-- **Fonts.** Poppins for English. In Arabic, IBM Plex Sans Arabic for text, tables and forms, and El Messiri only for
-  headings (`h1`-`h4`) (`next/font`: `--font-poppins`, `--font-arabic`, `--font-arabic-headings`). On Arabic screens
-  Poppins comes first: it has no Arabic letters, so Arabic text reaches the Arabic font and names typed in English stay
-  Poppins. The fonts have `adjustFontFallback: false`: an Arial fallback would otherwise draw the Arabic.
+- **Fonts.** Poppins for English. In Arabic, IBM Plex Sans Arabic for text, tables and forms, in both scripts (its Latin
+  letters were drawn to sit beside its Arabic ones, so a name typed in English matches the Arabic around it), and El
+  Messiri only for headings (`h1`-`h4`), with Poppins first there for Latin letters (`next/font`: `--font-poppins`,
+  `--font-arabic`, `--font-arabic-headings`; every subset is emitted, `subsets` only decides what is preloaded). The
+  fonts have `adjustFontFallback: false`: an Arial fallback would otherwise draw the Arabic.
+- **Arabic typography** (`:root[lang="ar"]` in `globals.css`, overriding Tailwind's variables, so no component changes):
+  small text 14 px on 24 px lines and body text 16 px on 27 px lines (Arabic letters look smaller than Latin ones and
+  carry dots and marks above and below), line heights of 1.5-1.75 for larger sizes and the `leading-*` classes,
+  **no letter spacing at all** (`--tracking-*` 0 and `letter-spacing: 0` on everything: spacing pulls joined letters
+  apart), and no italics. Arabic punctuation in the texts: ، ؛ ؟ and the single ellipsis character (…), never `...`.
+  Money keeps its amount and currency together with a no-break space. Wide grids that hold Arabic labels and amounts
+  go side by side only when there is room (`2xl:` on Reports' figures, container queries `@sm:` in `ProfileCard`'s
+  figures and the patient's facts). `e2e/tests/arabic-type.spec.ts` checks the font, sizes and spacing.
+- **Mixed Arabic and Latin on one line.** A Latin ID, name or dose next to an Arabic word with a number trades places
+  with it under the bidi rules ("PAT-2026-00004 · 53 سنة" showed as "53 · سنة PAT-2026-00004"). For text, join the
+  parts with `joinParts(parts, t.common.dot)` (`src/i18n/runtime.ts`: each part in U+2068 … U+2069 on Arabic screens,
+  English unchanged); in JSX use `<Parts parts={[…]} />` (UI kit: each part in a `<bdi>`, kept whole, so a narrow
+  column moves a part to the next line instead of splitting a name around it), or wrap typed text in `<bdi>`.
 - **WhatsApp templates** have a `language` (`ar`, `en` or empty): `pickTemplate(templates, trigger, lang)` in
   `src/lib/whatsapp.ts` prefers the screen's language. The dummy data has each template in both languages.
 - **Tests.** The browser tests run in English: `e2e/fixtures.ts` sets the language chosen on the computer to `en`

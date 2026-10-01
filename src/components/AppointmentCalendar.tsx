@@ -10,7 +10,7 @@ import { Alert, CARD_CLASS, statusLabel, statusTone, type Tone } from "@/compone
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
-import { messages, num } from "@/i18n";
+import { joinParts, messages, num } from "@/i18n";
 import { errorMessage, getList, updateDoc } from "@/lib/frappe";
 import { addDays, cx, formatDate, formatTime, fromMinutes, toMinutes, todayISO, weekdayShort, weekStart } from "@/lib/format";
 import { useMediaQuery } from "@/lib/hooks";
@@ -636,8 +636,7 @@ export default function AppointmentCalendar({
                           <>
                             <p className={cx("text-xs font-semibold truncate leading-tight", faded && "line-through")}>{who}</p>
                             <p className="text-xs truncate leading-tight opacity-80 mt-0.5">
-                              {formatTime(a.appointment_time)}
-                              {doctor ? `${t.common.dot}${doctor}` : a.reason_for_visit ? `${t.common.dot}${a.reason_for_visit}` : ""}
+                              {joinParts([formatTime(a.appointment_time), doctor || a.reason_for_visit], t.common.dot)}
                             </p>
                           </>
                         )}

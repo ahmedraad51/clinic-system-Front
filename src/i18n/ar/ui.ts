@@ -2,7 +2,7 @@ import type { Messages } from "../en";
 import { num, plural } from "../runtime";
 
 export const ui: Messages["ui"] = {
-  loading: "جارٍ التحميل...",
+  loading: "جارٍ التحميل…",
   tryAgain: "إعادة المحاولة",
   clearFilters: "مسح عوامل التصفية",
   clearSearch: "مسح البحث",
@@ -21,8 +21,8 @@ export const ui: Messages["ui"] = {
   notFound: (what: string) => `لم يُعثر على ${what}`,
   couldNotOpen: (what: string) => `تعذّر فتح ${what}`,
   notFoundText: "ربما تم حذفه، أو أن الرابط غير صحيح.",
-  searchPlaceholder: "بحث...",
-  searching: "جارٍ البحث...",
+  searchPlaceholder: "بحث…",
+  searching: "جارٍ البحث…",
   noMatches: "لا توجد نتائج",
   nothingYet: "لا يوجد ما يُعرض بعد.",
   required: "مطلوب",

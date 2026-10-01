@@ -7,7 +7,7 @@ export const doctors: Messages["doctors"] = {
   addDoctor: "إضافة طبيب",
   editDoctor: "تعديل الطبيب",
   saveDoctor: "حفظ الطبيب",
-  searchPlaceholder: "ابحث بالاسم أو الاختصاص أو الهاتف...",
+  searchPlaceholder: "ابحث بالاسم أو الاختصاص أو الهاتف…",
   statusFilter: "الحالة",
   allDoctors: "كل الأطباء",
   active: "فعّال",

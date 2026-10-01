@@ -5,7 +5,7 @@ export const users: Messages["users"] = {
   title: "المستخدمون",
   subtitle: "حسابات الموظفين وما يُسمح لكل شخص بفعله.",
   addUser: "إضافة مستخدم",
-  searchPlaceholder: "ابحث بالاسم أو البريد الإلكتروني...",
+  searchPlaceholder: "ابحث بالاسم أو البريد الإلكتروني…",
   statusFilter: "الحالة",
   allUsers: "كل المستخدمين",
   active: "فعّال",

@@ -17,14 +17,14 @@ import XraySection from "@/components/xrays/XraySection";
 import RecallDialog from "@/components/RecallDialog";
 import RecordHistory from "@/components/RecordHistory";
 import {
-  Button, Card, ClickableRow, DetailLayout, DetailList, DetailRow, EmptyState, IconTile, LinkButton, LoadError, NotFoundCard, PageContainer, PageHeader, PageLoading, ProfileCard, RecordLoading, StatusBadge, Table, Tabs, Td, Th, type Hue,
+  Button, Card, ClickableRow, DetailLayout, DetailList, DetailRow, EmptyState, IconTile, LinkButton, LoadError, NotFoundCard, PageContainer, PageHeader, PageLoading, Parts, ProfileCard, RecordLoading, StatusBadge, Table, Tabs, Td, Th, type Hue,
 } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
-import { label, messages } from "@/i18n";
+import { joinParts, label, messages } from "@/i18n";
 import { deleteDoc, errorMessage, getList, updateDoc, type FilterRow } from "@/lib/frappe";
 import { addMonths, display, formatDate, formatMonth, formatTime, todayISO } from "@/lib/format";
 import { currencyOf, sumByCurrency } from "@/lib/currency";
@@ -215,7 +215,7 @@ function PatientDetail() {
   ];
 
   const ageText = patient.age ? t.common.years(Number(patient.age)) : "";
-  const subtitle = [ageText, label(t.enums.gender, patient.gender), patient.name].filter(Boolean).join(t.common.dot);
+  const subtitle = joinParts([ageText, label(t.enums.gender, patient.gender), patient.name], t.common.dot);
   const whatsapp = whatsappNumber(patient.phone_number, countryCode);
   const remaining = Number(patient.total_remaining) || 0;
   // With plans or payments in the second currency, each currency is shown on its own ("IQD 150,000 + $300");
@@ -323,94 +323,97 @@ function PatientDetail() {
             </a>
           )}
             </div>
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-5 mt-6 pt-6 border-t border-gray-200 text-start">
-          {showAppointments && (
-            <Fact icon={History} hue="appointments" label={p.lastVisit}>
-              {lastVisit ? (
-                <Link href={appointmentHref(lastVisit.name)} className="hover:text-primary-600">
-                  {formatDate(lastVisit.appointment_date)}
-                  <span className="block text-xs font-normal text-gray-500">{lastVisit.reason_for_visit || lastVisit.doctor_name}</span>
-                </Link>
-              ) : data ? (
-                <span className="text-gray-500">{p.noneYet}</span>
-              ) : (
-                "…"
-              )}
-            </Fact>
-          )}
-          {showAppointments && (
-            <Fact icon={CalendarClock} hue="appointments" label={p.nextAppointment}>
-              {nextVisit ? (
-                <Link href={appointmentHref(nextVisit.name)} className="hover:text-primary-600">
-                  {t.dates.dateTime(
-                    nextVisit.appointment_date === today ? p.today : formatDate(nextVisit.appointment_date),
-                    formatTime(nextVisit.appointment_time),
+        {/* Two columns only where the card is at least 24rem wide; a narrow card keeps one. */}
+        <div className="@container mt-6 pt-6 border-t border-gray-200">
+          <dl className="grid grid-cols-1 @sm:grid-cols-2 gap-x-4 gap-y-5 text-start">
+            {showAppointments && (
+              <Fact icon={History} hue="appointments" label={p.lastVisit}>
+                {lastVisit ? (
+                  <Link href={appointmentHref(lastVisit.name)} className="hover:text-primary-600">
+                    {formatDate(lastVisit.appointment_date)}
+                    <span className="block text-xs font-normal text-gray-500">{lastVisit.reason_for_visit || lastVisit.doctor_name}</span>
+                  </Link>
+                ) : data ? (
+                  <span className="text-gray-500">{p.noneYet}</span>
+                ) : (
+                  "…"
+                )}
+              </Fact>
+            )}
+            {showAppointments && (
+              <Fact icon={CalendarClock} hue="appointments" label={p.nextAppointment}>
+                {nextVisit ? (
+                  <Link href={appointmentHref(nextVisit.name)} className="hover:text-primary-600">
+                    {t.dates.dateTime(
+                      nextVisit.appointment_date === today ? p.today : formatDate(nextVisit.appointment_date),
+                      formatTime(nextVisit.appointment_time),
+                    )}
+                    <span className="block text-xs font-normal text-gray-500">{nextVisit.doctor_name}</span>
+                  </Link>
+                ) : data ? (
+                  <span className="text-gray-500">{p.notBooked}</span>
+                ) : (
+                  "…"
+                )}
+              </Fact>
+            )}
+            <Fact icon={BellRing} hue="patients" label={p.nextCheckUp}>
+              {Number(patient.no_recall) === 1 ? (
+                <span className="text-gray-500">{p.noRecall}</span>
+              ) : patient.next_recall_date ? (
+                <>
+                  <span className={patient.next_recall_date <= today ? "text-red-600" : undefined}>
+                    {formatDate(patient.next_recall_date)}
+                    {patient.next_recall_date <= today && p.due}
+                  </span>
+                  {Number(patient.recall_interval_months) > 0 && (
+                    <span className="block text-xs font-normal text-gray-500">
+                      {t.recall.choiceEvery(Number(patient.recall_interval_months))}
+                    </span>
                   )}
-                  <span className="block text-xs font-normal text-gray-500">{nextVisit.doctor_name}</span>
-                </Link>
-              ) : data ? (
-                <span className="text-gray-500">{p.notBooked}</span>
+                </>
               ) : (
-                "…"
+                <>
+                  <span className="text-gray-500">{p.usualRule}</span>
+                  {lastVisit && (
+                    <span className="block text-xs font-normal text-gray-500">
+                      {p.about(formatDate(addMonths(lastVisit.appointment_date, DEFAULT_RECALL_MONTHS)))}
+                    </span>
+                  )}
+                </>
               )}
-            </Fact>
-          )}
-          <Fact icon={BellRing} hue="patients" label={p.nextCheckUp}>
-            {Number(patient.no_recall) === 1 ? (
-              <span className="text-gray-500">{p.noRecall}</span>
-            ) : patient.next_recall_date ? (
-              <>
-                <span className={patient.next_recall_date <= today ? "text-red-600" : undefined}>
-                  {formatDate(patient.next_recall_date)}
-                  {patient.next_recall_date <= today && p.due}
-                </span>
-                {Number(patient.recall_interval_months) > 0 && (
-                  <span className="block text-xs font-normal text-gray-500">
-                    {t.recall.choiceEvery(Number(patient.recall_interval_months))}
-                  </span>
-                )}
-              </>
-            ) : (
-              <>
-                <span className="text-gray-500">{p.usualRule}</span>
-                {lastVisit && (
-                  <span className="block text-xs font-normal text-gray-500">
-                    {p.about(formatDate(addMonths(lastVisit.appointment_date, DEFAULT_RECALL_MONTHS)))}
-                  </span>
-                )}
-              </>
-            )}
-            {can("edit_patients") && (
-              <button
-                type="button"
-                onClick={() => setEditingRecall(true)}
-                className="block text-xs font-medium text-primary-700 hover:underline pointer-coarse:min-h-11"
-              >
-                {p.change}
-                <span className="sr-only">{p.changeCheckUp}</span>
-              </button>
-            )}
-          </Fact>
-          {showPayments && (
-            <Fact icon={Wallet} hue={remaining > 0 ? "red" : "money"} label={p.balanceToPay}>
-              <span className={remaining > 0 ? "text-red-600" : "text-gray-500"}>{remainingText}</span>
-              {remaining > 0 && can("add_payments") && (
+              {can("edit_patients") && (
                 <button
                   type="button"
-                  onClick={() => openDialog({ kind: "newPayment", prefill: { patient: id }, patientName: patient.full_name })}
+                  onClick={() => setEditingRecall(true)}
                   className="block text-xs font-medium text-primary-700 hover:underline pointer-coarse:min-h-11"
                 >
-                  {p.addPayment}
+                  {p.change}
+                  <span className="sr-only">{p.changeCheckUp}</span>
                 </button>
               )}
             </Fact>
-          )}
-          {showPayments && (
-            <Fact icon={CreditCard} hue="money" label={p.paidSoFar}>
-              {paidText}
-            </Fact>
-          )}
-        </dl>
+            {showPayments && (
+              <Fact icon={Wallet} hue={remaining > 0 ? "red" : "money"} label={p.balanceToPay}>
+                <span className={remaining > 0 ? "text-red-600" : "text-gray-500"}>{remainingText}</span>
+                {remaining > 0 && can("add_payments") && (
+                  <button
+                    type="button"
+                    onClick={() => openDialog({ kind: "newPayment", prefill: { patient: id }, patientName: patient.full_name })}
+                    className="block text-xs font-medium text-primary-700 hover:underline pointer-coarse:min-h-11"
+                  >
+                    {p.addPayment}
+                  </button>
+                )}
+              </Fact>
+            )}
+            {showPayments && (
+              <Fact icon={CreditCard} hue="money" label={p.paidSoFar}>
+                {paidText}
+              </Fact>
+            )}
+          </dl>
+        </div>
           </ProfileCard>
         }
       >
@@ -740,7 +743,8 @@ interface TimelineItem {
   icon: LucideIcon;
   hue: Hue;
   title: string;
-  detail?: string;
+  /** Shown with Parts: each kept whole, with " · " between. */
+  detail?: Array<string | undefined | null>;
   href: string;
   badge?: ReactNode;
 }
@@ -766,7 +770,7 @@ function Timeline({
       icon: a.status === "Completed" ? CalendarCheck : Calendar,
       hue: "appointments",
       title: a.reason_for_visit || tp.appointment,
-      detail: [formatTime(a.appointment_time), a.doctor_name].filter(Boolean).join(t.common.dot),
+      detail: [formatTime(a.appointment_time), a.doctor_name],
       href: appointmentHref(a.name),
       badge: <StatusBadge kind="appointment" status={a.status} />,
     })),
@@ -781,7 +785,7 @@ function Timeline({
         icon: ClipboardList,
         hue: "treatments",
         title: tp.session(what),
-        detail: [s.notes, s.doctor_name].filter(Boolean).join(t.common.dot),
+        detail: [s.notes, s.doctor_name],
         href: treatmentHref(s.treatment_plan),
         badge: <StatusBadge kind="session" status={s.status} />,
       };
@@ -792,9 +796,7 @@ function Timeline({
       icon: CreditCard,
       hue: "money",
       title: tp.paid(money(Number(p.amount) || 0, p.currency)),
-      detail: [label(t.enums.paymentMethod, p.payment_method), label(t.enums.treatmentType, p.treatment_type)]
-        .filter(Boolean)
-        .join(t.common.dot),
+      detail: [label(t.enums.paymentMethod, p.payment_method), label(t.enums.treatmentType, p.treatment_type)],
       href: paymentHref(p.name),
     })),
   ].sort((x, y) => (y.date + (y.time ?? "")).localeCompare(x.date + (x.time ?? "")));
@@ -835,7 +837,7 @@ function Timeline({
                     <span className="text-xs font-medium text-gray-500 w-20 shrink-0">{formatDate(item.date)}</span>
                     <span className="flex-1 min-w-[10rem]">
                       <span className="block text-sm font-medium text-gray-800">{item.title}</span>
-                      {item.detail && <span className="block text-xs text-gray-500">{item.detail}</span>}
+                      {item.detail && <Parts parts={item.detail} className="block text-xs text-gray-500" />}
                     </span>
                     {item.badge}
                   </Link>

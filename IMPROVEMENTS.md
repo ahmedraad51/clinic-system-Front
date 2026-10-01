@@ -16,6 +16,16 @@ Each finished item says what changed, when, and which commit holds it.
 
 ## Done
 
+- 2026-10-01 - **Better Arabic typography.** Arabic screens now read more comfortably: text is a step larger (16 px,
+  small text 14 px) with taller lines, so the dots and marks above and below the letters have room; letter spacing is
+  gone everywhere (it pulled joined Arabic letters apart); English names, IDs and doses inside Arabic text use the
+  matching Latin letters of IBM Plex Sans Arabic instead of Poppins, so they no longer look bigger than the Arabic
+  around them; mixed lines keep their order ("PAT-2026-00004 · 53 سنة" no longer shows the age split from its
+  number, and a dose reads "500 mg", not "mg 500"); amounts never split from "د.ع" at the end of a line; and "…" is
+  the proper ellipsis. On a 1280 px screen the patient's facts and the report figures no longer squeeze into narrow
+  columns. English is unchanged, apart from the Reports figures going side by side from 1536 px. **What to check:**
+  look through the patient page, the Today board and Reports in Arabic.
+
 - 2026-10-01 - **DentClinic as an installable app (Phase 4, item 8).** DentClinic can now be installed like a program
   on a computer, tablet or phone: in Chrome or Edge with the install icon in the address bar or **Profile → Install
   DentClinic**, and on an iPhone or iPad with Share → Add to Home Screen. It opens in its own window with the tooth

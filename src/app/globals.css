@@ -279,12 +279,52 @@ body {
 }
 
 /*
- * Arabic screens: IBM Plex Sans Arabic for text, tables and forms, El Messiri for headings. Poppins comes first in
- * both (it has no Arabic letters), so names typed in English keep the English font.
+ * Arabic screens: IBM Plex Sans Arabic for text, tables and forms, in both scripts: its Latin letters (IBM Plex Sans)
+ * were drawn to sit beside its Arabic ones, so a patient's name typed in English matches the Arabic around it in size
+ * and weight. Headings: El Messiri for the Arabic letters, Poppins (first, without Arabic letters) for Latin ones.
  */
 :root[lang="ar"] body {
-  font-family: var(--font-poppins), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
   letter-spacing: 0;
+}
+
+/*
+ * Arabic typography. Arabic letters look smaller than Latin ones at the same size and carry dots and marks above and
+ * below the line, so on Arabic screens the small and body text are a step larger (14 and 16 px) with taller lines
+ * (about 1.7), headings get room for El Messiri's tall letters, and there is no letter spacing at all: spacing pulls
+ * joined Arabic letters apart. Every text-*, leading-* and tracking-* class reads these variables.
+ */
+:root[lang="ar"] {
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.5rem;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.6875rem;
+  --text-base--line-height: 1.75;
+  --text-lg--line-height: 1.7;
+  --text-xl--line-height: 1.6;
+  --text-2xl--line-height: 1.5;
+  --text-3xl--line-height: 1.4;
+  --text-4xl--line-height: 1.3;
+  --text-5xl--line-height: 1.25;
+  --leading-none: 1.25;
+  --leading-tight: 1.5;
+  --leading-snug: 1.6;
+  --leading-normal: 1.7;
+  --leading-relaxed: 1.85;
+  --tracking-tighter: 0;
+  --tracking-tight: 0;
+  --tracking-wide: 0;
+  --tracking-wider: 0;
+  --tracking-widest: 0;
+}
+/* Fixed spacing written in a class (or by the browser) never reaches Arabic text either. */
+:root[lang="ar"] body :where(*) {
+  letter-spacing: 0;
+}
+/* Arabic has no capital letters and no italics: an English-style label stays plain. */
+:root[lang="ar"] :where(.italic, em, i) {
+  font-style: normal;
 }
 :root[lang="ar"] :where(h1, h2, h3, h4) {
   font-family: var(--font-poppins), var(--font-arabic-headings), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;

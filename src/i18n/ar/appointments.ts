@@ -18,7 +18,7 @@ export const appointments: Messages["appointments"] = {
   allDoctors: "كل الأطباء",
   weekRange: (from: string, to: string) => `${from} – ${to}`,
   when: { all: "كل التواريخ", today: "اليوم", tomorrow: "غدًا", upcoming: "القادمة", past: "السابقة" },
-  searchPlaceholder: "ابحث باسم المريض أو الطبيب أو سبب الزيارة...",
+  searchPlaceholder: "ابحث باسم المريض أو الطبيب أو سبب الزيارة…",
   allStatuses: "كل الحالات",
   reason: "سبب الزيارة",
   noMatch: "لا توجد مواعيد تطابق هذا البحث.",

@@ -342,7 +342,7 @@ function Reports() {
       </Toolbar>
 
       <div className={stale ? "opacity-60 transition-opacity space-y-6" : "space-y-6"}>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 2xl:grid-cols-4 gap-4">
           <StatCard
             title={r.revenue}
             value={money(revenue)}
@@ -397,7 +397,7 @@ function Reports() {
         )}
 
         {profit && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
             <Card
               title={p.byCategory}
               icon={Wallet}

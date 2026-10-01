@@ -3,7 +3,7 @@ import { dates } from "./dates";
 
 export const paymentForm: Messages["paymentForm"] = {
   patient: "المريض",
-  searchPatient: "ابحث بالاسم أو رقم الهاتف...",
+  searchPatient: "ابحث بالاسم أو رقم الهاتف…",
   plan: "خطة العلاج",
   noPlansHint: "لا توجد لهذا المريض خطط عليها مبالغ متبقية.",
   noPlan: "بدون خطة (دفعة عامة)",

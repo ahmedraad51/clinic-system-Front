@@ -12,7 +12,7 @@ import { ConfirmDialog } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useToast } from "@/context/ToastContext";
-import { label } from "@/i18n";
+import { joinParts, label } from "@/i18n";
 import { deleteDoc, errorMessage, getList } from "@/lib/frappe";
 import { display, formatDate, formatTime } from "@/lib/format";
 import { useDocument } from "@/lib/hooks";
@@ -257,9 +257,7 @@ function PrescriptionDetail() {
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-gray-800">{row.medicine_name || row.medicine}</p>
                   <p className="text-sm text-gray-700">
-                    {[row.dose, label(t.enums.frequency, row.frequency), row.duration_days ? p.days(Number(row.duration_days)) : ""]
-                      .filter(Boolean)
-                      .join(t.common.dot)}
+                    {joinParts([row.dose, label(t.enums.frequency, row.frequency), row.duration_days ? p.days(Number(row.duration_days)) : ""], t.common.dot)}
                   </p>
                   {row.instructions && <p className="text-sm text-gray-500">{row.instructions}</p>}
                 </div>

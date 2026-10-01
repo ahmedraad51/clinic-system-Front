@@ -6,7 +6,7 @@ const minutes = (n: number) => plural(n, { one: "دقيقة واحدة", two: "�
 export const appointmentForm: Messages["appointmentForm"] = {
   saveFailed: "تعذّر حفظ الموعد. يُرجى المحاولة مرة أخرى.",
   clinicHours: (from: string, to: string) => `ساعات العيادة: من ${from} إلى ${to}`,
-  searchPatient: "ابحث بالاسم أو رقم الهاتف...",
+  searchPatient: "ابحث بالاسم أو رقم الهاتف…",
   selectDoctor: "اختر الطبيب",
   duration: "المدة",
   minutes: (n: number) => plural(n, { one: "دقيقة واحدة", two: "دقيقتان", few: "# دقائق", many: "# دقيقة", other: "# دقيقة" }),
@@ -19,7 +19,7 @@ export const appointmentForm: Messages["appointmentForm"] = {
   clashAfter: (date: string, time: string) => ` يوم ${date} الساعة ${time} يتداخل مع هذا الوقت.`,
 
   dayHeading: (doctor: string, date: string) => (doctor ? `${doctor}، ${date}` : date),
-  loadingDay: "جارٍ تحميل مواعيد الطبيب في هذا اليوم...",
+  loadingDay: "جارٍ تحميل مواعيد الطبيب في هذا اليوم…",
   booked: "المحجوز",
   nothingBooked: "لا يوجد حجز بعد.",
   range: (from: string, to: string) => `${from}–${to}`,

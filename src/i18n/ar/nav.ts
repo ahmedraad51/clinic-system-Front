@@ -52,10 +52,10 @@ export const nav: Messages["nav"] = {
   backToDashboard: "العودة إلى الرئيسية",
   search: {
     button: "البحث عن المرضى والإجراءات",
-    short: "ابحث عن مريض...",
+    short: "ابحث عن مريض…",
     dialog: "بحث",
-    placeholder: "اسم المريض أو هاتفه أو رقمه، أو إجراء...",
-    placeholderActionsOnly: "ابحث عن إجراء...",
+    placeholder: "اسم المريض أو هاتفه أو رقمه، أو إجراء…",
+    placeholderActionsOnly: "ابحث عن إجراء…",
     results: "النتائج",
     patientsGroup: "المرضى",
     actionsGroup: "الإجراءات",

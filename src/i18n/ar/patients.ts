@@ -7,7 +7,7 @@ export const patients: Messages["patients"] = {
   title: "المرضى",
   subtitle: "ابحث بالاسم أو رقم الهاتف أو رقم المريض.",
   addPatient: "إضافة مريض",
-  searchPlaceholder: "ابحث عن مريض...",
+  searchPlaceholder: "ابحث عن مريض…",
   balanceFilter: "الرصيد",
   allBalances: "كل الأرصدة",
   owesMoney: "عليه مبلغ",

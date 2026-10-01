@@ -3,7 +3,7 @@
  * keeps: each record's owner and creation (added), the Version records (changed; Track Changes) and the Deleted
  * Document records (deleted, with a copy to restore). Pure functions: the Activity page loads the rows.
  */
-import { label, messages } from "@/i18n";
+import { joinParts, label, messages } from "@/i18n";
 import { formatDate } from "./format";
 import { readableChanges, type HistoryChange } from "./history";
 import { appointmentHref, doctorHref, patientHref, paymentHref, prescriptionHref, treatmentHref } from "./links";
@@ -68,7 +68,8 @@ export function recordTitle(doctype: string, doc: Record<string, unknown> | unde
   const t = messages();
   const text = (field: string) => (typeof doc[field] === "string" || typeof doc[field] === "number" ? String(doc[field]) : "");
   const date = (field: string) => (text(field) ? formatDate(text(field)) : "");
-  const join = (...parts: string[]) => parts.filter(Boolean).join(t.common.dot);
+  // Isolated parts: a Latin name and the date beside it keep their order on an Arabic screen.
+  const join = (...parts: string[]) => joinParts(parts, t.common.dot);
   switch (doctype) {
     case "Patient":
     case "Doctor":

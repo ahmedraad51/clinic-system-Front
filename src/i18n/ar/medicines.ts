@@ -5,7 +5,7 @@ export const medicines: Messages["medicines"] = {
   title: "الأدوية",
   subtitle: "ما يظهر في نموذج الوصفة الطبية، مع الجرعة المعتادة لكل دواء. يجب أن يراجع طبيب الأسنان كل سطر.",
   addMedicine: "إضافة دواء",
-  searchPlaceholder: "ابحث بالاسم أو المجموعة أو التركيز...",
+  searchPlaceholder: "ابحث بالاسم أو المجموعة أو التركيز…",
   statusFilter: "الحالة",
   allMedicines: "كل الأدوية",
   active: "فعّال",

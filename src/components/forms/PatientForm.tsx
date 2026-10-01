@@ -260,7 +260,7 @@ export default function PatientForm({
                     <span className="text-sm">
                       <span dir="ltr">{p.phone_number}</span>
                       {t.common.dot}
-                      {p.name}
+                      <bdi>{p.name}</bdi>
                       {t.common.dot}
                       {duplicates.byPhone.some((q) => q.name === p.name) ? f.samePhone : f.sameName}
                     </span>

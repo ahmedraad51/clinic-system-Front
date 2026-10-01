@@ -8,7 +8,7 @@ import PrescriptionWarnings from "@/components/PrescriptionWarnings";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
 import LinkSelect from "@/components/ui/LinkSelect";
 import { useI18n } from "@/context/LanguageContext";
-import { label, messages } from "@/i18n";
+import { joinParts, label, messages } from "@/i18n";
 import { errorMessage, getList } from "@/lib/frappe";
 import { todayISO } from "@/lib/format";
 import { useDoctors, usePatientMedical } from "@/lib/hooks";
@@ -280,7 +280,7 @@ export default function PrescriptionForm({
                     <optgroup key={entry.group} label={label(t.enums.medicineGroup, entry.group)}>
                       {entry.items.map((medicine) => (
                         <option key={medicine.name} value={medicine.name}>
-                          {[medicineLabel(medicine), label(t.enums.medicineForm, medicine.dosage_form)].filter(Boolean).join(t.common.dot)}
+                          {joinParts([medicineLabel(medicine), label(t.enums.medicineForm, medicine.dosage_form)], t.common.dot)}
                         </option>
                       ))}
                     </optgroup>

@@ -10,7 +10,7 @@ import {
 import { Modal } from "@/components/ui/Modal";
 import { useI18n } from "@/context/LanguageContext";
 import { useToast } from "@/context/ToastContext";
-import { label } from "@/i18n";
+import { joinParts, label } from "@/i18n";
 import { createDoc, errorMessage, updateDoc, type FilterRow } from "@/lib/frappe";
 import { searchFilters, useDebounced, usePagedList } from "@/lib/hooks";
 import { CHILD_AGE, FREQUENCIES, MEDICINE_FIELDS, medicineLabel } from "@/lib/prescriptions";
@@ -121,19 +121,17 @@ function MedicinesList() {
                       >
                         {medicineLabel(medicine)}
                       </button>
-                      {kind.length > 0 && <span className="block text-xs text-gray-500">{kind.join(t.common.dot)}</span>}
+                      {kind.length > 0 && <span className="block text-xs text-gray-500">{joinParts(kind, t.common.dot)}</span>}
                     </Td>
                     <Td label={m.columns.usualDose}>
-                      {[
+                      {joinParts([
                         medicine.default_dose,
                         label(t.enums.frequency, medicine.default_frequency),
                         medicine.default_duration_days ? t.prescriptions.days(Number(medicine.default_duration_days)) : "",
-                      ]
-                        .filter(Boolean)
-                        .join(t.common.dot) || t.common.dash}
+                      ], t.common.dot) || t.common.dash}
                     </Td>
                     <Td label={m.columns.warnings} className="max-w-[320px]">
-                      {flags.length ? flags.join(t.common.dot) : t.common.dash}
+                      {flags.length ? joinParts(flags, t.common.dot) : t.common.dash}
                     </Td>
                     <Td label={m.columns.status}>
                       <Badge tone={Number(medicine.is_active) === 1 ? "green" : "gray"}>

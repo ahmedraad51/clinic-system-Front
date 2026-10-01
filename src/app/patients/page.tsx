@@ -13,7 +13,7 @@ import {
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
-import { label } from "@/i18n";
+import { joinParts, label } from "@/i18n";
 import { getList, type FilterRow } from "@/lib/frappe";
 import { searchFilters, useDebounced, useOpenBalances, usePagedList } from "@/lib/hooks";
 import { cx, display, formatShortDate, formatTime, todayISO } from "@/lib/format";
@@ -185,13 +185,11 @@ function PatientsList() {
                           {patient.full_name}
                         </Link>
                         <span className="block text-xs text-gray-500">
-                          {[
+                          {joinParts([
                             patient.name,
                             patient.age ? t.common.years(Number(patient.age)) : "",
                             label(t.enums.gender, patient.gender),
-                          ]
-                            .filter(Boolean)
-                            .join(t.common.dot)}
+                          ], t.common.dot)}
                         </span>
                         <MedicalChips patient={patient} />
                       </div>

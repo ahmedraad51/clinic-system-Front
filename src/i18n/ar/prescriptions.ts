@@ -25,7 +25,7 @@ export const prescriptions: Messages["prescriptions"] = {
   days: (n: number) => plural(n, { zero: "# يوم", one: "يوم واحد", two: "يومان", few: "# أيام", many: "# يومًا", other: "# يوم" }),
   signature: "توقيع الطبيب",
   form: {
-    patientPlaceholder: "ابحث بالاسم أو رقم الهاتف...",
+    patientPlaceholder: "ابحث بالاسم أو رقم الهاتف…",
     selectDoctor: "اختر الطبيب",
     medicines: "الأدوية",
     addMedicine: "إضافة دواء",

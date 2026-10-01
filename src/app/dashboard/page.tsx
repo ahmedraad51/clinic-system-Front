@@ -18,7 +18,7 @@ import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useSettings } from "@/context/SettingsContext";
 import { errorMessage, getCount, getList, type FilterRow } from "@/lib/frappe";
-import { label, messages, num } from "@/i18n";
+import { joinParts, label, messages, num } from "@/i18n";
 import { addDays, cx, formatCompact, formatDate, formatLongDate, formatMonth, formatMonthName, formatTime, monthStart, todayISO } from "@/lib/format";
 import { baseAmount } from "@/lib/currency";
 import { appointmentHref } from "@/lib/links";
@@ -483,7 +483,7 @@ function AppointmentList({
               <span className="flex-1 min-w-0">
                 <span className="block text-sm font-medium text-gray-800 truncate">{a.patient_name || a.name}</span>
                 <span className="block text-xs text-gray-500 truncate">
-                  {[a.doctor_name, a.reason_for_visit].filter(Boolean).join(" · ")}
+                  {joinParts([a.doctor_name, a.reason_for_visit], t.common.dot)}
                 </span>
               </span>
               <StatusBadge kind="appointment" status={a.status} />
