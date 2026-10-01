@@ -90,7 +90,8 @@ helpers, and `useDeployment()` (`src/context/DeploymentContext.tsx`, the outermo
   reminder marked as sent by `onOpen` stays in its list until it can really be sent; the Today board's reminders card and
   the Send Message dialog also say so in an `Alert`. `internet` comes from the server (`SERVER_METHODS.status` →
   `internet`) in clinic-server mode, and is simply the browser's network everywhere else.
-- **View-only (`useSession().readOnly`):** a reason or null: `"copy"` on the cloud copy, `"subscription"` when the
+- **View-only (`useSession().readOnly`):** a reason or null: `"copy"` on the cloud copy, `"offline"` while the server
+  cannot be reached or this computer has no network (see Offline viewing), `"subscription"` when the
   plan ended and its grace days are over (`subscriptionState()` `locked`), `"suspended"` when the platform suspended the clinic. While it is
   set, `can()` refuses every permission that changes data (`add_*`, `edit_*`, `delete_*`), so buttons gated by them
   disappear by themselves. Pages that need only `manage_users` stay readable and check `readOnly` themselves: Doctors,
@@ -110,6 +111,18 @@ helpers, and `useDeployment()` (`src/context/DeploymentContext.tsx`, the outermo
   and everyone sees an ended plan in its `GRACE_DAYS` with the day it becomes view-only; after that `ReadOnlyBanner`
   says "View-only: the plan has ended" (with **Renew** for the manager) or "this clinic is suspended". Tests set
   `window.__mockPlanLimits` and `window.__mockSubscription` before the app loads (`e2e/tests/limits.spec.ts`).
+- **Offline viewing** (all modes): every `getList`, `getCount` and `getDoc` keeps its last answer (`withCopy()` in
+  `src/lib/frappe.ts`: in memory and in the tab's `sessionStorage`, never `localStorage`; up to 400, an answer over
+  400,000 characters in memory only; saved half a second after the reads stop and when the page is left; cleared on
+  logout and when another user logs in, the tab remembering whose they are). When a read cannot reach the server it
+  gets that copy, so the Today board, today's appointments and the patients already opened keep showing. Meanwhile
+  `readOnly` is `"offline"`: every add, edit and delete is hidden, and `ReadOnlyBanner` says whether this computer
+  has no network or the server cannot be reached, up to when the data was loaded (`lastServerAnswer()`), and **Try
+  Again**. A form or dialog already open stays open with what was typed (`RequirePermission` and the form dialogs use
+  `canOpen()`, which ignores only a lost connection), and its Save says there is no connection. When the server
+  answers again (or the network comes back) `bumpData()` loads every list and page again. Something never loaded
+  says it cannot reach the server. Nothing is ever written offline. With the dummy data, `context.setOffline()` (or
+  the pretend switch "server down") makes every call fail like a real server (`e2e/tests/offline.spec.ts`).
 - **Connectivity** (`src/context/ConnectivityContext.tsx`, `useConnectivity()`): `browserOnline`, `server` (`ok`,
   `unreachable`, `checking`: every request reports through `onConnectionChange()` in `src/lib/frappe.ts`), `internet`,
   and `status` (the server's answer about itself: its clock, the internet, the cloud copy), asked every 30 seconds (10
@@ -179,9 +192,12 @@ src/lib/frappe.ts   the only module that touches data
   icons in `public/icons/`, shortcuts to Today, Appointments and Patients), the icons and title for iPhone in
   `layout.tsx` (`appleWebApp`, `viewport.themeColor`), and `public/sw.js`, registered by `ServiceWorkerRegister`
   (`src/components/InstallApp.tsx`) in the **production build only** (never under `npm run dev`). The service
-  worker caches only `public/offline.html` (Arabic and English) and its icon: when opening a page fails with no
-  connection it shows that page; everything else, and all data (`/frappe/…`), goes to the network untouched. Bump
-  `CACHE` in `sw.js` when the offline page changes. `InstallAppCard` on `/profile` shows **Install the App** when the
+  worker keeps the app's own files (`/_next/static/…`, fonts, icons; their names change with every build), the HTML of
+  each page opened (asked from the network first; a page opened by moving inside the app is fetched in the background,
+  at most every 10 minutes) and `public/offline.html` (Arabic and English) with its icon. With no connection a page
+  opened before still loads, and any other shows the offline page. It never touches the data (`/frappe/…`): the pages
+  hold no patient data. `ServiceWorkerRegister` also sends it the files loaded before it took over. Bump `VERSION` in
+  `sw.js` when it or the offline page changes. `InstallAppCard` on `/profile` shows **Install the App** when the
   browser offers it (`beforeinstallprompt`, kept for the button), how to install otherwise (Share → Add to Home
   Screen on iPhone and iPad), or that it is installed. The PNG icons are rendered from `icon.svg` and
   `icon-maskable.svg`; redraw them from the SVGs (at 192, 512, maskable 512 and Apple 180) when the logo changes.

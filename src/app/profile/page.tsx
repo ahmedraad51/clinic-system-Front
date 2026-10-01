@@ -122,7 +122,8 @@ function Profile() {
 
         <ScreenSizeCard />
         <InstallAppCard />
-        {readOnly ? (
+        {/* The online copy cannot change a password; anywhere else the server decides (offline, Save says why). */}
+        {readOnly === "copy" ? (
           <Card title={t.profile.changePassword} icon={KeyRound}>
             <p className="text-sm text-gray-600">{t.access.passwordAtClinic}</p>
           </Card>

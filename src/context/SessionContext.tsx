@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { useAuth } from "./AuthContext";
+import { useConnectivity } from "./ConnectivityContext";
 import { useDeployment } from "./DeploymentContext";
 import { useSubscription } from "./SubscriptionContext";
 import { getDoc, getList } from "@/lib/frappe";
@@ -24,9 +25,10 @@ type Perms = Record<PermissionKey, boolean>;
  * Why nothing can be changed right now, or null when things can be changed:
  * - "copy": this is the cloud copy of a clinic server (DEPLOYMENT_MODE=cloud-copy), for viewing only;
  * - "subscription": the clinic's plan ended and its grace days are over (subscriptionState() "locked");
- * - "suspended": the platform suspended the clinic.
+ * - "suspended": the platform suspended the clinic;
+ * - "offline": the server cannot be reached (or this computer has no network): the last copy of what was loaded shows.
  */
-export type ReadOnlyReason = "copy" | "subscription" | "suspended";
+export type ReadOnlyReason = "copy" | "offline" | "subscription" | "suspended";
 
 /** The permissions that change data (add_, edit_, delete_ …): all off while the app is read-only. */
 const changesData = (permission: PermissionKey) => /^(add|edit|delete)_/.test(permission);
@@ -61,6 +63,11 @@ interface SessionContextType {
   doctor: MyDoctor | null;
   can: (permission: PermissionKey) => boolean;
   /**
+   * Like can(), but a page or dialog that changes data stays open while the connection is lost (a short break must not
+   * throw away what was typed; its Save then says there is no connection). For RequirePermission and the form dialogs.
+   */
+  canOpen: (permission: PermissionKey) => boolean;
+  /**
    * Set while nothing may be changed (a view-only copy …). can() then refuses every add, edit and delete permission;
    * a page that only needs manage_users (Settings, Doctors, Users …) hides its own Save, Add and Edit buttons.
    */
@@ -79,6 +86,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const { user, loginCount } = useAuth();
   const { mode } = useDeployment();
   const { state: plan } = useSubscription();
+  const { browserOnline, server } = useConnectivity();
+  const offline = !browserOnline || server === "unreachable";
   const [state, setState] = useState<SessionState | null>(null);
   const [version, setVersion] = useState(0);
 
@@ -134,7 +143,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const isSuperUser = user === "Administrator" || roles.includes("System Manager");
     const clinicRole = CLINIC_ROLES.find((role) => roles.includes(role));
     const readOnly: ReadOnlyReason | null =
-      mode === "cloud-copy" ? "copy" : plan?.suspended ? "suspended" : plan?.phase === "locked" ? "subscription" : null;
+      mode === "cloud-copy"
+        ? "copy"
+        : offline
+          ? "offline"
+          : plan?.suspended
+            ? "suspended"
+            : plan?.phase === "locked"
+              ? "subscription"
+              : null;
+    // What stays closed even to a page already open: everything but a lost connection.
+    const lasting = readOnly && readOnly !== "offline" ? readOnly : plan?.suspended ? "suspended" : plan?.phase === "locked" ? "subscription" : null;
     return {
       profile: current?.profile ?? null,
       roles,
@@ -144,11 +163,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       isPlatformOwner: roles.includes(PLATFORM_ROLE),
       doctor: current?.doctor ?? null,
       can: (permission) => Boolean(current?.perms[permission]) && !(readOnly && changesData(permission)),
+      canOpen: (permission) => Boolean(current?.perms[permission]) && !(lasting && changesData(permission)),
       readOnly,
       loading: Boolean(user) && !current,
       refresh,
     };
-  }, [state, user, refresh, mode, plan]);
+  }, [state, user, refresh, mode, plan, offline]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

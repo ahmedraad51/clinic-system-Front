@@ -136,8 +136,9 @@ const NEEDS: Record<RecordDialog["kind"], PermissionKey> = {
 };
 
 function DialogFor({ dialog, onClose }: { dialog: RecordDialog; onClose: () => void }) {
-  const { can } = useSession();
-  if (!can(NEEDS[dialog.kind])) return null;
+  const { canOpen } = useSession();
+  // canOpen: a dialog being filled in stays open while the connection is lost.
+  if (!canOpen(NEEDS[dialog.kind])) return null;
   switch (dialog.kind) {
     case "newAppointment":
       return <NewAppointmentDialog prefill={dialog.prefill} patientName={dialog.patientName} onClose={onClose} />;

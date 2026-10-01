@@ -344,7 +344,9 @@ Node **20.9+** is required (developed on Node 22).
 
 **Install as an app.** DentClinic can be installed on a computer, tablet or phone (Chrome or Edge: the install icon
 in the address bar, or Profile → Install DentClinic; iPhone and iPad: Share → Add to Home Screen). It then opens in
-its own window, and shows a friendly page when there is no connection. This needs the production build over HTTPS
+its own window. When the connection is lost it keeps showing what was loaded (the Today board, today's appointments,
+the patients already opened) with a clear "Offline" banner, changes nothing until the connection is back, and then
+refreshes by itself; a page never opened shows a friendly offline page. This needs the production build over HTTPS
 (`npm run build` and `npm run start` behind HTTPS); `npm run dev` does not register the service worker.
 
 ### Checks and tests

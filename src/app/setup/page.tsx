@@ -93,7 +93,8 @@ function SetupWizard() {
     router.push("/dashboard");
   };
 
-  if (readOnly) {
+  // A lost connection keeps the wizard (and what was typed); its Save then says why.
+  if (readOnly && readOnly !== "offline") {
     return (
       <PageContainer narrow>
         <PageHeader title={w.title} />

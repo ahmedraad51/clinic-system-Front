@@ -43,12 +43,24 @@ const useApple = () => useSyncExternalStore(noChange, () => /iPad|iPhone|iPod|Ma
 
 /**
  * Registers the service worker (public/sw.js) in the production build only, so the dev server is never cached. It
- * makes the app installable and shows a friendly page when there is no connection.
+ * makes the app installable, and keeps the app's files and the pages opened so they still open offline.
  */
 export function ServiceWorkerRegister() {
   useEffect(() => {
     if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) return;
     navigator.serviceWorker.register("/sw.js").catch((err) => console.error(err));
+    // The files this page loaded before the worker took over, and the page itself, so they work offline too.
+    navigator.serviceWorker.ready
+      .then((registration) => {
+        const urls = performance
+          .getEntriesByType("resource")
+          .map((entry) => entry.name)
+          .filter((name) => name.startsWith(`${location.origin}/_next/static/`) || name.startsWith(`${location.origin}/fonts/`));
+        registration.active?.postMessage({ type: "keep", urls: [...urls, location.pathname] });
+      })
+      .catch(() => {
+        // No worker: nothing to keep.
+      });
   }, []);
   return null;
 }

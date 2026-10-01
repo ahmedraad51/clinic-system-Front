@@ -2,7 +2,7 @@ import { messages } from "@/i18n";
 import { GRACE_DAYS, PLAN_KEYS, PLANS, TRIAL_DAYS, type PlanKey, type PlanLimits } from "@/config/sales";
 import { currentMode, isValidClinicAddress } from "./deployment";
 import { demoFlag } from "./demo";
-import { addDays, addMonths, todayISO } from "./format";
+import { addDays, addMonths, frappeDateTime, todayISO } from "./format";
 import { LICENSE_KEY_PATTERN, LICENSE_METHODS, type LicenseStatus } from "./license";
 import { mockActingUser, mockGetCount, mockGetDoc, mockGetList } from "./mockData";
 import {
@@ -22,11 +22,6 @@ import { SUBSCRIPTION_METHODS, type Subscription } from "./subscription";
 
 type Args = Record<string, unknown>;
 
-/** "2026-09-26 08:30:00" in local time, like Frappe's datetimes. */
-export function frappeDateTime(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-}
 
 const minutesAgo = (minutes: number) => frappeDateTime(new Date(Date.now() - minutes * 60_000));
 

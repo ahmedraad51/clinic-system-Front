@@ -239,3 +239,9 @@ export function downloadCsv(filename: string, header: string[], rows: Array<Arra
   link.click();
   URL.revokeObjectURL(url);
 }
+
+/** "2026-09-26 08:30:00" in local time, like Frappe's datetimes. */
+export function frappeDateTime(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}

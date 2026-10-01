@@ -16,10 +16,11 @@ export default function RequirePermission({
   permission?: PermissionKey | PermissionKey[];
   children: ReactNode;
 }) {
-  const { can, loading } = useSession();
+  // canOpen: a form page stays open while the connection is lost.
+  const { canOpen, loading } = useSession();
   if (loading) return <PageLoading />;
   const needed = permission ? (Array.isArray(permission) ? permission : [permission]) : [];
-  if (!needed.every((key) => can(key))) return <NoAccess />;
+  if (!needed.every((key) => canOpen(key))) return <NoAccess />;
   return <>{children}</>;
 }
 

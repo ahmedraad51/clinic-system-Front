@@ -9,4 +9,11 @@ export const access: Messages["access"] = {
   readOnlyRefused: "هذه نسخة للعرض فقط: لا يمكن تغيير شيء هنا.",
   viewOnly: "للعرض فقط",
   passwordAtClinic: "تُغيَّر كلمات المرور في العيادة، لا في النسخة المخصصة للعرض.",
+  offlineTitle: "غير متصل: تعرض الشاشة آخر نسخة",
+  offlineNoNetwork: "هذا الحاسوب بلا شبكة.",
+  offlineNoServer: "تعذّر الوصول إلى الخادم.",
+  offlineShown: (when: string) =>
+    `يُعرض ما حُمّل حتى ${when}، ولا يمكن إضافة أو تعديل أي شيء. يتحدّث كل شيء تلقائيًا عند عودة الاتصال.`,
+  offlineNothing: "لا يمكن إضافة أو تعديل أي شيء. يتحدّث كل شيء تلقائيًا عند عودة الاتصال.",
+  tryAgain: "حاول مجددًا",
 };

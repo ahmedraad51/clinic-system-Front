@@ -1185,3 +1185,12 @@ only (a new Role; a clinic's System Manager must not have it), and refuses every
   `status` `active` or `ended`, `paid_until` = `expires_on`, `grace_days`. So the notices 14 days before, the grace
   days and view-only after work as in the cloud (see Plan limits and an ended plan), and the cloud copy shows the
   same. The screens send the manager to Settings → License to renew there.
+
+### Offline viewing (every mode; no new methods)
+
+- When the server cannot be reached, the front end shows the last copy of what it read (kept in the browser tab's
+  memory and `sessionStorage`, cleared on logout) and changes nothing: it never queues writes to send later. The
+  service worker keeps only the app's own files and page HTML, never `/frappe/…`.
+- So the back end needs nothing new, but: keep `/api/…` answers out of shared caches (`Cache-Control: private,
+  no-store`, Frappe's default for logged-in requests), and keep `frappe.auth.get_logged_user` and
+  `dent_app.api.server.status` light, since they are asked again as soon as the connection is back.

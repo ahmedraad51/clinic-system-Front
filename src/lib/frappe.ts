@@ -96,7 +96,24 @@ export function onConnectionChange(listener: ConnectionListener): () => void {
   return () => connectionListeners.delete(listener);
 }
 
+/** When the server last answered (ms since 1970), for "showing what was loaded up to …" while offline. */
+let lastAnswerAt: number | null = null;
+let answerSaved = 0;
+
+export function lastServerAnswer(): number | null {
+  loadCopies();
+  return lastAnswerAt;
+}
+
 function reportConnection(reachable: boolean) {
+  if (reachable) {
+    lastAnswerAt = Date.now();
+    // Kept with the copies (at most every 10 seconds), so it is still known after a reload while offline.
+    if (lastAnswerAt - answerSaved > 10_000) {
+      answerSaved = lastAnswerAt;
+      saveCopiesSoon();
+    }
+  }
   connectionListeners.forEach((listener) => listener(reachable));
 }
 
@@ -132,7 +149,8 @@ export function isConnectionLost(err: unknown): boolean {
  * connection while My Profile pretends the server cannot be reached (DEMO_FLAGS.serverDown).
  */
 async function viaMock<T>(call: () => Promise<T> | T): Promise<T> {
-  if (demoFlag("serverDown")) {
+  // No network on this computer (or the pretend switch): nothing reaches the server, as with a real one.
+  if (demoFlag("serverDown") || (typeof navigator !== "undefined" && !navigator.onLine)) {
     await new Promise((resolve) => setTimeout(resolve, 150));
     reportConnection(false);
     throw new ConnectionLostError();
@@ -294,10 +312,107 @@ export const login = async (usr: string, pwd: string): Promise<string> => {
 };
 
 export const logout = async () => {
+  clearReadCopies();
   await api.get("/frappe/api/method/logout");
   localStorage.removeItem("csrf_token");
   localStorage.removeItem("dental_user");
 };
+
+/* --- The last copy of what was read, for when the connection is lost ------------------------------------------------
+   Every read remembers its last answer, in this tab only: in memory, and in sessionStorage so a page the browser has
+   to load whole while offline still has it (sessionStorage belongs to the tab and is gone when it closes; never
+   localStorage: it holds patients' data). Cleared on logout and when the user changes. When the server cannot be
+   reached, the same read gets that copy, so the pages already loaded (the Today board, today's appointments, a
+   patient) keep showing while the app is view-only ("offline"). */
+
+/** How many answers are kept (the oldest go first). */
+const READ_COPY_LIMIT = 400;
+/** One answer bigger than this (a report's every payment) stays in memory only. */
+const STORED_COPY_MAX_CHARS = 400_000;
+const COPIES_KEY = "dc_read_copies";
+/** Whose copies they are. */
+const COPIES_USER_KEY = "dc_read_copies_user";
+const readCopies = new Map<string, unknown>();
+let copiesLoaded = false;
+let saveTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** The copies kept in this tab before a reload. */
+function loadCopies() {
+  if (copiesLoaded || typeof window === "undefined") return;
+  copiesLoaded = true;
+  // Leaving the page (the browser loading a page whole while offline, a reload): saved at once.
+  window.addEventListener("pagehide", saveCopies);
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(COPIES_KEY) || "null") as { at: number | null; copies: Array<[string, unknown]> } | null;
+    if (!saved) return;
+    for (const [key, value] of saved.copies) if (!readCopies.has(key)) readCopies.set(key, value);
+    if (lastAnswerAt === null) lastAnswerAt = saved.at;
+  } catch {
+    // Nothing kept, or storage blocked.
+  }
+}
+
+function saveCopies() {
+  clearTimeout(saveTimer);
+  saveTimer = undefined;
+  if (readCopies.size === 0) return;
+  const copies = [...readCopies].filter(([, value]) => JSON.stringify(value).length <= STORED_COPY_MAX_CHARS);
+  // Too much for the tab's storage: the oldest half goes, then nothing is kept on disk.
+  for (const part of [copies, copies.slice(Math.floor(copies.length / 2))]) {
+    try {
+      sessionStorage.setItem(COPIES_KEY, JSON.stringify({ at: lastAnswerAt, copies: part }));
+      return;
+    } catch {
+      // Full: try with fewer.
+    }
+  }
+  try {
+    sessionStorage.removeItem(COPIES_KEY);
+  } catch {
+    // Storage blocked.
+  }
+}
+
+/** Saved a moment after the reads stop (and at once when the page is left). */
+function saveCopiesSoon() {
+  if (typeof window === "undefined" || saveTimer !== undefined) return;
+  saveTimer = setTimeout(saveCopies, 500);
+}
+
+function keepCopy(key: string, value: unknown) {
+  loadCopies();
+  readCopies.delete(key);
+  readCopies.set(key, structuredClone(value));
+  if (readCopies.size > READ_COPY_LIMIT) readCopies.delete(readCopies.keys().next().value as string);
+  saveCopiesSoon();
+}
+
+/** Forgets every copy (logging out, another user). */
+export function clearReadCopies(): void {
+  readCopies.clear();
+  clearTimeout(saveTimer);
+  saveTimer = undefined;
+  try {
+    sessionStorage.removeItem(COPIES_KEY);
+  } catch {
+    // Storage blocked.
+  }
+}
+
+/** A read that falls back on its last copy (or `fallback`) when the server cannot be reached. */
+async function withCopy<T>(key: string, read: () => Promise<T>): Promise<T> {
+  try {
+    const value = await read();
+    keepCopy(key, value);
+    return value;
+  } catch (err) {
+    if (isConnectionLost(err) || isServerDown(err)) {
+      loadCopies();
+      if (readCopies.has(key)) return structuredClone(readCopies.get(key)) as T;
+    }
+    throw err;
+  }
+}
 
 export async function getList<T extends BaseDoc = Doc>(
   doctype: string,
@@ -305,6 +420,12 @@ export async function getList<T extends BaseDoc = Doc>(
   options: ListOptions = {},
 ): Promise<T[]> {
   const { filters, orFilters, orderBy, limit = 100, start = 0 } = options;
+  const key = `list|${doctype}|${JSON.stringify([fields, filters, orFilters, orderBy, limit, start])}`;
+  return withCopy(key, () => readList<T>(doctype, fields, { filters, orFilters, orderBy, limit, start }));
+}
+
+async function readList<T extends BaseDoc>(doctype: string, fields: string[], options: Required<Pick<ListOptions, "limit" | "start">> & ListOptions): Promise<T[]> {
+  const { filters, orFilters, orderBy, limit, start } = options;
   if (MOCK_DATA) {
     const rows = await viaMock(() => mockGetList(doctype, fields, { filters, orFilters, orderBy, limit, start }));
     return rows as unknown as T[];
@@ -329,6 +450,10 @@ export async function getList<T extends BaseDoc = Doc>(
 
 /** How many docs match. Used for paging and dashboard counts. */
 export async function getCount(doctype: string, filters?: Filters, orFilters?: FilterRow[]): Promise<number> {
+  return withCopy(`count|${doctype}|${JSON.stringify([filters, orFilters])}`, () => readCount(doctype, filters, orFilters));
+}
+
+async function readCount(doctype: string, filters?: Filters, orFilters?: FilterRow[]): Promise<number> {
   if (MOCK_DATA) return viaMock(() => mockGetCount(doctype, filters, orFilters));
   initAuth();
   if (orFilters?.length) {
@@ -355,6 +480,10 @@ export async function getCount(doctype: string, filters?: Filters, orFilters?: F
 }
 
 export async function getDoc<T extends BaseDoc = Doc>(doctype: string, name: string): Promise<T> {
+  return withCopy(`doc|${doctype}|${name}`, () => readDoc<T>(doctype, name));
+}
+
+async function readDoc<T extends BaseDoc>(doctype: string, name: string): Promise<T> {
   if (MOCK_DATA) return (await viaMock(() => mockGetDoc(doctype, name))) as unknown as T;
   initAuth();
   const res = await withReadRetry(() => api.get(resource(doctype, name)));
@@ -384,11 +513,28 @@ export async function getDocHistory(doctype: string, name: string): Promise<DocH
   return parseDocHistory(doc, docinfo);
 }
 
+let sessionUser: string | null = null;
+
 /**
  * Tells the data layer who is logged in. Only the dummy data uses it (to record who made each change); the real
  * server knows from the session.
  */
 export function setSessionUser(user: string | null): void {
+  // Another user must not see the last user's copies (the tab remembers whose they are across a reload).
+  let owner = sessionUser;
+  try {
+    owner ??= sessionStorage.getItem(COPIES_USER_KEY);
+  } catch {
+    // Storage blocked.
+  }
+  if (owner !== null && user !== owner) clearReadCopies();
+  sessionUser = user;
+  try {
+    if (user) sessionStorage.setItem(COPIES_USER_KEY, user);
+    else sessionStorage.removeItem(COPIES_USER_KEY);
+  } catch {
+    // Storage blocked.
+  }
   if (MOCK_DATA) setMockUser(user);
 }
 

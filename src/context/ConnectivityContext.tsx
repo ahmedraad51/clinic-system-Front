@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useAuth } from "./AuthContext";
 import { useDeployment } from "./DeploymentContext";
 import { callMethod, isConnectionLost, onConnectionChange } from "@/lib/frappe";
+import { bumpData } from "@/lib/dataVersion";
 import { subscribeDemoFlags } from "@/lib/demo";
 import { SERVER_METHODS, type ServerStatus } from "@/lib/server";
 
@@ -57,13 +58,24 @@ export function ConnectivityProvider({ children }: { children: ReactNode }) {
     () =>
       onConnectionChange((reachable) => {
         const next = reachable ? "ok" : "unreachable";
-        // Back after a break: ask about the internet and the cloud copy again at once.
-        if (next === "ok" && reach.current === "unreachable") setVersion((v) => v + 1);
+        // Back after a break: ask about the internet and the cloud copy again at once, and every list and page loads
+        // again (they showed the last copy while offline).
+        if (next === "ok" && reach.current === "unreachable") {
+          setVersion((v) => v + 1);
+          bumpData();
+        }
         reach.current = next;
         setServer(next);
       }),
     [],
   );
+
+  // The network back on this computer: every list and page loads again.
+  const wasOnline = useRef(browserOnline);
+  useEffect(() => {
+    if (browserOnline && !wasOnline.current) bumpData();
+    wasOnline.current = browserOnline;
+  }, [browserOnline]);
 
   // The pretend switches of the dummy data (My Profile) change what the server says about itself.
   useEffect(() => subscribeDemoFlags(() => setVersion((v) => v + 1)), []);

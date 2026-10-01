@@ -9,4 +9,13 @@ export const access = {
   readOnlyRefused: "This is a view-only copy: nothing can be changed here.",
   viewOnly: "View only",
   passwordAtClinic: "Passwords are changed at the clinic, not on the view-only copy.",
+  // The connection is lost: the last copy of what was loaded shows, view-only
+  offlineTitle: "Offline: you are seeing the last copy",
+  offlineNoNetwork: "This computer has no network.",
+  offlineNoServer: "The server cannot be reached.",
+  /** "What was loaded up to 8:42 AM is shown …" */
+  offlineShown: (when: string) =>
+    `What was loaded up to ${when} is shown, and nothing can be added or changed. Everything refreshes by itself when the connection is back.`,
+  offlineNothing: "Nothing can be added or changed. Everything refreshes by itself when the connection is back.",
+  tryAgain: "Try Again",
 };
