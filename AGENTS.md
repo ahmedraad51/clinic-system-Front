@@ -109,6 +109,12 @@ helpers, and `useDeployment()` (`src/context/DeploymentContext.tsx`, the outermo
   Every dummy-data call goes through `viaMock()` in `frappe.ts`, which reports the connection and fails while the
   server is "down". The parts that sell and run DentClinic (`dent_app.*` methods) are answered by
   `src/lib/mockPlatform.ts`, the clinic's own records by `mockData.ts`.
+- **Prices and plans** live in one file, `src/config/sales.ts`: `PLANS` (price, currency, month or year, a one-time
+  set-up fee, and the limits: doctors, users, storage), `TRIAL_DAYS`, `GRACE_DAYS`, `WARN_DAYS` and `CONTACT` (the sales
+  WhatsApp number and email). The texts that describe each plan are in `src/i18n/*/site.ts` (`plans`). The website's
+  screenshots are the README and Arabic pictures cropped to their first screen, 1200 px WebP, in `public/site/`;
+  remake them after `npm run screenshots:readme` and `npm run screenshots:arabic` (a small PIL script: crop to 1440 ×
+  900, resize to 1200 wide, WebP quality 80).
 - **Previewing a mode (dummy data only):** `/profile` → **Preview a Way of Installing** saves the mode in
   `localStorage.demo_deployment_mode` and reloads; `currentMode(MOCK_DATA)` (and `useDeployment()`) read
   it. With a real back end only the built mode counts. Tests set the same key with `page.addInitScript`.
@@ -235,6 +241,7 @@ src/
 │   ├── RecordDialogs.tsx     new / edit forms in a dialog (appointment, plan, payment) or side panel (patient); useRecordDialogs()
 │   ├── DoctorDialog.tsx      the add / edit doctor dialog (Doctors list and the doctor's page)
 │   ├── SessionEndedNotice.tsx  "Log in again" dialog (and banner) when the server ended the login; the page stays
+│   ├── site/                 the public website: SiteHeader, SitePlans, TrialForm, ClinicFinder
 │   ├── WhatsAppButton.tsx    every wa.me link: "Needs internet" (and nothing marked as sent) while there is none
 │   ├── ReadOnlyBanner.tsx    "View-only copy, last updated …" above every page while useSession().readOnly is set
 │   ├── SendWhatsAppDialog.tsx a WhatsApp message by hand from a template (opens wa.me)
@@ -273,6 +280,8 @@ src/
 │       ├── ColorInput.tsx    the app's own colour field (palette and colour code)
 │       ├── Tooltip.tsx       tooltip(text), the app's own hover and focus hint, and TooltipLayer (in layout.tsx)
 │       └── LinkSelect.tsx    searchable picker for Link fields (used for patients)
+├── config/
+│   └── sales.ts              the plans, prices, limits, trial and grace days, and the sales contacts (edit prices here)
 ├── context/
 │   ├── AuthContext.tsx       who is logged in, the AUTH_DISABLED switch, useAuth()
 │   ├── ConnectivityContext.tsx the connection to the server and the internet (status asked every 30 s), useConnectivity()
@@ -294,6 +303,7 @@ src/
     ├── dataVersion.ts        bumpData() / useDataVersion(): lists and record pages load again after a dialog saves
     ├── format.ts             money (IQD without decimals, currencyDecimals()), cleanNumberText(), dates, times, week helpers, cx(), CSV download
     ├── demo.ts               the dummy data's pretend switches (no internet, server down), demoFlag(), setDemoFlag()
+    ├── platform.ts           the platform (selling DentClinic): PLATFORM_METHODS, TrialRequest …
     ├── server.ts             what the server says about itself: SERVER_METHODS, ServerStatus, CloudCopyStatus
     ├── mockPlatform.ts       the dummy back end of the dent_app.* methods (server status, cloud copy, plans, platform …)
     ├── deployment.ts         the three ways to install: DEPLOYMENT_MODES, clinicFromHost(), isMainAddress(), the clinic address rule, the mode preview
@@ -356,7 +366,7 @@ the dialog to be hidden, and use `openSaved(page, "Payment recorded.")` to follo
 | Route | Permission | What it does |
 |---|---|---|
 | `/` | none | Server redirect to `/dashboard`; on the cloud's main address (`CLOUD_DOMAIN`) to `/site` |
-| `/site` | none (public) | The public website (no login, no menu): what DentClinic is, and **Go to Your Clinic** (a clinic's address, `<name>.CLOUD_DOMAIN`; a single-clinic install just opens the clinic) |
+| `/site` | none (public) | The public website (no login, no menu), in Arabic and English: what DentClinic is (Start a Free Trial, Talk to Us on WhatsApp), six features, three screenshots in the page's language (`public/site/{ar,en}/*.webp`), the three plans with their prices and limits (`SitePlans`, from `src/config/sales.ts`; Start with This Plan fills in the form), **Ask for a Free Trial** (`TrialForm`: clinic, name, mobile, city, email, plan, the web address wanted (`isValidClinicAddress`), message; sent with `PLATFORM_METHODS.requestTrial`), **Go to Your Clinic** (a clinic's address, `<name>.CLOUD_DOMAIN`; a single-clinic install just opens the clinic) and a floating WhatsApp button (`CONTACT.whatsapp`) |
 | `/dashboard` | none (cards appear per permission) | A **welcome card** (date, greeting, "2 appointments today, 2 still to come."); on a wide screen (xl) today's appointments and **Needs attention** sit side by side right under the numbers, so on a full HD screen (1920 × 1080 at 100 %) they show without scrolling, and the whole menu fits too (`e2e/tests/full-hd.spec.ts`); right under it the **quick actions** as large `ActionTile`s (New Appointment, Add Patient, New Treatment, Record Payment, each by permission, with a one-line hint from `sm` up); counts for today's appointments, patients, active plans; revenue this month and amount owed; today's list and the next 7 days; a **Needs attention** card (hidden when empty) with past appointments still open, tomorrow's reminders not yet opened, patients due for recall (`dueForRecall` in `src/lib/recall.ts`: the dentist's date, else 6 months) and patients who owe money, each linking to where it is handled; the appointment lists show each patient's initials (`Avatar`). Below, three **charts** (`Charts.tsx`), each by permission: revenue per month for the last 6 months (`view_payments`, amounts written short, "450K"), visits per month (`view_appointments`, cancelled ones and no-shows left out) and treatment plans by type (`view_treatments`, a ring with the 5 biggest types and "Other") |
 | `/today` | `view_appointments` | The front desk board: counts (still to come (not arrived), waiting, in the chair, late, completed, no show), today's appointments grouped by doctor with one-tap **Confirm**, **Arrived** (sets `arrived_at` to now: the badge becomes "Waiting 12 min"), **In Chair** (sets `in_chair_at`: "In the chair since 10:05 AM"), **Undo step** (clears the last step), **Completed**, **No show** and **Undo** (`edit_appointments`; the steps are `visitStep()` in `src/lib/waitingRoom.ts`, only for Scheduled or Confirmed visits), late patients (still open and not arrived `LATE_AFTER` = 10 minutes after the start) highlighted, **Waiting Room Screen** (a link to `/waiting-room`), a red chip for high medical alerts, what the patient owes (`view_payments`), **Add Payment** (`add_payments`), **Walk-in** (books now, rounded up to the quarter hour) and Refresh. **Tomorrow's reminders** (when `enable_whatsapp` is on) lists tomorrow's booked patients with **Send reminder**, which opens `wa.me` with the active "24 Hours Before" template (or the first active one) filled in; opened reminders are remembered on that computer (`localStorage.reminders_opened`). **Lab work due** lists plans sent to a lab and not back that are late or due within two days (`view_treatments`). Below, **Earlier, still open** lists up to 50 past appointments still Scheduled or Confirmed, with Completed / No show / Cancelled buttons; resolved ones drop off. The dashboard and the bell link here |
 | `/waiting-room` | `view_appointments` | The waiting room TV screen, with no menu or top bar: the clinic logo and name, a big clock and the date, and three columns: **In the chair**, **Waiting** (longest first, with the minutes) and **Coming up** (the next 6 not arrived, from a quarter of an hour ago on), each patient as first name and initial only (`shortName()`, in a `<bdi>`) with the doctor. Loads today's open appointments again every 20 seconds (`REFRESH_SECONDS`) and after a dialog saves; a failed load keeps the last list and says so. **Full Screen** and **Back to Today** hide in full screen. The only screen with larger text sizes (it is read from across the room). In dummy mode a new tab starts from the seed data, so tests open it from the Today board in the same tab |

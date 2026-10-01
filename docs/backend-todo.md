@@ -1048,3 +1048,15 @@ serves all three; what each mode needs from the back end is listed below, item b
   site's read-only mode, `maintenance_mode`/`allow_writes` off), except the session itself (login, logout).
 - **Users** on the copy are the clinic's own (copied with the data); a password change is made at the clinic and
   arrives with the next update.
+
+### The public website and free trials (the platform's site)
+
+- **`dent_app.platform.request_trial`** on the platform's site, **allowed for Guest** (`allow_guest=True`), with a rate
+  limit (Frappe's `@rate_limit`, for example 5 an hour per IP address) and a check that the phone has at least 10
+  digits. Arguments (`TrialRequest` in `src/lib/platform.ts`): `clinic_name`*, `contact_name`*, `phone`*, `city`,
+  `email`, `plan` (`cloud`, `server`, `server-cloud`), `address` (the web address wanted: `isValidClinicAddress()`;
+  say in the answer if it is taken), `message`, `language` (`ar` or `en`). Saves a **Trial Request** (`TRQ-.#####`:
+  those fields, `status` Select New / Contacted / Started / Declined) and tells the platform owner (email or WhatsApp).
+  Returns the record's name.
+- The website's prices are the published ones in `src/config/sales.ts`; a clinic's own plan, price and limits are
+  kept by the platform (see Plans).

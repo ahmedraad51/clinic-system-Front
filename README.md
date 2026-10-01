@@ -418,6 +418,10 @@ requests sent to its own site, and the main address shows the public website (it
 | `CLINIC_SITE_URL` | `https://{clinic}.sites.dentclinic.example` | Each cloud clinic's Frappe site |
 | `PLATFORM_SITE_URL` | `https://platform.sites.dentclinic.example` | The platform's Frappe site, for the main address |
 
+**Prices.** The three plans (Cloud, Clinic Server, Clinic Server + Cloud copy), their prices, limits and the free-trial
+length are in one file, [`src/config/sales.ts`](src/config/sales.ts), with the sales WhatsApp number. The public
+website on the main address shows them.
+
 With the dummy data you do not need three builds: **My Profile → Preview a Way of Installing** shows the app as
 another mode on that computer. [`docs/backend-todo.md`](docs/backend-todo.md) lists what the back end must provide
 for each mode.

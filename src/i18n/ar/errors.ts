@@ -41,6 +41,7 @@ export const errors: Messages["errors"] = {
     linked: (doctype: string, name: string, linkedDoctype: string, linkedName: string) =>
       `تعذّر حذف ${doctype} ${name}، فهناك سجل مرتبط به: ${linkedDoctype} ${linkedName}.`,
     newPassword: "كلمة المرور الجديدة مطلوبة.",
+    required: "املأ كل الحقول المطلوبة.",
     noMethod: (method: string) => `الإجراء ${method} غير متاح مع البيانات التجريبية.`,
     readFile: "تعذّرت قراءة الملف.",
   },

@@ -61,7 +61,7 @@ test("the clinic is read from the web address", async () => {
 
 test("the public website opens with no login and no menu", async ({ page }) => {
   await page.goto("/site");
-  await expect(page.getByRole("heading", { level: 1, name: "DentClinic" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Your dental clinic, organised, in Arabic and English" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Patients", exact: true })).toHaveCount(0);
   // This build serves one clinic (no CLOUD_DOMAIN): the website opens it.
   await expect(page.getByText("This copy of DentClinic serves one clinic.")).toBeVisible();

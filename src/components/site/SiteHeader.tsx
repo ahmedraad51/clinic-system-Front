@@ -16,9 +16,11 @@ export default function SiteHeader({ children }: { children?: React.ReactNode })
           <span className="w-9 h-9 shrink-0 bg-brand rounded-md flex items-center justify-center text-white">
             <ToothLogo size={22} />
           </span>
-          <span className="text-xl font-semibold text-gray-900">{t.site.title}</span>
+          <span className="text-xl font-semibold text-gray-900 truncate">{t.site.title}</span>
         </Link>
-        <nav className="ms-auto flex items-center gap-1 sm:gap-3">{children}</nav>
+        <nav aria-label={t.site.nav.label} className="ms-auto flex items-center gap-1 sm:gap-3">
+          {children}
+        </nav>
         <div role="group" aria-label={t.site.language} className="flex gap-1">
           {LANGS.map((option) => (
             <button

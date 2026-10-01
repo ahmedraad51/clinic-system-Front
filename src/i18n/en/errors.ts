@@ -40,6 +40,7 @@ export const errors = {
     linked: (doctype: string, name: string, linkedDoctype: string, linkedName: string) =>
       `Cannot delete ${doctype} ${name} because it is linked with ${linkedDoctype} ${linkedName}.`,
     newPassword: "New password is required.",
+    required: "Fill in every required field.",
     noMethod: (method: string) => `The method ${method} is not available with dummy data.`,
     readFile: "Could not read the file.",
   },
